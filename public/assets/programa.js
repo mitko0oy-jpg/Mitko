@@ -1,12 +1,12 @@
 // Public course map: every work and topic per grade, with what is ready and what is coming.
-import { $, api, esc, KIND_LABEL, me, params, PLANNED_LABEL, SECTION_LABEL, topbar } from "./app.js";
+import { $, api, esc, KIND_LABEL, me, params, PLANNED_LABEL, plannedLeft, SECTION_LABEL, topbar } from "./app.js";
 
 let grade = [5, 6, 7].includes(Number(params().get("klas"))) ? Number(params().get("klas")) : 7;
 
 function unitRow(u) {
   const total = u.resources.reduce((s, r) => s + r.total, 0);
   const ready = u.resources.map((r) => `<span class="rk">${esc(KIND_LABEL[r.kind] || r.kind)}${r.kind === "chars" ? "" : ` ${r.total}`}</span>`).join("");
-  const soon = (u.planned || []).map((p) => `<span class="rk soon">${esc(PLANNED_LABEL[p] || p)}</span>`).join("");
+  const soon = plannedLeft(u.planned, u.resources).map((p) => `<span class="rk soon">${esc(PLANNED_LABEL[p] || p)}</span>`).join("");
   return `<div class="unit ${total ? "" : "soon"}"><p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}<div class="rks">${ready}${soon}</div></div>`;
 }
 

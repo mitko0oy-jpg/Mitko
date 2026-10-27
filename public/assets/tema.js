@@ -1,5 +1,5 @@
 // One work or language topic with everything the platform has for it.
-import { $, api, esc, guard, KIND_LABEL, params, PLANNED_LABEL, renderUnlock, resourceHref, SECTION_LABEL, topbar } from "./app.js";
+import { $, api, esc, guard, KIND_LABEL, params, PLANNED_LABEL, plannedLeft, renderUnlock, resourceHref, SECTION_LABEL, topbar } from "./app.js";
 
 const DESC = {
   cards: "Въпроси с обяснение защо отговорът е верен.",
@@ -36,8 +36,9 @@ async function load() {
   let h = `<p class="eyebrow">${esc(SECTION_LABEL[u.section] || "")}${u.grp ? ` · ${esc(u.grp)}` : ""}</p><h1>${esc(u.title)}</h1>${u.subtitle ? `<p class="lead">${esc(u.subtitle)}</p>` : ""}`;
   if (d.resources.length) h += `<div class="ress">${d.resources.map((r) => tile(r, u)).join("")}</div>`;
   else h += `<p class="notice info">Материалите за тази ${u.section === "language" ? "тема" : "творба"} се подготвят.</p>`;
-  if (u.planned?.length) {
-    h += `<h3 class="grp">Предстои</h3><div class="ress">${u.planned.map((p) => `<div class="res soon"><p class="t">${esc(PLANNED_LABEL[p] || p)}</p><span class="pill">скоро</span></div>`).join("")}</div>`;
+  const left = plannedLeft(u.planned, d.resources);
+  if (left.length) {
+    h += `<h3 class="grp">Предстои</h3><div class="ress">${left.map((p) => `<div class="res soon"><p class="t">${esc(PLANNED_LABEL[p] || p)}</p><span class="pill">скоро</span></div>`).join("")}</div>`;
   }
   h += `<div id="unlockBox"></div>`;
   $("main").innerHTML = h;

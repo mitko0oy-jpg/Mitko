@@ -1,0 +1,1815 @@
+{
+ "units": [
+  {
+   "slug": "g5-mit-za-proizhoda-na-bogovete",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Митологичен модел за света",
+   "title": "Мит за произхода на боговете",
+   "subtitle": "Древногръцки мит, преразказан от Петър Кърджилов",
+   "position": 1,
+   "match": {
+    "works": [
+     "Мит за произхода на боговете"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-nachaloto-na-sveta",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Митологичен модел за света",
+   "title": "Началото на света",
+   "subtitle": "Библейски разказ, из „Битие“",
+   "position": 2,
+   "match": {
+    "works": [
+     "Началото на света"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-gospod-i-dyavolat-pravyat-sveta",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Фолклорен модел за света",
+   "title": "Господ и дяволът правят света",
+   "subtitle": "Легенда",
+   "position": 3,
+   "match": {
+    "works": [
+     "Господ и дяволът правят света"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-trimata-bratya-i-zlatnata-yabalka",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Фолклорен модел за света",
+   "title": "Тримата братя и златната ябълка",
+   "subtitle": "Вълшебна приказка",
+   "position": 4,
+   "match": {
+    "works": [
+     "Тримата братя и златната ябълка"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-zlatnoto-momiche",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Фолклорен модел за света",
+   "title": "Златното момиче",
+   "subtitle": "Приказка",
+   "position": 5,
+   "match": {
+    "works": [
+     "Златното момиче"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-troitsa-bratya-grada-gradyaha",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Фолклорен модел за света",
+   "title": "Троица братя града градяха",
+   "subtitle": "Народна песен",
+   "position": 6,
+   "match": {
+    "works": [
+     "Троица братя града градяха"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-folklorniyat-kalendar",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Фолклорен модел за света",
+   "title": "Фолклорният календар",
+   "subtitle": "Коледа, Великден, Пасха, Курбан байрам, Гергьовден",
+   "position": 7,
+   "match": {
+    "works": [
+     "Фолклорният календар"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-hayduti",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Хайдути",
+   "subtitle": "Христо Ботев – поема",
+   "position": 8,
+   "match": {
+    "works": [
+     "Хайдути"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-legenda-za-roma",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Легенда за рома",
+   "subtitle": "Откъс от приказката, преразказана от Михаил Георгиев",
+   "position": 9,
+   "match": {
+    "works": [
+     "Легенда за рома"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-glavataryat-koyto-iskal-da-pleni-mesechinata",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Главатарят, който искал да плени месечината",
+   "subtitle": "Приказка",
+   "position": 10,
+   "match": {
+    "works": [
+     "Главатарят, който искал да плени месечината"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-kotarakat-v-chizmi",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Котаракът в чизми",
+   "subtitle": "Шарл Перо – „Котаракът Наставник, или Котаракът в чизми“",
+   "position": 11,
+   "match": {
+    "works": [
+     "Котаракът в чизми"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-groznoto-patentse",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Грозното патенце",
+   "subtitle": "Ханс Кристиан Андерсен – приказка",
+   "position": 12,
+   "match": {
+    "works": [
+     "Грозното патенце"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-pohititelyat-na-malnii",
+   "grade": 5,
+   "section": "literature",
+   "grp": "Различни разкази за човека и света",
+   "title": "Похитителят на мълнии",
+   "subtitle": "Рик Риърдън – откъси от X глава",
+   "position": 13,
+   "match": {
+    "works": [
+     "Похитителят на мълнии"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-ezikat-sredstvo-za-obshtuvane",
+   "grade": 5,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Езикът – средство за общуване",
+   "subtitle": "",
+   "position": 14,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-ofitsialno-i-neofitsialno-obshtuvane",
+   "grade": 5,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Официално и неофициално общуване",
+   "subtitle": "",
+   "position": 15,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-tekstat-stroezh-na-teksta",
+   "grade": 5,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Текстът. Строеж на текста",
+   "subtitle": "Повествование, описание, разсъждение",
+   "position": 16,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-rechnikovo-i-gramatichno-znachenie-na-dumata",
+   "grade": 5,
+   "section": "language",
+   "grp": "Думата",
+   "title": "Речниково и граматично значение на думата",
+   "subtitle": "Видове думи според значението и звуковия състав",
+   "position": 17,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-pravopis-i-pravogovor",
+   "grade": 5,
+   "section": "language",
+   "grp": "Думата",
+   "title": "Правопис и правоговор",
+   "subtitle": "Според морфемния строеж на думата; главна буква",
+   "position": 18,
+   "match": {
+    "works": [],
+    "topics": [
+     "Звучни и беззвучни съгласни",
+     "Окончания",
+     "Гласни ъ и а",
+     "Главна буква"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-zvukovi-promeni-podvizhno-i-nepostoyanno-a",
+   "grade": 5,
+   "section": "language",
+   "grp": "Думата",
+   "title": "Звукови промени. Подвижно и непостоянно Ъ",
+   "subtitle": "",
+   "position": 19,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-izmenyaemi-chasti-na-rechta",
+   "grade": 5,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Изменяеми части на речта",
+   "subtitle": "Съществително, прилагателно, числително име, глагол",
+   "position": 20,
+   "match": {
+    "works": [],
+    "topics": [
+     "Съществително име",
+     "Род и число",
+     "Числително име",
+     "Глагол"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-mestoimeniya",
+   "grade": 5,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Местоимения",
+   "subtitle": "Лично, възвратно лично, притежателно, възвратно притежателно",
+   "position": 21,
+   "match": {
+    "works": [],
+    "topics": [
+     "Местоимение"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-minalo-svarsheno-i-minalo-nesvarsheno-vreme",
+   "grade": 5,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Минало свършено и минало несвършено време",
+   "subtitle": "",
+   "position": 22,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-prichastiya",
+   "grade": 5,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Причастия",
+   "subtitle": "Минало свършено и минало несвършено деятелно причастие",
+   "position": 23,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-neizmenyaemi-chasti-na-rechta",
+   "grade": 5,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Неизменяеми части на речта",
+   "subtitle": "Наречие, предлог",
+   "position": 24,
+   "match": {
+    "works": [],
+    "topics": [
+     "Наречие"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-glavni-chasti-na-izrechenieto",
+   "grade": 5,
+   "section": "language",
+   "grp": "Простото изречение",
+   "title": "Главни части на изречението",
+   "subtitle": "Подлог и сказуемо",
+   "position": 25,
+   "match": {
+    "works": [],
+    "topics": [
+     "Подлог и сказуемо",
+     "Просто и сложно изречение",
+     "Видове изречения"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g5-vtorostepenni-chasti-na-izrechenieto",
+   "grade": 5,
+   "section": "language",
+   "grp": "Простото изречение",
+   "title": "Второстепенни части на изречението",
+   "subtitle": "Допълнение, определение, обстоятелствено пояснение",
+   "position": 26,
+   "match": {
+    "works": [],
+    "topics": [
+     "Второстепенни части"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-hubava-si-moya-goro",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и природата",
+   "title": "Хубава си, моя горо",
+   "subtitle": "Любен Каравелов",
+   "position": 1,
+   "match": {
+    "works": [
+     "Хубава си, моя горо"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-otechestvo-lyubezno-kak-hubavo-si-ti",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и природата",
+   "title": "Отечество любезно, как хубаво си ти!",
+   "subtitle": "Иван Вазов",
+   "position": 2,
+   "match": {
+    "works": [
+     "Отечество любезно, как хубаво си ти!"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-moeto-semeystvo-i-drugi-zhivotni",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и природата",
+   "title": "Моето семейство и други животни",
+   "subtitle": "Джералд Даръл – откъси от IV глава",
+   "position": 3,
+   "match": {
+    "works": [
+     "Моето семейство и други животни"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-kosachi",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и изкуството",
+   "title": "Косачи",
+   "subtitle": "Елин Пелин – разказ",
+   "position": 4,
+   "match": {
+    "works": [
+     "Косачи"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-hudozhnik",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и изкуството",
+   "title": "Художник",
+   "subtitle": "Веселин Ханчев – стихотворение",
+   "position": 5,
+   "match": {
+    "works": [
+     "Художник"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-pod-igoto-predstavlenieto",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и изкуството",
+   "title": "Под игото – „Представлението“",
+   "subtitle": "Иван Вазов – роман, глава",
+   "position": 6,
+   "match": {
+    "works": [
+     "Под игото – „Представлението“"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-pod-igoto-radini-valneniya",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Под игото – „Радини вълнения“",
+   "subtitle": "Иван Вазов – роман, глава",
+   "position": 7,
+   "match": {
+    "works": [
+     "Под игото – „Радини вълнения“"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-printsat-i-prosyakat",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Принцът и просякът",
+   "subtitle": "Марк Твен – I и III глава",
+   "position": 8,
+   "match": {
+    "works": [
+     "Принцът и просякът"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-bratchetata-na-gavrosh",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Братчетата на Гаврош",
+   "subtitle": "Христо Смирненски – стихотворение",
+   "position": 9,
+   "match": {
+    "works": [
+     "Братчетата на Гаврош"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-serafim",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Серафим",
+   "subtitle": "Йордан Йовков – разказ",
+   "position": 10,
+   "match": {
+    "works": [
+     "Серафим"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-urok-po-geografiya",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Урок по география",
+   "subtitle": "Бранислав Нушич – из „Автобиография“",
+   "position": 11,
+   "match": {
+    "works": [
+     "Урок по география"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-malkiyat-prints",
+   "grade": 6,
+   "section": "literature",
+   "grp": "Човекът и другите",
+   "title": "Малкият принц",
+   "subtitle": "Антоан дьо Сент-Екзюпери – част XXI",
+   "position": 12,
+   "match": {
+    "works": [
+     "Малкият принц"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-tekstat-v-nauchnoto-obshtuvane",
+   "grade": 6,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Текстът в научното общуване",
+   "subtitle": "Отговор на научен въпрос, урочна статия",
+   "position": 13,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-mestoimeniya",
+   "grade": 6,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Местоимения",
+   "subtitle": "Показателно, въпросително, относително, отрицателно, неопределително, обобщително",
+   "position": 14,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-prichastiya-i-deeprichastie",
+   "grade": 6,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Причастия и деепричастие",
+   "subtitle": "Сегашно деятелно, минало страдателно причастие; деепричастие",
+   "position": 15,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-slozhni-glagolni-vremena",
+   "grade": 6,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Сложни глаголни времена",
+   "subtitle": "Минало неопределено, минало предварително, бъдеще в миналото",
+   "position": 16,
+   "match": {
+    "works": [],
+    "topics": [
+     "Сложни глаголни времена",
+     "Прости глаголни времена"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-sayuz-mezhdumetie-chastitsa",
+   "grade": 6,
+   "section": "language",
+   "grp": "Части на речта",
+   "title": "Съюз, междуметие, частица",
+   "subtitle": "",
+   "position": 17,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-chasti-na-izrechenieto",
+   "grade": 6,
+   "section": "language",
+   "grp": "Изречение",
+   "title": "Части на изречението",
+   "subtitle": "Преговор от 5. клас",
+   "position": 18,
+   "match": {
+    "works": [],
+    "topics": [
+     "Подлог и сказуемо",
+     "Второстепенни части"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-ednorodni-chasti",
+   "grade": 6,
+   "section": "language",
+   "grp": "Изречение",
+   "title": "Еднородни части",
+   "subtitle": "",
+   "position": 19,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-slozhno-sachineno-izrechenie",
+   "grade": 6,
+   "section": "language",
+   "grp": "Изречение",
+   "title": "Сложно съчинено изречение",
+   "subtitle": "",
+   "position": 20,
+   "match": {
+    "works": [],
+    "topics": [
+     "Сложно изречение"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-zvukovi-promeni-promenlivo-ya",
+   "grade": 6,
+   "section": "language",
+   "grp": "Правопис",
+   "title": "Звукови промени. Променливо Я",
+   "subtitle": "",
+   "position": 21,
+   "match": {
+    "works": [],
+    "topics": [
+     "Ятов преход"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g6-pravopis-na-dumite",
+   "grade": 6,
+   "section": "language",
+   "grp": "Правопис",
+   "title": "Правопис на думите",
+   "subtitle": "Звучни и беззвучни съгласни, членуване, слято и разделно писане",
+   "position": 22,
+   "match": {
+    "works": [],
+    "topics": [
+     "Звучни и беззвучни съгласни",
+     "Пълен и кратък член",
+     "Слято и разделно писане"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-stani-stani-yunak-balkanski",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Стани, стани, юнак балкански",
+   "subtitle": "Добри Чинтулов",
+   "position": 1,
+   "match": {
+    "works": [
+     "Стани, стани, юнак балкански"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-vyatar-echi-balkan-stene",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Вятър ечи, Балкан стене",
+   "subtitle": "Добри Чинтулов",
+   "position": 2,
+   "match": {
+    "works": [
+     "Вятър ечи, Балкан стене"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-na-proshtavane-v-1868-g",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "На прощаване в 1868 г.",
+   "subtitle": "Христо Ботев",
+   "position": 3,
+   "match": {
+    "works": [
+     "На прощаване в 1868 г."
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-nemili-nedragi",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Немили-недраги",
+   "subtitle": "Иван Вазов – повест (I, II, III, V, X глава, епилог)",
+   "position": 4,
+   "match": {
+    "works": [
+     "Немили-недраги"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-edna-balgarka",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Една българка",
+   "subtitle": "Иван Вазов – разказ",
+   "position": 5,
+   "match": {
+    "works": [
+     "Една българка"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-opalchentsite-na-shipka",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Опълченците на Шипка",
+   "subtitle": "Иван Вазов – ода",
+   "position": 6,
+   "match": {
+    "works": [
+     "Опълченците на Шипка"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-balgarskiyat-ezik",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Българинът във възрожденския свят",
+   "title": "Българският език",
+   "subtitle": "Иван Вазов – ода",
+   "position": 7,
+   "match": {
+    "works": [
+     "Българският език"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-do-chikago-i-nazad",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "До Чикаго и назад",
+   "subtitle": "Алеко Константинов – пътепис (откъс)",
+   "position": 8,
+   "match": {
+    "works": [
+     "До Чикаго и назад"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-bay-ganyo-patuva",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "Бай Ганьо пътува",
+   "subtitle": "Алеко Константинов – фейлетон",
+   "position": 9,
+   "match": {
+    "works": [
+     "Бай Ганьо пътува"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-nerazdelni",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "Неразделни",
+   "subtitle": "Пенчо П. Славейков – балада",
+   "position": 10,
+   "match": {
+    "works": [
+     "Неразделни"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-zatochenitsi",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "Заточеници",
+   "subtitle": "Пейо Яворов – елегия",
+   "position": 11,
+   "match": {
+    "works": [
+     "Заточеници"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-po-zhatva",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "По жътва",
+   "subtitle": "Елин Пелин – разказ",
+   "position": 12,
+   "match": {
+    "works": [
+     "По жътва"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-po-zhitsata",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Човекът в обществото – норми, ценности и конфликти",
+   "title": "По жицата",
+   "subtitle": "Йордан Йовков – разказ",
+   "position": 13,
+   "match": {
+    "works": [
+     "По жицата"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-hayduti",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Хайдути",
+   "subtitle": "Христо Ботев – поема",
+   "position": 14,
+   "match": {
+    "works": [
+     "Хайдути"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-hubava-si-moya-goro",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Хубава си, моя горо",
+   "subtitle": "Любен Каравелов",
+   "position": 15,
+   "match": {
+    "works": [
+     "Хубава си, моя горо"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-otechestvo-lyubezno-kak-hubavo-si-ti",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Отечество любезно, как хубаво си ти!",
+   "subtitle": "Иван Вазов",
+   "position": 16,
+   "match": {
+    "works": [
+     "Отечество любезно, как хубаво си ти!"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-kosachi",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Косачи",
+   "subtitle": "Елин Пелин – разказ",
+   "position": 17,
+   "match": {
+    "works": [
+     "Косачи"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-hudozhnik",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Художник",
+   "subtitle": "Веселин Ханчев",
+   "position": 18,
+   "match": {
+    "works": [
+     "Художник"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-pod-igoto-predstavlenieto",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Под игото – „Представлението“",
+   "subtitle": "Иван Вазов",
+   "position": 19,
+   "match": {
+    "works": [
+     "Под игото – „Представлението“"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-pod-igoto-radini-valneniya",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Под игото – „Радини вълнения“",
+   "subtitle": "Иван Вазов",
+   "position": 20,
+   "match": {
+    "works": [
+     "Под игото – „Радини вълнения“"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-bratchetata-na-gavrosh",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Братчетата на Гаврош",
+   "subtitle": "Христо Смирненски",
+   "position": 21,
+   "match": {
+    "works": [
+     "Братчетата на Гаврош"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-serafim",
+   "grade": 7,
+   "section": "literature",
+   "grp": "Преговор за НВО: творби от 5. и 6. клас",
+   "title": "Серафим",
+   "subtitle": "Йордан Йовков – разказ",
+   "position": 22,
+   "match": {
+    "works": [
+     "Серафим"
+    ],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "text",
+    "audio",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-tekstat-v-masovata-komunikatsiya",
+   "grade": 7,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Текстът в масовата комуникация",
+   "subtitle": "Информационна бележка, интервю, репортаж",
+   "position": 23,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-hudozhestveniyat-tekst",
+   "grade": 7,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Художественият текст",
+   "subtitle": "Извличане и анализиране на информация",
+   "position": 24,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-dumata-kato-leksikalno-sredstvo",
+   "grade": 7,
+   "section": "language",
+   "grp": "Текст и общуване",
+   "title": "Думата като лексикално средство",
+   "subtitle": "Експресивна лексика, речников състав",
+   "position": 25,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-pravopis-i-pravogovor",
+   "grade": 7,
+   "section": "language",
+   "grp": "Правопис",
+   "title": "Правопис и правоговор",
+   "subtitle": "Представки, удвоени и непроизносими съгласни, окончания, слято и разделно писане",
+   "position": 26,
+   "match": {
+    "works": [],
+    "topics": [
+     "Представки",
+     "Удвоени съгласни",
+     "Непроизносими съгласни",
+     "Окончания",
+     "Слято и разделно писане"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-zvukovi-promeni-v-dumata",
+   "grade": 7,
+   "section": "language",
+   "grp": "Правопис",
+   "title": "Звукови промени в думата",
+   "subtitle": "Променливо Я и други звукови промени",
+   "position": 27,
+   "match": {
+    "works": [],
+    "topics": [
+     "Ятов преход"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-palen-i-kratak-chlen",
+   "grade": 7,
+   "section": "language",
+   "grp": "Правопис",
+   "title": "Пълен и кратък член",
+   "subtitle": "",
+   "position": 28,
+   "match": {
+    "works": [],
+    "topics": [
+     "Пълен и кратък член"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-naklonenie-i-preizkazni-formi",
+   "grade": 7,
+   "section": "language",
+   "grp": "Глагол",
+   "title": "Наклонение и преизказни форми",
+   "subtitle": "Изявително, условно, повелително наклонение; преизказни форми",
+   "position": 29,
+   "match": {
+    "works": [],
+    "topics": [
+     "Наклонение"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-savmestna-upotreba-na-vremena-i-nakloneniya",
+   "grade": 7,
+   "section": "language",
+   "grp": "Глагол",
+   "title": "Съвместна употреба на времена и наклонения",
+   "subtitle": "",
+   "position": 30,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-prichastiya",
+   "grade": 7,
+   "section": "language",
+   "grp": "Глагол",
+   "title": "Причастия",
+   "subtitle": "Преговор за НВО",
+   "position": 31,
+   "match": {
+    "works": [],
+    "topics": [
+     "Причастия"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-mestoimeniya",
+   "grade": 7,
+   "section": "language",
+   "grp": "Глагол",
+   "title": "Местоимения",
+   "subtitle": "Преговор за НВО – всички видове",
+   "position": 32,
+   "match": {
+    "works": [],
+    "topics": [
+     "Местоимения"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-sastavno-skazuemo",
+   "grade": 7,
+   "section": "language",
+   "grp": "Синтаксис",
+   "title": "Съставно сказуемо",
+   "subtitle": "",
+   "position": 33,
+   "match": {
+    "works": [],
+    "topics": [
+     "Сказуемо"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-obosobeni-chasti",
+   "grade": 7,
+   "section": "language",
+   "grp": "Синтаксис",
+   "title": "Обособени части",
+   "subtitle": "",
+   "position": 34,
+   "match": {
+    "works": [],
+    "topics": [
+     "Обособени части"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-slozhno-sastavno-izrechenie",
+   "grade": 7,
+   "section": "language",
+   "grp": "Синтаксис",
+   "title": "Сложно съставно изречение",
+   "subtitle": "Подчинителни връзки",
+   "position": 35,
+   "match": {
+    "works": [],
+    "topics": [
+     "Сложно изречение"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-slozhno-smeseno-izrechenie",
+   "grade": 7,
+   "section": "language",
+   "grp": "Синтаксис",
+   "title": "Сложно смесено изречение",
+   "subtitle": "",
+   "position": 36,
+   "match": {
+    "works": [],
+    "topics": []
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-pryaka-nepryaka-i-polupryaka-rech",
+   "grade": 7,
+   "section": "language",
+   "grp": "Синтаксис",
+   "title": "Пряка, непряка и полупряка реч",
+   "subtitle": "Цитиране",
+   "position": 37,
+   "match": {
+    "works": [],
+    "topics": [
+     "Пряка и непряка реч"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-zapetaya-v-slozhnoto-izrechenie",
+   "grade": 7,
+   "section": "language",
+   "grp": "Пунктуация и редактиране",
+   "title": "Запетая в сложното изречение",
+   "subtitle": "Пред „че“, „който“, „но“, „а“ и около подчинено изречение",
+   "position": 38,
+   "match": {
+    "works": [],
+    "topics": [
+     "Запетая пред „че“",
+     "Запетая при подчинено изречение",
+     "Запетая пред „но“ и „а“"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-obrashtenie-vmetnati-dumi-ednorodni-chasti",
+   "grade": 7,
+   "section": "language",
+   "grp": "Пунктуация и редактиране",
+   "title": "Обръщение, вметнати думи, еднородни части",
+   "subtitle": "",
+   "position": 39,
+   "match": {
+    "works": [],
+    "topics": [
+     "Обръщение и вметнати думи",
+     "Еднородни части"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  },
+  {
+   "slug": "g7-redaktirane-na-tekst",
+   "grade": 7,
+   "section": "language",
+   "grp": "Пунктуация и редактиране",
+   "title": "Редактиране на текст",
+   "subtitle": "Като задача 17 от НВО",
+   "position": 40,
+   "match": {
+    "works": [],
+    "topics": [
+     "Редактиране"
+    ]
+   },
+   "planned": [
+    "lesson",
+    "cards"
+   ],
+   "info": {}
+  }
+ ]
+}

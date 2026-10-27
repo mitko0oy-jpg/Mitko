@@ -30,6 +30,7 @@
 - `sessions` – бисквитка `eb_s`, в базата се пази само SHA-256. Родител може да „влезе като детето“ (сесия с user_id и child_id).
 - `modules` + `items` – съдържанието. Видове модули: cards, diagnostic, t25, chars, pesho, exam. `items.status`: draft / review / approved / hidden. Децата виждат само approved (в TEST_MODE и review).
 - Пробната матура (`exam`) е по един елемент на част; ключът (`key`, `editing`) не се праща на браузъра, а се връща с резултата след „Предай“ (`POST /api/learn/exam`). Резултатът се пази в `progress.answer` като JSON.
+- `units` – структурата на курса по програмата на МОН: клас → раздел (литература / език) → група → творба или тема. Ресурсите се свързват по заглавие (карти → `ws`, задача 25 → `w`, герои и Пешо → `work`). Източник: `curriculum/build-units.py` → `curriculum/units.json` (само заглавия, може да е в git); зарежда се с `admin.mjs import curriculum/units.json`. Страници: `/programa/` (публична карта), `/tema/?u=…` (темата за детето).
 - `progress` – отговорите + Leitner кутия за преговор (интервали 0, 1, 3, 7, 16, 35 дни).
 - `entitlements` – платен достъп на родителя (`bel-all` или `bel7` и т.н.), важи за всичките му деца.
 - `access_codes` – кодове (кутия, наложен платеж, тестери); вид `reviewer` прави профила проверител.

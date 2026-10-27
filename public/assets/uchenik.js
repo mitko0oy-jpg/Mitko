@@ -65,7 +65,7 @@ async function load() {
   const tabs = [
     ["literature", SECTION_LABEL.literature],
     ["language", SECTION_LABEL.language],
-    ["all", "Всички упражнения"],
+    ["all", "Всичко"],
   ];
   h += `<div class="tabs" role="tablist" style="margin-top:22px">${tabs.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join("")}</div><div id="tabBody"></div>`;
   h += `<p class="small muted" style="margin-top:22px">AI говори само за творбите. Не пиши лични данни – име, адрес, училище или телефон.</p>`;

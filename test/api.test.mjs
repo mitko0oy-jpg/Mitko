@@ -2,6 +2,7 @@
 // Run: node scripts/dev-server.mjs 8899 & node scripts/admin.mjs import content.json; EDUBEL_URL=http://localhost:8899 node --test test/
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const BASE = process.env.EDUBEL_URL || "http://localhost:8899";
 const ADMIN = process.env.ADMIN_TOKEN || "local-admin-token-local-admin-token-0000";
@@ -193,4 +194,45 @@ test("mock exam: free section, locked sections, exact scoring", async () => {
 
   const fam = await parent("family");
   assert.equal(fam.children[0].exam.done, 2);
+});
+
+test("course structure: public map, unit page, locked resources", async () => {
+  const units = JSON.parse(await readFile(new URL("../curriculum/units.json", import.meta.url), "utf8"));
+  const imp = await admin("import", units);
+  assert.equal(imp.units, units.units.length);
+
+  // Public map: titles and counts only, no item content.
+  const pub = await fetch(`${BASE}/api/units?grade=7`).then((r) => r.json());
+  const edna = pub.units.find((u) => u.slug === "g7-edna-balgarka");
+  assert.ok(edna, "unit for „Една българка“");
+  assert.ok(edna.resources.some((r) => r.kind === "cards" && r.total > 0));
+  assert.equal(JSON.stringify(pub).includes("\"items\""), false);
+  const badGrade = await fetch(`${BASE}/api/units?grade=9`);
+  assert.equal(badGrade.status, 400);
+
+  const parent = client();
+  await parent("auth/register", { name: "Ани", email: `ani.${run}@example.com`, password: "parola123", consent: true });
+  await parent("family/children", { name: "Вики", username: `viki.${run}`, password: "123456", grade: 7 });
+  const kid = client();
+  await kid("auth/login", { username: `viki.${run}`, password: "123456" });
+
+  const map = await kid("learn/units");
+  assert.equal(map.grade, 7);
+  assert.ok(map.units.some((u) => u.section === "language"));
+  assert.ok(map.units.every((u) => u.resources.every((r) => r.items === undefined)));
+
+  const page = await kid("learn/unit/g7-edna-balgarka");
+  assert.equal(page.unit.match, undefined, "matching rules stay on the server");
+  const cards = page.resources.find((r) => r.kind === "cards");
+  assert.ok(cards.total >= cards.open);
+  assert.equal(cards.items.filter((i) => i.open).length, cards.open);
+  let r = await kid("learn/unit/no-such-unit");
+  assert.equal(r.status, 404);
+
+  // A child of another grade does not see 7th-grade units.
+  await parent("family/children", { name: "Бояна", username: `boyana.${run}`, password: "123456", grade: 5 });
+  const kid5 = client();
+  await kid5("auth/login", { username: `boyana.${run}`, password: "123456" });
+  r = await kid5("learn/unit/g7-edna-balgarka");
+  assert.equal(r.status, 404);
 });
