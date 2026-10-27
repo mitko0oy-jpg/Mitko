@@ -98,7 +98,9 @@ export default handle(async (req) => {
         additionalProperties: false,
       },
     );
-    return json({ ok: !!r.ok, feedback: String(r.feedback || ""), key: c.key });
+    // The fast model sometimes leaves the feedback empty; the child should always get a sentence.
+    const feedback = String(r.feedback || "").trim() || (r.ok ? "Точно така – разбрал си същността." : "Почти – сравни с отговора отдолу.");
+    return json({ ok: !!r.ok, feedback, key: c.key });
   }
 
   if (mode === "pesho") {
