@@ -103,22 +103,24 @@
 - **Цените са в словашки формат**: `12,90 €`, `48 %`. Сменят се пак в `CONFIG`.
 - **Резервният контакт е имейл** (`CONFIG.email` = `zdravecnatura@gmail.com`),
   защото SK сайтът няма телефон. Показва се, ако на страницата няма ъпсел бутон.
-- **Снимките са словашки.** Горе е снимката със спрея върху коляното (`spray-use.webp`).
-  Банерите са Арника, Ментол и MSM с етикет „Nové v spreji“, а Včelí jed е с етикет
-  „Poznáš ho z gélu“ до карето „7 aktívnych zložiek“.
-- **Финалният блок** показва „Tvoja objednávka“ (гел ✓ + спрей с цената), а малката
-  снимка е `spray-thumb.webp`.
+- **Финалният блок** показва инфографиката и „Tvoja objednávka“ (гел ✓ + спрей с цената).
 - Ако трябва резервен линк при „НЕ“, страницата „Благодарим“ на SK сайта е `/hvala`.
 
-⚠️ **Правописни грешки в словашките банери** (поправи ги в ChatGPT и смени файловете
-със същите имена):
+### Снимки (`sk/images/`, направени с Higgsfield)
 
-| Файл | Грешно | Правилно |
-|---|---|---|
-| `bee-venom.webp` | Pčelia otrava | **Včelí jed** („otrava“ на словашки е „отравяне“) |
-| `bee-venom.webp` | nepohoodlí | **nepohodlí** |
-| `arnica.webp` | Nosi lekť a komfort v kĺboch a svaloch. | **Prináša ľahkosť a komfort do kĺbov a svalov.** |
-| `msm.webp` | Populárna aktívna zložka za bolesť kĺbov. | **Populárna aktívna zložka pri bolesti kĺbov.** |
+| Файл | Къде е на страницата |
+|---|---|
+| `spray.webp` | Горе: шишето със словашки етикет |
+| `duo.webp` | „Dva produkty“: гелът (топло) и спреят (студено) един до друг |
+| `sit-back.webp`, `sit-garden.webp`, `sit-after.webp` | „3 chvíle“: кръст, градина, след разходка |
+| `arnica.webp`, `menthol.webp`, `msm.webp` | Съставките с етикет „Nové v spreji“ |
+| `bee-venom.webp` | Včelí jed с етикет „Poznáš ho z gélu“, до „7 aktívnych zložiek“ |
+| `box.webp` | „Prečo tak výhodne?“: двата продукта в един кашон |
+| `infographic.webp` | Финалният блок |
+| `spray-thumb.webp` | Малката снимка в „Tvoja objednávka“ |
+
+Текстът във всички снимки е проверен. Правописните грешки от колажа (Pčelia otrava,
+nepohoodlí, Nosi lekť, za bolesť kĺbov) са поправени. Линковете се сменят в `CONFIG.images`.
 
 ---
 
