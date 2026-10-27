@@ -54,7 +54,7 @@
 .bvu-shot{position:relative;max-width:420px;margin:0 auto;width:100%}
 .bvu-shot img{width:100%;border-radius:24px;background:#fff;box-shadow:0 18px 40px -18px rgba(91,54,33,.45)}
 .bvu-badge{position:absolute;display:grid;place-items:center;text-align:center;font-family:'Montserrat',Arial,sans-serif;font-weight:900;line-height:1}
-.bvu-badge--pct{top:14px;left:14px;width:86px;height:86px;border-radius:50%;background:var(--orange);color:#fff;font-size:26px;box-shadow:0 6px 16px rgba(217,82,11,.4);transform:rotate(-10deg)}
+.bvu-badge--pct{top:14px;right:14px;width:86px;height:86px;border-radius:50%;background:var(--orange);color:#fff;font-size:26px;box-shadow:0 6px 16px rgba(217,82,11,.4);transform:rotate(10deg)}
 .bvu-badge--pct small{display:block;font-size:11px;letter-spacing:.06em;margin-top:3px}
 .bvu-badge--ml{bottom:16px;right:14px;padding:8px 12px;border-radius:12px;background:var(--brown);color:#fff;font-size:15px}
 .bvu-ticks li{position:relative;padding:8px 0 8px 40px;font-size:18px;border-bottom:1px dashed var(--line)}
@@ -139,11 +139,10 @@
 /* --- Съставки --- */
 .bvu-ingr{display:grid;gap:16px;margin-top:26px}
 .bvu-ing{position:relative;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 14px 30px -20px rgba(91,54,33,.45)}
-.bvu-ing img{width:100%;aspect-ratio:2/1;object-fit:cover;object-position:center}
-.bvu-ing__body{padding:14px 18px 20px}
-.bvu-ing h3{font-size:24px;font-weight:900}
-.bvu-ing__sub{display:inline-block;margin-top:6px;background:var(--orange);color:#fff;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:4px 11px}
-.bvu .bvu-ing p{font-size:16px;color:var(--muted);margin-top:8px}
+.bvu-ing img{width:100%}
+.bvu-ing__new--gel{background:var(--brown);box-shadow:none}
+.bvu-ingr2{display:grid;gap:16px;margin-top:16px}
+.bvu-ingr2 .bvu-seven{margin-top:0}
 .bvu-ing__new{position:absolute;top:14px;right:14px;background:var(--green);color:#fff;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:6px 12px;box-shadow:0 4px 10px rgba(31,157,85,.35)}
 .bvu-seven{margin-top:22px;background:#fff;border-radius:22px;padding:18px;border:2px dashed var(--honey)}
 .bvu-seven h3{text-align:center;font-size:21px;font-weight:900;margin-bottom:12px}
@@ -191,7 +190,7 @@
 .bvu-sum__row{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #f3e7d6}
 .bvu-sum__row--add{background:#fff7ee}
 .bvu-sum__ico{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;background:var(--green-bg);color:var(--green);font-size:26px;font-weight:900}
-.bvu-sum__row img{width:56px;height:56px;object-fit:contain;padding:3px;border-radius:14px;background:#fff;border:1px solid var(--line)}
+.bvu-sum__row img{width:56px;height:56px;object-fit:cover;border-radius:14px;background:#fff;border:1px solid var(--line)}
 .bvu-sum__name{font-weight:800;font-size:16px;line-height:1.25;color:var(--brown)}
 .bvu-sum__name small{display:block;color:#8c7b69;font-size:13px;font-weight:700;margin-top:2px}
 .bvu-sum__val{text-align:right;font-weight:900;line-height:1.15;white-space:nowrap}
@@ -233,6 +232,7 @@
   .bvu-slot{grid-template-columns:1fr;align-content:start;text-align:center;border-left:0;border-top:6px solid var(--fire);padding:18px 14px}
   .bvu-slot--spray{border-top-color:var(--ice)}
   .bvu-ingr{grid-template-columns:repeat(3,1fr)}
+  .bvu-ingr2{grid-template-columns:1fr 1fr;align-items:center}
   .bvu-final__box{padding:32px 36px}
   .bvu-final__box h2{font-size:32px}
   .bvu-sticky{display:none}
@@ -268,7 +268,7 @@
 
       <div class="bvu-hero__grid">
         <div class="bvu-shot">
-          <img data-bvu-img="spray" alt="Bee Venom sprej na kĺby s včelím jedom 100 ml" width="1122" height="1402">
+          <img data-bvu-img="spray" alt="Bee Venom sprej na kĺby s včelím jedom – nastrieka sa priamo na koleno" width="765" height="527">
           <div class="bvu-badge bvu-badge--pct"><div>−<span data-bvu="pct">48 %</span><small>IBA TERAZ</small></div></div>
           <div class="bvu-badge bvu-badge--ml">100 ml</div>
         </div>
@@ -393,17 +393,17 @@
       <h2 class="bvu-h2">Sprej pridáva <span class="bvu-hl">3 zložky</span>, ktoré tvoj gél nemá</h2>
       <p class="bvu-lead">Plus včelí jed, ktorý už poznáš z gélu.</p>
       <div class="bvu-ingr">
-        <div class="bvu-ing"><img data-bvu-img="arnica" alt="Arnika" width="1000" height="517" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
-          <div class="bvu-ing__body"><h3>Arnika</h3><span class="bvu-ing__sub">Znižuje napätie</span><p>Pomáha pri fyzickej záťaži, únave a nepohodlí. Prináša ľahkosť a komfort do namáhaných oblastí.</p></div></div>
-        <div class="bvu-ing"><img data-bvu-img="menthol" alt="Mentol" width="1000" height="524" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
-          <div class="bvu-ing__body"><h3>Mentol</h3><span class="bvu-ing__sub">Okamžite chladí</span><p>Prináša rýchly komfort a svieži pocit. Pomáha upokojiť namáhanú oblasť hneď po nanesení.</p></div></div>
-        <div class="bvu-ing"><img data-bvu-img="msm" alt="MSM" width="1000" height="401" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
-          <div class="bvu-ing__body"><h3>MSM</h3><span class="bvu-ing__sub">Podporuje pohyblivosť</span><p>Obľúbená zložka vo formulách pre komfort kĺbov. Podporuje ľahkosť a voľnosť pohybu.</p></div></div>
+        <div class="bvu-ing"><img data-bvu-img="arnica" alt="Arnika – prirodzená úľava pri fyzickom namáhaní, únave a nepohodlí" width="462" height="580" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span></div>
+        <div class="bvu-ing"><img data-bvu-img="menthol" alt="Mentol – osviežujúci chlad a úľava" width="461" height="580" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span></div>
+        <div class="bvu-ing"><img data-bvu-img="msm" alt="MSM – podporuje pohyblivosť kĺbov" width="463" height="580" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span></div>
       </div>
+      <div class="bvu-ingr2">
+      <div class="bvu-ing"><img data-bvu-img="beeVenom" alt="Včelí jed – podpora pohyblivosti a komfortu v kĺboch a svaloch" width="620" height="527" loading="lazy"><span class="bvu-ing__new bvu-ing__new--gel">Poznáš ho z gélu</span></div>
       <div class="bvu-seven">
         <h3>Gél + Sprej = <span class="bvu-hl">7 aktívnych zložiek</span> v jednej rutine</h3>
         <div class="bvu-seven__row bvu-seven__row--gel"><b>V géli (už ho máš)</b><span>🐝 Včelí jed</span><span>🌿 Kurkuma</span><span>🍵 Zelený čaj</span><span>☀️ Vitamín D3</span></div>
         <div class="bvu-seven__row bvu-seven__row--spray"><b>Sprej pridáva</b><span>🌼 Arnika</span><span>❄️ Mentol</span><span>💎 MSM</span></div>
+      </div>
       </div>
     </div>
   </section>
@@ -461,7 +461,7 @@
             <div class="bvu-sum__val bvu-sum__val--ok">V objednávke</div>
           </div>
           <div class="bvu-sum__row bvu-sum__row--add">
-            <img data-bvu-img="spray" alt="" width="56" height="56" loading="lazy">
+            <img data-bvu-img="thumb" alt="" width="56" height="56" loading="lazy">
             <div class="bvu-sum__name">+ Sprej s včelím jedom<small>Nemastná formula · 100 ml</small></div>
             <div class="bvu-sum__val"><s data-bvu="old">24,90 €</s><span class="bvu-sum__price" data-bvu="new">12,90 €</span></div>
           </div>
@@ -502,10 +502,12 @@
     timerMinutes: 10,         // таймер за запазване на цената
     email: 'zdravecnatura@gmail.com', // показва се, ако бутонът не може да добави продукта
     images: {                 // сложи линковете от качените снимки в ConvertBuilder
-      spray: 'images/spray.webp',
+      spray: 'images/spray-use.webp',       // горе на страницата
+      thumb: 'images/spray-thumb.webp',     // малката снимка в „Tvoja objednávka“
       arnica: 'images/arnica.webp',
       menthol: 'images/menthol.webp',
-      msm: 'images/msm.webp'
+      msm: 'images/msm.webp',
+      beeVenom: 'images/bee-venom.webp'
     },
     hideNativeWidget: true,   // скрива вградения ъпсел бутон – натиска се от нашите бутони
     acceptUrl: '',            // резервно: линк при „ДА“, ако на страницата няма ъпсел бутон
