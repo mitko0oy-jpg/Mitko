@@ -1,5 +1,5 @@
 // "Teach Pesho": the child explains a typical exam mistake to a classmate.
-import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar } from "./app.js";
+import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar, backFromParams, normTitle } from "./app.js";
 
 let MOD, ALL = [], PROG = {}, LOCKED = 0;
 let pq = [], pi = 0, tries = 0, learned = 0, busy = false;
@@ -53,10 +53,14 @@ function skeleton() {
 }
 
 function startPesho() {
+  // A link from a work's page practises only that work.
+  const w = params().get("w");
+  const pool = w ? ALL.filter((p) => normTitle(p.work) === normTitle(w)) : ALL;
+  const src = pool.length ? pool : ALL;
   // New mistakes first, then the ones not yet fixed.
-  const fresh = shuffle(ALL.filter((p) => !PROG[p.id]));
-  const retry = shuffle(ALL.filter((p) => PROG[p.id] && !PROG[p.id].last_ok));
-  const rest = shuffle(ALL.filter((p) => PROG[p.id]?.last_ok));
+  const fresh = shuffle(src.filter((p) => !PROG[p.id]));
+  const retry = shuffle(src.filter((p) => PROG[p.id] && !PROG[p.id].last_ok));
+  const rest = shuffle(src.filter((p) => PROG[p.id]?.last_ok));
   pq = [...fresh, ...retry, ...rest].slice(0, 5);
   pi = 0;
   learned = 0;
@@ -134,7 +138,7 @@ function end() {
 
 async function load() {
   const m = await guard("child");
-  topbar(m, { back: { href: "/uchenik/", label: "Начало" } });
+  topbar(m, { back: backFromParams() });
   const slug = params().get("m");
   if (!slug) return (location.href = "/uchenik/");
   MOD = await api(`learn/module/${encodeURIComponent(slug)}`);
@@ -142,6 +146,7 @@ async function load() {
   PROG = MOD.progress;
   LOCKED = MOD.locked;
   skeleton();
+  if (params().get("w")) startPesho();
 }
 load().catch((e) => {
   if (e.message !== "redirect") $("main").innerHTML = `<p class="notice err">${esc(e.message)}</p>`;

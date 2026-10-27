@@ -115,7 +115,7 @@ function render(d) {
     </form></details>`;
 
   if (!d.access.length && d.children.length) h += `<div class="panel"><h3>Пълен достъп</h3>${offerBody(d)}</div>`;
-  h += `<footer class="site"><a href="/usloviya/">Условия и поверителност</a></footer>`;
+  h += `<footer class="site"><a href="/programa/">Програмата по класове</a><a href="/usloviya/">Условия и поверителност</a></footer>`;
   $("main").innerHTML = h;
   bind(d);
 }

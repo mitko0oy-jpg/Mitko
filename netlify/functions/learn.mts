@@ -5,6 +5,7 @@ import { event, hit, one, q, tx } from "../lib/db.mts";
 import { scoreRetelling, scoreSection } from "../lib/exam.mts";
 import { bad, body, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { spend } from "../lib/usage.mts";
+import { unitResources } from "../lib/units.mts";
 
 // Fields the browser never needs: the AI uses them on the server.
 function clientData(kind: string, data: any) {
@@ -67,6 +68,32 @@ export default handle(async (req) => {
       unlockRequested: !!unlock,
       testMode: testMode(),
     });
+  }
+
+  // The course structure of the child's grade: sections → units → resources.
+  if (req.method === "GET" && parts[0] === "units") {
+    const { units, byUnit, full } = await unitResources(child.grade, child);
+    return json({
+      grade: child.grade,
+      full,
+      units: units.map((u) => ({
+        slug: u.slug,
+        section: u.section,
+        grp: u.grp,
+        title: u.title,
+        subtitle: u.subtitle,
+        planned: u.planned,
+        resources: (byUnit.get(u.slug) || []).map(({ items, ...r }) => r),
+      })),
+      testMode: testMode(),
+    });
+  }
+
+  if (req.method === "GET" && parts[0] === "unit" && parts[1]) {
+    const { units, byUnit, full } = await unitResources(child.grade, child);
+    const u = units.find((x) => x.slug === parts[1]);
+    if (!u) throw notFound("Няма такава тема.");
+    return json({ unit: { ...u, match: undefined }, full, resources: byUnit.get(u.slug) || [], testMode: testMode() });
   }
 
   // Cards that are due again today across all card modules of the grade.

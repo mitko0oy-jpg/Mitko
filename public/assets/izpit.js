@@ -1,5 +1,5 @@
 // Online mock exam: four sections like the NVO, scored on the server with a full answer review.
-import { $, api, esc, gradeOf, guard, params, renderUnlock, topbar } from "./app.js";
+import { $, api, esc, gradeOf, guard, params, renderUnlock, topbar, backFromParams } from "./app.js";
 
 let MOD, SECTIONS = [], PROG = {};
 const LET = "АБВГ";
@@ -251,7 +251,7 @@ function showResult(sec, r) {
 
 async function load() {
   const m = await guard("child");
-  topbar(m, { back: { href: "/uchenik/", label: "Начало" } });
+  topbar(m, { back: backFromParams() });
   const slug = params().get("m");
   if (!slug) return (location.href = "/uchenik/");
   MOD = await api(`learn/module/${encodeURIComponent(slug)}`);

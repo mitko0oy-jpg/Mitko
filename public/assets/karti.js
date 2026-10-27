@@ -1,5 +1,5 @@
 // Literature cards and the diagnostic test (adapted from the 90-cards prototype).
-import { $, api, esc, gradeOf, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar } from "./app.js";
+import { $, api, esc, gradeOf, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar, backFromParams, normTitle } from "./app.js";
 
 const COLORS = ["--l0", "--l1", "--l2"];
 const LET = "АБВГ";
@@ -279,7 +279,7 @@ document.addEventListener("keydown", (e) => {
 
 async function load() {
   const m = await guard("child");
-  topbar(m, { back: { href: "/uchenik/", label: "Начало" } });
+  topbar(m, { back: backFromParams() });
   const slug = params().get("m");
   if (!slug) return (location.href = "/uchenik/");
   MOD = await api(`learn/module/${encodeURIComponent(slug)}`);
@@ -293,6 +293,16 @@ async function load() {
   renderHome();
   show("home");
   if (params().get("rezhim") === "pregovor") start("due");
+  const w = params().get("w");
+  if (w) {
+    const all = [...new Set(CARDS.flatMap((c) => c.ws || []))];
+    const name = all.find((x) => normTitle(x) === normTitle(w));
+    if (name) start("work", name);
+    else if (LOCKED) {
+      $("home").insertAdjacentHTML("afterbegin", `<div id="unlockBox"></div>`);
+      renderUnlock($("unlockBox"), { module: MOD.module.slug, title: MOD.module.title, locked: true });
+    }
+  }
 }
 load().catch((e) => {
   if (e.message !== "redirect") $("main").innerHTML = `<p class="notice err">${esc(e.message)}</p>`;

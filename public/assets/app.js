@@ -151,3 +151,20 @@ export async function saveProgress(module, results) {
     return null;
   }
 }
+
+// Where each kind of module opens, and how resources and planned materials are named.
+export const PATHS = { cards: "/karti/", diagnostic: "/karti/", t25: "/zadacha25/", chars: "/geroi/", pesho: "/pesho/", exam: "/izpit/" };
+export const KIND_LABEL = { cards: "Карти", t25: "Задача 25", chars: "Интервю с героя", pesho: "Научи Пешо", diagnostic: "Входен тест", exam: "Пробна матура" };
+export const PLANNED_LABEL = { lesson: "Кратък урок", audio: "Аудио", video: "Видео", test: "Тест", text: "Текстът на творбата", summary: "Резюме" };
+export const SECTION_LABEL = { literature: "Литература", language: "Български език" };
+
+// Link to a resource of a unit; "ot" brings the child back to the unit page.
+export function resourceHref(r, unitSlug, extra = "") {
+  return `${PATHS[r.kind]}?m=${encodeURIComponent(r.module)}${extra}&ot=${encodeURIComponent(unitSlug)}`;
+}
+export function backFromParams() {
+  const ot = new URLSearchParams(location.search).get("ot");
+  return ot ? { href: `/tema/?u=${encodeURIComponent(ot)}`, label: "Към темата" } : { href: "/uchenik/", label: "Начало" };
+}
+export const normTitle = (s) =>
+  String(s || "").toLowerCase().replace(/[„“”"«»'’]/g, "").replace(/[–—-]/g, " ").replace(/\s+/g, " ").trim();

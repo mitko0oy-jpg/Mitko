@@ -160,3 +160,30 @@ footer.site a{color:var(--muted)}
 .coachfb .lang{background:var(--warn-soft)} .coachfb .lang b{color:var(--warn)}
 .coachfb ol{margin:4px 0 0;padding-left:20px}
 .coachfb .thinking{color:var(--muted);font-style:italic}
+
+/* course structure: units on the child's home, unit page, public programme */
+.eyebrow{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--l0);margin:0 0 6px}
+h3.grp{font-size:16px;margin:22px 0 10px;color:var(--muted);font-family:var(--sans);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.units,.ress{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.unit,.res{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--paper-edge);border-radius:12px;padding:12px 12px 10px;box-shadow:0 2px 8px var(--shadow);text-align:left;font:inherit}
+a.unit:hover,a.res:hover{border-color:var(--gold)}
+.unit .t,.res .t{font-family:var(--serif);font-weight:700;font-size:16.5px;line-height:1.25;color:var(--ink);margin:0}
+.unit .d,.res .d{font-size:13px;color:var(--muted);margin:0;line-height:1.35}
+.unit .bar{margin-top:auto}
+.unit.soon,.res.soon{opacity:.62;box-shadow:none;border-style:dashed}
+.unit.soon .pill,.res.soon .pill{align-self:flex-start;margin-top:6px}
+.rks{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 4px}
+.rk{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--gold-soft);color:var(--ink)}
+.ress{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.res .meta{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600;color:var(--l1);margin-top:6px}
+.res.locked{opacity:.75;border-style:dashed;cursor:pointer}
+.res .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-block;font-size:13.5px;font-weight:600;padding:6px 10px;border-radius:999px;border:1.5px solid var(--line);text-decoration:none;color:var(--ink);background:var(--paper)}
+a.chip:hover{border-color:var(--gold)}
+.chip.off{color:var(--muted);border-style:dashed}
+.todays{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.today{display:flex;flex-direction:column;gap:2px;text-decoration:none;background:var(--ink);color:var(--paper);border-radius:14px;padding:12px 14px}
+.today b{font-family:var(--serif);font-size:17px}
+.today span{font-size:13.5px;opacity:.85}
+.today.gold{background:var(--gold);color:var(--on-accent)}
+.rk.soon{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:500}

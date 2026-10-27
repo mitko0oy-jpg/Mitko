@@ -68,6 +68,7 @@ export default handle(async (req) => {
   if (parts[0] === "import") {
     const modules = Array.isArray(b.modules) ? b.modules : [];
     const items = Array.isArray(b.items) ? b.items : [];
+    const units = Array.isArray(b.units) ? b.units : [];
     let created = 0, changed = 0, same = 0;
     await tx(async (t) => {
       for (const m of modules) {
@@ -78,6 +79,16 @@ export default handle(async (req) => {
            ON CONFLICT (slug) DO UPDATE SET grade = $2, kind = $3, title = $4, subtitle = $5, position = $6,
              free_ratio = $7, free_count = $8, meta = $9, active = $10`,
           [m.slug, m.grade, m.kind, m.title, m.subtitle || "", m.position || 0, m.free_ratio ?? 0.3, m.free_count ?? null, JSON.stringify(m.meta || {}), m.active !== false],
+        );
+      }
+      for (const u of units) {
+        if (!["literature", "language"].includes(u.section)) throw bad("section", `Непознат раздел: ${u.section}`);
+        await t(
+          `INSERT INTO units (slug, grade, section, grp, title, subtitle, position, match, planned, info, active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (slug) DO UPDATE SET grade = $2, section = $3, grp = $4, title = $5, subtitle = $6, position = $7,
+             match = $8, planned = $9, info = $10, active = $11`,
+          [u.slug, u.grade, u.section, u.grp || "", u.title, u.subtitle || "", u.position || 0, JSON.stringify(u.match || {}), JSON.stringify(u.planned || []), JSON.stringify(u.info || {}), u.active !== false],
         );
       }
       for (const it of items) {
@@ -105,7 +116,7 @@ export default handle(async (req) => {
         }
       }
     });
-    return json({ ok: true, created, changed, same });
+    return json({ ok: true, created, changed, same, units: units.length });
   }
 
   // Fix one item after a teacher comment; the fix goes back to the teacher for approval.

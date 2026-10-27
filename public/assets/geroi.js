@@ -1,5 +1,5 @@
 // "Interview with a character" (adapted from the talking-literature prototype). The AI runs on our server.
-import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar } from "./app.js";
+import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, shuffle, topbar, backFromParams } from "./app.js";
 
 let MOD, CHARS = [], PROG = {}, LOCKED = 0, CARDS = null;
 let ch = null, turns = [], userCount = 0, busy = false;
@@ -244,7 +244,7 @@ async function startQuiz() {
 
 async function load() {
   const m = await guard("child");
-  topbar(m, { back: { href: "/uchenik/", label: "Начало" } });
+  topbar(m, { back: backFromParams() });
   const slug = params().get("m");
   if (!slug) return (location.href = "/uchenik/");
   MOD = await api(`learn/module/${encodeURIComponent(slug)}`);
@@ -254,6 +254,8 @@ async function load() {
   skeleton();
   renderChars();
   show("ipick");
+  const c = CHARS.findIndex((x) => x.id === Number(params().get("c")));
+  if (c >= 0) openChar(c);
 }
 load().catch((e) => {
   if (e.message !== "redirect") $("main").innerHTML = `<p class="notice err">${esc(e.message)}</p>`;

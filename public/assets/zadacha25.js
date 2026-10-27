@@ -1,5 +1,5 @@
 // Task 25 trainer with self-check and the AI coach (adapted from the prototypes).
-import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, topbar } from "./app.js";
+import { $, api, esc, guard, lockLine, params, renderUnlock, saveProgress, topbar, backFromParams } from "./app.js";
 
 let MOD, T = [], PROG = {}, LOCKED = 0, cur = 0, round = 0, busy = false, dirty = false;
 
@@ -224,7 +224,7 @@ window.addEventListener("pagehide", () => {
 
 async function load() {
   const m = await guard("child");
-  topbar(m, { back: { href: "/uchenik/", label: "Начало" } });
+  topbar(m, { back: backFromParams() });
   const slug = params().get("m");
   if (!slug) return (location.href = "/uchenik/");
   MOD = await api(`learn/module/${encodeURIComponent(slug)}`);
@@ -234,6 +234,8 @@ async function load() {
   skeleton();
   renderHome();
   show("home");
+  const t = T.findIndex((x) => x.id === Number(params().get("t")));
+  if (t >= 0) openTask(t);
 }
 load().catch((e) => {
   if (e.message !== "redirect") $("main").innerHTML = `<p class="notice err">${esc(e.message)}</p>`;
