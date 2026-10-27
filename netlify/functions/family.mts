@@ -39,6 +39,13 @@ async function childOverview(c: any, full: boolean) {
     "SELECT module_slug, created_at, seen_at FROM unlock_requests WHERE child_id = $1 ORDER BY created_at DESC",
     [c.id],
   );
+  const exam = await q<{ title: string; points: number; max: number }>(
+    `SELECT i.data->>'title' AS title, (p.answer::json->>'points')::float AS points, (p.answer::json->>'max')::float AS max
+       FROM progress p JOIN items i ON i.id = p.item_id JOIN modules m ON m.slug = i.module_slug
+      WHERE p.child_id = $1 AND m.kind = 'exam' AND p.answer IS NOT NULL ORDER BY i.position`,
+    [c.id],
+  );
+  const examMod = modules.find((m) => m.kind === "exam");
   const last = await one<{ at: string }>("SELECT max(last_at) AS at FROM progress WHERE child_id = $1", [c.id]);
   const week = await one<{ n: number }>(
     "SELECT count(*)::int AS n FROM progress WHERE child_id = $1 AND last_at > now() - interval '7 days'",
@@ -54,6 +61,7 @@ async function childOverview(c: any, full: boolean) {
     weak: works.weak,
     strong: works.strong,
     diagnostic: diag && diag.done ? { done: diag.done, ok: diag.ok, total: diag.total } : null,
+    exam: exam.length ? { sections: exam, done: exam.length, total: examMod?.total || exam.length } : null,
     unlockRequests: unlock.map((u) => ({ module: u.module_slug, at: u.created_at, seen: !!u.seen_at })),
     lastActive: last?.at || null,
     weekItems: week?.n || 0,

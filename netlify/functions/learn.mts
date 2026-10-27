@@ -2,12 +2,19 @@ import type { Config } from "@netlify/functions";
 import { accessibleItems, hasFullAccess, moduleSummaries, nextBox, testMode, type ModuleRow } from "../lib/access.mts";
 import { requireChild } from "../lib/auth.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
-import { bad, body, forbidden, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { scoreRetelling, scoreSection } from "../lib/exam.mts";
+import { bad, body, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { spend } from "../lib/usage.mts";
 
 // Fields the browser never needs: the AI uses them on the server.
 function clientData(kind: string, data: any) {
   if (kind === "chars") {
     const { facts, voice, limits, key, ...rest } = data;
+    return rest;
+  }
+  // The answer key of an exam section is only sent back after the child hands it in.
+  if (kind === "exam") {
+    const { key, editing, ...rest } = data;
     return rest;
   }
   return data;
@@ -47,12 +54,14 @@ export default handle(async (req) => {
     // Show what the pass would open (per card level), without sending the locked content itself.
     const lockedLevels: Record<number, number> = {};
     if (m.kind === "cards") for (const i of items.slice(open.length)) lockedLevels[i.data.l] = (lockedLevels[i.data.l] || 0) + 1;
+    const lockedTitles = m.kind === "exam" ? items.slice(open.length).map((i) => i.data.title) : [];
     return json({
       module: { slug: m.slug, kind: m.kind, title: m.title, subtitle: m.subtitle, meta: m.meta },
       full,
       total: items.length,
       locked: items.length - open.length,
       lockedLevels,
+      lockedTitles,
       items: open.map((i) => ({ id: Number(i.id), ext: i.ext_id, status: i.status, data: clientData(m.kind, i.data) })),
       progress: Object.fromEntries(prog.map((p: any) => [p.item_id, p])),
       unlockRequested: !!unlock,
@@ -84,6 +93,7 @@ export default handle(async (req) => {
   if (parts[0] === "progress") {
     if (!(await hit(`prog:${child.id}`, 120, 60))) throw tooMany();
     const m = await loadModule(str(b.module, 80), child.grade);
+    if (m.kind === "exam") throw bad("module", "Изпитът се предава през /api/learn/exam.");
     const { open, items, full } = await accessibleItems(m, child.parent_id, child.grade);
     const allowed = new Set(open.map((i) => Number(i.id)));
     const results = Array.isArray(b.results) ? b.results.slice(0, 100) : [];
@@ -120,6 +130,57 @@ export default handle(async (req) => {
     const freeFinished = !full && items.length > open.length && (done?.n || 0) >= open.length;
     if (freeFinished) await event("free_finished", { module: m.slug }, null, child.id);
     return json({ ok: true, done: done?.n || 0, accessible: open.length, total: items.length, freeFinished });
+  }
+
+  // Hand in one section of a mock exam: scored on the server, the result (with the key) is stored.
+  if (parts[0] === "exam") {
+    if (!(await hit(`exam:${child.id}`, 30, 3600))) throw tooMany();
+    const m = await loadModule(str(b.module, 80), child.grade);
+    if (m.kind !== "exam") throw bad("module", "Това не е изпит.");
+    const { open } = await accessibleItems(m, child.parent_id, child.grade);
+    const item = open.find((i) => Number(i.id) === Number(b.itemId));
+    if (!item) throw forbidden("Тази част е в пълния достъп.");
+    const data = item.data;
+    const answers: Record<string, string> = b.answers && typeof b.answers === "object" ? b.answers : {};
+    let result: any;
+    if (data.kind === "retelling") {
+      const variant = Number(b.variant) === 1 ? 1 : 0;
+      const text = String(answers.text || "").trim().slice(0, 8000);
+      if (text.length < 300) throw bad("short", "Преразказът е твърде кратък. Напиши поне няколко абзаца.");
+      await spend(child.id, child.parent_id, child.grade);
+      let r;
+      try {
+        r = await scoreRetelling(child.grade, data, variant, text);
+      } catch (e) {
+        if (e instanceof HttpError) throw e;
+        throw new HttpError(502, "ai_error", "Проверката не успя. Текстът ти е запазен – опитай пак.");
+      }
+      const k = data.key.variants[variant];
+      result = { kind: "retelling", variant, yours: text, ...r, model: k.model_retelling, plan: k.plan };
+    } else {
+      const needsAi = data.tasks.some((t: any) => !t.options && t.n !== 17 && String(answers[t.n] ?? "").trim());
+      if (needsAi) await spend(child.id, child.parent_id, child.grade);
+      const results = await scoreSection(child.grade, data, answers);
+      result = {
+        kind: "section",
+        results,
+        points: results.reduce((s, r) => s + (r.points ?? 0), 0),
+        max: results.reduce((s, r) => s + r.max, 0),
+        unscored: results.filter((r) => r.points === null).length,
+      };
+    }
+    const percent = Math.round((result.points / result.max) * 100);
+    const ok = percent >= 50;
+    const [prev] = await q<{ box: number }>("SELECT box FROM progress WHERE child_id = $1 AND item_id = $2", [child.id, item.id]);
+    await q(
+      `INSERT INTO progress (child_id, item_id, attempts, correct, last_ok, score, answer, box, last_at)
+       VALUES ($1, $2, 1, $3, $4, $5, $6, $7, now())
+       ON CONFLICT (child_id, item_id) DO UPDATE SET attempts = progress.attempts + 1, correct = progress.correct + $3,
+         last_ok = $4, score = $5, answer = $6, last_at = now()`,
+      [child.id, item.id, ok ? 1 : 0, ok, percent, JSON.stringify(result), prev ? Number(prev.box) : 0],
+    );
+    await event("exam_section", { module: m.slug, section: item.ext_id, percent }, null, child.id);
+    return json({ ok: true, percent, result });
   }
 
   // The child reached the end of the free part and asks a parent to unlock the rest.

@@ -12,6 +12,8 @@ const show = (id) => {
   window.scrollTo(0, 0);
 };
 const isDiag = () => MOD.module.kind === "diagnostic";
+// Literature cards are grouped by work, language drills by topic.
+const U = () => (MOD.module.meta.unit === "тема" ? { one: "тема", many: "теми" } : { one: "творба", many: "творби" });
 const last = (c) => (PROG[c.id] ? (PROG[c.id].last_ok ? 1 : 0) : undefined);
 
 function skeleton() {
@@ -71,7 +73,7 @@ function renderHome() {
       ${wrong.length ? `<button class="btn ghost" id="wrongBtn">Повтори грешните (${wrong.length})</button>` : ""}
     </div>`;
   if (WORKS.length) {
-    h += `<div class="mapsec"><h2>Карта на знанията</h2><p class="sub">Цветът показва как се справяш с всяка творба. Докосни творба, за да упражниш само нея.</p>
+    h += `<div class="mapsec"><h2>Карта на знанията</h2><p class="sub">Цветът показва как се справяш с всяка ${U().one}. Докосни ${U().one}, за да упражниш само нея.</p>
       <div class="legend"><span style="--dot:var(--ok)">знаеш добре</span><span style="--dot:var(--gold)">почти</span><span style="--dot:var(--bad)">за преговор</span><span style="--dot:var(--line)">не е проверена</span></div>
       <div class="map" id="map"></div></div>`;
   }
@@ -241,7 +243,7 @@ async function finish() {
       <a class="btn ghost" href="/uchenik/">Начало</a>
     </div>
     ${Object.keys(per).length > 1 || weak.length ? `<div class="block"><h3>Карта на пропуските</h3>
-      <p class="sub">${weak.length ? "Тези творби имат нужда от преговор – най-слабите са най-отгоре." : "Нямаш слаби творби в този тест."}</p>
+      <p class="sub">${weak.length ? `Тези ${U().many} имат нужда от преговор – най-слабите са най-отгоре.` : `Нямаш слаби ${U().many} в този тест.`}</p>
       <ul class="gaps">${weak.slice(0, 6).map((w) => `<li><span class="gn">${esc(w)}</span><span class="gc">${per[w].bad} от ${per[w].t} грешни</span><span class="gb"><i style="width:${(per[w].bad / per[w].t) * 100}%"></i></span></li>`).join("")}</ul>
       ${strong.length ? `<p class="strongs"><b>Знаеш добре:</b> ${strong.map(esc).join(", ")}</p>` : ""}</div>` : ""}
     <div class="block"><h3>Изпрати резултата на родител</h3><p class="sub">Едно докосване – и мама или татко виждат как се справяш.</p>

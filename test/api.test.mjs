@@ -144,3 +144,53 @@ test("parent, child, free limit, unlock, code, review", async () => {
   const form = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "a=b" });
   assert.equal(form.status, 415);
 });
+
+test("mock exam: free section, locked sections, exact scoring", async () => {
+  const parent = client();
+  await parent("auth/register", { name: "Ева", email: `eva.${run}@example.com`, password: "parola123", consent: true });
+  await parent("family/children", { name: "Боби", username: `bobi.${run}`, password: "123456", grade: 7 });
+  const kid = client();
+  await kid("auth/login", { username: `bobi.${run}`, password: "123456" });
+
+  let mod = await kid("learn/module/bel7-izpit");
+  assert.equal(mod.items.length, 1, "only the first section is free");
+  assert.deepEqual(mod.lockedTitles, ["Български език", "Литература", "Преразказ"]);
+  assert.equal(mod.items[0].data.key, undefined, "answer key is not sent before hand-in");
+
+  // All correct answers of section 1 (from the export used by the operator).
+  const all = await admin("export");
+  const s1 = all.items.find((i) => i.ext_id === "izpit1-s1").data;
+  const answers = Object.fromEntries(Object.entries(s1.key).map(([n, k]) => [n, k.a.trim().charAt(0)]));
+  let r = await kid("learn/exam", { module: "bel7-izpit", itemId: mod.items[0].id, answers });
+  assert.equal(r.result.points, r.result.max);
+  assert.equal(r.percent, 100);
+  // A locked section cannot be handed in.
+  const s2item = all.items.find((i) => i.ext_id === "izpit1-s2");
+  r = await kid("learn/exam", { module: "bel7-izpit", itemId: 999999, answers: {} });
+  assert.equal(r.status, 403);
+  // The generic progress endpoint cannot fake an exam score.
+  r = await kid("learn/progress", { module: "bel7-izpit", results: [{ itemId: mod.items[0].id, ok: true, score: 100 }] });
+  assert.equal(r.status, 400);
+
+  // With a pass: section 2, task 17 corrected exactly as the key says.
+  const { codes } = await admin("codes", { count: 1, days: 30, batch: "exam-test" });
+  await parent("family/redeem", { code: codes[0] });
+  mod = await kid("learn/module/bel7-izpit");
+  assert.equal(mod.items.length, 4);
+  const s2 = s2item.data;
+  let fixed = s2.editText;
+  for (const e of s2.editing) fixed = fixed.replace(e.wrong, e.right);
+  const a2 = { 17: fixed };
+  for (const [n, k] of Object.entries(s2.key)) if (s2.tasks.find((t) => String(t.n) === n)?.options) a2[n] = k.a.trim().charAt(0);
+  const s2id = mod.items.find((i) => i.ext === "izpit1-s2").id;
+  r = await kid("learn/exam", { module: "bel7-izpit", itemId: s2id, answers: a2 });
+  const t17 = r.result.results.find((x) => x.n === 17);
+  assert.equal(t17.points, 14, "all 14 corrections recognised");
+  assert.ok(t17.errors.every((e) => e.fixed));
+  // Untouched text scores 0 on task 17.
+  r = await kid("learn/exam", { module: "bel7-izpit", itemId: s2id, answers: { 17: s2.editText } });
+  assert.equal(r.result.results.find((x) => x.n === 17).points, 0);
+
+  const fam = await parent("family");
+  assert.equal(fam.children[0].exam.done, 2);
+});

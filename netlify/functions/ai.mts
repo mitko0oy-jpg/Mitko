@@ -1,13 +1,10 @@
 import type { Config } from "@netlify/functions";
-import { accessibleItems, hasFullAccess, type ModuleRow } from "../lib/access.mts";
+import { accessibleItems, type ModuleRow } from "../lib/access.mts";
 import { chat, jsonCall, safety } from "../lib/ai.mts";
 import { requireChild } from "../lib/auth.mts";
-import { hit, one, q } from "../lib/db.mts";
-import { bad, body, env, forbidden, handle, HttpError, json, notFound, str, tooMany } from "../lib/http.mts";
-
-const FREE_TOTAL = () => Number(env("AI_FREE_TOTAL") || 20); // lifetime messages without a pass
-const PAID_DAILY = () => Number(env("AI_PAID_DAILY") || 60);
-const GLOBAL_DAILY = () => Number(env("AI_GLOBAL_DAILY") || 3000);
+import { one } from "../lib/db.mts";
+import { spend } from "../lib/usage.mts";
+import { bad, body, forbidden, handle, json, notFound, str } from "../lib/http.mts";
 
 function sentences(txt: string) {
   const s = txt.replace(/\b(г|в|др|пр|Хр|напр|т\.е|т\.нар|ок)\./gi, "$1").replace(/…/g, ".");
@@ -23,28 +20,6 @@ async function itemFor(childId: number, parentId: number, grade: number, itemId:
   const { open } = await accessibleItems(m, parentId, grade);
   if (!open.some((i) => Number(i.id) === Number(itemId))) throw forbidden("Този материал е в пълния достъп.");
   return { item: row.data, module: m };
-}
-
-async function spend(childId: number, parentId: number, grade: number) {
-  if (!(await hit(`ai:burst:${childId}`, 12, 60))) throw tooMany("Много въпроси наведнъж. Изчакай минута.");
-  const today = new Date().toISOString().slice(0, 10);
-  if (!(await hit(`ai:global:${today}`, GLOBAL_DAILY(), 86400))) {
-    throw new HttpError(503, "ai_busy", "AI е натоварен днес. Опитай утре.");
-  }
-  const full = await hasFullAccess(parentId, grade);
-  if (full) {
-    const r = await one<{ count: number }>("SELECT count FROM ai_usage WHERE child_id = $1 AND day = $2", [childId, today]);
-    if ((r?.count || 0) >= PAID_DAILY()) throw new HttpError(429, "ai_daily", "Стига толкова за днес – утре продължаваме!");
-  } else {
-    const r = await one<{ n: number }>("SELECT COALESCE(sum(count), 0)::int AS n FROM ai_usage WHERE child_id = $1", [childId]);
-    if ((r?.n || 0) >= FREE_TOTAL()) {
-      throw new HttpError(402, "ai_free_used", "Безплатните разговори свършиха. Покажи на родител, за да отключи пълния достъп.");
-    }
-  }
-  await q(
-    "INSERT INTO ai_usage (child_id, day, count) VALUES ($1, $2, 1) ON CONFLICT (child_id, day) DO UPDATE SET count = ai_usage.count + 1",
-    [childId, today],
-  );
 }
 
 export default handle(async (req) => {

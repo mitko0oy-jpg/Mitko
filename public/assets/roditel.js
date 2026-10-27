@@ -29,6 +29,7 @@ function kidCard(c, d) {
     <div class="stat"><div class="n txt">${esc(ago(c.lastActive))}</div><div class="l">последно учене</div></div>
     <div class="stat"><div class="n">${c.weekItems}</div><div class="l">упражнения за 7 дни</div></div>
     <div class="stat"><div class="n">${dg ? `${dg.ok} / ${dg.done}` : "–"}</div><div class="l">${dg ? `входен тест · ${gradeOf(dg.ok, dg.done)} (ориентировъчно)` : "входният тест не е решен"}</div></div>
+    ${examStat(c.exam)}
   </div>`;
 
   if (c.modules.length) {
@@ -44,7 +45,7 @@ function kidCard(c, d) {
   }
 
   if (c.weak.length || c.strong.length) {
-    h += `<h3 style="margin-top:18px">Творби</h3>`;
+    h += `<h3 style="margin-top:18px">Слаби места</h3>`;
     if (c.weak.length) h += `<p class="small muted" style="margin:0">За преговор:</p><ul class="weak">${c.weak.map((w) => `<li><span>${esc(w.work)}</span><span>${w.bad} ${w.bad === 1 ? "грешка" : "грешки"}</span></li>`).join("")}</ul>`;
     if (c.strong.length) h += `<p class="small" style="margin-top:10px"><b>Знае добре:</b> ${c.strong.map(esc).join(", ")}</p>`;
   }
@@ -66,6 +67,14 @@ function kidCard(c, d) {
     </details>
   </article>`;
   return h;
+}
+
+function examStat(e) {
+  if (!e) return "";
+  const pts = e.sections.reduce((s, x) => s + x.points, 0);
+  const max = e.sections.reduce((s, x) => s + x.max, 0);
+  const label = e.done >= e.total ? `пробна матура · ${gradeOf(pts, max)} (ориентировъчно)` : `пробна матура · ${e.done} от ${e.total} части`;
+  return `<div class="stat"><div class="n">${Math.round(pts)} / ${Math.round(max)}</div><div class="l">${label}</div></div>`;
 }
 
 function offerBody(d) {

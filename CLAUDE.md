@@ -28,7 +28,8 @@
 - `users` – родител / проверител (reviewer) / admin, с имейл и парола (scrypt).
 - `children` – създава ги родителят: потребителско име + парола, клас. Без имейл на детето (под 14 г. е нужно съгласие на родител).
 - `sessions` – бисквитка `eb_s`, в базата се пази само SHA-256. Родител може да „влезе като детето“ (сесия с user_id и child_id).
-- `modules` + `items` – съдържанието. `items.status`: draft / review / approved / hidden. Децата виждат само approved (в TEST_MODE и review).
+- `modules` + `items` – съдържанието. Видове модули: cards, diagnostic, t25, chars, pesho, exam. `items.status`: draft / review / approved / hidden. Децата виждат само approved (в TEST_MODE и review).
+- Пробната матура (`exam`) е по един елемент на част; ключът (`key`, `editing`) не се праща на браузъра, а се връща с резултата след „Предай“ (`POST /api/learn/exam`). Резултатът се пази в `progress.answer` като JSON.
 - `progress` – отговорите + Leitner кутия за преговор (интервали 0, 1, 3, 7, 16, 35 дни).
 - `entitlements` – платен достъп на родителя (`bel-all` или `bel7` и т.н.), важи за всичките му деца.
 - `access_codes` – кодове (кутия, наложен платеж, тестери); вид `reviewer` прави профила проверител.
@@ -42,7 +43,7 @@
 
 ## Работа със съдържанието
 
-1. Източник: JSON от материалите на Еду БЕЛ (не са в git). `node scripts/build-content.mjs <data-dir> <out.json>` прави модулите.
+1. Източник: JSON от материалите на Еду БЕЛ (не са в git). `node scripts/build-content.mjs <data-dir> <out.json> [extra.json]` прави модулите; `extra.json` са допълнителни модули (напр. езиковите упражнения за 5.–7. клас), също извън git.
 2. `EDUBEL_URL=https://edubel-app.netlify.app ADMIN_TOKEN=… node scripts/admin.mjs import out.json` – повторният импорт не пипа одобреното, ако съдържанието е същото; променените елементи се връщат за преглед.
 3. Учителят-проверител одобрява или коментира на `/pregled/`.
 4. `node scripts/admin.mjs comments` показва отворените коментари; поправката е с `node scripts/admin.mjs item <id> '{"data":{…},"resolution":"…"}'` и елементът пак отива за одобрение.
@@ -64,5 +65,5 @@ EDUBEL_URL=http://localhost:8899 npm test
 
 - Плащане с карта (Stripe) и имейли (Brevo) – изискват акаунти на Митко.
 - Свой домейн `app.edubel.site` – един DNS запис в SuperHosting.bg.
-- Пробни НВО онлайн, език (граматика, правопис, редактиране), 5. и 6. клас, после математика.
+- Още пробни матури, литература за 5. и 6. клас, после математика.
 - Преди официалния старт: `TEST_MODE` махнат, юрист за условията, базата в ЕС регион.

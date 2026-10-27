@@ -1,0 +1,47 @@
+/* Online mock exam */
+.xsecs{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
+.xsec{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--paper);border:1px solid var(--paper-edge);border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px var(--shadow)}
+.xsec:hover{border-color:var(--gold)}
+.xsec .num{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--paper);font-family:var(--serif);font-weight:700}
+.xsec .t b{display:block;font-family:var(--serif);font-size:18px;color:var(--ink)}
+.xsec .t small{color:var(--muted);font-size:13.5px}
+.xsec .st{font-weight:700;color:var(--ok);white-space:nowrap;font-variant-numeric:tabular-nums}
+.xsec.locked{opacity:.75;border-style:dashed}
+.xsec.locked .num{background:var(--line);color:var(--muted)}
+.xtotal{background:var(--paper);border:1px solid var(--paper-edge);border-radius:16px;padding:18px;margin:16px 0;text-align:center;box-shadow:0 6px 18px var(--shadow)}
+.xtotal .big{display:block;font-family:var(--serif);font-size:44px;font-weight:700;color:var(--ink);line-height:1.1;font-variant-numeric:tabular-nums}
+.xtotal .big small{font-size:22px;color:var(--muted)}
+.xtotal .grade{display:inline-block;margin:6px 0;padding:4px 12px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:700;font-size:15px}
+.xtotal p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.xtext{background:var(--paper);border:1px solid var(--paper-edge);border-radius:12px;padding:10px 14px;margin:10px 0}
+.xtext summary{cursor:pointer;font-weight:600;color:var(--ink);padding:4px 0}
+.xtext p{font-family:var(--serif);font-size:16.5px;line-height:1.6}
+.xtask{background:var(--paper);border:1px solid var(--paper-edge);border-radius:14px;padding:14px 16px;margin-top:14px}
+.xintro{font-size:15px;background:var(--gold-soft);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.xq{font-weight:600;color:var(--ink);margin:0 0 10px}
+.xq .n,.xres .n{font-family:var(--serif);color:var(--gold);margin-right:4px}
+.xopts{display:grid;gap:8px}
+.xopt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:15.5px}
+.xopt input{margin-top:3px;accent-color:var(--ink);flex:none;width:18px;height:18px}
+.xopt:has(input:checked){border-color:var(--ink);background:var(--gold-soft)}
+.xans{font:inherit;width:100%;background:var(--field);color:var(--text);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;line-height:1.5}
+.xans.big{font-family:var(--serif);font-size:16.5px}
+.xsubmit{margin-top:20px}
+.xres{background:var(--paper);border:1px solid var(--paper-edge);border-left:5px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+.xres.ok{border-left-color:var(--ok)} .xres.half{border-left-color:var(--gold)} .xres.bad{border-left-color:var(--bad)}
+.xres header{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:start;font-weight:600;color:var(--ink);font-size:15px;margin-bottom:6px}
+.xres header b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.xres details{margin-top:6px;font-size:15px}
+.xres summary{cursor:pointer;color:var(--l1);font-weight:600}
+.xfb{background:var(--gold-soft);border-radius:8px;padding:8px 10px}
+.xerrs{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:6px;font-size:15px}
+.xerrs li.ok{color:var(--ok)} .xerrs li.bad{color:var(--bad)}
+.xerrs small{display:block;color:var(--muted);margin-left:18px}
+.xcrit{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.xcrit li{display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.xcrit small{grid-column:1/-1;color:var(--muted);font-size:14px}
+.xtips{margin:0;padding-left:18px;display:grid;gap:8px;font-size:15px}
+.rlbl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 4px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.back{border:0;background:none;padding:10px 4px;font-weight:600;color:var(--muted);min-height:44px}
+.pos{font-size:15px;font-weight:600;color:var(--muted)}

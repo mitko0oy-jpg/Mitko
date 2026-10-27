@@ -4,7 +4,7 @@ import { formatCode, newCode } from "../lib/codes.mts";
 import { one, q, tx } from "../lib/db.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
 
-const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic"];
+const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam"];
 
 // JSONB does not keep key order, so compare content with sorted keys.
 function stable(v: any): string {

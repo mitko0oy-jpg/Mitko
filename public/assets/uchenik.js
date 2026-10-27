@@ -1,6 +1,6 @@
 import { $, api, esc, guard, pct, topbar } from "./app.js";
 
-export const PATHS = { cards: "/karti/", diagnostic: "/karti/", t25: "/zadacha25/", chars: "/geroi/", pesho: "/pesho/" };
+export const PATHS = { cards: "/karti/", diagnostic: "/karti/", t25: "/zadacha25/", chars: "/geroi/", pesho: "/pesho/", exam: "/izpit/" };
 const COLORS = ["--l0", "--l1", "--l2", "--gold", "--l1", "--l2"];
 
 async function load() {
