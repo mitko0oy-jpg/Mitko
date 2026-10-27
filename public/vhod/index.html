@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Вход – Еду БЕЛ</title>
+<meta name="description" content="Еду БЕЛ – български език и литература за 5., 6. и 7. клас: карти, тренажор за писане, разговори с героите и отчет за родителя.">
+<meta name="theme-color" content="#1B2A4A">
+<link rel="icon" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/assets/app.css">
+<script type="module" src="/assets/vhod.js"></script>
+</head>
+<body>
+<div class="wrap">
+<div id="topbar"></div>
+<main id="main">
+<h1>Вход</h1>
+<div class="tabs" role="tablist">
+  <button role="tab" id="tabChild" aria-selected="true">Ученик</button>
+  <button role="tab" id="tabParent" aria-selected="false">Родител</button>
+</div>
+<form class="stack" id="childForm" novalidate>
+  <div class="field"><label for="cUser">Потребителско име</label><input type="text" id="cUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
+  <div class="field"><label for="cPass">Парола</label><input type="password" id="cPass" autocomplete="current-password" required></div>
+  <p class="formerr" id="cErr" role="alert"></p>
+  <button class="btn full" type="submit">Влез</button>
+  <p class="small muted">Нямаш профил? Помоли родител да те добави от своя профил.</p>
+</form>
+<form class="stack" id="parentForm" novalidate hidden>
+  <div class="field"><label for="pEmail">Имейл</label><input type="email" id="pEmail" autocomplete="email" required></div>
+  <div class="field"><label for="pPass">Парола</label><input type="password" id="pPass" autocomplete="current-password" required></div>
+  <p class="formerr" id="pErr" role="alert"></p>
+  <button class="btn full" type="submit">Влез</button>
+  <p class="small muted">Нямаш профил? <a href="/registracia/">Регистрирай се</a></p>
+</form>
+</main>
+</div>
+</body>
+</html>

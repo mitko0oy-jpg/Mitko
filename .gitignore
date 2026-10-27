@@ -1,0 +1,11 @@
+node_modules/
+.netlify/
+.env
+.env.*
+deploy-*.zip
+tmp/
+# Paid content never goes into this public repository.
+private/
+content/
+*.pdf
+*.docx

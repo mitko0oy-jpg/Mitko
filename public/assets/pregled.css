@@ -1,0 +1,15 @@
+/* Teacher review mode */
+button.mod{width:100%;border:1px solid var(--paper-edge);font:inherit}
+.ritem{background:var(--paper);border:1px solid var(--paper-edge);border-radius:14px;padding:16px 18px;margin-top:14px;box-shadow:0 4px 14px var(--shadow)}
+.ritem header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ritem header .small{margin-right:auto}
+.rq{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.35;color:var(--ink);margin:4px 0 10px}
+.rquote{margin:0 0 12px;padding:10px 14px;background:var(--gold-soft);border-left:4px solid var(--gold);border-radius:4px;font-family:var(--serif);font-style:italic}
+.ropts{margin:0 0 10px;padding-left:22px;display:grid;gap:4px}
+.ropts li.right{font-weight:600;color:var(--ok)}
+.rlbl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 4px}
+.rmodel{background:var(--ok-soft);border-radius:10px;padding:10px 12px}
+.ritem ul{margin:0 0 6px;padding-left:20px}
+.rcomments{display:grid;gap:8px;margin-top:12px}
+.rc{background:var(--bad-soft);border-radius:10px;padding:10px 12px;font-size:15px}
+.rc.done{background:var(--ok-soft)}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Регистрация – Еду БЕЛ</title>
+<meta name="description" content="Еду БЕЛ – български език и литература за 5., 6. и 7. клас: карти, тренажор за писане, разговори с героите и отчет за родителя.">
+<meta name="theme-color" content="#1B2A4A">
+<link rel="icon" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/assets/app.css">
+<script type="module" src="/assets/registracia.js"></script>
+</head>
+<body>
+<div class="wrap">
+<div id="topbar"></div>
+<main id="main">
+<h1>Регистрация за родители</h1>
+<p class="lead">Профилът е на родителя. След това добавяш детето си с потребителско име и парола. Детето не дава лични данни.</p>
+<form class="stack" id="regForm" novalidate>
+  <div class="field"><label for="rName">Твоето име</label><input type="text" id="rName" autocomplete="given-name" maxlength="80" required></div>
+  <div class="field"><label for="rEmail">Имейл</label><input type="email" id="rEmail" autocomplete="email" required></div>
+  <div class="field"><label for="rPass">Парола</label><input type="password" id="rPass" autocomplete="new-password" minlength="8" required><span class="hint">Поне 8 знака.</span></div>
+  <div class="field"><label for="rCode">Код за достъп (ако имаш)</label><input type="text" id="rCode" autocapitalize="characters" spellcheck="false" placeholder="ABCDE-23456"><span class="hint">Кодът е в кутията с картите или ти е изпратен по имейл.</span></div>
+  <label class="check"><input type="checkbox" id="rConsent"><span>Аз съм родител или настойник и приемам <a href="/usloviya/" target="_blank" rel="noopener">условията и политиката за поверителност</a>. Давам съгласие детето ми да ползва платформата.</span></label>
+  <p class="formerr" id="rErr" role="alert"></p>
+  <button class="btn gold full" type="submit">Създай профил</button>
+  <p class="small muted">Вече имаш профил? <a href="/vhod/">Влез</a></p>
+</form>
+</main>
+</div>
+</body>
+</html>
