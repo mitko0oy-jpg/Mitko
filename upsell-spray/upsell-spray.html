@@ -273,7 +273,7 @@
               <span class="bvu-price__new" data-bvu="new">€12,90</span>
               <span class="bvu-price__save"><span>Спестяваш <span data-bvu="save">€12,00</span></span></span>
             </div>
-            <p class="bvu-timer">Цената е запазена за теб още <b data-bvu-timer>10:00</b></p>
+            <p class="bvu-timer" data-bvu-expired="Офертата може да изтече всеки момент">Цената е запазена за теб още <b data-bvu-timer>10:00</b></p>
             <button type="button" class="bvu-cta" data-bvu-accept data-bvu-watch="hero">
               <span class="bvu-cta__main">ДА, ДОБАВИ КЪМ ПОРЪЧКАТА</span>
               <span class="bvu-cta__sub">1 клик • без попълване на данни отново</span>
@@ -443,7 +443,7 @@
             <span class="bvu-price__new" data-bvu="new">€12,90</span>
             <span class="bvu-price__save"><span>Спестяваш <span data-bvu="save">€12,00</span></span></span>
           </div>
-          <p class="bvu-timer">Цената е запазена за теб още <b data-bvu-timer>10:00</b></p>
+          <p class="bvu-timer" data-bvu-expired="Офертата може да изтече всеки момент">Цената е запазена за теб още <b data-bvu-timer>10:00</b></p>
           <button type="button" class="bvu-cta" data-bvu-accept data-bvu-watch="final">
             <span class="bvu-cta__main">ДА, ДОБАВИ КЪМ ПОРЪЧКАТА</span>
             <span class="bvu-cta__sub">Пристига в същия колет • плащаш при получаване</span>
@@ -526,11 +526,13 @@
   var timers = root.querySelectorAll('[data-bvu-timer]');
   function tick() {
     var left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
-    var txt = left > 0
-      ? String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0')
-      : 'изтича';
+    if (!left) {
+      each(timers, function (el) { var p = el.parentNode; p.textContent = p.getAttribute('data-bvu-expired'); });
+      return;
+    }
+    var txt = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
     each(timers, function (el) { el.textContent = txt; });
-    if (left > 0) setTimeout(tick, 1000);
+    setTimeout(tick, 1000);
   }
   tick();
 

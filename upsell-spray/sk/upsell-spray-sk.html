@@ -1,0 +1,628 @@
+<!--
+  BeeVenom – ЪПСЕЛ (СЛОВАШКА ВЕРСИЯ): Sprej na kĺby s včelím jedom 100 ml
+  Страница след поръчка на Gél s včelím jedom 20 g (beevenom-sk)
+
+  КАК СЕ ПОЛЗВА: целият код се поставя в един HTML / Custom code елемент
+  на ъпсел стъпката във фунията. Всички настройки (цени, снимки, линкове)
+  са в CONFIG най-долу в <script>. Подробно: ../README.md
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+.bvu{
+  --honey:#f6a21a;--orange:#f2711c;--orange-d:#d9520b;--brown:#3b2314;--brown-2:#5b3621;
+  --ink:#1f232b;--muted:#5d5248;--cream:#fff8ed;--cream-2:#fbefdc;--card:#fffdf9;--line:#efdcc0;
+  --green:#1f9d55;--green-bg:#e9f7ef;--ice:#1b7fb8;--ice-bg:#e8f4fb;--fire:#e2561b;--fire-bg:#fff0e6;
+  font-family:'Nunito',Arial,sans-serif;font-size:18px;line-height:1.5;color:var(--ink);
+  background:var(--cream);-webkit-text-size-adjust:100%;text-align:left;overflow:hidden;
+}
+.bvu *,.bvu *::before,.bvu *::after{box-sizing:border-box}
+.bvu h1,.bvu h2,.bvu h3{font-family:'Montserrat',Arial,sans-serif;color:var(--brown);margin:0;line-height:1.15;letter-spacing:-.01em;text-transform:none}
+.bvu p{margin:0}
+.bvu ul{margin:0;padding:0;list-style:none}
+.bvu img{display:block;max-width:100%;height:auto;border:0}
+.bvu b,.bvu strong{font-weight:900}
+.bvu-wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.bvu-sec{padding:44px 0}
+.bvu-sec--alt{background:var(--card)}
+.bvu-h2{font-size:28px;font-weight:900;text-align:center}
+.bvu .bvu-lead{font-size:19px;color:var(--muted);text-align:center;max-width:720px;margin:12px auto 0}
+.bvu-hl{color:var(--orange)}
+.bvu-kicker{display:block;text-align:center;font-weight:900;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-d);margin-bottom:8px}
+
+/* --- Прогрес лента --- */
+.bvu-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:12px 8px;background:#fff;border-bottom:1px solid var(--line)}
+.bvu-step{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12.5px;font-weight:800;line-height:1.2;color:#9a8b7c}
+.bvu-step i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#eee3d3;color:#8c7b69;font-size:13px;flex:none}
+.bvu-step.is-done{color:var(--green)}
+.bvu-step.is-done i{background:var(--green);color:#fff}
+.bvu-step.is-active{color:var(--brown)}
+.bvu-step.is-active i{background:var(--orange);color:#fff}
+
+/* --- Предупреждение --- */
+.bvu-alert{background:var(--brown);color:#fff;text-align:center;padding:12px 16px;font-size:16px;font-weight:700}
+.bvu-alert b{color:#ffd27a}
+
+/* --- Hero --- */
+.bvu-hero{padding:26px 0 40px;background:radial-gradient(120% 70% at 50% 0,#fff3d6 0,var(--cream) 60%)}
+.bvu-hero__q{display:block;text-align:center;font-weight:800;font-size:18px;color:var(--brown-2);margin-bottom:8px}
+.bvu-hero h1{font-size:30px;font-weight:900;text-align:center}
+.bvu .bvu-hero__sub{font-size:18px;color:var(--muted);text-align:center;max-width:640px;margin:12px auto 0}
+.bvu-hero__grid{display:grid;gap:22px;margin-top:22px;align-items:center}
+.bvu-shot{position:relative;max-width:420px;margin:0 auto;width:100%}
+.bvu-shot img{width:100%;border-radius:24px;background:#fff;box-shadow:0 18px 40px -18px rgba(91,54,33,.45)}
+.bvu-badge{position:absolute;display:grid;place-items:center;text-align:center;font-family:'Montserrat',Arial,sans-serif;font-weight:900;line-height:1}
+.bvu-badge--pct{top:14px;left:14px;width:86px;height:86px;border-radius:50%;background:var(--orange);color:#fff;font-size:26px;box-shadow:0 6px 16px rgba(217,82,11,.4);transform:rotate(-10deg)}
+.bvu-badge--pct small{display:block;font-size:11px;letter-spacing:.06em;margin-top:3px}
+.bvu-badge--ml{bottom:16px;right:14px;padding:8px 12px;border-radius:12px;background:var(--brown);color:#fff;font-size:15px}
+.bvu-ticks li{position:relative;padding:8px 0 8px 40px;font-size:18px;border-bottom:1px dashed var(--line)}
+.bvu-ticks li:last-child{border-bottom:0}
+.bvu-ticks li::before{content:"✓";position:absolute;left:0;top:9px;width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;font-weight:900;font-size:16px;display:grid;place-items:center}
+
+/* --- Цена + бутон --- */
+.bvu-offer{margin-top:18px;background:#fff;border:2px solid var(--honey);border-radius:22px;padding:18px 16px 16px;box-shadow:0 14px 30px -18px rgba(217,82,11,.5)}
+.bvu-price{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:4px 14px;text-align:center}
+.bvu-price__old{font-size:18px;color:#8c7b69;font-weight:700}
+.bvu-price__old s{text-decoration-thickness:2px;text-decoration-color:#d93a2b}
+.bvu-price__new{font-family:'Montserrat',Arial,sans-serif;font-size:44px;font-weight:900;color:var(--orange-d);line-height:1}
+.bvu-price__save{flex-basis:100%;display:flex;justify-content:center}
+.bvu-price__save>span{background:var(--green-bg);color:var(--green);font-weight:900;font-size:15px;padding:5px 12px;border-radius:999px}
+.bvu .bvu-timer{margin:14px 0 12px;text-align:center;font-size:16px;font-weight:700;color:var(--brown-2)}
+.bvu-timer b{display:inline-block;min-width:66px;font-family:'Montserrat',Arial,sans-serif;font-size:20px;color:#fff;background:var(--brown);border-radius:8px;padding:2px 8px;margin-left:4px;font-variant-numeric:tabular-nums}
+.bvu .bvu-cta{appearance:none;-webkit-appearance:none;border:0;margin:0;cursor:pointer;width:100%;display:block;text-align:center;border-radius:16px;padding:16px 14px;
+  background:linear-gradient(180deg,#ff8a2a 0,var(--orange) 45%,var(--orange-d) 100%);color:#fff;font-family:'Montserrat',Arial,sans-serif;
+  box-shadow:0 6px 0 #b8440a,0 14px 26px -8px rgba(217,82,11,.6);transition:transform .12s,box-shadow .12s;animation:bvuPulse 2.4s ease-in-out infinite}
+.bvu .bvu-cta:hover{filter:brightness(1.05)}
+.bvu .bvu-cta:active{transform:translateY(4px);box-shadow:0 2px 0 #b8440a,0 8px 18px -8px rgba(217,82,11,.6)}
+.bvu .bvu-cta:focus-visible{outline:3px solid var(--brown);outline-offset:3px}
+.bvu-cta__main{display:block;font-size:21px;font-weight:900;letter-spacing:.01em;line-height:1.2}
+.bvu-cta__sub{display:block;font-family:'Nunito',Arial,sans-serif;font-size:14px;font-weight:700;opacity:.95;margin-top:4px}
+.bvu .bvu-cta.is-busy{pointer-events:none;opacity:.8;animation:none}
+@keyframes bvuPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+.bvu-trust{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.bvu-trust div{text-align:center;font-size:13px;font-weight:800;color:var(--brown-2);line-height:1.25;background:var(--cream);border-radius:12px;padding:10px 4px}
+.bvu-trust span{display:block;font-size:22px;margin-bottom:4px}
+.bvu .bvu-no{appearance:none;-webkit-appearance:none;background:none;border:0;margin:14px auto 0;padding:6px;display:block;cursor:pointer;color:#8c7b69;font-family:'Nunito',Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.bvu .bvu-no:hover{color:var(--brown)}
+.bvu .bvu-fallback{display:none;margin-top:12px;text-align:center;font-size:16px;font-weight:700;color:var(--brown);background:var(--cream-2);border-radius:12px;padding:10px}
+.bvu-fallback a{color:var(--orange-d);font-weight:900}
+.bvu .bvu-fallback.is-on{display:block}
+
+/* --- Гел срещу Спрей --- */
+.bvu-duo{display:grid;gap:16px;margin-top:26px}
+.bvu-card{background:#fff;border:2px solid var(--line);border-radius:22px;padding:20px 18px;position:relative}
+.bvu-card--spray{border-color:var(--honey);box-shadow:0 16px 34px -20px rgba(217,82,11,.55)}
+.bvu-card__tag{display:inline-block;font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:5px 12px;margin-bottom:10px}
+.bvu-card--gel .bvu-card__tag{background:var(--green-bg);color:var(--green)}
+.bvu-card--spray .bvu-card__tag{background:var(--orange);color:#fff}
+.bvu-card h3{font-size:22px;font-weight:900}
+.bvu-card h3 small{display:block;font-family:'Nunito',Arial,sans-serif;font-size:15px;font-weight:800;color:#8c7b69;margin-top:2px}
+.bvu-rows{margin-top:12px}
+.bvu-rows li{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 0;border-top:1px solid #f3e7d6;font-size:17px}
+.bvu-rows li>span{font-size:24px;line-height:1.1}
+.bvu-rows em{display:block;font-style:normal;font-size:13px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#a08f7d}
+.bvu-eq{margin-top:22px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;text-align:center}
+.bvu-eq__item{border-radius:16px;padding:12px 16px;font-weight:900;font-size:17px;line-height:1.25}
+.bvu-eq__item small{display:block;font-weight:700;font-size:14px}
+.bvu-eq__fire{background:var(--fire-bg);color:var(--fire)}
+.bvu-eq__ice{background:var(--ice-bg);color:var(--ice)}
+.bvu-eq__res{background:var(--brown);color:#fff;flex-basis:100%;max-width:520px}
+.bvu-eq__op{font-family:'Montserrat',Arial,sans-serif;font-size:28px;font-weight:900;color:var(--brown);line-height:1}
+.bvu-eq__op--eq{flex-basis:100%}
+
+/* --- Ситуации --- */
+.bvu-sits{display:grid;gap:14px;margin-top:26px}
+.bvu-sit{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:start;background:#fff;border-radius:20px;padding:18px;border:1px solid var(--line)}
+.bvu-sit__ico{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:30px;background:var(--cream-2)}
+.bvu-sit h3{font-size:19px;font-weight:900;margin-bottom:4px}
+.bvu-sit p{font-size:17px;color:var(--muted)}
+.bvu-sit p b{color:var(--orange-d)}
+.bvu-zones{margin-top:22px;text-align:center}
+.bvu-zones p{font-weight:900;color:var(--brown);margin-bottom:10px}
+.bvu-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.bvu-chips span{background:#fff;border:2px solid var(--honey);color:var(--brown);font-weight:800;font-size:16px;border-radius:999px;padding:6px 14px}
+
+/* --- Ден --- */
+.bvu-day{margin-top:26px;display:grid;gap:12px;position:relative}
+.bvu-slot{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;background:#fff;border-radius:18px;padding:14px 16px;border-left:6px solid var(--fire)}
+.bvu-slot--spray{border-left-color:var(--ice)}
+.bvu-slot__time{font-size:32px;text-align:center;line-height:1}
+.bvu-slot__time small{display:block;font-size:12px;font-weight:900;color:#8c7b69;margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+.bvu-slot h3{font-size:18px;font-weight:900}
+.bvu-slot h3 span{font-size:13px;font-family:'Nunito',Arial,sans-serif;font-weight:900;border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+.bvu-slot--gel h3 span{background:var(--fire-bg);color:var(--fire)}
+.bvu-slot--spray h3 span{background:var(--ice-bg);color:var(--ice)}
+.bvu-slot p{font-size:16px;color:var(--muted);margin-top:2px}
+
+/* --- Съставки --- */
+.bvu-ingr{display:grid;gap:16px;margin-top:26px}
+.bvu-ing{position:relative;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 14px 30px -20px rgba(91,54,33,.45)}
+.bvu-ing img{width:100%;aspect-ratio:2/1;object-fit:cover;object-position:center}
+.bvu-ing__body{padding:14px 18px 20px}
+.bvu-ing h3{font-size:24px;font-weight:900}
+.bvu-ing__sub{display:inline-block;margin-top:6px;background:var(--orange);color:#fff;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:4px 11px}
+.bvu .bvu-ing p{font-size:16px;color:var(--muted);margin-top:8px}
+.bvu-ing__new{position:absolute;top:14px;right:14px;background:var(--green);color:#fff;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:6px 12px;box-shadow:0 4px 10px rgba(31,157,85,.35)}
+.bvu-seven{margin-top:22px;background:#fff;border-radius:22px;padding:18px;border:2px dashed var(--honey)}
+.bvu-seven h3{text-align:center;font-size:21px;font-weight:900;margin-bottom:12px}
+.bvu-seven__row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.bvu-seven__row>b{flex-basis:100%;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:#a08f7d}
+.bvu-seven__row span{border-radius:999px;padding:5px 12px;font-weight:800;font-size:15px}
+.bvu-seven__row--gel span{background:var(--cream-2);color:var(--brown-2)}
+.bvu-seven__row--spray span{background:var(--orange);color:#fff}
+
+/* --- Сравнение на цената --- */
+.bvu-why{margin-top:22px;background:#fff;border-radius:22px;padding:20px 18px;border:1px solid var(--line);font-size:18px}
+.bvu-why p+p{margin-top:10px}
+.bvu-table{width:100%;border-collapse:separate;border-spacing:0;margin-top:20px;font-size:16px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+.bvu-table th,.bvu-table td{padding:12px 10px;text-align:center;border-bottom:1px solid #f3e7d6;vertical-align:middle}
+.bvu-table tr:last-child td{border-bottom:0}
+.bvu-table th{font-family:'Montserrat',Arial,sans-serif;font-weight:900;font-size:15px;color:var(--brown);background:var(--cream-2)}
+.bvu-table th.is-best{background:var(--orange);color:#fff}
+.bvu-table td:first-child{text-align:left;font-weight:800;color:var(--brown-2)}
+.bvu-table td.is-best{background:#fff7ee;font-weight:900;color:var(--green)}
+.bvu-table td.is-bad{color:#a2412f}
+
+/* --- Гаранция --- */
+.bvu-guar{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center;background:var(--brown);color:#fff;border-radius:22px;padding:20px 18px;margin-top:26px}
+.bvu-guar__seal{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd98a,var(--honey));color:var(--brown);display:grid;place-items:center;text-align:center;font-family:'Montserrat',Arial,sans-serif;font-weight:900;font-size:24px;line-height:.9;box-shadow:0 0 0 4px rgba(255,255,255,.18)}
+.bvu-guar__seal small{display:block;font-size:11px}
+.bvu-guar h3{color:#ffd27a;font-size:20px;font-weight:900}
+.bvu-guar p{font-size:16px;opacity:.95;margin-top:4px}
+
+/* --- Въпроси --- */
+.bvu-faq{max-width:760px;margin:24px auto 0}
+.bvu-faq details{background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.bvu-faq summary{cursor:pointer;list-style:none;padding:16px 48px 16px 18px;font-weight:900;font-size:17px;color:var(--brown);position:relative}
+.bvu-faq summary::-webkit-details-marker{display:none}
+.bvu-faq summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:26px;font-weight:900;color:var(--orange)}
+.bvu-faq details[open] summary::after{content:"–"}
+.bvu-faq details p{padding:0 18px 16px;font-size:17px;color:var(--muted)}
+
+/* --- Финал --- */
+.bvu-final{background:linear-gradient(180deg,var(--cream) 0,#ffe9c7 100%)}
+.bvu-final__box{max-width:760px;margin:0 auto;background:#fff;border-radius:26px;padding:22px 18px;border:3px solid var(--honey);box-shadow:0 22px 44px -24px rgba(217,82,11,.6)}
+.bvu-final__box h2{font-size:26px;font-weight:900;text-align:center}
+.bvu-final__box>p{text-align:center;color:var(--muted);margin-top:8px}
+.bvu-sum{margin-top:18px;border:1px solid var(--line);border-radius:18px;overflow:hidden;text-align:left}
+.bvu-sum__head{background:var(--cream-2);font-weight:900;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--brown-2);padding:10px 14px}
+.bvu-sum__row{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #f3e7d6}
+.bvu-sum__row--add{background:#fff7ee}
+.bvu-sum__ico{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;background:var(--green-bg);color:var(--green);font-size:26px;font-weight:900}
+.bvu-sum__row img{width:56px;height:56px;object-fit:contain;padding:3px;border-radius:14px;background:#fff;border:1px solid var(--line)}
+.bvu-sum__name{font-weight:800;font-size:16px;line-height:1.25;color:var(--brown)}
+.bvu-sum__name small{display:block;color:#8c7b69;font-size:13px;font-weight:700;margin-top:2px}
+.bvu-sum__val{text-align:right;font-weight:900;line-height:1.15;white-space:nowrap}
+.bvu-sum__val s{display:block;font-size:13px;color:#8c7b69;font-weight:700}
+.bvu-sum__val--ok{color:var(--green);font-size:14px}
+.bvu-sum__price{font-family:'Montserrat',Arial,sans-serif;font-size:19px;color:var(--orange-d)}
+.bvu-final .bvu-offer{border:0;box-shadow:none;padding:12px 0 0;margin-top:6px}
+.bvu .bvu-note{font-size:13px;color:#9a8b7c;text-align:center;max-width:720px;margin:22px auto 0}
+
+/* --- Лепкава лента (мобилно) --- */
+.bvu-sticky{position:fixed;left:0;right:0;bottom:0;z-index:9990;background:#fff;border-top:2px solid var(--honey);box-shadow:0 -10px 24px -10px rgba(59,35,20,.35);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;transform:translateY(110%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}
+.bvu-sticky.is-on{transform:none;visibility:visible;transition:transform .25s ease}
+.bvu-sticky__price{line-height:1.1;flex:none}
+.bvu-sticky__price s{display:block;font-size:13px;color:#8c7b69;font-weight:700}
+.bvu-sticky__price b{font-family:'Montserrat',Arial,sans-serif;font-size:22px;color:var(--orange-d)}
+.bvu .bvu-sticky .bvu-cta{padding:12px 10px;animation:none;box-shadow:0 4px 0 #b8440a}
+.bvu-sticky .bvu-cta__main{font-size:16px}
+
+/* Скрива вградения ъпсел бутон на платформата (нашите бутони го натискат вместо клиента) */
+.bvu-hide-native .upsellWidget{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;margin:0!important;padding:0!important}
+
+@media (min-width:820px){
+  .bvu-sec{padding:64px 0}
+  .bvu-h2{font-size:38px}
+  .bvu-hero{padding:36px 0 56px}
+  .bvu-hero h1{font-size:44px;max-width:900px;margin:0 auto}
+  .bvu .bvu-hero__sub{font-size:20px}
+  .bvu-hero__grid{grid-template-columns:1fr 1.05fr;gap:40px;margin-top:34px}
+  .bvu-shot{max-width:460px}
+  .bvu-duo{grid-template-columns:1fr 1fr;gap:22px}
+  .bvu-eq__res{flex-basis:auto}
+  .bvu-eq__op--eq{flex-basis:auto}
+  .bvu-steps{display:flex;justify-content:center;gap:28px;padding:14px 16px}
+  .bvu-step{flex-direction:row;gap:8px;font-size:14px}
+  .bvu-sits{grid-template-columns:repeat(3,1fr)}
+  .bvu-sit{grid-template-columns:1fr}
+  .bvu-day{grid-template-columns:repeat(4,1fr)}
+  .bvu-slot{grid-template-columns:1fr;align-content:start;text-align:center;border-left:0;border-top:6px solid var(--fire);padding:18px 14px}
+  .bvu-slot--spray{border-top-color:var(--ice)}
+  .bvu-ingr{grid-template-columns:repeat(3,1fr)}
+  .bvu-final__box{padding:32px 36px}
+  .bvu-final__box h2{font-size:32px}
+  .bvu-sticky{display:none}
+}
+@media (max-width:380px){
+  .bvu-step{font-size:11.5px}
+  .bvu-hero h1{font-size:26px}
+  .bvu-price__new{font-size:38px}
+  .bvu-cta__main{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bvu .bvu-cta{animation:none}
+  .bvu-sticky{transition:none}
+}
+</style>
+
+<div class="bvu" id="bvu">
+
+  <!-- 1. ПРОГРЕС: клиентът вижда, че поръчката е приета и е на „стъпка 2“ -->
+  <div class="bvu-steps" aria-label="Kroky objednávky">
+    <div class="bvu-step is-done"><i>✓</i>Objednávka prijatá</div>
+    <div class="bvu-step is-active"><i>2</i>Špeciálna ponuka</div>
+    <div class="bvu-step"><i>3</i>Hotovo</div>
+  </div>
+  <div class="bvu-alert">⚠️ <b>Nezatváraj túto stránku.</b> Tvoja objednávka je zaznamenaná — skôr než ju odošleme, máš jednu jednorazovú ponuku.</div>
+
+  <!-- 2. HERO + ОФЕРТА -->
+  <section class="bvu-hero">
+    <div class="bvu-wrap">
+      <span class="bvu-hero__q">Gél je na ráno a na večer. A čo cez deň?</span>
+      <h1>Pridaj si <span class="bvu-hl">Sprej s včelím jedom</span> do toho istého balíka so zľavou <span data-bvu="pct">48 %</span></h1>
+      <p class="bvu-hero__sub">Gél pôsobí do hĺbky s hrejivým pocitom. Sprej chladí za pár sekúnd — bez vtierania, bez mastných rúk, dokonca aj na chrbte. Spolu pokryjú celý deň.</p>
+
+      <div class="bvu-hero__grid">
+        <div class="bvu-shot">
+          <img data-bvu-img="spray" alt="Bee Venom sprej na kĺby s včelím jedom 100 ml" width="1122" height="1402">
+          <div class="bvu-badge bvu-badge--pct"><div>−<span data-bvu="pct">48 %</span><small>IBA TERAZ</small></div></div>
+          <div class="bvu-badge bvu-badge--ml">100 ml</div>
+        </div>
+
+        <div>
+          <ul class="bvu-ticks">
+            <li><b>Okamžite chladí</b> — mentol prináša svieži pocit za pár sekúnd</li>
+            <li><b>Bez vtierania a masáže</b> — nastriekaš a pokračuješ vo svojom dni</li>
+            <li><b>Dosiahne na chrbát aj kríže</b> — tam, kam ruka nedočiahne</li>
+            <li><b>3 nové zložky</b>, ktoré gél nemá: arnika, mentol a MSM</li>
+          </ul>
+
+          <div class="bvu-offer">
+            <div class="bvu-price">
+              <span class="bvu-price__old">Bežná cena: <s data-bvu="old">24,90 €</s></span>
+              <span class="bvu-price__new" data-bvu="new">12,90 €</span>
+              <span class="bvu-price__save"><span>Ušetríš <span data-bvu="save">12,00 €</span></span></span>
+            </div>
+            <p class="bvu-timer" data-bvu-expired="Ponuka môže každú chvíľu skončiť">Cena je pre teba rezervovaná ešte <b data-bvu-timer>10:00</b></p>
+            <button type="button" class="bvu-cta" data-bvu-accept data-bvu-watch="hero">
+              <span class="bvu-cta__main">ÁNO, PRIDAŤ DO OBJEDNÁVKY</span>
+              <span class="bvu-cta__sub">1 klik • bez opätovného vypĺňania údajov</span>
+            </button>
+            <p class="bvu-fallback" data-bvu-fallback>Napíš nám na <a data-bvu-mail href="mailto:zdravecnatura@gmail.com"><span data-bvu="email">zdravecnatura@gmail.com</span></a> a sprej pridáme k tvojej objednávke.</p>
+            <div class="bvu-trust">
+              <div><span>📦</span>Ten istý balík — bez ďalšieho poštovného</div>
+              <div><span>💶</span>Platíš pri prevzatí</div>
+              <div><span>🛡️</span>30 dní na vyskúšanie</div>
+            </div>
+          </div>
+          <button type="button" class="bvu-no" data-bvu-decline>Nie, ďakujem — nechcem sprej so zľavou</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. ЗАЩО ДВАТА: различна задача, не „още от същото“ -->
+  <section class="bvu-sec bvu-sec--alt">
+    <div class="bvu-wrap">
+      <span class="bvu-kicker">Prečo gél AJ sprej?</span>
+      <h2 class="bvu-h2">Dva produkty. <span class="bvu-hl">Dve rôzne úlohy.</span></h2>
+      <p class="bvu-lead">Gél je koncentrovaný — stačí malé množstvo vmasírované do pokožky a pôsobí do hĺbky. Sprej je na chvíle, keď nemáš čas zastaviť sa, minútu masírovať a umývať si ruky.</p>
+
+      <div class="bvu-duo">
+        <div class="bvu-card bvu-card--gel">
+          <span class="bvu-card__tag">✓ Už je v tvojej objednávke</span>
+          <h3>Gél s včelím jedom<small>Koncentrovaná formula · 20 g</small></h3>
+          <ul class="bvu-rows">
+            <li><span>🔥</span><div><em>Pocit</em>Hrejivý, do hĺbky</div></li>
+            <li><span>🎯</span><div><em>Kde</em>Bodovo — koleno, členok, lakeť, prsty</div></li>
+            <li><span>🌙</span><div><em>Kedy</em>Ráno a večer, s masážou do vstrebania</div></li>
+            <li><span>🧪</span><div><em>Zložky</em>Včelí jed, kurkuma, zelený čaj, vitamín D3</div></li>
+          </ul>
+        </div>
+        <div class="bvu-card bvu-card--spray">
+          <span class="bvu-card__tag">+ Pridaj teraz so zľavou <span data-bvu="pct">48 %</span></span>
+          <h3>Sprej s včelím jedom<small>Nemastná formula · 100 ml</small></h3>
+          <ul class="bvu-rows">
+            <li><span>❄️</span><div><em>Pocit</em>Chladivý, hneď po nanesení</div></li>
+            <li><span>🌀</span><div><em>Kde</em>Veľké a ťažko dostupné miesta — chrbát, kríže, ramená, krk</div></li>
+            <li><span>⚡</span><div><em>Kedy</em>Cez deň, vonku, po námahe — za pár sekúnd</div></li>
+            <li><span>🧪</span><div><em>Zložky</em>Včelí jed, arnika, mentol, MSM</div></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bvu-eq" aria-label="Gél plus sprej rovná sa starostlivosť počas celého dňa">
+        <div class="bvu-eq__item bvu-eq__fire">🔥 Gél<small>hĺbková starostlivosť</small></div>
+        <div class="bvu-eq__op">+</div>
+        <div class="bvu-eq__item bvu-eq__ice">❄️ Sprej<small>rýchly komfort</small></div>
+        <div class="bvu-eq__op bvu-eq__op--eq">=</div>
+        <div class="bvu-eq__item bvu-eq__res">Starostlivosť od rána do večera<small>bez „prázdnych“ hodín medzi nanášaním</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. КОГА ГЕЛЪТ НЕ Е УДОБЕН → там е спреят -->
+  <section class="bvu-sec">
+    <div class="bvu-wrap">
+      <span class="bvu-kicker">Úprimne povedané</span>
+      <h2 class="bvu-h2">3 chvíle, keď gél <span class="bvu-hl">nie je praktický</span></h2>
+      <p class="bvu-lead">Gél je výborný, keď si doma a máš minútu čas. Ale deň sa neodohráva len doma.</p>
+      <div class="bvu-sits">
+        <div class="bvu-sit">
+          <div class="bvu-sit__ico">🙇</div>
+          <div><h3>Miesto je na chrbte</h3><p>Kríže, lopatky, krk — sám tam s gélom a masážou ťažko dosiahneš. <b>Sprej nastriekaš z diaľky, bez cudzej pomoci.</b></p></div>
+        </div>
+        <div class="bvu-sit">
+          <div class="bvu-sit__ico">🌳</div>
+          <div><h3>Si vonku alebo máš plné ruky</h3><p>V záhrade, na cestách, v práci. Nemáš ako masírovať a umývať si ruky. <b>Sprej máš v taške — dvakrát strekneš a ideš ďalej.</b></p></div>
+        </div>
+        <div class="bvu-sit">
+          <div class="bvu-sit__ico">🥵</div>
+          <div><h3>Po námahe</h3><p>Keď je miesto unavené a „páli“, chceš chlad, nie ďalšie zahriatie. <b>Mentol v spreji okamžite chladí.</b></p></div>
+        </div>
+      </div>
+      <div class="bvu-zones">
+        <p>Sprej je praktický na:</p>
+        <div class="bvu-chips"><span>Kríže</span><span>Chrbát</span><span>Lopatky</span><span>Krk</span><span>Ramená</span><span>Kolená</span><span>Lýtka</span><span>Členky</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. ДЕНЯТ С ДВАТА ПРОДУКТА -->
+  <section class="bvu-sec bvu-sec--alt">
+    <div class="bvu-wrap">
+      <span class="bvu-kicker">Jednoduchá rutina</span>
+      <h2 class="bvu-h2">Tvoj deň s <span class="bvu-hl">gélom + sprejom</span></h2>
+      <div class="bvu-day">
+        <div class="bvu-slot bvu-slot--gel"><div class="bvu-slot__time">🌅<small>Ráno</small></div><div><h3>Gél <span>zahreje</span></h3><p>Vmasíruj do stuhnutých kĺbov skôr, než vyrazíš.</p></div></div>
+        <div class="bvu-slot bvu-slot--spray"><div class="bvu-slot__time">☀️<small>Cez deň</small></div><div><h3>Sprej <span>schladí</span></h3><p>Podľa potreby — v záhrade, na prechádzke, v práci. Bez mastných rúk.</p></div></div>
+        <div class="bvu-slot bvu-slot--spray"><div class="bvu-slot__time">🚶<small>Po námahe</small></div><div><h3>Sprej <span>osvieži</span></h3><p>Po schodoch, nosení či dlhej chôdzi — chladivý pocit okamžite.</p></div></div>
+        <div class="bvu-slot bvu-slot--gel"><div class="bvu-slot__time">🌙<small>Večer</small></div><div><h3>Gél <span>uvoľní</span></h3><p>Vmasíruj pred spaním pre pokojný a uvoľnený večer.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. СЪСТАВКИ: 3 нови, които гелът няма -->
+  <section class="bvu-sec">
+    <div class="bvu-wrap">
+      <span class="bvu-kicker">Nie je to „to isté“</span>
+      <h2 class="bvu-h2">Sprej pridáva <span class="bvu-hl">3 zložky</span>, ktoré tvoj gél nemá</h2>
+      <p class="bvu-lead">Plus včelí jed, ktorý už poznáš z gélu.</p>
+      <div class="bvu-ingr">
+        <div class="bvu-ing"><img data-bvu-img="arnica" alt="Arnika" width="1000" height="517" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
+          <div class="bvu-ing__body"><h3>Arnika</h3><span class="bvu-ing__sub">Znižuje napätie</span><p>Pomáha pri fyzickej záťaži, únave a nepohodlí. Prináša ľahkosť a komfort do namáhaných oblastí.</p></div></div>
+        <div class="bvu-ing"><img data-bvu-img="menthol" alt="Mentol" width="1000" height="524" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
+          <div class="bvu-ing__body"><h3>Mentol</h3><span class="bvu-ing__sub">Okamžite chladí</span><p>Prináša rýchly komfort a svieži pocit. Pomáha upokojiť namáhanú oblasť hneď po nanesení.</p></div></div>
+        <div class="bvu-ing"><img data-bvu-img="msm" alt="MSM" width="1000" height="401" loading="lazy"><span class="bvu-ing__new">Nové v spreji</span>
+          <div class="bvu-ing__body"><h3>MSM</h3><span class="bvu-ing__sub">Podporuje pohyblivosť</span><p>Obľúbená zložka vo formulách pre komfort kĺbov. Podporuje ľahkosť a voľnosť pohybu.</p></div></div>
+      </div>
+      <div class="bvu-seven">
+        <h3>Gél + Sprej = <span class="bvu-hl">7 aktívnych zložiek</span> v jednej rutine</h3>
+        <div class="bvu-seven__row bvu-seven__row--gel"><b>V géli (už ho máš)</b><span>🐝 Včelí jed</span><span>🌿 Kurkuma</span><span>🍵 Zelený čaj</span><span>☀️ Vitamín D3</span></div>
+        <div class="bvu-seven__row bvu-seven__row--spray"><b>Sprej pridáva</b><span>🌼 Arnika</span><span>❄️ Mentol</span><span>💎 MSM</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. ЗАЩО ЦЕНАТА Е ТАКАВА САМО СЕГА -->
+  <section class="bvu-sec bvu-sec--alt">
+    <div class="bvu-wrap">
+      <span class="bvu-kicker">Prečo tak výhodne?</span>
+      <h2 class="bvu-h2">Pretože tvoj balík <span class="bvu-hl">sa už pripravuje</span></h2>
+      <div class="bvu-why">
+        <p>Tvoja objednávka je zaznamenaná a kuriér je už objednaný. Ak sprej vložíme <b>do tej istej krabice</b>, ušetríme druhé balenie aj druhé doručenie.</p>
+        <p>Tento rozdiel ti vrátime ako zľavu. Preto cena <b data-bvu="new">12,90 €</b> platí <b>iba na tejto stránke</b> — neskôr sa sprej predáva samostatne za <b data-bvu="old">24,90 €</b> plus poštovné.</p>
+      </div>
+      <table class="bvu-table">
+        <thead><tr><th></th><th>Neskôr, samostatne</th><th class="is-best">Teraz, v tom istom balíku</th></tr></thead>
+        <tbody>
+          <tr><td>Cena spreja</td><td class="is-bad"><s data-bvu="old">24,90 €</s></td><td class="is-best" data-bvu="new">12,90 €</td></tr>
+          <tr><td>Doručenie</td><td class="is-bad">Platíš znova</td><td class="is-best">Bez ďalšieho poštovného</td></tr>
+          <tr><td>Kedy príde</td><td class="is-bad">Druhý balík, ďalšie čakanie</td><td class="is-best">Spolu s gélom</td></tr>
+          <tr><td>Platba</td><td>Pri prevzatí</td><td class="is-best">Naraz, pri prevzatí</td></tr>
+        </tbody>
+      </table>
+      <div class="bvu-guar">
+        <div class="bvu-guar__seal"><div>30<small>DNÍ</small></div></div>
+        <div><h3>30-dňové skúšobné obdobie</h3><p>Vyskúšaj gél aj sprej spolu. Ak nebudeš spokojný, vrátime ti peniaze. Bez zbytočných otázok.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. ВЪПРОСИ -->
+  <section class="bvu-sec">
+    <div class="bvu-wrap">
+      <h2 class="bvu-h2">Často kladené otázky</h2>
+      <div class="bvu-faq">
+        <details open><summary>Musím teraz niečo platiť?</summary><p>Nie. Sprej pridáme k už vytvorenej objednávke a všetko zaplatíš naraz pri prevzatí balíka.</p></details>
+        <details><summary>Príde v samostatnom balíku?</summary><p>Nie. Sprej príde v tom istom balíku, s tým istým kuriérom, spolu s gélom. Bez ďalšieho poštovného.</p></details>
+        <details><summary>Môžem gél a sprej používať spolu?</summary><p>Áno — sú vytvorené tak, aby sa dopĺňali. Najpraktickejšie je gél ráno a večer a sprej cez deň, keď ho potrebuješ. Riaď sa pokynmi na obale.</p></details>
+        <details><summary>A čo ak mi nebude vyhovovať?</summary><p>Máš 30-dňové skúšobné obdobie. Ak nebudeš spokojný, vrátime ti peniaze.</p></details>
+        <details><summary>Môžem si ho kúpiť neskôr za rovnakú cenu?</summary><p>Nie. Zľava je možná iba teraz, pretože sprej pôjde v tom istom balíku. Neskôr sa objednáva samostatne, za bežnú cenu a s novým poštovným.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. ФИНАЛНА ОФЕРТА -->
+  <section class="bvu-sec bvu-final">
+    <div class="bvu-wrap">
+      <div class="bvu-final__box">
+        <h2>Posledný krok: <span class="bvu-hl">pridaj sprej</span></h2>
+        <p>Jednorazová ponuka — iba k tejto objednávke.</p>
+        <div class="bvu-sum">
+          <div class="bvu-sum__head">Tvoja objednávka</div>
+          <div class="bvu-sum__row">
+            <div class="bvu-sum__ico">✓</div>
+            <div class="bvu-sum__name">Gél s včelím jedom<small>Koncentrovaná formula · 20 g</small></div>
+            <div class="bvu-sum__val bvu-sum__val--ok">V objednávke</div>
+          </div>
+          <div class="bvu-sum__row bvu-sum__row--add">
+            <img data-bvu-img="spray" alt="" width="56" height="56" loading="lazy">
+            <div class="bvu-sum__name">+ Sprej s včelím jedom<small>Nemastná formula · 100 ml</small></div>
+            <div class="bvu-sum__val"><s data-bvu="old">24,90 €</s><span class="bvu-sum__price" data-bvu="new">12,90 €</span></div>
+          </div>
+        </div>
+        <div class="bvu-offer">
+          <div class="bvu-price">
+            <span class="bvu-price__old">Bežná cena: <s data-bvu="old">24,90 €</s></span>
+            <span class="bvu-price__new" data-bvu="new">12,90 €</span>
+            <span class="bvu-price__save"><span>Ušetríš <span data-bvu="save">12,00 €</span></span></span>
+          </div>
+          <p class="bvu-timer" data-bvu-expired="Ponuka môže každú chvíľu skončiť">Cena je pre teba rezervovaná ešte <b data-bvu-timer>10:00</b></p>
+          <button type="button" class="bvu-cta" data-bvu-accept data-bvu-watch="final">
+            <span class="bvu-cta__main">ÁNO, PRIDAŤ DO OBJEDNÁVKY</span>
+            <span class="bvu-cta__sub">Príde v tom istom balíku • platíš pri prevzatí</span>
+          </button>
+          <p class="bvu-fallback" data-bvu-fallback>Napíš nám na <a data-bvu-mail href="mailto:zdravecnatura@gmail.com"><span data-bvu="email">zdravecnatura@gmail.com</span></a> a sprej pridáme k tvojej objednávke.</p>
+        </div>
+        <button type="button" class="bvu-no" data-bvu-decline>Nie, ďakujem — pokračujem iba s gélom</button>
+      </div>
+      <p class="bvu-note">Kozmetický prípravok na vonkajšie použitie. Nie je liek. Individuálny pocit sa môže líšiť.</p>
+    </div>
+  </section>
+
+  <!-- Лепкава лента на телефон -->
+  <div class="bvu-sticky" data-bvu-sticky aria-hidden="true">
+    <div class="bvu-sticky__price"><s data-bvu="old">24,90 €</s><b data-bvu="new">12,90 €</b></div>
+    <button type="button" class="bvu-cta" data-bvu-accept tabindex="-1"><span class="bvu-cta__main">PRIDAŤ DO OBJEDNÁVKY</span></button>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ============ НАСТРОЙКИ – промени само тук ============ */
+  var CONFIG = {
+    priceNew: 12.90,          // цена в ъпсела (трябва да съвпада с цената на ъпсел бутона в ConvertBuilder)
+    priceOld: 24.90,          // редовна цена на спрея
+    currency: '€',
+    timerMinutes: 10,         // таймер за запазване на цената
+    email: 'zdravecnatura@gmail.com', // показва се, ако бутонът не може да добави продукта
+    images: {                 // сложи линковете от качените снимки в ConvertBuilder
+      spray: 'images/spray.webp',
+      arnica: 'images/arnica.webp',
+      menthol: 'images/menthol.webp',
+      msm: 'images/msm.webp'
+    },
+    hideNativeWidget: true,   // скрива вградения ъпсел бутон – натиска се от нашите бутони
+    acceptUrl: '',            // резервно: линк при „ДА“, ако на страницата няма ъпсел бутон
+    declineUrl: ''            // резервно: линк при „НЕ“ (напр. страницата „Ďakujeme“)
+  };
+  /* ====================================================== */
+
+  var root = document.getElementById('bvu');
+  if (!root) return;
+
+  function each(list, fn) { Array.prototype.forEach.call(list, fn); }
+  // словашки формат: 12,90 € и 48 %
+  function money(n) { return n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency; }
+
+  // Цени и имейл
+  var save = CONFIG.priceOld - CONFIG.priceNew;
+  var values = {
+    'new': money(CONFIG.priceNew),
+    old: money(CONFIG.priceOld),
+    save: money(save),
+    pct: Math.round(save / CONFIG.priceOld * 100) + ' %',
+    email: CONFIG.email
+  };
+  each(root.querySelectorAll('[data-bvu]'), function (el) {
+    var v = values[el.getAttribute('data-bvu')];
+    if (v != null) el.textContent = v;
+  });
+  each(root.querySelectorAll('[data-bvu-mail]'), function (el) {
+    el.href = 'mailto:' + CONFIG.email;
+  });
+
+  // Снимки
+  each(root.querySelectorAll('[data-bvu-img]'), function (el) {
+    var src = CONFIG.images[el.getAttribute('data-bvu-img')];
+    if (src) el.src = src;
+  });
+
+  if (CONFIG.hideNativeWidget) document.documentElement.classList.add('bvu-hide-native');
+
+  // Таймер – пази се при презареждане на страницата
+  var KEY = 'bvu_spray_deadline', now = Date.now(), deadline = 0;
+  try { deadline = parseInt(sessionStorage.getItem(KEY), 10) || 0; } catch (e) {}
+  if (!deadline) {
+    deadline = now + CONFIG.timerMinutes * 60000;
+    try { sessionStorage.setItem(KEY, String(deadline)); } catch (e) {}
+  }
+  var timers = root.querySelectorAll('[data-bvu-timer]');
+  function tick() {
+    var left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+    if (!left) {
+      each(timers, function (el) { var p = el.parentNode; p.textContent = p.getAttribute('data-bvu-expired'); });
+      return;
+    }
+    var txt = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+    each(timers, function (el) { el.textContent = txt; });
+    setTimeout(tick, 1000);
+  }
+  tick();
+
+  function track(name) {
+    try {
+      if (window.fbq) window.fbq('trackCustom', name);
+      if (window.gtag) window.gtag('event', name);
+    } catch (e) {}
+  }
+
+  // ДА → натиска вградения ъпсел бутон на платформата (добавя към същата поръчка)
+  var busy = false;
+  function accept() {
+    if (busy) return;
+    track('UpsellSprayAccept');
+    var native = document.querySelector('.upsell-positive-action');
+    if (native || CONFIG.acceptUrl) {
+      busy = true;
+      each(root.querySelectorAll('[data-bvu-accept]'), function (b) { b.classList.add('is-busy'); });
+      setTimeout(function () {
+        busy = false;
+        each(root.querySelectorAll('[data-bvu-accept]'), function (b) { b.classList.remove('is-busy'); });
+      }, 5000);
+      if (native) native.click();
+      else window.location.href = CONFIG.acceptUrl;
+      return;
+    }
+    each(root.querySelectorAll('[data-bvu-fallback]'), function (el) { el.classList.add('is-on'); });
+    if (window.console) console.warn('BeeVenom upsell: на страницата няма ъпсел бутон (.upsell-positive-action), а acceptUrl е празен.');
+  }
+
+  // НЕ → следващата стъпка от фунията
+  function decline() {
+    track('UpsellSprayDecline');
+    var native = document.querySelector('.upsell-negative-action');
+    if (native) { native.click(); return; }
+    var F = window.WebPlatform && window.WebPlatform.Funnels;
+    if (F && F.show && F.isInFunnel && F.isInFunnel()) { F.show('next', false, true); return; }
+    if (CONFIG.declineUrl) window.location.href = CONFIG.declineUrl;
+  }
+
+  each(root.querySelectorAll('[data-bvu-accept]'), function (b) { b.addEventListener('click', accept); });
+  each(root.querySelectorAll('[data-bvu-decline]'), function (b) { b.addEventListener('click', decline); });
+
+  // Лепкава лента: показва се между горния и долния голям бутон
+  var sticky = root.querySelector('[data-bvu-sticky]');
+  var hero = root.querySelector('[data-bvu-watch="hero"]');
+  var fin = root.querySelector('[data-bvu-watch="final"]');
+  if (sticky && hero && fin) {
+    var queued = false;
+    var update = function () {
+      queued = false;
+      var show = hero.getBoundingClientRect().bottom < 0 && fin.getBoundingClientRect().top > window.innerHeight;
+      sticky.classList.toggle('is-on', show);
+    };
+    var onScroll = function () {
+      if (!queued) { queued = true; requestAnimationFrame(update); }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+})();
+</script>
