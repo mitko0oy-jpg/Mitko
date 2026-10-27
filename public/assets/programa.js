@@ -1,20 +1,20 @@
 // Public course map: every work and topic per grade, with what is ready and what is coming.
-import { $, api, esc, KIND_LABEL, me, params, PLANNED_LABEL, plannedLeft, SECTION_LABEL, topbar } from "./app.js";
+import { $, api, esc, me, params, SECTION_LABEL, stepLabel, topbar, unitSteps } from "./app.js";
 
 let grade = [5, 6, 7].includes(Number(params().get("klas"))) ? Number(params().get("klas")) : 7;
 
+// Every unit opens its page: the steps that are ready and the ones still coming.
 function unitRow(u) {
-  const total = u.resources.reduce((s, r) => s + r.total, 0);
-  const ready = u.resources.map((r) => `<span class="rk">${esc(KIND_LABEL[r.kind] || r.kind)}${r.kind === "chars" ? "" : ` ${r.total}`}</span>`).join("");
-  const soon = plannedLeft(u.planned, u.resources).map((p) => `<span class="rk soon">${esc(PLANNED_LABEL[p] || p)}</span>`).join("");
-  return `<div class="unit ${total ? "" : "soon"}"><p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}<div class="rks">${ready}${soon}</div></div>`;
+  const steps = unitSteps(u.planned, u.resources);
+  const chips = steps.map((s) => `<span class="rk ${s.res ? "" : "soon"}">${esc(stepLabel(s.kind, u.section))}${s.res && !["chars", "lesson", "reading"].includes(s.kind) ? ` ${s.res.total}` : ""}</span>`).join("");
+  return `<a class="unit ${u.resources.length ? "" : "soon"}" href="/tema/?u=${encodeURIComponent(u.slug)}"><p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}<div class="rks">${chips}</div></a>`;
 }
 
 async function render() {
   const d = await api(`units?grade=${grade}`);
   const ready = d.units.filter((u) => u.resources.length).length;
   let h = `<h1>Програмата по класове</h1>
-    <p class="lead">Всички творби и теми по учебната програма на МОН. Попълнените имат упражнения, а останалите се подготвят.</p>
+    <p class="lead">Всички творби и теми по учебната програма на МОН. Отвори която и да е, за да видиш стъпките ѝ.</p>
     <div class="tabs" role="tablist">${[5, 6, 7].map((g) => `<button role="tab" data-g="${g}" aria-selected="${g === grade}">${g}. клас</button>`).join("")}</div>
     <p class="notice info">${grade}. клас: <b>${ready}</b> от ${d.units.length} теми и творби имат упражнения.</p>
     <p class="small muted"><span class="rk">Готово</span> има упражнения · <span class="rk soon">Предстои</span> се подготвя</p>`;

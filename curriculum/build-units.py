@@ -14,11 +14,11 @@ def add(grade, section, grp, title, subtitle="", works=None, topics=None, planne
         "slug": slug(f"g{grade}", title), "grade": grade, "section": section, "grp": grp, "title": title, "subtitle": subtitle,
         "position": len([u for u in units if u["grade"] == grade]) + 1,
         "match": {"works": works or ([title] if section == "literature" else []), "topics": topics or []},
-        "planned": planned or [], "info": info or {},
+        "planned": list(planned or []), "info": info or ({"textbook": True} if planned is PROT else {}),
     })
 
 # Free to publish in full (authors who died more than 70 years ago, folklore): text and audio are possible.
-PD = ["lesson", "text", "audio", "cards"]
+PD = ["reading", "lesson", "cards"]
 PROT = ["lesson", "cards"]  # protected text or translation: own analysis only
 LANG = ["lesson", "cards"]
 

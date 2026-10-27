@@ -1,7 +1,8 @@
 // Teacher review: each item as the child sees it, plus "approve" and "comment".
 import { $, api, esc, guard, toast, topbar } from "./app.js";
+import { lessonHtml, readingHtml } from "./lesson-view.js";
 
-const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо" };
+const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене" };
 let filter = "review";
 let current = null;
 
@@ -30,6 +31,9 @@ function itemBody(kind, d) {
   if (kind === "pesho") {
     return `<p class="small muted">${esc(d.work)}</p><p class="rlbl">Пешо казва (грешно)</p><p class="rq">${esc(d.says)}</p><p class="rlbl">Вярното</p><p>${esc(d.truth)}</p>`;
   }
+  // Lessons and texts: the same view as the child's, empty sections included.
+  if (kind === "lesson") return `<p class="small muted">Тема: ${esc(d.unit)}</p><div class="lesson">${lessonHtml(d.section || "literature", d)}</div>`;
+  if (kind === "reading") return `<p class="small muted">Тема: ${esc(d.unit)}</p><div class="lesson">${readingHtml(d)}</div>`;
   return `<pre>${esc(JSON.stringify(d, null, 2))}</pre>`;
 }
 

@@ -154,16 +154,34 @@ export async function saveProgress(module, results) {
 
 // Where each kind of module opens, and how resources and planned materials are named.
 export const PATHS = { cards: "/karti/", diagnostic: "/karti/", t25: "/zadacha25/", chars: "/geroi/", pesho: "/pesho/", exam: "/izpit/" };
-export const KIND_LABEL = { cards: "Карти", t25: "Задача 25", chars: "Интервю с героя", pesho: "Научи Пешо", diagnostic: "Входен тест", exam: "Пробна матура" };
-export const PLANNED_LABEL = { lesson: "Кратък урок", audio: "Аудио", video: "Видео", test: "Тест", text: "Текстът на творбата", summary: "Резюме", cards: "Карти" };
-// Planned materials that already exist as a resource are not shown as "coming".
-export const plannedLeft = (planned, resources) => (planned || []).filter((p) => !(p === "cards" && resources.some((r) => r.kind === "cards")));
+export const KIND_LABEL = { cards: "Карти", t25: "Задача 25", chars: "Интервю с героя", pesho: "Научи Пешо", diagnostic: "Входен тест", exam: "Пробна матура", lesson: "Кратък урок", reading: "Прочети и чуй" };
+// The steps of every work or topic, always in this order.
+export const STEP_ORDER = ["reading", "lesson", "cards", "t25", "chars", "pesho"];
+export const stepLabel = (kind, section) => (kind === "cards" && section === "language" ? "Упражнения" : kind === "lesson" && section === "language" ? "Правилото" : KIND_LABEL[kind] || kind);
+// Older unit lists name the reading step "text" and "audio".
+const plannedKinds = (planned) => [...new Set((planned || []).map((p) => (p === "text" || p === "audio" ? "reading" : p)))];
+// Planned steps plus the ones that already exist, in the order of STEP_ORDER.
+export function unitSteps(planned, resources) {
+  const want = new Set([...plannedKinds(planned), ...resources.map((r) => r.kind)]);
+  return STEP_ORDER.filter((k) => want.has(k)).map((kind) => ({ kind, res: resources.find((r) => r.kind === kind) || null }));
+}
+// Planned steps that do not exist yet.
+export const plannedLeft = (planned, resources) => plannedKinds(planned).filter((p) => !resources.some((r) => r.kind === p));
 export const SECTION_LABEL = { literature: "Литература", language: "Български език" };
 
 // Link to a resource of a unit; "ot" brings the child back to the unit page.
 export function resourceHref(r, unitSlug, extra = "") {
   return `${PATHS[r.kind]}?m=${encodeURIComponent(r.module)}${extra}&ot=${encodeURIComponent(unitSlug)}`;
 }
+// A unit from the public course map, for visitors who are not logged in as a child.
+export async function publicUnit(slug) {
+  const grade = Number((String(slug).match(/^g([5-7])-/) || [])[1]);
+  const d = grade ? await api(`units?grade=${grade}`) : { units: [] };
+  const u = d.units.find((x) => x.slug === slug);
+  if (!u) throw new ApiError(404, "not_found", "Няма такава тема.");
+  return { ...u, grade };
+}
+
 export function backFromParams() {
   const ot = new URLSearchParams(location.search).get("ot");
   return ot ? { href: `/tema/?u=${encodeURIComponent(ot)}`, label: "Към темата" } : { href: "/uchenik/", label: "Начало" };

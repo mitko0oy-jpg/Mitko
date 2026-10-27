@@ -25,6 +25,9 @@ export const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+// Lessons and reading texts name their unit directly.
+const PER_UNIT = ["lesson", "reading"];
+
 // Which works/topics an item belongs to, by module kind.
 function tagsOf(kind: string, data: any): string[] {
   if (kind === "cards") return data.ws || [];
@@ -42,7 +45,7 @@ type Res = { module: string; kind: string; title: string; total: number; open: n
 // Resources per unit. With childId/parentId, counts what the child may open and has done.
 export async function unitResources(grade: number, child?: { id: number; parent_id: number }) {
   const units = await gradeUnits(grade);
-  const mods = (await gradeModules(grade)).filter((m) => ["cards", "t25", "chars", "pesho"].includes(m.kind));
+  const mods = (await gradeModules(grade)).filter((m) => ["cards", "t25", "chars", "pesho", ...PER_UNIT].includes(m.kind));
   const full = child ? await hasFullAccess(child.parent_id, grade) : false;
   const items = await q<{ id: number; module_slug: string; data: any }>(
     `SELECT i.id, i.module_slug, i.data FROM items i JOIN modules m ON m.slug = i.module_slug
@@ -67,7 +70,9 @@ export async function unitResources(grade: number, child?: { id: number; parent_
     const want = new Set([...(u.match.works || []), ...(u.match.topics || [])].map(norm));
     const res: Res[] = [];
     for (const m of mods) {
-      const its = items.filter((i) => i.module_slug === m.slug && tagsOf(m.kind, i.data).some((t) => want.has(norm(t))));
+      const its = items.filter(
+        (i) => i.module_slug === m.slug && (PER_UNIT.includes(m.kind) ? i.data.unit === u.slug : tagsOf(m.kind, i.data).some((t) => want.has(norm(t)))),
+      );
       if (!its.length) continue;
       const r: Res = { module: m.slug, kind: m.kind, title: m.title, total: its.length, open: 0, done: 0, ok: 0, items: [] };
       for (const i of its) {

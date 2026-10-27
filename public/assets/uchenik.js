@@ -1,4 +1,4 @@
-import { $, api, esc, guard, KIND_LABEL, PATHS, pct, SECTION_LABEL, topbar } from "./app.js";
+import { $, api, esc, guard, PATHS, pct, SECTION_LABEL, stepLabel, topbar } from "./app.js";
 
 const COLORS = ["--l0", "--l1", "--l2", "--gold", "--l1", "--l2"];
 let tab = "literature";
@@ -6,14 +6,18 @@ try {
   tab = sessionStorage.getItem("edubel-tab") || "literature";
 } catch {}
 
+// In the test version empty units open too, so testers can see their steps.
+let showEmpty = false;
+
 function unitCard(u) {
   const total = u.resources.reduce((s, r) => s + r.total, 0);
   const open = u.resources.reduce((s, r) => s + r.open, 0);
   const done = u.resources.reduce((s, r) => s + r.done, 0);
   if (!total) {
-    return `<div class="unit soon"><p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}<span class="pill">скоро</span></div>`;
+    const inner = `<p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}<span class="pill">скоро</span>`;
+    return showEmpty ? `<a class="unit soon" href="/tema/?u=${encodeURIComponent(u.slug)}">${inner}</a>` : `<div class="unit soon">${inner}</div>`;
   }
-  const kinds = u.resources.map((r) => `<span class="rk">${esc(KIND_LABEL[r.kind] || r.kind)}${r.kind === "chars" ? "" : ` ${r.total}`}</span>`).join("");
+  const kinds = u.resources.map((r) => `<span class="rk">${esc(stepLabel(r.kind, u.section))}${["chars", "lesson", "reading"].includes(r.kind) ? "" : ` ${r.total}`}</span>`).join("");
   return `<a class="unit" href="/tema/?u=${encodeURIComponent(u.slug)}"><p class="t">${esc(u.title)}</p>${u.subtitle ? `<p class="d">${esc(u.subtitle)}</p>` : ""}
     <div class="rks">${kinds}</div>
     <div class="bar" aria-hidden="true"><i style="width:${pct(done, total)}%"></i><i class="lock" style="width:${pct(total - open, total)}%;margin-left:auto"></i></div></a>`;
@@ -33,6 +37,7 @@ function sectionHtml(units, section) {
 
 function modulesHtml(mods) {
   return `<div class="mods">${mods
+    .filter((x) => PATHS[x.kind])
     .map((x, i) => {
       const state = x.done === 0 ? "Още не си започнал" : x.freeFinished ? "Безплатната част е готова" : `${x.done} от ${x.accessible}`;
       return `<a class="mod" style="--c:var(${COLORS[i % COLORS.length]})" href="${PATHS[x.kind]}?m=${encodeURIComponent(x.slug)}">
@@ -47,6 +52,7 @@ async function load() {
   const m = await guard("child");
   topbar(m);
   const [d, s] = await Promise.all([api("learn/home"), api("learn/units")]);
+  showEmpty = !!s.testMode;
   let h = `<h1>Здравей, ${esc(d.child.name)}!</h1>`;
   if (!d.modules.length && !s.units.length) {
     $("main").innerHTML = h + `<p class="lead">Материалите за ${d.child.grade}. клас се подготвят. Скоро ще са тук!</p>`;

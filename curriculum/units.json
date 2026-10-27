@@ -18,7 +18,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-nachaloto-na-sveta",
@@ -38,7 +40,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-gospod-i-dyavolat-pravyat-sveta",
@@ -55,9 +59,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -77,9 +80,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -99,9 +101,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -121,9 +122,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -163,9 +163,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -188,7 +187,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-glavataryat-koyto-iskal-da-pleni-mesechinata",
@@ -208,7 +209,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-kotarakat-v-chizmi",
@@ -228,7 +231,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-groznoto-patentse",
@@ -248,7 +253,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-pohititelyat-na-malnii",
@@ -268,7 +275,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g5-ezikat-sredstvo-za-obshtuvane",
@@ -539,9 +548,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -561,9 +569,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -586,7 +593,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g6-kosachi",
@@ -603,9 +612,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -628,7 +636,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g6-pod-igoto-predstavlenieto",
@@ -645,9 +655,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -667,9 +676,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -692,7 +700,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g6-bratchetata-na-gavrosh",
@@ -709,9 +719,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -731,9 +740,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -756,7 +764,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g6-malkiyat-prints",
@@ -776,7 +786,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g6-tekstat-v-nauchnoto-obshtuvane",
@@ -987,9 +999,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1009,9 +1020,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1031,9 +1041,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1053,9 +1062,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1075,9 +1083,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1097,9 +1104,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1119,9 +1125,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1141,9 +1146,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1163,9 +1167,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1185,9 +1188,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1207,9 +1209,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1229,9 +1230,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1251,9 +1251,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1273,9 +1272,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1295,9 +1293,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1317,9 +1314,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1339,9 +1335,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1364,7 +1359,9 @@
     "lesson",
     "cards"
    ],
-   "info": {}
+   "info": {
+    "textbook": true
+   }
   },
   {
    "slug": "g7-pod-igoto-predstavlenieto",
@@ -1381,9 +1378,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1403,9 +1399,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1425,9 +1420,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}
@@ -1447,9 +1441,8 @@
     "topics": []
    },
    "planned": [
+    "reading",
     "lesson",
-    "text",
-    "audio",
     "cards"
    ],
    "info": {}

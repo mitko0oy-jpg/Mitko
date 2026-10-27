@@ -236,3 +236,51 @@ test("course structure: public map, unit page, locked resources", async () => {
   r = await kid5("learn/unit/g7-edna-balgarka");
   assert.equal(r.status, 404);
 });
+
+test("lessons and texts: empty template, written lesson, locked text", async () => {
+  const units = JSON.parse(await readFile(new URL("../curriculum/units.json", import.meta.url), "utf8"));
+  await admin("import", units);
+  const unit = units.units.find((u) => u.grade === 6 && u.planned.includes("reading"));
+  const parent = client();
+  await parent("auth/register", { name: "Ели", email: `eli.${run}@example.com`, password: "parola123", consent: true });
+  await parent("family/children", { name: "Дани", username: `dani.${run}`, password: "123456", grade: 6 });
+  const kid = client();
+  await kid("auth/login", { username: `dani.${run}`, password: "123456" });
+
+  // Nothing written yet: the page gets no item and shows the template.
+  let r = await kid(`learn/unit/${unit.slug}/lesson`);
+  assert.equal(r.status, 200);
+  assert.equal(r.item, null);
+  assert.equal(r.locked, false);
+  assert.equal(r.unit.slug, unit.slug);
+
+  const mods = [
+    { slug: `test-uroci-${run}`, grade: 6, kind: "lesson", title: "Кратки уроци", free_ratio: 1 },
+    { slug: `test-chetene-${run}`, grade: 6, kind: "reading", title: "Текстове", free_count: 0 },
+  ];
+  await admin("import", {
+    modules: mods,
+    items: [
+      { module: mods[0].slug, ext: "u1", position: 1, data: { unit: unit.slug, sections: { short: "Тестов урок." } } },
+      { module: mods[1].slug, ext: "r1", position: 1, data: { unit: unit.slug, text: "Тестов текст." } },
+    ],
+  });
+  r = await kid(`learn/unit/${unit.slug}/lesson`);
+  assert.equal(r.item.data.sections.short, "Тестов урок.");
+  assert.equal(r.item.done, false);
+  r = await kid("learn/progress", { module: mods[0].slug, results: [{ itemId: r.item.id, ok: true }] });
+  r = await kid(`learn/unit/${unit.slug}/lesson`);
+  assert.equal(r.item.done, true, "the lesson is marked as read");
+
+  // A locked text is not sent to the browser.
+  r = await kid(`learn/unit/${unit.slug}/reading`);
+  assert.equal(r.item, null);
+  assert.equal(r.locked, true);
+  const page = await kid(`learn/unit/${unit.slug}`);
+  assert.deepEqual(page.resources.map((x) => x.kind).filter((k) => k === "lesson" || k === "reading").sort(), ["lesson", "reading"]);
+
+  // Hide the test modules again.
+  await admin("import", { modules: mods.map((m) => ({ ...m, active: false })), items: [] });
+  r = await kid(`learn/unit/${unit.slug}/lesson`);
+  assert.equal(r.item, null);
+});

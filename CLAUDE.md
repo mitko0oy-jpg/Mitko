@@ -28,9 +28,9 @@
 - `users` – родител / проверител (reviewer) / admin, с имейл и парола (scrypt).
 - `children` – създава ги родителят: потребителско име + парола, клас. Без имейл на детето (под 14 г. е нужно съгласие на родител).
 - `sessions` – бисквитка `eb_s`, в базата се пази само SHA-256. Родител може да „влезе като детето“ (сесия с user_id и child_id).
-- `modules` + `items` – съдържанието. Видове модули: cards, diagnostic, t25, chars, pesho, exam. `items.status`: draft / review / approved / hidden. Децата виждат само approved (в TEST_MODE и review).
+- `modules` + `items` – съдържанието. Видове модули: cards, diagnostic, t25, chars, pesho, exam, lesson, reading. `items.status`: draft / review / approved / hidden. Децата виждат само approved (в TEST_MODE и review).
 - Пробната матура (`exam`) е по един елемент на част; ключът (`key`, `editing`) не се праща на браузъра, а се връща с резултата след „Предай“ (`POST /api/learn/exam`). Резултатът се пази в `progress.answer` като JSON.
-- `units` – структурата на курса по програмата на МОН: клас → раздел (литература / език) → група → творба или тема. Ресурсите се свързват по заглавие (карти → `ws`, задача 25 → `w`, герои и Пешо → `work`). Източник: `curriculum/build-units.py` → `curriculum/units.json` (само заглавия, може да е в git); зарежда се с `admin.mjs import curriculum/units.json`. Страници: `/programa/` (публична карта), `/tema/?u=…` (темата за детето).
+- `units` – структурата на курса по програмата на МОН: клас → раздел (литература / език) → група → творба или тема. Ресурсите се свързват по заглавие (карти → `ws`, задача 25 → `w`, герои и Пешо → `work`). Източник: `curriculum/build-units.py` → `curriculum/units.json` (само заглавия, може да е в git); зарежда се с `admin.mjs import curriculum/units.json`. Страници: `/programa/` (публична карта), `/tema/?u=…` (стъпките на темата; за посетител – само структурата), `/urok/?u=…` (кратък урок), `/chetene/?u=…` (текст, аудио, думи). Стъпките винаги са в реда „Прочети и чуй“ → „Кратък урок“ → „Карти“ → „Задача 25“ → „Интервю с героя“ → „Научи Пешо“ (`STEP_ORDER` в `app.js`). Ненаписаните урок и текст показват празен шаблон (на децата – само в TEST_MODE).
 - `progress` – отговорите + Leitner кутия за преговор (интервали 0, 1, 3, 7, 16, 35 дни).
 - `entitlements` – платен достъп на родителя (`bel-all` или `bel7` и т.н.), важи за всичките му деца.
 - `access_codes` – кодове (кутия, наложен платеж, тестери); вид `reviewer` прави профила проверител.
@@ -49,6 +49,8 @@
 3. Учителят-проверител одобрява или коментира на `/pregled/`.
 4. `node scripts/admin.mjs comments` показва отворените коментари; поправката е с `node scripts/admin.mjs item <id> '{"data":{…},"resolution":"…"}'` и елементът пак отива за одобрение.
 5. Правилата за съдържанието и AI безопасността: `docs/CONTENT_RULES.md`, `docs/AI_SAFETY.md`.
+6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
+7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
 
 ## Тестове
 

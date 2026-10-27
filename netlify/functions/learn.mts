@@ -83,8 +83,27 @@ export default handle(async (req) => {
         title: u.title,
         subtitle: u.subtitle,
         planned: u.planned,
+        info: u.info,
         resources: (byUnit.get(u.slug) || []).map(({ items, ...r }) => r),
       })),
+      testMode: testMode(),
+    });
+  }
+
+  // The short lesson or the reading text of one unit. Empty until it is written: the page then shows the template.
+  if (req.method === "GET" && parts[0] === "unit" && parts[1] && ["lesson", "reading"].includes(parts[2])) {
+    const { units, byUnit } = await unitResources(child.grade, child);
+    const u = units.find((x) => x.slug === parts[1]);
+    if (!u) throw notFound("Няма такава тема.");
+    const r = (byUnit.get(u.slug) || []).find((x) => x.kind === parts[2]);
+    const first = r?.items[0];
+    const item = first?.open ? await one<{ id: number; data: any }>("SELECT id, data FROM items WHERE id = $1", [first.id]) : null;
+    const done = item ? await one<{ last_ok: boolean }>("SELECT last_ok FROM progress WHERE child_id = $1 AND item_id = $2", [child.id, item.id]) : null;
+    return json({
+      unit: { ...u, match: undefined },
+      module: r?.module || null,
+      item: item ? { id: Number(item.id), data: item.data, done: !!done } : null,
+      locked: !!first && !first.open,
       testMode: testMode(),
     });
   }

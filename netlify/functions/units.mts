@@ -18,6 +18,7 @@ export default handle(async (req) => {
         title: u.title,
         subtitle: u.subtitle,
         planned: u.planned,
+        info: u.info,
         resources: (byUnit.get(u.slug) || []).map((r) => ({ kind: r.kind, title: r.title, total: r.total })),
       })),
       testMode: testMode(),
