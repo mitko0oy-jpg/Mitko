@@ -4,6 +4,7 @@
 //   ... node scripts/admin.mjs codes '{"count":20,"days":60,"batch":"testers"}'
 //   ... node scripts/admin.mjs stats | comments | export
 //   ... node scripts/admin.mjs item 123 '{"data":{...},"resolution":"Поправено"}'
+//   ... node scripts/admin.mjs users example.com
 //   ... node scripts/admin.mjs delete-user parent@example.com
 import { readFile } from "node:fs/promises";
 
@@ -34,6 +35,7 @@ if (cmd === "import") out = await call("POST", "import", JSON.parse(await readFi
 else if (cmd === "codes") out = await call("POST", "codes", JSON.parse(a || "{}"));
 else if (cmd === "item") out = await call("POST", `items/${a}`, JSON.parse(b || "{}"));
 else if (cmd === "delete-user") out = await call("POST", "delete-user", { email: a, confirm: a });
+else if (cmd === "users") out = await call("GET", `users?q=${encodeURIComponent(a || "")}`);
 else if (["stats", "comments", "export"].includes(cmd)) out = await call("GET", cmd);
 else {
   console.error("Unknown command");

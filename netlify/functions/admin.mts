@@ -42,6 +42,19 @@ export default handle(async (req) => {
     return json({ comments: rows });
   }
 
+  // Find accounts by part of the e-mail (support, test clean-up, GDPR requests).
+  if (req.method === "GET" && parts[0] === "users") {
+    const like = (new URL(req.url).searchParams.get("q") || "").trim();
+    if (like.length < 3) throw bad("q", "Дай поне 3 знака от имейла.");
+    const rows = await q(
+      `SELECT u.email, u.role, u.created_at, count(c.id)::int AS children
+         FROM users u LEFT JOIN children c ON c.parent_id = u.id
+        WHERE u.email ILIKE $1 GROUP BY u.id ORDER BY u.created_at DESC LIMIT 100`,
+      [`%${like}%`],
+    );
+    return json({ users: rows });
+  }
+
   if (req.method === "GET" && parts[0] === "export") {
     const modules = await q("SELECT * FROM modules ORDER BY grade, position");
     const items = await q("SELECT module_slug, ext_id, position, data, status, reviewed_at, updated_at FROM items ORDER BY module_slug, position");
