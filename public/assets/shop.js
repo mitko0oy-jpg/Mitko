@@ -163,6 +163,13 @@ if (fine && !reduce) {
     });
     b.addEventListener("pointerleave", () => (b.style.transform = ""));
   }
+  const prod = $(".hero-product");
+  if (hero && prod) {
+    hero.addEventListener("pointermove", (e) => {
+      prod.style.setProperty("--px", `${(e.clientX / innerWidth - 0.5) * -24}px`);
+      prod.style.setProperty("--py", `${(e.clientY / innerHeight - 0.5) * -16}px`);
+    });
+  }
   for (const s of $$(".stage")) {
     const inner = $(".stage-inner", s);
     s.addEventListener("pointermove", (e) => {

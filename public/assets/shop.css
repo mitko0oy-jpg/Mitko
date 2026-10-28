@@ -62,7 +62,7 @@ body[data-deck="lit"]::after{mix-blend-mode:overlay;opacity:.09}
 
 /* ---------- type ---------- */
 h1,h2,h3,h4{margin:0;font-weight:800;letter-spacing:-.025em;line-height:1.04;text-wrap:balance}
-.display{font-size:clamp(40px,6vw,86px);letter-spacing:-.04em;line-height:.95}
+.display{font-size:clamp(40px,5.4vw,80px);letter-spacing:-.04em;line-height:.95}
 .h2{font-size:clamp(34px,5.2vw,64px);letter-spacing:-.035em;line-height:1}
 .h3{font-size:clamp(22px,2.4vw,28px);letter-spacing:-.02em;line-height:1.15}
 .serif{font-family:var(--serif);font-weight:600;font-style:italic;letter-spacing:-.02em}
@@ -118,8 +118,19 @@ body[data-deck="hub"] .nav{background:color-mix(in srgb,var(--bg) 84%,transparen
 .hero-shade{position:absolute;inset:0;z-index:-1;background:
   linear-gradient(90deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 94%,transparent) 34%,color-mix(in srgb,var(--bg) 62%,transparent) 50%,transparent 70%),
   linear-gradient(0deg,var(--bg) 0%,transparent 22%)}
-.hero-inner{max-width:var(--maxw)}
-.hero-copy{max-width:700px}
+.hero-inner{position:relative;z-index:1;max-width:var(--maxw)}
+.hero{--bh:min(58svh,540px,36vw)}
+.hero-copy{max-width:min(640px,calc(100% - var(--bh) * 1.12 - 50px))}
+/* The box is its own layer, sized to the first screen, so it is always seen whole; two real cards peek out behind it. */
+.hero-product{--ar:820/923;--top:calc(var(--nav-h) + (min(100svh,980px) - var(--nav-h)) / 2);position:absolute;z-index:0;top:var(--top);right:max(3vw,calc((100% - var(--maxw)) / 2 + 20px));height:var(--bh);aspect-ratio:var(--ar);translate:0 -50%;pointer-events:none;
+  transform:translate3d(var(--px,0px),calc(var(--py,0px) - var(--hp,0) * 70px),0);transition:transform .5s var(--ease)}
+.hp-box{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 46px 44px rgba(50,25,8,.42));animation:float 8s ease-in-out infinite}
+.hp-card{position:absolute;width:62%;height:auto;aspect-ratio:10/14;object-fit:cover;border-radius:4.5%/3.2%;box-shadow:var(--card-shadow);opacity:0;animation:cardIn 1.2s var(--ease) .5s forwards,float 9s ease-in-out 1.7s infinite}
+.hp-card.c1{left:-24%;top:16%;rotate:-12deg}
+.hp-card.c2{right:-24%;top:22%;rotate:10deg;animation-delay:.7s,2.4s}
+@keyframes float{50%{translate:0 -12px}}
+@keyframes cardIn{from{opacity:0;transform:translateX(0) scale(.9)}to{opacity:1;transform:none}}
+body[data-deck="lit"] .hp-box{filter:drop-shadow(0 46px 50px rgba(0,0,0,.65))}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;margin-bottom:26px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;font-weight:600}
 .eyebrow .pill{padding:4px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
 .hero h1 .ln{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
@@ -137,7 +148,9 @@ body[data-deck="hub"] .nav{background:color-mix(in srgb,var(--bg) 84%,transparen
 .hero-price{display:inline-flex;align-items:baseline;gap:10px;margin-left:4px}
 @media (max-width:760px){
   .hero{min-height:auto;align-items:end;padding:calc(var(--nav-h) + 8px) 0 56px}
-  .hero-media{position:relative;inset:auto;height:min(100vw,560px);margin:0 calc(var(--gutter)*-1) -80px;overflow:hidden}
+  .hero-media{position:relative;inset:auto;height:min(100vw,560px);margin:0 calc(var(--gutter)*-1) -36px;overflow:hidden}
+  .hero-product{--top:calc(var(--nav-h) + 8px + min(48vw,270px));right:50%;height:min(70vw,400px);translate:50% -50%}
+  .hero-copy{max-width:none}
   .hero-media::after{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(transparent,var(--bg))}
   .hero-media video,.hero-media img{object-position:80% 50%}
   body[data-deck="lit"] .hero-media video,body[data-deck="lit"] .hero-media img{object-position:94% 50%}
