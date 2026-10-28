@@ -481,6 +481,26 @@ body[data-deck="lit"] .field .err{color:#FF8A7A}
 .done h3{font-size:28px;margin-bottom:10px}
 .done p{color:var(--muted)}
 @media (max-width:940px){.order-wrap{grid-template-columns:1fr}}
+/* package cards when ConvertBuilder's checkout takes the order */
+.packs-cb{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.pack-card{position:relative;display:flex;flex-direction:column;gap:4px;padding:28px 24px 24px;border-radius:22px;background:var(--surface);box-shadow:inset 0 0 0 2px var(--line);text-decoration:none;color:var(--ink);transition:transform .5s var(--spring),box-shadow .3s}
+.pack-card:hover{transform:translateY(-6px);box-shadow:inset 0 0 0 2px var(--accent),var(--shadow-sm)}
+.pack-card.best{box-shadow:inset 0 0 0 2px var(--accent),0 20px 50px -24px color-mix(in srgb,var(--accent) 70%,transparent)}
+.pack-card b{font-size:19px;letter-spacing:-.01em;line-height:1.25}
+.pack-card small{color:var(--muted);font-size:14.5px}
+.pack-card .price{margin-top:16px;font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.pack-card .price s{display:block;margin-bottom:6px;font-size:15px;font-weight:600;letter-spacing:0;color:var(--muted)}
+.pack-card .save{align-self:flex-start;margin-top:10px;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12.5px;font-weight:800}
+.pack-card .go{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;margin-top:auto;padding:0 20px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:800}
+.pack-card .price,.pack-card .save{margin-bottom:18px}
+.pack-card .price:has(+ .save){margin-bottom:0}
+.pack-card .flag{position:absolute;top:-11px;right:18px;padding:4px 12px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.perks-cb{grid-template-columns:repeat(4,1fr);margin-top:22px}
+@media (max-width:860px){.packs-cb{grid-template-columns:1fr}.perks-cb{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.perks-cb{grid-template-columns:1fr}}
+/* a builder wrapper that blocks position: sticky: the deck opens while it scrolls through the screen */
+.no-sticky .deck-scroll{height:auto}
+.no-sticky .deck-sticky{position:relative;height:auto;min-height:100svh;padding:calc(var(--nav-h) + 90px) 0 50px}
 @media (max-width:520px){.fields{grid-template-columns:1fr}.ship{grid-template-columns:1fr}.perks{grid-template-columns:1fr}.pack{grid-template-columns:auto 1fr;}.pack .price{grid-column:2;text-align:left}}
 
 /* ---------- FAQ ---------- */

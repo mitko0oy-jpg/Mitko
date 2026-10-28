@@ -1,4 +1,6 @@
 // Card shop pages: scroll effects, the 3D card stage, flip cards, gallery, topic filter and the order form.
+// The same code also runs inside a ConvertBuilder code block (see scripts/build-landing.mjs): then
+// window.EB_LANDING holds the settings and ConvertBuilder's own checkout takes the orders.
 import { PACKAGES, SHIPPING, euro } from "/assets/shop-catalog.js";
 
 const $ = (s, root = document) => root.querySelector(s);
@@ -7,6 +9,30 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const fine = matchMedia("(pointer: fine)").matches;
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+const CB = window.EB_LANDING || null;
+const shell = document.getElementById("ebl");
+let noSticky = false;
+if (CB && shell) {
+  for (const [k, v] of Object.entries(CB.prices || {})) if (PACKAGES[k] && v > 0) PACKAGES[k].price = Math.round(v * 100);
+  PACKAGES["lit-2"].was = 2 * PACKAGES["lit-1"].price;
+  PACKAGES["ezik-2"].was = 2 * PACKAGES["ezik-1"].price;
+  PACKAGES.duo.was = PACKAGES["lit-1"].price + PACKAGES["ezik-1"].price;
+  for (const a of $$("[data-link]", shell)) if (CB.links?.[a.dataset.link]) a.href = CB.links[a.dataset.link];
+  // Fixed bars and the lightbox go straight under <body>: a builder wrapper with a transform would pin them to itself.
+  const fixed = document.createElement("div");
+  fixed.id = "ebf";
+  fixed.className = "js";
+  fixed.dataset.deck = shell.dataset.deck;
+  for (const el of $$(".progress, .nav, .buybar, #lightbox", shell)) fixed.appendChild(el);
+  document.body.appendChild(fixed);
+  // position: sticky needs every ancestor to let overflow through; otherwise the deck opens as it scrolls into view.
+  for (let el = shell.parentElement; el && el !== document.body; el = el.parentElement) {
+    const cs = getComputedStyle(el);
+    if (![cs.overflowX, cs.overflowY].every((o) => o === "visible" || o === "clip")) noSticky = true;
+  }
+  shell.classList.toggle("no-sticky", noSticky);
+}
 
 // Prices on the page always come from the catalog.
 for (const el of $$("[data-price]")) {
@@ -27,6 +53,7 @@ let ticking = false;
 
 function progressOf(el) {
   const r = el.getBoundingClientRect();
+  if (noSticky) return clamp((innerHeight - r.top) / (innerHeight * 0.95));
   return clamp(-r.top / Math.max(1, r.height - innerHeight));
 }
 
@@ -375,7 +402,40 @@ const ICON_PERK = {
   size: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="11" height="15" rx="1.8"/><path d="M8 21h11V7"/></svg>',
 };
 
+function packCards(root) {
+  const flags = JSON.parse(root.dataset.flags || "{}");
+  const href = esc(CB.order || "#porachka-forma");
+  root.className = "packs-cb";
+  root.innerHTML = root.dataset.packs
+    .split(",")
+    .map((k) => {
+      const p = PACKAGES[k];
+      const was = p.was ? Math.max(p.was, p.price) : 0;
+      return `<a class="pack-card${k === "duo" ? " best" : ""}" href="${href}">
+        ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
+        <b>${esc(p.title)}</b><small>${esc(p.note)}</small>
+        <span class="price">${was > p.price ? `<s>${euro(was)}</s>` : ""}${euro(p.price)}</span>
+        ${was > p.price ? `<span class="save">спестяваш ${euro(was - p.price)}</span>` : ""}
+        <span class="go">Поръчай <span aria-hidden="true">→</span></span>
+      </a>`;
+    })
+    .join("");
+  root.insertAdjacentHTML(
+    "afterend",
+    `<div class="perks perks-cb">
+      <div class="perk">${ICON_PERK.cash}<span>Плащаш при получаване – наложен платеж</span></div>
+      <div class="perk">${ICON_PERK.eye}<span>Преглед на пратката преди плащане</span></div>
+      <div class="perk">${ICON_PERK.truck}<span>Изпращаме до 1–2 работни дни</span></div>
+      <div class="perk">${ICON_PERK.size}<span>Карти 10 × 14 см в здрава кутия</span></div>
+    </div>`,
+  );
+}
+
 for (const root of $$("[data-order]")) {
+  if (CB) {
+    packCards(root);
+    continue;
+  }
   orderMarkup(root);
   const form = $("form", root);
   const place = $("#o-place", form);
