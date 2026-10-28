@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp">
+<link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-tuba.webp">
 
 <script type="application/ld+json">
 {
@@ -122,7 +122,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-hero h1{margin-bottom:18px}
 #bvl .bv-hero .bv-lead{margin-bottom:22px}
 #bvl .bv-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;padding:0;list-style:none}
-#bvl .bv-chips li{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:15px;font-weight:700;box-shadow:0 1px 2px rgba(60,35,5,.05)}
+#bvl .bv-chips li{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 5px;font-size:15px;font-weight:700;box-shadow:0 2px 8px rgba(60,35,5,.07)}
+#bvl .bv-chips img{width:30px;height:30px;object-fit:contain;border-radius:50%;background:var(--honey-50);padding:2px}
 #bvl .bv-proof{display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap}
 #bvl .bv-stars{color:#F5A623;font-size:22px;letter-spacing:2px;line-height:1}
 #bvl .bv-proof strong{font-size:17px}
@@ -131,12 +132,29 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-micro span::before{content:"✓";color:var(--green);font-weight:800;margin-right:6px}
 #bvl .bv-hero__media{position:relative;max-width:520px;margin:0 auto;width:100%}
 #bvl .bv-hero__media::before{content:"";position:absolute;inset:8% 6% 4%;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%);filter:blur(6px)}
-#bvl .bv-hero__media img{position:relative;mix-blend-mode:multiply;width:100%}
-#bvl .bv-badge{position:absolute;background:#fff;border-radius:18px;padding:10px 14px;box-shadow:var(--shadow-l);font-size:14px;line-height:1.25;font-weight:700;display:flex;align-items:center;gap:10px}
+#bvl .bv-hero__media{aspect-ratio:5/6}
+#bvl .bv-hero__tuba{position:absolute;z-index:2;left:50%;top:2%;width:60%;margin-left:-30%;height:auto;filter:drop-shadow(0 34px 34px rgba(120,60,0,.28)) drop-shadow(0 6px 10px rgba(120,60,0,.18));animation:bv-tube 8s ease-in-out infinite}
+@keyframes bv-tube{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#bvl .bv-ingfloat{position:absolute;z-index:1;pointer-events:none;animation:bv-pop 1s cubic-bezier(.2,.8,.2,1) both}
+#bvl .bv-ingfloat img{display:block;width:100%;height:auto;filter:drop-shadow(0 14px 18px rgba(90,45,0,.22));animation:bv-bob 7s ease-in-out infinite}
+@keyframes bv-pop{from{opacity:0;transform:scale(.5) translateY(30px)}to{opacity:1;transform:none}}
+@keyframes bv-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-14px) rotate(5deg)}}
+#bvl .bv-ingfloat--tea{left:0;top:4%;width:30%}
+#bvl .bv-ingfloat--tea img{transform:rotate(-18deg);animation-duration:8s}
+#bvl .bv-ingfloat--d3{right:0;top:30%;width:22%}
+#bvl .bv-ingfloat--d3 img{animation-duration:6.5s;animation-delay:-2s}
+#bvl .bv-ingfloat--honey{left:2%;bottom:3%;width:30%;z-index:3}
+#bvl .bv-ingfloat--honey img{animation-duration:9s;animation-delay:-4s}
+#bvl .bv-ingfloat--turmeric{right:0;bottom:5%;width:32%;z-index:3}
+#bvl .bv-ingfloat--turmeric img{animation-duration:7.5s;animation-delay:-1s}
+#bvl .bv-ingfloat--bee{right:-5%;top:-6%;width:22%;z-index:4}
+#bvl .bv-ingfloat--bee img{animation:bv-hover 5s ease-in-out infinite}
+@keyframes bv-hover{0%,100%{transform:translate(0,0) rotate(-4deg)}25%{transform:translate(-12px,-10px) rotate(2deg)}50%{transform:translate(-4px,8px) rotate(-8deg)}75%{transform:translate(10px,-4px) rotate(0)}}
+#bvl .bv-badge{position:absolute;z-index:5;background:#fff;border-radius:18px;padding:10px 14px;box-shadow:var(--shadow-l);font-size:14px;line-height:1.25;font-weight:700;display:flex;align-items:center;gap:10px}
 #bvl .bv-badge b{display:block;font-size:22px;color:var(--red);letter-spacing:-.02em}
-#bvl .bv-badge--1{left:-2%;top:16%}
+#bvl .bv-badge--1{left:-3%;top:40%}
 #bvl .bv-badge--2{right:-2%;top:46%}
-#bvl .bv-badge--3{left:4%;bottom:6%}
+#bvl .bv-badge--3{right:-3%;top:58%}
 
 /* ---------- trust strip ---------- */
 #bvl .bv-trust{position:relative;z-index:2;margin-top:-36px;padding:0}
@@ -149,8 +167,11 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 /* ---------- situations ---------- */
 #bvl .bv-sits{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
 #bvl .bv-sit{margin:0;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
-#bvl .bv-sit__img{aspect-ratio:1032/712;overflow:hidden;background:var(--honey-50)}
-#bvl .bv-sit__img img{width:116.28%;max-width:none;margin:-8.14% 0 0 -8.14%}
+#bvl .bv-sit__img{aspect-ratio:4/3;overflow:hidden;background:var(--honey-50)}
+#bvl .bv-sit{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+#bvl .bv-sit:hover{transform:translateY(-6px);box-shadow:var(--shadow-l)}
+#bvl .bv-sit .bv-loop{transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+#bvl .bv-sit:hover .bv-loop{transform:scale(1.05)}
 #bvl .bv-sit p{margin:0;padding:14px 16px 16px;font-weight:800;font-size:16px;line-height:1.3}
 #bvl .bv-sits-foot{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:12px}
 
@@ -280,13 +301,17 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-yes{color:var(--green);font-size:20px}
 
 /* ---------- how to ---------- */
-#bvl .bv-how__grid{display:grid;gap:40px;align-items:center}
-#bvl .bv-steps{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:14px;counter-reset:s}
-#bvl .bv-steps li{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius-s);padding:16px 18px}
-#bvl .bv-steps li::before{counter-increment:s;content:counter(s);flex:none;width:40px;height:40px;border-radius:12px;background:var(--honey);color:var(--night);font-weight:800;font-size:19px;display:grid;place-items:center}
-#bvl .bv-steps strong{display:block}
-#bvl .bv-steps span{color:var(--muted);font-size:16px}
-#bvl .bv-how__media{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-l);max-width:400px;margin:0 auto}
+#bvl .bv-hsteps{list-style:none;margin:48px 0 0;padding:0;display:grid;gap:18px}
+#bvl .bv-hstep{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+#bvl .bv-hstep:hover{transform:translateY(-6px);box-shadow:var(--shadow-l)}
+#bvl .bv-hstep__media{aspect-ratio:1/1;border-radius:24px 24px 0 0;overflow:hidden;background:var(--honey-50)}
+#bvl .bv-hstep__num{position:absolute;top:-20px;left:18px;z-index:2;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#FFC24A,var(--honey-d));color:#fff;font-weight:800;font-size:21px;border:3px solid #fff;box-shadow:0 8px 18px rgba(224,138,0,.35);animation:bv-ping 2.4s ease-out infinite}
+@keyframes bv-ping{0%{box-shadow:0 8px 18px rgba(224,138,0,.35),0 0 0 0 rgba(245,166,35,.55)}70%,100%{box-shadow:0 8px 18px rgba(224,138,0,.35),0 0 0 14px rgba(245,166,35,0)}}
+#bvl .bv-hstep__body{padding:18px 20px 22px}
+#bvl .bv-hstep h3{font-size:18px;line-height:1.3;margin:0 0 6px}
+#bvl .bv-hstep p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
+#bvl .bv-how__foot{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center;justify-content:space-between;margin-top:30px}
+#bvl .bv-how__foot .bv-note{margin:0;flex:1 1 420px}
 #bvl .bv-note{display:flex;gap:12px;align-items:flex-start;margin-top:18px;background:var(--green-50);border:1px solid #CFE6CF;border-radius:var(--radius-s);padding:14px 16px;font-size:15px;line-height:1.5}
 
 /* ---------- timeline ---------- */
@@ -368,6 +393,10 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-bens{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:32px -20px 0;padding:6px 20px 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   #bvl .bv-bens::-webkit-scrollbar{display:none}
   #bvl .bv-ben{flex:0 0 80%;scroll-snap-align:center}
+  #bvl .bv-hsteps{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:30px -20px 0;padding:26px 20px 16px;scrollbar-width:none}
+  #bvl .bv-hsteps::-webkit-scrollbar{display:none}
+  #bvl .bv-hstep{flex:0 0 74%;scroll-snap-align:center}
+  #bvl .bv-how__foot .bv-btn{width:100%}
   #bvl .bv-swipe{display:flex}
   #bvl .bv-eta__box strong{font-size:17px}
   #bvl .bv-compare table{font-size:15px}
@@ -396,6 +425,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-pack--hot{transform:translateY(-12px)}
   #bvl .bv-assure{grid-template-columns:1fr 1fr}
   #bvl .bv-bens{grid-template-columns:repeat(2,1fr)}
+  #bvl .bv-hsteps{grid-template-columns:repeat(2,1fr);row-gap:40px}
 }
 @media (min-width:960px){
   #bvl section{padding:104px 0}
@@ -405,7 +435,10 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-hero__grid{grid-template-columns:1.08fr .92fr;gap:48px}
   #bvl .bv-formula__grid{grid-template-columns:1.15fr .85fr;gap:64px}
   #bvl .bv-bens{grid-template-columns:repeat(3,1fr);gap:18px}
-  #bvl .bv-how__grid{grid-template-columns:1.1fr .9fr;gap:64px}
+  #bvl .bv-hsteps{grid-template-columns:repeat(4,1fr);gap:22px}
+  #bvl .bv-hstep::after{content:"";position:absolute;top:5px;left:72px;right:-40px;height:3px;background:repeating-linear-gradient(90deg,var(--honey) 0 9px,transparent 9px 16px);transform-origin:left;transform:scaleX(0);transition:transform 1s cubic-bezier(.2,.8,.2,1) .4s}
+  #bvl .bv-hstep.bv-in::after{transform:scaleX(1)}
+  #bvl .bv-hstep:last-child::after{display:none}
   #bvl .bv-life{grid-template-columns:1.1fr .9fr}
   #bvl .bv-life__txt{padding:40px 44px 40px 0}
   #bvl .bv-stories{grid-template-columns:repeat(4,1fr)}
@@ -416,7 +449,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   html{scroll-behavior:auto}
   #bvl .bv-ticker__track,#bvl .bv-pulse{animation:none}
   #bvl.bv-js .bv-rv{opacity:1;transform:none;filter:none;transition:none}
-  #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall{animation:none}
+  #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall,#bvl .bv-hero__tuba,#bvl .bv-ingfloat,#bvl .bv-ingfloat img,#bvl .bv-hstep__num{animation:none!important}
   #bvl .bv-flyzone,#bvl .bv-fall{display:none}
 }
 </style>
@@ -462,7 +495,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <h1>За зоните на тялото, които <em class="bv-accent">дават знак</em> всяка сутрин</h1>
       <p class="bv-lead">Гел с пчелна отрова в 10× концентрирана формула. Затопля, попива бързо и връща усещането за лекота в колене, кръст, рамене и врат.</p>
       <ul class="bv-chips" aria-label="Съставки">
-        <li>🐝 Пчелна отрова</li><li>🌿 Куркума</li><li>🍵 Зелен чай</li><li>☀️ Витамин D3</li>
+        <li><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-bee.webp" alt="" width="30" height="30">Пчелна отрова</li><li><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-turmeric.webp" alt="" width="30" height="30">Куркума</li><li><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-tea.webp" alt="" width="30" height="30">Зелен чай</li><li><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-d3.webp" alt="" width="30" height="30">Витамин D3</li>
       </ul>
       <div class="bv-proof">
         <span class="bv-stars" aria-hidden="true">★★★★★</span>
@@ -475,9 +508,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <div class="bv-micro"><span>Плащаш при получаване</span><span>Без предплащане</span><span>30 дни тест период</span></div>
     </div>
     <div class="bv-hero__media">
-      <img src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова – туба и кутия, 20 г" fetchpriority="high">
+      <span class="bv-ingfloat bv-ingfloat--tea" style="animation-delay:0.15s"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-tea.webp" alt="" loading="eager" decoding="async"></span>
+      <span class="bv-ingfloat bv-ingfloat--d3" style="animation-delay:0.3s"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-d3.webp" alt="" loading="eager" decoding="async"></span>
+      <img class="bv-hero__tuba" src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-tuba.webp" width="720" height="1218" alt="BeeVenom гел с пчелна отрова – туба и кутия, 20 г" fetchpriority="high">
+      <span class="bv-ingfloat bv-ingfloat--honey" style="animation-delay:0.45s"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-honey.webp" alt="" loading="eager" decoding="async"></span>
+      <span class="bv-ingfloat bv-ingfloat--turmeric" style="animation-delay:0.6s"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-turmeric.webp" alt="" loading="eager" decoding="async"></span>
+      <span class="bv-ingfloat bv-ingfloat--bee" style="animation-delay:0.75s"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/hero-bee.webp" alt="" loading="eager" decoding="async"></span>
       <div class="bv-badge bv-badge--1"><div><b>10×</b>концентрирана<br>формула</div></div>
-      <div class="bv-badge bv-badge--2"><div><b>40</b>дози в<br>една туба</div></div>
       <div class="bv-badge bv-badge--3"><span class="bv-ico" style="width:38px;height:38px;font-size:18px">🌡️</span><div>Затопля още при<br>първото нанасяне</div></div>
     </div>
   </div>
@@ -500,12 +537,12 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     <h2>Когато движението стане по-трудно, <em class="bv-accent">тялото изпраща сигнал</em></h2>
     <p class="bv-lead">Ставите често се обаждат при съвсем обикновени неща. Може би ще се разпознаеш в някоя от тези ситуации.</p>
     <div class="bv-sits">
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_27_PM-2-3033707.png?format=webp" width="1200" height="1200" alt="Жена се изправя трудно от леглото сутрин"></div><p>Сутрин ставаш от леглото по-трудно</p></figure>
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_28_PM-3-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се качва бавно по стълби, хванал коляното си"></div><p>Стълбите вече не са толкова лесни</p></figure>
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_33_PM-6-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от бюро, хванал кръста си"></div><p>Сковаваш се след дълго седене</p></figure>
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_26_PM-1-3033707.png?format=webp" width="1200" height="1200" alt="Жена с чадър и торби в дъжда"></div><p>Усещаш смяната на времето в ставите</p></figure>
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_32_PM-5-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от дивана с усилие"></div><p>Ставането от дивана иска усилие</p></figure>
-      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_35_PM-7-3033706.png?format=webp" width="1200" height="1200" alt="Жена седи будна в леглото през нощта"></div><p>Неудобство, което не те оставя да спиш</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-sutrin.jpg" aria-label="Мъж седи на ръба на леглото сутрин и разтрива коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-sutrin.mp4" type="video/mp4"></video></div><p>Сутрин ставаш от леглото по-трудно</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-stalbi.jpg" aria-label="Жена спира на стълбите с торби в ръце"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-stalbi.mp4" type="video/mp4"></video></div><p>Стълбите с торбите стават изпитание</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-kola.jpg" aria-label="Мъж слиза от колата и се протяга, хванал кръста си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-kola.mp4" type="video/mp4"></video></div><p>Сковаваш се след дълъг път с колата</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-gradina.jpg" aria-label="Жена със сламена шапка се изправя в градината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-gradina.mp4" type="video/mp4"></video></div><p>Градината вече иска повече почивки</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-vnuk.jpg" aria-label="Дядо вдига внука си в двора"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-vnuk.mp4" type="video/mp4"></video></div><p>Внуците искат да ги вдигнеш на ръце</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-nosht.jpg" aria-label="Жена лежи будна нощем и разтрива рамото си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-nosht.mp4" type="video/mp4"></video></div><p>Неудобство, което не те оставя да спиш</p></figure>
     </div>
     <div class="bv-sits-foot">
       <a class="bv-btn" href="#bv-offers">Върни лекотата в движението си <span class="bv-arr">→</span></a>
@@ -563,27 +600,27 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
     <div class="bv-bens">
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-toplina.jpg" aria-label="Жена масажира гел в коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-toplina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌡️</span></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.jpg" aria-label="Ръце масажират коляното, което затопля"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌡️</span></div>
         <div class="bv-ben__body"><h3>Топлина и релакс за минути</h3><p>Приятно затопляне още при първото нанасяне.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-dalbochina.jpg" aria-label="Златиста топлина прониква в коляното"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-dalbochina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">✨</span></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.jpg" aria-label="Златисти капки проникват през слоевете на кожата"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">✨</span></div>
         <div class="bv-ben__body"><h3>Действа в дълбочина</h3><p>Не остава само на повърхността – малко количество е достатъчно.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-zoni.jpg" aria-label="Жена нанася гел на врата и рамото си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-zoni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🙆</span></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-zoni.jpg" aria-label="Усмихната жена разтрива врата и рамото си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-zoni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🙆</span></div>
         <div class="bv-ben__body"><h3>Колене, кръст, рамене, врат</h3><p>Един гел за всички натоварени зони, включително глезени и лакти.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-formula.jpg" aria-label="Тубата BeeVenom с пчелна пита, куркума и зелен чай"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-formula.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌿</span></div>
-        <div class="bv-ben__body"><h3>Натурална формула</h3><p>Пчелна отрова, куркума, зелен чай и витамин D3.</p></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-formula.jpg" aria-label="Тубата BeeVenom с пчелна пита, куркума, зелен чай и витамин D3"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-formula.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌿</span></div>
+        <div class="bv-ben__body"><h3>Висококонцентрирана 100% натурална формула</h3><p>Пчелна отрова, куркума, зелен чай и витамин D3.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-bez-mazni.jpg" aria-label="Жена закопчава чиста бяла риза"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-bez-mazni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">👕</span></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-bez-mazni.jpg" aria-label="Жена нанася малко гел на коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-bez-mazni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">⏱️</span></div>
         <div class="bv-ben__body"><h3>Попива бързо, без мазни следи</h3><p>Обличаш се минути след нанасянето.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-nad50.jpg" aria-label="Усмихната двойка на разходка в планината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-nad50.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">❤️</span></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.jpg" aria-label="Двойка над 50 на преход в планината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">❤️</span></div>
         <div class="bv-ben__body"><h3>Предпочитан от хора над 50</h3><p>Хиляди българи го нанасят всяка сутрин.</p></div>
       </article>
     </div>
@@ -732,22 +769,24 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 </section>
 
 <!-- ============ КАК СЕ ИЗПОЛЗВА ============ -->
-<section style="background:var(--honey-50)">
+<section class="bv-how" style="background:var(--honey-50)">
   <div class="bv-wave" aria-hidden="true" style="color:var(--honey-50)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
-  <div class="bv-wrap bv-how__grid">
-    <div>
+  <div class="bv-wrap">
+    <div class="bv-center">
       <span class="bv-eyebrow">Как BeeVenom се грижи за тялото?</span>
       <h2>Една минута на ден. <em class="bv-accent">Това е всичко.</em></h2>
-      <ol class="bv-steps">
-        <li><div><strong>Почисти и подсуши кожата</strong><span>Нанася се върху чиста и суха кожа.</span></div></li>
-        <li><div><strong>Вземи количество колкото грахово зърно</strong><span>Формулата е концентрирана – малко е достатъчно.</span></div></li>
-        <li><div><strong>Нанеси върху зоната</strong><span>Коляно, кръст, рамо, врат, лакът или глезен.</span></div></li>
-        <li><div><strong>Масажирай до пълно попиване</strong><span>С леки кръгови движения 30–60 секунди. 2–3 пъти дневно или вечер преди лягане.</span></div></li>
-      </ol>
-      <div class="bv-note"><span>💡</span><span>След употреба измий ръцете си. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите.</span></div>
+      <p class="bv-lead">4 лесни стъпки – 2–3 пъти дневно или вечер преди лягане.</p>
     </div>
-    <div class="bv-how__media bv-rv">
-      <img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/ChatGPT_Image_Jul_17_2026_11_22_12_PM-4319747.png?format=webp" width="675" height="1200" alt="Как да използвате BeeVenom гел – 4 стъпки">
+    <ol class="bv-hsteps">
+      <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:0.0s">1</span><div class="bv-hstep__media"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="600" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-1.jpg" aria-label="Жена подсушава коляното си с мека кърпа"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-1.mp4" type="video/mp4"></video></div><div class="bv-hstep__body"><h3>Почисти и подсуши кожата</h3><p>Нанася се върху чиста и суха кожа.</p></div></li>
+      <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:0.6s">2</span><div class="bv-hstep__media"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="600" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-2.jpg" aria-label="Капка гел колкото грахово зърно върху пръста"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-2.mp4" type="video/mp4"></video></div><div class="bv-hstep__body"><h3>Вземи колкото грахово зърно</h3><p>Формулата е концентрирана – малко е достатъчно.</p></div></li>
+      <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:1.2s">3</span><div class="bv-hstep__media"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="600" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-3.jpg" aria-label="Жена нанася гела отстрани на коляното"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-3.mp4" type="video/mp4"></video></div><div class="bv-hstep__body"><h3>Нанеси върху зоната</h3><p>Коляно, кръст, рамо, врат, лакът или глезен.</p></div></li>
+      <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:1.8s">4</span><div class="bv-hstep__media"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="600" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-4.jpg" aria-label="Ръце масажират коляното с кръгови движения"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/how-4.mp4" type="video/mp4"></video></div><div class="bv-hstep__body"><h3>Масажирай до попиване</h3><p>С леки кръгови движения 30–60 секунди.</p></div></li>
+    </ol>
+    <p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>
+    <div class="bv-how__foot">
+      <div class="bv-note"><span>💡</span><span>След употреба измий ръцете си. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите.</span></div>
+      <a class="bv-btn" href="#bv-offers">Поръчай сега <span class="bv-arr">→</span></a>
     </div>
   </div>
 </section>
@@ -1008,7 +1047,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     });
 
     // стъпаловидно появяване на картите в решетките
-    root.querySelectorAll('.bv-bens,.bv-ings,.bv-sits,.bv-tl,.bv-stories,.bv-packs,.bv-shots').forEach(function(g){
+    root.querySelectorAll('.bv-bens,.bv-ings,.bv-sits,.bv-tl,.bv-stories,.bv-packs,.bv-shots,.bv-hsteps').forEach(function(g){
       Array.prototype.forEach.call(g.children, function(c, i){ c.classList.add('bv-rv'); c.style.setProperty('--bv-d', (i % 6) * 0.09 + 's'); });
     });
     root.querySelectorAll('section .bv-center').forEach(function(c){ c.classList.add('bv-rv'); });
