@@ -36,7 +36,9 @@
 </script>
 
 <style>
-:root{
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+#bvl,#bv-sticky{
   --honey:#F5A623; --honey-d:#E08A00; --honey-50:#FFF7E8; --honey-100:#FFEDC8;
   --cream:#FFFBF3; --paper:#FFFFFF;
   --ink:#24180C; --ink-2:#4A3A28; --muted:#6E5D49; --line:#EFE2CC;
@@ -49,429 +51,443 @@
   --wrap:1160px;
   color-scheme:light;
 }
-*{box-sizing:border-box}
+/* ---------- защита от стиловете на ConvertBuilder ---------- */
+html{overflow-x:hidden}
+#bvl{display:block;position:relative;float:none;clear:both;text-align:left;margin-left:calc(50% - 50vw + var(--bv-sbw,0px)/2);margin-right:calc(50% - 50vw + var(--bv-sbw,0px)/2)}
+#bvl h1,#bvl h2,#bvl h3,#bvl h4,#bvl p,#bvl ul,#bvl ol,#bvl li,#bvl figure,#bvl table,#bvl th,#bvl td,#bvl a,#bvl span,#bvl strong,#bvl b,#bvl em,#bvl s,#bvl small,#bvl summary,#bvl details,#bvl div,#bvl article,#bvl section,#bvl header,#bvl footer,#bvl nav,#bvl main,#bvl ol,#bv-sticky,#bv-sticky *{font-family:inherit;text-transform:none;text-shadow:none;float:none}
+#bvl strong,#bvl b,#bv-sticky strong{font-weight:800}
+#bvl em{font-style:italic}
+#bvl s{text-decoration:line-through}
+#bvl ul,#bvl ol{list-style:none}
+#bvl .bv-tl__item ul{list-style:disc}
+#bv-sticky{font:500 16px/1.4 "Manrope",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-feature-settings:"locl" 0;color:var(--ink);text-align:left}
+#bvl table{border-collapse:separate}
+
+#bvl,#bvl *,#bvl *::before,#bvl *::after,#bv-sticky,#bv-sticky *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--cream);color:var(--ink);font:500 18px/1.6 "Manrope",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-feature-settings:"locl" 0;-webkit-font-smoothing:antialiased}
-img{max-width:100%;height:auto;display:block}
-a{color:inherit}
-h1,h2,h3{line-height:1.12;margin:0 0 .5em;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
-h1{font-size:clamp(34px,5.4vw,60px)}
-h2{font-size:clamp(28px,3.8vw,44px)}
-h3{font-size:21px;letter-spacing:-.01em}
-p{margin:0 0 1em}
-em.accent{font-feature-settings:"locl" 0;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:var(--honey-d);letter-spacing:0}
-.wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
-section{padding:84px 0;position:relative}
-.center{text-align:center}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);background:var(--honey-100);padding:7px 14px;border-radius:999px;margin-bottom:18px}
-.lead{font-size:20px;color:var(--ink-2);max-width:720px}
-.center .lead{margin-left:auto;margin-right:auto}
-.small{font-size:14px;color:var(--muted)}
-.honeycomb{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V66l28 16 28-16v16L28 98z' fill='none' stroke='%23F5A623' stroke-opacity='.14' stroke-width='1.2'/%3E%3C/svg%3E")}
+#bvl{background:var(--cream);color:var(--ink);font:500 18px/1.6 "Manrope",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-feature-settings:"locl" 0;-webkit-font-smoothing:antialiased}
+#bvl img{max-width:100%;height:auto;display:block}
+#bvl a{color:inherit}
+#bvl h1,#bvl h2,#bvl h3{line-height:1.12;margin:0 0 .5em;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+#bvl h1{font-size:clamp(34px,5.4vw,60px)}
+#bvl h2{font-size:clamp(28px,3.8vw,44px)}
+#bvl h3{font-size:21px;letter-spacing:-.01em}
+#bvl p{margin:0 0 1em}
+#bvl em.bv-accent{font-feature-settings:"locl" 0;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:var(--honey-d);letter-spacing:0}
+#bvl .bv-wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
+#bvl section{padding:84px 0;position:relative}
+#bvl .bv-center{text-align:center}
+#bvl .bv-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);background:var(--honey-100);padding:7px 14px;border-radius:999px;margin-bottom:18px}
+#bvl .bv-lead{font-size:20px;color:var(--ink-2);max-width:720px}
+#bvl .bv-center .bv-lead{margin-left:auto;margin-right:auto}
+#bvl .bv-small{font-size:14px;color:var(--muted)}
+#bvl .bv-honeycomb{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0 32L0 82V66l28 16 28-16v16L28 98z' fill='none' stroke='%23F5A623' stroke-opacity='.14' stroke-width='1.2'/%3E%3C/svg%3E")}
 
 /* ---------- buttons ---------- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:16px 30px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;font:800 19px/1.2 "Manrope",sans-serif;font-feature-settings:"locl" 0;color:#fff;background:linear-gradient(180deg,#EA3A2C,var(--red-d));box-shadow:0 10px 24px rgba(214,42,30,.32),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .15s ease,box-shadow .15s ease}
-.btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(214,42,30,.4),inset 0 1px 0 rgba(255,255,255,.25)}
-.btn:focus-visible,.btn-ghost:focus-visible,summary:focus-visible{outline:3px solid var(--honey);outline-offset:3px}
-.btn .arr{transition:transform .15s}
-.btn:hover .arr{transform:translateX(4px)}
-.btn-block{width:100%}
-.btn-ghost{display:inline-flex;align-items:center;gap:10px;min-height:60px;padding:14px 22px;border-radius:999px;text-decoration:none;font-weight:800;color:var(--ink);background:#fff;border:2px solid var(--line)}
-.btn-ghost:hover{border-color:var(--honey)}
-.pulse{animation:pulse 2.6s ease-in-out infinite}
-@keyframes pulse{0%,100%{box-shadow:0 10px 24px rgba(214,42,30,.32),0 0 0 0 rgba(214,42,30,.35)}50%{box-shadow:0 10px 24px rgba(214,42,30,.32),0 0 0 12px rgba(214,42,30,0)}}
+#bvl .bv-btn,#bv-sticky .bv-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:16px 30px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;font:800 19px/1.2 "Manrope",sans-serif;font-feature-settings:"locl" 0;color:#fff;background:linear-gradient(180deg,#EA3A2C,var(--red-d));box-shadow:0 10px 24px rgba(214,42,30,.32),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .15s ease,box-shadow .15s ease}
+#bvl .bv-btn:hover,#bv-sticky .bv-btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(214,42,30,.4),inset 0 1px 0 rgba(255,255,255,.25)}
+#bvl .bv-btn:focus-visible,#bv-sticky .bv-btn:focus-visible,#bvl .bv-btn-ghost:focus-visible,#bvl summary:focus-visible{outline:3px solid var(--honey);outline-offset:3px}
+#bvl .bv-btn .bv-arr,#bv-sticky .bv-btn .bv-arr{transition:transform .15s}
+#bvl .bv-btn:hover .bv-arr,#bv-sticky .bv-btn:hover .bv-arr{transform:translateX(4px)}
+#bvl .bv-btn-block{width:100%}
+#bvl .bv-btn-ghost{display:inline-flex;align-items:center;gap:10px;min-height:60px;padding:14px 22px;border-radius:999px;text-decoration:none;font-weight:800;color:var(--ink);background:#fff;border:2px solid var(--line)}
+#bvl .bv-btn-ghost:hover{border-color:var(--honey)}
+#bvl .bv-pulse{animation:bv-pulse 2.6s ease-in-out infinite}
+@keyframes bv-pulse{0%,100%{box-shadow:0 10px 24px rgba(214,42,30,.32),0 0 0 0 rgba(214,42,30,.35)}50%{box-shadow:0 10px 24px rgba(214,42,30,.32),0 0 0 12px rgba(214,42,30,0)}}
 
 /* ---------- ticker ---------- */
-.ticker{background:var(--night);color:#FFE9B8;font-size:15px;font-weight:700;overflow:hidden;white-space:nowrap}
-.ticker__track{display:inline-flex;gap:48px;padding:9px 0;animation:tick 38s linear infinite}
-.ticker__track span{display:inline-flex;gap:8px;align-items:center}
-@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#bvl .bv-ticker{background:var(--night);color:#FFE9B8;font-size:15px;font-weight:700;overflow:hidden;white-space:nowrap}
+#bvl .bv-ticker__track{display:inline-flex;gap:48px;padding:9px 0;animation:bv-tick 38s linear infinite}
+#bvl .bv-ticker__track span{display:inline-flex;gap:8px;align-items:center}
+@keyframes bv-tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 /* ---------- header ---------- */
-.header{position:sticky;top:0;z-index:40;background:rgba(255,251,243,.88);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
-.header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:70px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:-.02em}
-.logo b{color:var(--honey-d)}
-.nav{display:none;gap:26px;font-size:16px;font-weight:700}
-.nav a{text-decoration:none;color:var(--ink-2)}
-.nav a:hover{color:var(--red)}
-.header__right{display:flex;align-items:center;gap:14px}
-.phone{display:none;text-decoration:none;line-height:1.2;text-align:right}
-.phone strong{display:block;font-size:18px}
-.phone span{font-size:13px;color:var(--muted)}
-.header .btn{min-height:46px;padding:10px 20px;font-size:16px}
+#bvl .bv-header{position:sticky;top:0;z-index:40;background:rgba(255,251,243,.88);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+#bvl .bv-header .bv-wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:70px}
+#bvl .bv-logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:-.02em}
+#bvl .bv-logo b{color:var(--honey-d)}
+#bvl .bv-nav{display:none;gap:26px;font-size:16px;font-weight:700}
+#bvl .bv-nav a{text-decoration:none;color:var(--ink-2)}
+#bvl .bv-nav a:hover{color:var(--red)}
+#bvl .bv-header__right{display:flex;align-items:center;gap:14px}
+#bvl .bv-phone{display:none;text-decoration:none;line-height:1.2;text-align:right}
+#bvl .bv-phone strong{display:block;font-size:18px}
+#bvl .bv-phone span{font-size:13px;color:var(--muted)}
+#bvl .bv-header .bv-btn{min-height:46px;padding:10px 20px;font-size:16px}
 
 /* ---------- hero ---------- */
-.hero{padding:36px 0 56px;background:radial-gradient(120% 90% at 85% 10%,#FFE2A3 0%,rgba(255,226,163,0) 55%),radial-gradient(80% 70% at 0% 100%,#FFF0D2 0%,rgba(255,240,210,0) 60%),var(--cream);overflow:hidden}
-.hero__grid{display:grid;gap:28px;align-items:center}
-.hero h1{margin-bottom:18px}
-.hero .lead{margin-bottom:22px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;padding:0;list-style:none}
-.chips li{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:15px;font-weight:700;box-shadow:0 1px 2px rgba(60,35,5,.05)}
-.proof{display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap}
-.stars{color:#F5A623;font-size:22px;letter-spacing:2px;line-height:1}
-.proof strong{font-size:17px}
-.cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.micro{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;font-size:15px;font-weight:700;color:var(--ink-2)}
-.micro span::before{content:"✓";color:var(--green);font-weight:800;margin-right:6px}
-.hero__media{position:relative;max-width:520px;margin:0 auto;width:100%}
-.hero__media::before{content:"";position:absolute;inset:8% 6% 4%;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%);filter:blur(6px)}
-.hero__media img{position:relative;mix-blend-mode:multiply;width:100%}
-.badge{position:absolute;background:#fff;border-radius:18px;padding:10px 14px;box-shadow:var(--shadow-l);font-size:14px;line-height:1.25;font-weight:700;display:flex;align-items:center;gap:10px}
-.badge b{display:block;font-size:22px;color:var(--red);letter-spacing:-.02em}
-.badge--1{left:-2%;top:16%}
-.badge--2{right:-2%;top:46%}
-.badge--3{left:4%;bottom:6%}
+#bvl .bv-hero{padding:36px 0 56px;background:radial-gradient(120% 90% at 85% 10%,#FFE2A3 0%,rgba(255,226,163,0) 55%),radial-gradient(80% 70% at 0% 100%,#FFF0D2 0%,rgba(255,240,210,0) 60%),var(--cream);overflow:hidden}
+#bvl .bv-hero__grid{display:grid;gap:28px;align-items:center}
+#bvl .bv-hero h1{margin-bottom:18px}
+#bvl .bv-hero .bv-lead{margin-bottom:22px}
+#bvl .bv-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;padding:0;list-style:none}
+#bvl .bv-chips li{background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:15px;font-weight:700;box-shadow:0 1px 2px rgba(60,35,5,.05)}
+#bvl .bv-proof{display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap}
+#bvl .bv-stars{color:#F5A623;font-size:22px;letter-spacing:2px;line-height:1}
+#bvl .bv-proof strong{font-size:17px}
+#bvl .bv-cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+#bvl .bv-micro{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;font-size:15px;font-weight:700;color:var(--ink-2)}
+#bvl .bv-micro span::before{content:"✓";color:var(--green);font-weight:800;margin-right:6px}
+#bvl .bv-hero__media{position:relative;max-width:520px;margin:0 auto;width:100%}
+#bvl .bv-hero__media::before{content:"";position:absolute;inset:8% 6% 4%;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%);filter:blur(6px)}
+#bvl .bv-hero__media img{position:relative;mix-blend-mode:multiply;width:100%}
+#bvl .bv-badge{position:absolute;background:#fff;border-radius:18px;padding:10px 14px;box-shadow:var(--shadow-l);font-size:14px;line-height:1.25;font-weight:700;display:flex;align-items:center;gap:10px}
+#bvl .bv-badge b{display:block;font-size:22px;color:var(--red);letter-spacing:-.02em}
+#bvl .bv-badge--1{left:-2%;top:16%}
+#bvl .bv-badge--2{right:-2%;top:46%}
+#bvl .bv-badge--3{left:4%;bottom:6%}
 
 /* ---------- trust strip ---------- */
-.trust{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0}
-.trust__grid{display:grid;grid-template-columns:1fr;gap:14px}
-.trust__item{display:flex;gap:12px;align-items:center;font-size:15px;line-height:1.3;color:var(--ink-2)}
-.trust__item strong{display:block;color:var(--ink);font-size:16px}
-.ico{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--honey-50);border:1px solid var(--honey-100);font-size:22px}
+#bvl .bv-trust{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0}
+#bvl .bv-trust__grid{display:grid;grid-template-columns:1fr;gap:14px}
+#bvl .bv-trust__item{display:flex;gap:12px;align-items:center;font-size:15px;line-height:1.3;color:var(--ink-2)}
+#bvl .bv-trust__item strong{display:block;color:var(--ink);font-size:16px}
+#bvl .bv-ico{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--honey-50);border:1px solid var(--honey-100);font-size:22px}
 
 /* ---------- situations ---------- */
-.sits{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
-.sit{margin:0;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
-.sit__img{aspect-ratio:1032/712;overflow:hidden;background:var(--honey-50)}
-.sit__img img{width:116.28%;max-width:none;margin:-8.14% 0 0 -8.14%}
-.sit p{margin:0;padding:14px 16px 16px;font-weight:800;font-size:16px;line-height:1.3}
-.sits-foot{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:12px}
+#bvl .bv-sits{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
+#bvl .bv-sit{margin:0;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+#bvl .bv-sit__img{aspect-ratio:1032/712;overflow:hidden;background:var(--honey-50)}
+#bvl .bv-sit__img img{width:116.28%;max-width:none;margin:-8.14% 0 0 -8.14%}
+#bvl .bv-sit p{margin:0;padding:14px 16px 16px;font-weight:800;font-size:16px;line-height:1.3}
+#bvl .bv-sits-foot{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:12px}
 
 /* ---------- delivery bar ---------- */
-.eta{padding:0}
-.eta__box{display:flex;flex-direction:column;gap:14px;align-items:flex-start;background:linear-gradient(100deg,#FFF1D0,#FFE2A3);border:1px solid #F7D287;border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow)}
-.eta__box strong{font-size:19px;line-height:1.35}
-.eta__gift{display:block;margin-top:4px;font-size:15px;line-height:1.45;color:var(--ink-2)}
-.eta__box .row{display:flex;gap:14px;align-items:center}
-.eta__box .ico{background:#fff}
+#bvl .bv-eta{padding:0}
+#bvl .bv-eta__box{display:flex;flex-direction:column;gap:14px;align-items:flex-start;background:linear-gradient(100deg,#FFF1D0,#FFE2A3);border:1px solid #F7D287;border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow)}
+#bvl .bv-eta__box strong{font-size:19px;line-height:1.35}
+#bvl .bv-eta__gift{display:block;margin-top:4px;font-size:15px;line-height:1.45;color:var(--ink-2)}
+#bvl .bv-eta__box .bv-row{display:flex;gap:14px;align-items:center}
+#bvl .bv-eta__box .bv-ico{background:#fff}
 
 /* ---------- formula (dark) ---------- */
-.formula{background:var(--night);color:#FBEBD2;overflow:hidden}
-.formula::before{content:"";position:absolute;inset:0;opacity:.6}
-.formula h2{color:#fff}
-.formula .eyebrow{background:rgba(245,166,35,.16);color:#FFC65C}
-.formula .lead{color:#E9D6B8}
-.formula__grid{display:grid;gap:40px;align-items:center;position:relative}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:28px 0}
-.stat{background:var(--night-2);border:1px solid rgba(255,198,92,.18);border-radius:var(--radius-s);padding:18px}
-.stat b{display:block;font-size:40px;line-height:1;color:#FFC65C;letter-spacing:-.03em;margin-bottom:8px}
-.stat span{font-size:15px;line-height:1.35;color:#E9D6B8}
-.formula__media{border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.35);max-width:440px;margin:0 auto}
+#bvl .bv-formula{background:var(--night);color:#FBEBD2;overflow:hidden}
+#bvl .bv-formula::before{content:"";position:absolute;inset:0;opacity:.6}
+#bvl .bv-formula h2{color:#fff}
+#bvl .bv-formula .bv-eyebrow{background:rgba(245,166,35,.16);color:#FFC65C}
+#bvl .bv-formula .bv-lead{color:#E9D6B8}
+#bvl .bv-formula__grid{display:grid;gap:40px;align-items:center;position:relative}
+#bvl .bv-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:28px 0}
+#bvl .bv-stat{background:var(--night-2);border:1px solid rgba(255,198,92,.18);border-radius:var(--radius-s);padding:18px}
+#bvl .bv-stat b{display:block;font-size:40px;line-height:1;color:#FFC65C;letter-spacing:-.03em;margin-bottom:8px}
+#bvl .bv-stat span{font-size:15px;line-height:1.35;color:#E9D6B8}
+#bvl .bv-formula__media{border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.35);max-width:440px;margin:0 auto}
 
 /* ---------- benefits ---------- */
-.bens{display:grid;gap:14px;margin-top:36px}
-.ben{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-.ben .ico{width:52px;height:52px;font-size:26px}
-.ben strong{display:block;font-size:18px;line-height:1.3;margin-bottom:4px}
-.ben span{color:var(--muted);font-size:16px;line-height:1.5}
+#bvl .bv-bens{display:grid;gap:14px;margin-top:36px}
+#bvl .bv-ben{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+#bvl .bv-ben .bv-ico{width:52px;height:52px;font-size:26px}
+#bvl .bv-ben strong{display:block;font-size:18px;line-height:1.3;margin-bottom:4px}
+#bvl .bv-ben span{color:var(--muted);font-size:16px;line-height:1.5}
 
 /* ---------- quality + guarantee ---------- */
-.assure{display:grid;gap:18px;margin-top:56px}
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow)}
-.card h3{display:flex;align-items:center;gap:12px}
-.qual{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.qual li{display:flex;gap:10px;font-size:16px;line-height:1.45}
-.qual li::before{content:"✓";color:var(--green);font-weight:800}
-.guar{display:flex;gap:22px;align-items:center;background:linear-gradient(135deg,#FFF6E2,#FFE7B5);border-color:#F7D287}
-.seal{flex:none;width:118px;height:118px}
-.guar p{margin:0;font-size:17px}
-.callbar{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:center;background:var(--night);color:#FBEBD2;border-radius:var(--radius);padding:20px 24px;text-align:center}
-.callbar a{color:#FFC65C;font-weight:800;font-size:24px;text-decoration:none;white-space:nowrap}
-.callbar small{display:block;font-size:14px;color:#D9C3A0}
+#bvl .bv-assure{display:grid;gap:18px;margin-top:56px}
+#bvl .bv-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow)}
+#bvl .bv-card h3{display:flex;align-items:center;gap:12px}
+#bvl .bv-qual{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+#bvl .bv-qual li{display:flex;gap:10px;font-size:16px;line-height:1.45}
+#bvl .bv-qual li::before{content:"✓";color:var(--green);font-weight:800}
+#bvl .bv-guar{display:flex;gap:22px;align-items:center;background:linear-gradient(135deg,#FFF6E2,#FFE7B5);border-color:#F7D287}
+#bvl .bv-seal{flex:none;width:118px;height:118px}
+#bvl .bv-guar p{margin:0;font-size:17px}
+#bvl .bv-callbar{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:center;background:var(--night);color:#FBEBD2;border-radius:var(--radius);padding:20px 24px;text-align:center}
+#bvl .bv-callbar a{color:#FFC65C;font-weight:800;font-size:24px;text-decoration:none;white-space:nowrap}
+#bvl .bv-callbar small{display:block;font-size:14px;color:#D9C3A0}
 
 /* ---------- offers ---------- */
-.offers{background:linear-gradient(180deg,var(--honey-50),#FFF 70%)}
-.packs{display:grid;gap:20px;margin-top:40px;align-items:stretch}
-.pack{position:relative;display:flex;flex-direction:column;background:#fff;border:2px solid var(--line);border-radius:26px;padding:24px 22px 22px;box-shadow:var(--shadow)}
-.pack--hot{border-color:var(--red);box-shadow:0 0 0 5px rgba(214,42,30,.09),var(--shadow-l)}
-.ribbon{position:absolute;top:-15px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--red);color:#fff;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:7px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(214,42,30,.3)}
-.ribbon--gold{background:var(--honey-d);box-shadow:0 6px 16px rgba(224,138,0,.3)}
-.off{position:absolute;top:18px;right:18px;background:var(--green);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:5px 11px}
-.pack__img{height:210px;display:grid;place-items:center;margin:6px 0 10px}
-.pack__img img{max-height:210px;width:auto;mix-blend-mode:multiply}
-.pack h3{font-size:26px;margin:0 0 2px;text-align:center}
-.pack__sub{text-align:center;color:var(--muted);font-weight:700;margin-bottom:14px}
-.pack ul{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px;font-size:16px}
-.pack li{display:flex;gap:10px;line-height:1.4}
-.pack li::before{content:"✓";color:var(--green);font-weight:800}
-.pack li.gift{background:var(--honey-50);border:1px dashed #F2C26B;border-radius:12px;padding:10px 12px}
-.pack li.gift::before{content:"🎁"}
-.price{display:flex;align-items:baseline;justify-content:center;gap:12px;margin-top:auto}
-.price b{font-size:44px;letter-spacing:-.03em;line-height:1;color:var(--red)}
-.price s{color:var(--muted);font-size:20px;font-weight:700}
-.unit{text-align:center;font-size:15px;font-weight:700;color:var(--green);margin:8px 0 16px}
-.pack .btn{width:100%}
-.pack__note{text-align:center;font-size:14px;color:var(--muted);margin:10px 0 0}
-.pay{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 24px;margin-top:30px;font-weight:700;font-size:15px;color:var(--ink-2)}
+#bvl .bv-offers{background:linear-gradient(180deg,var(--honey-50),#FFF 70%)}
+#bvl .bv-packs{display:grid;gap:20px;margin-top:40px;align-items:stretch}
+#bvl .bv-pack{position:relative;display:flex;flex-direction:column;background:#fff;border:2px solid var(--line);border-radius:26px;padding:24px 22px 22px;box-shadow:var(--shadow)}
+#bvl .bv-pack--hot{border-color:var(--red);box-shadow:0 0 0 5px rgba(214,42,30,.09),var(--shadow-l)}
+#bvl .bv-ribbon{position:absolute;top:-15px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--red);color:#fff;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:7px 16px;border-radius:999px;box-shadow:0 6px 16px rgba(214,42,30,.3)}
+#bvl .bv-ribbon--gold{background:var(--honey-d);box-shadow:0 6px 16px rgba(224,138,0,.3)}
+#bvl .bv-off{position:absolute;top:18px;right:18px;background:var(--green);color:#fff;font-weight:800;font-size:15px;border-radius:999px;padding:5px 11px}
+#bvl .bv-pack__img{height:210px;display:grid;place-items:center;margin:6px 0 10px}
+#bvl .bv-pack__img img{max-height:210px;width:auto;mix-blend-mode:multiply}
+#bvl .bv-pack h3{font-size:26px;margin:0 0 2px;text-align:center}
+#bvl .bv-pack__sub{text-align:center;color:var(--muted);font-weight:700;margin-bottom:14px}
+#bvl .bv-pack ul{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px;font-size:16px}
+#bvl .bv-pack li{display:flex;gap:10px;line-height:1.4}
+#bvl .bv-pack li::before{content:"✓";color:var(--green);font-weight:800}
+#bvl .bv-pack li.bv-gift{background:var(--honey-50);border:1px dashed #F2C26B;border-radius:12px;padding:10px 12px}
+#bvl .bv-pack li.bv-gift::before{content:"🎁"}
+#bvl .bv-price{display:flex;align-items:baseline;justify-content:center;gap:12px;margin-top:auto}
+#bvl .bv-price b{font-size:44px;letter-spacing:-.03em;line-height:1;color:var(--red)}
+#bvl .bv-price s{color:var(--muted);font-size:20px;font-weight:700}
+#bvl .bv-unit{text-align:center;font-size:15px;font-weight:700;color:var(--green);margin:8px 0 16px}
+#bvl .bv-pack .bv-btn{width:100%}
+#bvl .bv-pack__note{text-align:center;font-size:14px;color:var(--muted);margin:10px 0 0}
+#bvl .bv-pay{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 24px;margin-top:30px;font-weight:700;font-size:15px;color:var(--ink-2)}
 
 /* ---------- ingredients ---------- */
-.ings{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
-.ing{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-.ing__img{aspect-ratio:440/350;overflow:hidden;background:#fff}
-.ing__img img{width:436.36%;max-width:none}
-.ing__body{padding:14px 16px 18px}
-.ing h3{font-size:19px;margin-bottom:6px}
-.ing p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
-.compare{margin-top:56px;overflow-x:auto}
-.compare table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);font-size:16px}
-.compare th,.compare td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--line)}
-.compare tr:last-child td{border-bottom:0}
-.compare thead th{background:var(--honey-50);font-size:15px}
-.compare th.us,.compare td.us{background:#FFF8EA;text-align:center;font-weight:800}
-.compare thead th.us{background:var(--honey);color:var(--night)}
-.compare td.them{text-align:center;color:var(--muted)}
-.yes{color:var(--green);font-size:20px}
+#bvl .bv-ings{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
+#bvl .bv-ing{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+#bvl .bv-ing__img{aspect-ratio:440/350;overflow:hidden;background:#fff}
+#bvl .bv-ing__img img{width:436.36%;max-width:none}
+#bvl .bv-ing__body{padding:14px 16px 18px}
+#bvl .bv-ing h3{font-size:19px;margin-bottom:6px}
+#bvl .bv-ing p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
+#bvl .bv-compare{margin-top:56px;overflow-x:auto}
+#bvl .bv-compare table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);font-size:16px}
+#bvl .bv-compare th,#bvl .bv-compare td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--line)}
+#bvl .bv-compare tr:last-child td{border-bottom:0}
+#bvl .bv-compare thead th{background:var(--honey-50);font-size:15px}
+#bvl .bv-compare th.bv-us,#bvl .bv-compare td.bv-us{background:#FFF8EA;text-align:center;font-weight:800}
+#bvl .bv-compare thead th.bv-us{background:var(--honey);color:var(--night)}
+#bvl .bv-compare td.bv-them{text-align:center;color:var(--muted)}
+#bvl .bv-yes{color:var(--green);font-size:20px}
 
 /* ---------- how to ---------- */
-.how__grid{display:grid;gap:40px;align-items:center}
-.steps{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:14px;counter-reset:s}
-.steps li{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius-s);padding:16px 18px}
-.steps li::before{counter-increment:s;content:counter(s);flex:none;width:40px;height:40px;border-radius:12px;background:var(--honey);color:var(--night);font-weight:800;font-size:19px;display:grid;place-items:center}
-.steps strong{display:block}
-.steps span{color:var(--muted);font-size:16px}
-.how__media{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-l);max-width:400px;margin:0 auto}
-.note{display:flex;gap:12px;align-items:flex-start;margin-top:18px;background:var(--green-50);border:1px solid #CFE6CF;border-radius:var(--radius-s);padding:14px 16px;font-size:15px;line-height:1.5}
+#bvl .bv-how__grid{display:grid;gap:40px;align-items:center}
+#bvl .bv-steps{list-style:none;margin:28px 0 0;padding:0;display:grid;gap:14px;counter-reset:s}
+#bvl .bv-steps li{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius-s);padding:16px 18px}
+#bvl .bv-steps li::before{counter-increment:s;content:counter(s);flex:none;width:40px;height:40px;border-radius:12px;background:var(--honey);color:var(--night);font-weight:800;font-size:19px;display:grid;place-items:center}
+#bvl .bv-steps strong{display:block}
+#bvl .bv-steps span{color:var(--muted);font-size:16px}
+#bvl .bv-how__media{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-l);max-width:400px;margin:0 auto}
+#bvl .bv-note{display:flex;gap:12px;align-items:flex-start;margin-top:18px;background:var(--green-50);border:1px solid #CFE6CF;border-radius:var(--radius-s);padding:14px 16px;font-size:15px;line-height:1.5}
 
 /* ---------- timeline ---------- */
-.timeline{background:#fff}
-.tl{display:grid;gap:16px;margin-top:40px;position:relative}
-.tl__item{position:relative;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:22px 20px}
-.tl__when{display:inline-block;font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--honey-d);border-radius:999px;padding:5px 12px;margin-bottom:12px}
-.tl__item h3{font-size:20px}
-.tl__item ul{margin:0;padding-left:20px;color:var(--ink-2);font-size:16px}
-.tl__emo{position:absolute;right:18px;top:16px;font-size:28px}
-.life{display:grid;gap:28px;align-items:center;margin-top:56px;background:var(--night);border-radius:28px;overflow:hidden;color:#FBEBD2}
-.life__img{min-height:260px;height:100%}
-.life__img img{width:100%;height:100%;object-fit:cover}
-.life__txt{padding:6px 26px 30px}
-.life__txt h3{color:#fff;font-size:clamp(24px,3vw,34px)}
-.life__txt p{color:#E9D6B8}
+#bvl .bv-timeline{background:#fff}
+#bvl .bv-tl{display:grid;gap:16px;margin-top:40px;position:relative}
+#bvl .bv-tl__item{position:relative;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:22px 20px}
+#bvl .bv-tl__when{display:inline-block;font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--honey-d);border-radius:999px;padding:5px 12px;margin-bottom:12px}
+#bvl .bv-tl__item h3{font-size:20px}
+#bvl .bv-tl__item ul{margin:0;padding-left:20px;color:var(--ink-2);font-size:16px}
+#bvl .bv-tl__emo{position:absolute;right:18px;top:16px;font-size:28px}
+#bvl .bv-life{display:grid;gap:28px;align-items:center;margin-top:56px;background:var(--night);border-radius:28px;overflow:hidden;color:#FBEBD2}
+#bvl .bv-life__img{min-height:260px;height:100%}
+#bvl .bv-life__img img{width:100%;height:100%;object-fit:cover}
+#bvl .bv-life__txt{padding:6px 26px 30px}
+#bvl .bv-life__txt h3{color:#fff;font-size:clamp(24px,3vw,34px)}
+#bvl .bv-life__txt p{color:#E9D6B8}
 
 /* ---------- reviews ---------- */
-.rev-head{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:34px}
-.rev-head .stars{font-size:30px}
-.shots{columns:1;column-gap:14px}
-.shot{break-inside:avoid;margin:0 0 14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
-.shot img{border-radius:10px;width:auto;max-width:100%;margin:0 auto}
-.stories{display:grid;gap:16px;margin-top:40px}
-.story{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column}
-.story p{font-size:17px;color:var(--ink-2);margin-bottom:18px}
-.story p::before{content:"„"}
-.story p::after{content:"“"}
-.who{display:flex;align-items:center;gap:12px;margin-top:auto}
-.av{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:var(--night);background:linear-gradient(135deg,#FFD679,var(--honey))}
-.who strong{display:block;line-height:1.2}
-.who span{font-size:14px;color:var(--muted)}
-.verified{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--green)}
+#bvl .bv-rev-head{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:34px}
+#bvl .bv-rev-head .bv-stars{font-size:30px}
+#bvl .bv-shots{columns:1;column-gap:14px}
+#bvl .bv-shot{break-inside:avoid;margin:0 0 14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
+#bvl .bv-shot img{border-radius:10px;width:auto;max-width:100%;margin:0 auto}
+#bvl .bv-stories{display:grid;gap:16px;margin-top:40px}
+#bvl .bv-story{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+#bvl .bv-story p{font-size:17px;color:var(--ink-2);margin-bottom:18px}
+#bvl .bv-story p::before{content:"„"}
+#bvl .bv-story p::after{content:"“"}
+#bvl .bv-who{display:flex;align-items:center;gap:12px;margin-top:auto}
+#bvl .bv-av{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:var(--night);background:linear-gradient(135deg,#FFD679,var(--honey))}
+#bvl .bv-who strong{display:block;line-height:1.2}
+#bvl .bv-who span{font-size:14px;color:var(--muted)}
+#bvl .bv-verified{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--green)}
 
 /* ---------- FAQ ---------- */
-.faq{background:#fff}
-.faq__wrap{max-width:860px;margin:0 auto}
-.faq h3{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);margin:36px 0 12px}
-details{background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-s);margin-bottom:10px;overflow:hidden}
-summary{list-style:none;cursor:pointer;padding:18px 56px 18px 20px;font-weight:800;font-size:18px;position:relative}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:20px;color:var(--honey-d);transition:transform .2s}
-details[open] summary::after{content:"–"}
-details>div{padding:0 20px 18px;color:var(--ink-2);font-size:17px}
-details>div p:last-child{margin:0}
+#bvl .bv-faq{background:#fff}
+#bvl .bv-faq__wrap{max-width:860px;margin:0 auto}
+#bvl .bv-faq h3{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);margin:36px 0 12px}
+#bvl details{background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-s);margin-bottom:10px;overflow:hidden}
+#bvl summary{list-style:none;cursor:pointer;padding:18px 56px 18px 20px;font-weight:800;font-size:18px;position:relative}
+#bvl summary::-webkit-details-marker{display:none}
+#bvl summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:20px;color:var(--honey-d);transition:transform .2s}
+#bvl details[open] summary::after{content:"–"}
+#bvl details>div{padding:0 20px 18px;color:var(--ink-2);font-size:17px}
+#bvl details>div p:last-child{margin:0}
 
 /* ---------- final ---------- */
-.final{background:radial-gradient(90% 80% at 50% 0%,#FFE2A3 0%,rgba(255,226,163,0) 70%),var(--cream);text-align:center}
-.final__media{position:relative;max-width:320px;margin:0 auto 10px}
-.final__media::before{content:"";position:absolute;inset:6% 0 0;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%)}
-.final__media img{position:relative;mix-blend-mode:multiply}
-.final .cta-row{justify-content:center;margin-top:24px}
+#bvl .bv-final{background:radial-gradient(90% 80% at 50% 0%,#FFE2A3 0%,rgba(255,226,163,0) 70%),var(--cream);text-align:center}
+#bvl .bv-final__media{position:relative;max-width:320px;margin:0 auto 10px}
+#bvl .bv-final__media::before{content:"";position:absolute;inset:6% 0 0;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%)}
+#bvl .bv-final__media img{position:relative;mix-blend-mode:multiply}
+#bvl .bv-final .bv-cta-row{justify-content:center;margin-top:24px}
 
-.footer{background:var(--night);color:#D9C3A0;padding:40px 0 120px;font-size:14px;text-align:center}
-.footer a{color:#FFC65C;text-decoration:none;font-weight:700}
-.footer p{margin:0 0 8px}
+#bvl .bv-footer{background:var(--night);color:#D9C3A0;padding:40px 0 120px;font-size:14px;text-align:center}
+#bvl .bv-footer a{color:#FFC65C;text-decoration:none;font-weight:700}
+#bvl .bv-footer p{margin:0 0 8px}
 
 /* ---------- sticky mobile CTA ---------- */
-.sticky{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(60,35,5,.12);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;transform:translateY(110%);transition:transform .25s ease}
-.sticky.show{transform:none}
-.sticky__txt{flex:1;line-height:1.25;font-size:14px;color:var(--muted)}
-.sticky__txt strong{display:block;color:var(--ink);font-size:16px}
-.sticky .btn{min-height:52px;padding:12px 20px;font-size:16px}
-.sticky .call{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--green-50);border:1px solid #CFE6CF;text-decoration:none;font-size:22px}
+#bv-sticky{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(60,35,5,.12);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;transform:translateY(110%);transition:transform .25s ease}
+#bv-sticky.bv-show{transform:none}
+#bv-sticky .bv-sticky__txt{flex:1;line-height:1.25;font-size:14px;color:var(--muted)}
+#bv-sticky .bv-sticky__txt strong{display:block;color:var(--ink);font-size:16px}
+#bv-sticky .bv-btn{min-height:52px;padding:12px 20px;font-size:16px}
+#bv-sticky .bv-call{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--green-50);border:1px solid #CFE6CF;text-decoration:none;font-size:22px}
 
 /* reveal on scroll */
-.rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
-.rv.in{opacity:1;transform:none}
+#bvl.bv-js .bv-rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+#bvl.bv-js .bv-rv.bv-in{opacity:1;transform:none}
 
 /* ---------- breakpoints ---------- */
 @media (max-width:719px){
-  .pack--hot{order:-2}
-  .pack--best{order:-1}
-  .eta__box .ico{display:none}
-  .eta__box strong{font-size:17px}
-  .compare table{font-size:15px}
-  .compare th,.compare td{padding:12px 10px}
-  .compare thead th{font-size:13px}
-  .badge{font-size:12px;padding:8px 10px}
-  .badge b{font-size:18px}
-  .hero{padding-top:24px}
-  .hero__grid{gap:0}
-  .hero__copy{display:contents}
-  .hero__copy>.eyebrow{justify-self:start}
-  .hero__copy>.eyebrow,.hero__copy>h1{order:-2}
-  .hero__media{order:-1;max-width:380px;margin:0 auto 18px}
+  #bvl .bv-pack--hot{order:-2}
+  #bvl .bv-pack--best{order:-1}
+  #bvl .bv-eta__box .bv-ico{display:none}
+  #bvl .bv-eta__box strong{font-size:17px}
+  #bvl .bv-compare table{font-size:15px}
+  #bvl .bv-compare th,#bvl .bv-compare td{padding:12px 10px}
+  #bvl .bv-compare thead th{font-size:13px}
+  #bvl .bv-badge{font-size:12px;padding:8px 10px}
+  #bvl .bv-badge b{font-size:18px}
+  #bvl .bv-hero{padding-top:24px}
+  #bvl .bv-hero__grid{gap:0}
+  #bvl .bv-hero__copy{display:contents}
+  #bvl .bv-hero__copy>.bv-eyebrow{justify-self:start}
+  #bvl .bv-hero__copy>.bv-eyebrow,#bvl .bv-hero__copy>h1{order:-2}
+  #bvl .bv-hero__media{order:-1;max-width:380px;margin:0 auto 18px}
 }
 @media (min-width:600px){
-  .shots{columns:2}
-  .trust__grid{grid-template-columns:repeat(4,1fr)}
-  .eta__box{flex-direction:row;align-items:center;justify-content:space-between}
-  .stories{grid-template-columns:repeat(2,1fr)}
+  #bvl .bv-shots{columns:2}
+  #bvl .bv-trust__grid{grid-template-columns:repeat(4,1fr)}
+  #bvl .bv-eta__box{flex-direction:row;align-items:center;justify-content:space-between}
+  #bvl .bv-stories{grid-template-columns:repeat(2,1fr)}
 }
 @media (min-width:720px){
-  .sits{grid-template-columns:repeat(3,1fr);gap:18px}
-  .ings{grid-template-columns:repeat(4,1fr)}
-  .tl{grid-template-columns:repeat(4,1fr)}
-  .packs{grid-template-columns:repeat(3,1fr)}
-  .pack--hot{transform:translateY(-12px)}
-  .assure{grid-template-columns:1fr 1fr}
-  .bens{grid-template-columns:repeat(2,1fr)}
+  #bvl .bv-sits{grid-template-columns:repeat(3,1fr);gap:18px}
+  #bvl .bv-ings{grid-template-columns:repeat(4,1fr)}
+  #bvl .bv-tl{grid-template-columns:repeat(4,1fr)}
+  #bvl .bv-packs{grid-template-columns:repeat(3,1fr)}
+  #bvl .bv-pack--hot{transform:translateY(-12px)}
+  #bvl .bv-assure{grid-template-columns:1fr 1fr}
+  #bvl .bv-bens{grid-template-columns:repeat(2,1fr)}
 }
 @media (min-width:960px){
-  section{padding:104px 0}
-  .nav{display:flex}
-  .phone{display:block}
-  .hero{padding:56px 0 80px}
-  .hero__grid{grid-template-columns:1.08fr .92fr;gap:48px}
-  .formula__grid{grid-template-columns:1.15fr .85fr;gap:64px}
-  .bens{grid-template-columns:repeat(3,1fr);gap:18px}
-  .how__grid{grid-template-columns:1.1fr .9fr;gap:64px}
-  .life{grid-template-columns:1.1fr .9fr}
-  .life__txt{padding:40px 44px 40px 0}
-  .stories{grid-template-columns:repeat(4,1fr)}
-  .sticky{display:none}
-  .footer{padding-bottom:40px}
+  #bvl section{padding:104px 0}
+  #bvl .bv-nav{display:flex}
+  #bvl .bv-phone{display:block}
+  #bvl .bv-hero{padding:56px 0 80px}
+  #bvl .bv-hero__grid{grid-template-columns:1.08fr .92fr;gap:48px}
+  #bvl .bv-formula__grid{grid-template-columns:1.15fr .85fr;gap:64px}
+  #bvl .bv-bens{grid-template-columns:repeat(3,1fr);gap:18px}
+  #bvl .bv-how__grid{grid-template-columns:1.1fr .9fr;gap:64px}
+  #bvl .bv-life{grid-template-columns:1.1fr .9fr}
+  #bvl .bv-life__txt{padding:40px 44px 40px 0}
+  #bvl .bv-stories{grid-template-columns:repeat(4,1fr)}
+  #bv-sticky{display:none}
+  #bvl .bv-footer{padding-bottom:40px}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .ticker__track,.pulse{animation:none}
-  .rv{opacity:1;transform:none;transition:none}
+  #bvl .bv-ticker__track,#bvl .bv-pulse{animation:none}
+  #bvl.bv-js .bv-rv{opacity:1;transform:none;transition:none}
 }
 </style>
 </head>
 <body>
+<div id="bvl">
+
 
 <!-- ============ ЛЕНТА ГОРЕ ============ -->
-<div class="ticker" aria-label="Предимства">
-  <div class="ticker__track">
+<div class="bv-ticker" aria-label="Предимства">
+  <div class="bv-ticker__track">
     <span>🎁 Подарък билкови пластири към пакетите</span><span>🚚 Доставка до 1–2 работни дни в цяла България</span><span>💶 Плащаш при получаване</span><span>🛡️ 30 дни тест период</span>
     <span aria-hidden="true">🎁 Подарък билкови пластири към пакетите</span><span aria-hidden="true">🚚 Доставка до 1–2 работни дни в цяла България</span><span aria-hidden="true">💶 Плащаш при получаване</span><span aria-hidden="true">🛡️ 30 дни тест период</span>
   </div>
 </div>
 
-<header class="header">
-  <div class="wrap">
-    <a class="logo" href="#top" aria-label="BeeVenom – начало">
+<header class="bv-header">
+  <div class="bv-wrap">
+    <a class="bv-logo" href="#bv-top" aria-label="BeeVenom – начало">
       <svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="22" cy="20" rx="12" ry="8" fill="#FFE7B0" stroke="#E08A00" stroke-width="2" transform="rotate(-25 22 20)"/><ellipse cx="42" cy="20" rx="12" ry="8" fill="#FFE7B0" stroke="#E08A00" stroke-width="2" transform="rotate(25 42 20)"/><ellipse cx="32" cy="38" rx="14" ry="18" fill="#F5A623"/><path d="M19 33h26M18.5 41h27M21 49h22" stroke="#24180C" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="19" r="6" fill="#24180C"/></svg>
       <span>Bee<b>Venom</b></span>
     </a>
-    <nav class="nav" aria-label="Основна навигация">
-      <a href="#formula">Как действа</a>
-      <a href="#sastav">Състав</a>
-      <a href="#otzivi">Отзиви</a>
-      <a href="#faq">Въпроси</a>
+    <nav class="bv-nav" aria-label="Основна навигация">
+      <a href="#bv-formula">Как действа</a>
+      <a href="#bv-sastav">Състав</a>
+      <a href="#bv-otzivi">Отзиви</a>
+      <a href="#bv-faq">Въпроси</a>
     </nav>
-    <div class="header__right">
-      <a class="phone" href="tel:+359988880507"><strong>0988 88 05 07</strong><span>всеки ден 10–21 ч.</span></a>
-      <a class="btn" href="#offers">Поръчай</a>
+    <div class="bv-header__right">
+      <a class="bv-phone" href="tel:+359988880507"><strong>0988 88 05 07</strong><span>всеки ден 10–21 ч.</span></a>
+      <a class="bv-btn" href="#bv-offers">Поръчай</a>
     </div>
   </div>
 </header>
 
-<main id="top">
+<main id="bv-top">
 
 <!-- ============ HERO ============ -->
-<section class="hero honeycomb">
-  <div class="wrap hero__grid">
-    <div class="hero__copy">
-      <span class="eyebrow">🐝 BeeVenom Care Gel · 10× формула</span>
-      <h1>За зоните на тялото, които <em class="accent">дават знак</em> всяка сутрин</h1>
-      <p class="lead">Гел с пчелна отрова в 10× концентрирана формула. Затопля, попива бързо и връща усещането за лекота в колене, кръст, рамене и врат.</p>
-      <ul class="chips" aria-label="Съставки">
+<section class="bv-hero bv-honeycomb">
+  <div class="bv-wrap bv-hero__grid">
+    <div class="bv-hero__copy">
+      <span class="bv-eyebrow">🐝 BeeVenom Care Gel · 10× формула</span>
+      <h1>За зоните на тялото, които <em class="bv-accent">дават знак</em> всяка сутрин</h1>
+      <p class="bv-lead">Гел с пчелна отрова в 10× концентрирана формула. Затопля, попива бързо и връща усещането за лекота в колене, кръст, рамене и врат.</p>
+      <ul class="bv-chips" aria-label="Съставки">
         <li>🐝 Пчелна отрова</li><li>🌿 Куркума</li><li>🍵 Зелен чай</li><li>☀️ Витамин D3</li>
       </ul>
-      <div class="proof">
-        <span class="stars" aria-hidden="true">★★★★★</span>
+      <div class="bv-proof">
+        <span class="bv-stars" aria-hidden="true">★★★★★</span>
         <strong>Над 30 000 доволни клиенти в България</strong>
       </div>
-      <div class="cta-row">
-        <a class="btn pulse" href="#offers">Виж офертите <span class="arr">→</span></a>
-        <a class="btn-ghost" href="tel:+359988880507">📞 0988 88 05 07</a>
+      <div class="bv-cta-row">
+        <a class="bv-btn bv-pulse" href="#bv-offers">Виж офертите <span class="bv-arr">→</span></a>
+        <a class="bv-btn-ghost" href="tel:+359988880507">📞 0988 88 05 07</a>
       </div>
-      <div class="micro"><span>Плащаш при получаване</span><span>Без предплащане</span><span>30 дни тест период</span></div>
+      <div class="bv-micro"><span>Плащаш при получаване</span><span>Без предплащане</span><span>30 дни тест период</span></div>
     </div>
-    <div class="hero__media">
+    <div class="bv-hero__media">
       <img src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова – туба и кутия, 20 г" fetchpriority="high">
-      <div class="badge badge--1"><div><b>10×</b>концентрирана<br>формула</div></div>
-      <div class="badge badge--2"><div><b>40</b>дози в<br>една туба</div></div>
-      <div class="badge badge--3"><span class="ico" style="width:38px;height:38px;font-size:18px">🌡️</span><div>Затопля още при<br>първото нанасяне</div></div>
+      <div class="bv-badge bv-badge--1"><div><b>10×</b>концентрирана<br>формула</div></div>
+      <div class="bv-badge bv-badge--2"><div><b>40</b>дози в<br>една туба</div></div>
+      <div class="bv-badge bv-badge--3"><span class="bv-ico" style="width:38px;height:38px;font-size:18px">🌡️</span><div>Затопля още при<br>първото нанасяне</div></div>
     </div>
   </div>
 </section>
 
 <!-- ============ ДОВЕРИЕ ============ -->
-<div class="trust">
-  <div class="wrap trust__grid">
-    <div class="trust__item"><span class="ico">💶</span><div><strong>Плащаш при получаване</strong>в брой или с карта на куриера</div></div>
-    <div class="trust__item"><span class="ico">🚚</span><div><strong>1–2 работни дни</strong>Спиди или Еконт, до адрес или офис</div></div>
-    <div class="trust__item"><span class="ico">🛡️</span><div><strong>30 дни тест период</strong>не си доволен – връщаме парите</div></div>
-    <div class="trust__item"><span class="ico">🇪🇺</span><div><strong>Нотифициран в ЕС</strong>козметичен портал CPNP</div></div>
+<div class="bv-trust">
+  <div class="bv-wrap bv-trust__grid">
+    <div class="bv-trust__item"><span class="bv-ico">💶</span><div><strong>Плащаш при получаване</strong>в брой или с карта на куриера</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">🚚</span><div><strong>1–2 работни дни</strong>Спиди или Еконт, до адрес или офис</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">🛡️</span><div><strong>30 дни тест период</strong>не си доволен – връщаме парите</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">🇪🇺</span><div><strong>Нотифициран в ЕС</strong>козметичен портал CPNP</div></div>
   </div>
 </div>
 
 <!-- ============ ПОЗНАТО ЛИ ТИ Е ============ -->
 <section>
-  <div class="wrap center">
-    <span class="eyebrow">Познато ли ти е?</span>
-    <h2>Когато движението стане по-трудно, <em class="accent">тялото изпраща сигнал</em></h2>
-    <p class="lead">Ставите често се обаждат при съвсем обикновени неща. Може би ще се разпознаеш в някоя от тези ситуации.</p>
-    <div class="sits">
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_27_PM-2-3033707.png?format=webp" width="1200" height="1200" alt="Жена се изправя трудно от леглото сутрин"></div><p>Сутрин ставаш от леглото по-трудно</p></figure>
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_28_PM-3-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се качва бавно по стълби, хванал коляното си"></div><p>Стълбите вече не са толкова лесни</p></figure>
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_33_PM-6-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от бюро, хванал кръста си"></div><p>Сковаваш се след дълго седене</p></figure>
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_26_PM-1-3033707.png?format=webp" width="1200" height="1200" alt="Жена с чадър и торби в дъжда"></div><p>Усещаш смяната на времето в ставите</p></figure>
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_32_PM-5-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от дивана с усилие"></div><p>Ставането от дивана иска усилие</p></figure>
-      <figure class="sit rv"><div class="sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_35_PM-7-3033706.png?format=webp" width="1200" height="1200" alt="Жена седи будна в леглото през нощта"></div><p>Неудобство, което не те оставя да спиш</p></figure>
+  <div class="bv-wrap bv-center">
+    <span class="bv-eyebrow">Познато ли ти е?</span>
+    <h2>Когато движението стане по-трудно, <em class="bv-accent">тялото изпраща сигнал</em></h2>
+    <p class="bv-lead">Ставите често се обаждат при съвсем обикновени неща. Може би ще се разпознаеш в някоя от тези ситуации.</p>
+    <div class="bv-sits">
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_27_PM-2-3033707.png?format=webp" width="1200" height="1200" alt="Жена се изправя трудно от леглото сутрин"></div><p>Сутрин ставаш от леглото по-трудно</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_28_PM-3-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се качва бавно по стълби, хванал коляното си"></div><p>Стълбите вече не са толкова лесни</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_33_PM-6-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от бюро, хванал кръста си"></div><p>Сковаваш се след дълго седене</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_26_PM-1-3033707.png?format=webp" width="1200" height="1200" alt="Жена с чадър и торби в дъжда"></div><p>Усещаш смяната на времето в ставите</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_32_PM-5-3033706.png?format=webp" width="1200" height="1200" alt="Мъж се изправя от дивана с усилие"></div><p>Ставането от дивана иска усилие</p></figure>
+      <figure class="bv-sit bv-rv"><div class="bv-sit__img"><img loading="lazy" src="https://content.app-sources.com/s/4839412235735522/uploads/Изображения/ChatGPT_Image_Oct_26_2026_06_48_35_PM-7-3033706.png?format=webp" width="1200" height="1200" alt="Жена седи будна в леглото през нощта"></div><p>Неудобство, което не те оставя да спиш</p></figure>
     </div>
-    <div class="sits-foot">
-      <a class="btn" href="#offers">Върни лекотата в движението си <span class="arr">→</span></a>
-      <span class="small">Илюстративни ситуации.</span>
+    <div class="bv-sits-foot">
+      <a class="bv-btn" href="#bv-offers">Върни лекотата в движението си <span class="bv-arr">→</span></a>
+      <span class="bv-small">Илюстративни ситуации.</span>
     </div>
   </div>
 </section>
 
 <!-- ============ ДОСТАВКА ============ -->
-<section class="eta">
-  <div class="wrap">
-    <div class="eta__box">
-      <div class="row"><span class="ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span id="eta">до 2 работни дни</span></strong><span class="eta__gift">🎁 Към пакетите 2+1 и 3+2 получаваш билкови пластири подарък.</span></div></div>
-      <a class="btn" href="#offers">Избери пакет</a>
+<section class="bv-eta">
+  <div class="bv-wrap">
+    <div class="bv-eta__box">
+      <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span id="bv-eta">до 2 работни дни</span></strong><span class="bv-eta__gift">🎁 Към пакетите 2+1 и 3+2 получаваш билкови пластири подарък.</span></div></div>
+      <a class="bv-btn" href="#bv-offers">Избери пакет</a>
     </div>
   </div>
 </section>
 
 <!-- ============ ФОРМУЛА ============ -->
-<section class="formula honeycomb" id="formula">
-  <div class="wrap formula__grid">
+<section class="bv-formula bv-honeycomb" id="bv-formula">
+  <div class="bv-wrap bv-formula__grid">
     <div>
-      <span class="eyebrow">BeeVenom 4 Max™</span>
-      <h2>Нова висококонцентрирана формула, която <em class="accent" style="color:#FFC65C">прониква в дълбочина</em></h2>
-      <p class="lead">Усети разликата още след първото нанасяне. Малко количество е достатъчно, за да стигне там, откъдето идват неудобството и сковаността.</p>
-      <div class="stats">
-        <div class="stat"><b>10×</b><span>концентрирана формула</span></div>
-        <div class="stat"><b>50</b><span>ужилвания – на толкова се равнява пчелната отрова в 20 г</span></div>
-        <div class="stat"><b>4</b><span>натурални активни съставки</span></div>
-        <div class="stat"><b>40</b><span>дози в една туба от 20 г</span></div>
+      <span class="bv-eyebrow">BeeVenom 4 Max™</span>
+      <h2>Нова висококонцентрирана формула, която <em class="bv-accent" style="color:#FFC65C">прониква в дълбочина</em></h2>
+      <p class="bv-lead">Усети разликата още след първото нанасяне. Малко количество е достатъчно, за да стигне там, откъдето идват неудобството и сковаността.</p>
+      <div class="bv-stats">
+        <div class="bv-stat"><b>10×</b><span>концентрирана формула</span></div>
+        <div class="bv-stat"><b>50</b><span>ужилвания – на толкова се равнява пчелната отрова в 20 г</span></div>
+        <div class="bv-stat"><b>4</b><span>натурални активни съставки</span></div>
+        <div class="bv-stat"><b>40</b><span>дози в една туба от 20 г</span></div>
       </div>
-      <a class="btn" href="#offers">Поръчай сега <span class="arr">→</span></a>
+      <a class="bv-btn" href="#bv-offers">Поръчай сега <span class="bv-arr">→</span></a>
     </div>
-    <div class="formula__media rv">
+    <div class="bv-formula__media bv-rv">
       <img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/1774544082684-mxmgyru2ff9-4544169.jpg?format=webp" width="670" height="1200" alt="Коляно и четирите съставки на гела: пчелна отрова, куркума, зелен чай, витамин D3">
     </div>
   </div>
@@ -479,36 +495,36 @@ details>div p:last-child{margin:0}
 
 <!-- ============ ЗАЩО ГО ИЗБИРАТ ============ -->
 <section>
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Защо хората го избират?</span>
-      <h2>Една туба за всяка зона, която <em class="accent">те спира</em></h2>
+  <div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Защо хората го избират?</span>
+      <h2>Една туба за всяка зона, която <em class="bv-accent">те спира</em></h2>
     </div>
-    <div class="bens">
-      <div class="ben rv"><span class="ico">🌡️</span><div><strong>Топлина и релакс за минути</strong><span>Приятно затопляне още при първото нанасяне.</span></div></div>
-      <div class="ben rv"><span class="ico">💧</span><div><strong>Действа в дълбочина</strong><span>Не остава само на повърхността – малко количество е достатъчно.</span></div></div>
-      <div class="ben rv"><span class="ico">🦵</span><div><strong>Колене, кръст, рамене, врат</strong><span>Един гел за всички натоварени зони, включително глезени и лакти.</span></div></div>
-      <div class="ben rv"><span class="ico">🌿</span><div><strong>Натурална формула</strong><span>Пчелна отрова, куркума, зелен чай и витамин D3.</span></div></div>
-      <div class="ben rv"><span class="ico">👕</span><div><strong>Попива бързо, без мазни следи</strong><span>Обличаш се минути след нанасянето.</span></div></div>
-      <div class="ben rv"><span class="ico">👵</span><div><strong>Предпочитан от хора над 50</strong><span>Хиляди българи го нанасят всяка сутрин.</span></div></div>
+    <div class="bv-bens">
+      <div class="bv-ben bv-rv"><span class="bv-ico">🌡️</span><div><strong>Топлина и релакс за минути</strong><span>Приятно затопляне още при първото нанасяне.</span></div></div>
+      <div class="bv-ben bv-rv"><span class="bv-ico">💧</span><div><strong>Действа в дълбочина</strong><span>Не остава само на повърхността – малко количество е достатъчно.</span></div></div>
+      <div class="bv-ben bv-rv"><span class="bv-ico">🦵</span><div><strong>Колене, кръст, рамене, врат</strong><span>Един гел за всички натоварени зони, включително глезени и лакти.</span></div></div>
+      <div class="bv-ben bv-rv"><span class="bv-ico">🌿</span><div><strong>Натурална формула</strong><span>Пчелна отрова, куркума, зелен чай и витамин D3.</span></div></div>
+      <div class="bv-ben bv-rv"><span class="bv-ico">👕</span><div><strong>Попива бързо, без мазни следи</strong><span>Обличаш се минути след нанасянето.</span></div></div>
+      <div class="bv-ben bv-rv"><span class="bv-ico">👵</span><div><strong>Предпочитан от хора над 50</strong><span>Хиляди българи го нанасят всяка сутрин.</span></div></div>
     </div>
 
-    <div class="assure">
-      <div class="card rv">
-        <h3><span class="ico">🔬</span>Качество и безопасност</h3>
-        <ul class="qual">
+    <div class="bv-assure">
+      <div class="bv-card bv-rv">
+        <h3><span class="bv-ico">🔬</span>Качество и безопасност</h3>
+        <ul class="bv-qual">
           <li>Отговаря на европейския Регламент (ЕО) № 1223/2009 за козметични продукти</li>
           <li>Преминал оценка за безопасност</li>
           <li>Нотифициран в европейския портал за козметични продукти (CPNP)</li>
           <li>Пълният списък на съставките е отпечатан върху опаковката</li>
         </ul>
       </div>
-      <div class="card guar rv">
-        <svg class="seal" viewBox="0 0 120 120" aria-hidden="true">
-          <defs><path id="sealc" d="M60 60m-43 0a43 43 0 1 1 86 0a43 43 0 1 1-86 0"/></defs>
+      <div class="bv-card bv-guar bv-rv">
+        <svg class="bv-seal" viewBox="0 0 120 120" aria-hidden="true">
+          <defs><path id="bv-sealc" d="M60 60m-43 0a43 43 0 1 1 86 0a43 43 0 1 1-86 0"/></defs>
           <circle cx="60" cy="60" r="57" fill="#F5A623"/><circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 4"/>
           <circle cx="60" cy="60" r="34" fill="#fff"/>
-          <text font-family="Manrope,sans-serif" font-weight="800" font-size="9.5" fill="#24180C" letter-spacing="1.6"><textPath href="#sealc">ГАРАНЦИЯ · ВРЪЩАМЕ ПАРИТЕ · ГАРАНЦИЯ ·</textPath></text>
+          <text font-family="Manrope,sans-serif" font-weight="800" font-size="9.5" fill="#24180C" letter-spacing="1.6"><textPath href="#bv-sealc">ГАРАНЦИЯ · ВРЪЩАМЕ ПАРИТЕ · ГАРАНЦИЯ ·</textPath></text>
           <text x="60" y="63" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="30" fill="#D62A1E">30</text>
           <text x="60" y="78" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="11" fill="#24180C">ДНИ</text>
         </svg>
@@ -519,7 +535,7 @@ details>div p:last-child{margin:0}
       </div>
     </div>
 
-    <div class="callbar">
+    <div class="bv-callbar">
       <div><small>За бърза поръчка по телефона</small><a href="tel:+359988880507">📞 0988 88 05 07</a></div>
       <div><small>всеки ден от 10:00 до 21:00 ч.</small><strong>🚚 Доставка 1–2 дни · Плащане при получаване</strong></div>
     </div>
@@ -527,106 +543,106 @@ details>div p:last-child{margin:0}
 </section>
 
 <!-- ============ ОФЕРТИ ============ -->
-<section class="offers" id="offers">
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Специални цени</span>
-      <h2>Вземи своя пакет BeeVenom <em class="accent">на изгодна цена</em></h2>
-      <p class="lead">Повечето клиенти избират пакет – гелът стига за повече зони, а цената на туба пада почти наполовина.</p>
+<section class="bv-offers" id="bv-offers">
+  <div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Специални цени</span>
+      <h2>Вземи своя пакет BeeVenom <em class="bv-accent">на изгодна цена</em></h2>
+      <p class="bv-lead">Повечето клиенти избират пакет – гелът стига за повече зони, а цената на туба пада почти наполовина.</p>
     </div>
-    <div class="packs">
-      <article class="pack">
-        <span class="off">−11%</span>
-        <div class="pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_02_42_PM-1049163.png?format=webp" width="512" height="640" alt="1 туба BeeVenom с кутия"></div>
+    <div class="bv-packs">
+      <article class="bv-pack">
+        <span class="bv-off">−11%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_02_42_PM-1049163.png?format=webp" width="512" height="640" alt="1 туба BeeVenom с кутия"></div>
         <h3>1 туба</h3>
-        <p class="pack__sub">40 дози · за да пробваш</p>
+        <p class="bv-pack__sub">40 дози · за да пробваш</p>
         <ul>
           <li>Натурална грижа за една зона</li>
           <li>Попива бързо, без мазни следи</li>
           <li>30 дни тест период</li>
         </ul>
-        <div class="price"><b>€15,90</b><s>€17,90</s></div>
-        <p class="unit">Специална цена</p>
-        <a class="btn" href="https://beevenombg.eu/checkout1">Избирам този пакет</a>
-        <p class="pack__note">Плащаш при получаване</p>
+        <div class="bv-price"><b>€15,90</b><s>€17,90</s></div>
+        <p class="bv-unit">Специална цена</p>
+        <a class="bv-btn" href="https://beevenombg.eu/checkout1">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
       </article>
 
-      <article class="pack pack--hot">
-        <span class="ribbon">⭐ Най-популярен</span>
-        <span class="off">−57%</span>
-        <div class="pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png?format=webp" width="640" height="640" alt="3 туби BeeVenom – 2 + 1 подарък"></div>
+      <article class="bv-pack bv-pack--hot">
+        <span class="bv-ribbon">⭐ Най-популярен</span>
+        <span class="bv-off">−57%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png?format=webp" width="640" height="640" alt="3 туби BeeVenom – 2 + 1 подарък"></div>
         <h3>2 + 1 подарък</h3>
-        <p class="pack__sub">3 туби · 120 дози</p>
+        <p class="bv-pack__sub">3 туби · 120 дози</p>
         <ul>
-          <li class="gift">8 билкови пластира подарък (стойност €7,90)</li>
+          <li class="bv-gift">8 билкови пластира подарък (стойност €7,90)</li>
           <li>За продължителна употреба</li>
           <li>Спестяваш €30,80</li>
         </ul>
-        <div class="price"><b>€22,90</b><s>€53,70</s></div>
-        <p class="unit">само €7,63 за туба</p>
-        <a class="btn pulse" href="https://beevenombg.eu/checkout2">Избирам този пакет</a>
-        <p class="pack__note">Плащаш при получаване</p>
+        <div class="bv-price"><b>€22,90</b><s>€53,70</s></div>
+        <p class="bv-unit">само €7,63 за туба</p>
+        <a class="bv-btn bv-pulse" href="https://beevenombg.eu/checkout2">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
       </article>
 
-      <article class="pack pack--best">
-        <span class="ribbon ribbon--gold">💰 Най-изгоден</span>
-        <span class="off">−67%</span>
-        <div class="pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_51_PM-1049172.png?format=webp" width="640" height="640" alt="5 туби BeeVenom – 3 + 2 подарък"></div>
+      <article class="bv-pack bv-pack--best">
+        <span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>
+        <span class="bv-off">−67%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_51_PM-1049172.png?format=webp" width="640" height="640" alt="5 туби BeeVenom – 3 + 2 подарък"></div>
         <h3>3 + 2 подарък</h3>
-        <p class="pack__sub">5 туби · 200 дози</p>
+        <p class="bv-pack__sub">5 туби · 200 дози</p>
         <ul>
-          <li class="gift">16 билкови пластира подарък (стойност €14,90)</li>
+          <li class="bv-gift">16 билкови пластира подарък (стойност €14,90)</li>
           <li>За цялото семейство или няколко зони</li>
           <li>Спестяваш €59,60</li>
         </ul>
-        <div class="price"><b>€29,90</b><s>€89,50</s></div>
-        <p class="unit">само €5,98 за туба</p>
-        <a class="btn" href="https://beevenombg.eu/checkout3">Избирам този пакет</a>
-        <p class="pack__note">Плащаш при получаване</p>
+        <div class="bv-price"><b>€29,90</b><s>€89,50</s></div>
+        <p class="bv-unit">само €5,98 за туба</p>
+        <a class="bv-btn" href="https://beevenombg.eu/checkout3">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
       </article>
     </div>
-    <div class="pay">
+    <div class="bv-pay">
       <span>🔒 Без данни за карта в сайта</span><span>💶 Наложен платеж</span><span>📲 SMS с номер за проследяване</span><span>🛡️ 30 дни тест период</span>
     </div>
   </div>
 </section>
 
 <!-- ============ СЪСТАВ ============ -->
-<section id="sastav">
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Какво съдържа гелът?</span>
-      <h2>4 натурални съставки, <em class="accent">подбрани да работят заедно</em></h2>
-      <p class="lead">Всяка съставка е внимателно подбрана, за да подкрепя усещането за комфорт и да се грижи за тялото при всяко движение.</p>
+<section id="bv-sastav">
+  <div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Какво съдържа гелът?</span>
+      <h2>4 натурални съставки, <em class="bv-accent">подбрани да работят заедно</em></h2>
+      <p class="bv-lead">Всяка съставка е внимателно подбрана, за да подкрепя усещането за комфорт и да се грижи за тялото при всяко движение.</p>
     </div>
-    <div class="ings">
-      <article class="ing rv">
-        <div class="ing__img"><img loading="lazy" style="margin-left:-2.27%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Пчела и пчелна пита"></div>
-        <div class="ing__body"><h3>Пчелна отрова</h3><p>Звездата на формулата. Дава характерното затопляне и превръща масажа в дълбока грижа.</p></div>
+    <div class="bv-ings">
+      <article class="bv-ing bv-rv">
+        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-2.27%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Пчела и пчелна пита"></div>
+        <div class="bv-ing__body"><h3>Пчелна отрова</h3><p>Звездата на формулата. Дава характерното затопляне и превръща масажа в дълбока грижа.</p></div>
       </article>
-      <article class="ing rv">
-        <div class="ing__img"><img loading="lazy" style="margin-left:-110.68%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Корен и прах от куркума"></div>
-        <div class="ing__body"><h3>Куркума</h3><p>Златният корен, познат от векове в традиционната грижа за натоварените зони.</p></div>
+      <article class="bv-ing bv-rv">
+        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-110.68%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Корен и прах от куркума"></div>
+        <div class="bv-ing__body"><h3>Куркума</h3><p>Златният корен, познат от векове в традиционната грижа за натоварените зони.</p></div>
       </article>
-      <article class="ing rv">
-        <div class="ing__img"><img loading="lazy" style="margin-left:-224.55%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Чаша зелен чай и листа"></div>
-        <div class="ing__body"><h3>Зелен чай (EGCG)</h3><p>Богат на антиоксиданти, които се грижат за кожата в третираната зона.</p></div>
+      <article class="bv-ing bv-rv">
+        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-224.55%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Чаша зелен чай и листа"></div>
+        <div class="bv-ing__body"><h3>Зелен чай (EGCG)</h3><p>Богат на антиоксиданти, които се грижат за кожата в третираната зона.</p></div>
       </article>
-      <article class="ing rv">
-        <div class="ing__img"><img loading="lazy" style="margin-left:-334.32%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Капсула витамин D3"></div>
-        <div class="ing__body"><h3>Витамин D3</h3><p>Допълва формулата и подхранва кожата при ежедневна употреба.</p></div>
+      <article class="bv-ing bv-rv">
+        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-334.32%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Капсула витамин D3"></div>
+        <div class="bv-ing__body"><h3>Витамин D3</h3><p>Допълва формулата и подхранва кожата при ежедневна употреба.</p></div>
       </article>
     </div>
 
-    <div class="compare rv" role="region" aria-label="Сравнение" tabindex="0">
+    <div class="bv-compare bv-rv" role="region" aria-label="Сравнение" tabindex="0">
       <table>
-        <thead><tr><th scope="col">Сравни сам</th><th scope="col" class="us">BeeVenom</th><th scope="col" class="them">Обикновен масажен крем</th></tr></thead>
+        <thead><tr><th scope="col">Сравни сам</th><th scope="col" class="bv-us">BeeVenom</th><th scope="col" class="bv-them">Обикновен масажен крем</th></tr></thead>
         <tbody>
-          <tr><td>Пчелна отрова в 10× концентрирана формула</td><td class="us"><span class="yes">✓</span></td><td class="them">–</td></tr>
-          <tr><td>4 натурални активни съставки в една туба</td><td class="us"><span class="yes">✓</span></td><td class="them">обикновено 1–2</td></tr>
-          <tr><td>Попива бързо, без мазни следи по дрехите</td><td class="us"><span class="yes">✓</span></td><td class="them">често мазен</td></tr>
-          <tr><td>Малко количество стига – около 40 дози в туба</td><td class="us"><span class="yes">✓</span></td><td class="them">–</td></tr>
-          <tr><td>Плащане при получаване и 30 дни тест период</td><td class="us"><span class="yes">✓</span></td><td class="them">–</td></tr>
+          <tr><td>Пчелна отрова в 10× концентрирана формула</td><td class="bv-us"><span class="bv-yes">✓</span></td><td class="bv-them">–</td></tr>
+          <tr><td>4 натурални активни съставки в една туба</td><td class="bv-us"><span class="bv-yes">✓</span></td><td class="bv-them">обикновено 1–2</td></tr>
+          <tr><td>Попива бързо, без мазни следи по дрехите</td><td class="bv-us"><span class="bv-yes">✓</span></td><td class="bv-them">често мазен</td></tr>
+          <tr><td>Малко количество стига – около 40 дози в туба</td><td class="bv-us"><span class="bv-yes">✓</span></td><td class="bv-them">–</td></tr>
+          <tr><td>Плащане при получаване и 30 дни тест период</td><td class="bv-us"><span class="bv-yes">✓</span></td><td class="bv-them">–</td></tr>
         </tbody>
       </table>
     </div>
@@ -635,117 +651,167 @@ details>div p:last-child{margin:0}
 
 <!-- ============ КАК СЕ ИЗПОЛЗВА ============ -->
 <section style="background:var(--honey-50)">
-  <div class="wrap how__grid">
+  <div class="bv-wrap bv-how__grid">
     <div>
-      <span class="eyebrow">Как BeeVenom се грижи за тялото?</span>
-      <h2>Една минута на ден. <em class="accent">Това е всичко.</em></h2>
-      <ol class="steps">
+      <span class="bv-eyebrow">Как BeeVenom се грижи за тялото?</span>
+      <h2>Една минута на ден. <em class="bv-accent">Това е всичко.</em></h2>
+      <ol class="bv-steps">
         <li><div><strong>Почисти и подсуши кожата</strong><span>Нанася се върху чиста и суха кожа.</span></div></li>
         <li><div><strong>Вземи количество колкото грахово зърно</strong><span>Формулата е концентрирана – малко е достатъчно.</span></div></li>
         <li><div><strong>Нанеси върху зоната</strong><span>Коляно, кръст, рамо, врат, лакът или глезен.</span></div></li>
         <li><div><strong>Масажирай до пълно попиване</strong><span>С леки кръгови движения 30–60 секунди. 2–3 пъти дневно или вечер преди лягане.</span></div></li>
       </ol>
-      <div class="note"><span>💡</span><span>След употреба измий ръцете си. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите.</span></div>
+      <div class="bv-note"><span>💡</span><span>След употреба измий ръцете си. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите.</span></div>
     </div>
-    <div class="how__media rv">
+    <div class="bv-how__media bv-rv">
       <img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/ChatGPT_Image_Jul_17_2026_11_22_12_PM-4319747.png?format=webp" width="675" height="1200" alt="Как да използвате BeeVenom гел – 4 стъпки">
     </div>
   </div>
 </section>
 
 <!-- ============ КАК СЕ ПРОМЕНЯ ЕЖЕДНЕВИЕТО ============ -->
-<section class="timeline">
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Как се променя ежедневието</span>
-      <h2>Какво можеш да усетиш <em class="accent">при редовна употреба?</em></h2>
-      <p class="lead">Последователната грижа може да помогне за по-комфортно движение, по-малко усещане за скованост и повече увереност в ежедневието.</p>
+<section class="bv-timeline">
+  <div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Как се променя ежедневието</span>
+      <h2>Какво можеш да усетиш <em class="bv-accent">при редовна употреба?</em></h2>
+      <p class="bv-lead">Последователната грижа може да помогне за по-комфортно движение, по-малко усещане за скованост и повече увереност в ежедневието.</p>
     </div>
-    <div class="tl">
-      <div class="tl__item rv"><span class="tl__emo" aria-hidden="true">🌡️</span><span class="tl__when">1-во нанасяне</span><h3>Приятно затопляне</h3><ul><li>Усещане за топлина в зоната</li><li>Повече комфорт още сега</li></ul></div>
-      <div class="tl__item rv"><span class="tl__emo" aria-hidden="true">🦵</span><span class="tl__when">След 7 дни</span><h3>По-леко движение</h3><ul><li>По-спокойни първи стъпки</li><li>По-малко сутрешна скованост</li></ul></div>
-      <div class="tl__item rv"><span class="tl__emo" aria-hidden="true">👣</span><span class="tl__when">След 14 дни</span><h3>Повече увереност</h3><ul><li>При ходене и по стълбите</li><li>Ежедневните задачи – по-лесно</li></ul></div>
-      <div class="tl__item rv"><span class="tl__emo" aria-hidden="true">🏡</span><span class="tl__when">След 30 дни</span><h3>Грижата става навик</h3><ul><li>Комфортът се поддържа</li><li>Повече свобода за любимите неща</li></ul></div>
+    <div class="bv-tl">
+      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🌡️</span><span class="bv-tl__when">1-во нанасяне</span><h3>Приятно затопляне</h3><ul><li>Усещане за топлина в зоната</li><li>Повече комфорт още сега</li></ul></div>
+      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🦵</span><span class="bv-tl__when">След 7 дни</span><h3>По-леко движение</h3><ul><li>По-спокойни първи стъпки</li><li>По-малко сутрешна скованост</li></ul></div>
+      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">👣</span><span class="bv-tl__when">След 14 дни</span><h3>Повече увереност</h3><ul><li>При ходене и по стълбите</li><li>Ежедневните задачи – по-лесно</li></ul></div>
+      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🏡</span><span class="bv-tl__when">След 30 дни</span><h3>Грижата става навик</h3><ul><li>Комфортът се поддържа</li><li>Повече свобода за любимите неща</li></ul></div>
     </div>
-    <p class="small center" style="margin-top:18px">Индивидуалното усещане и резултатите могат да се различават. Продуктът е предназначен за външна козметична употреба и не е лекарство.</p>
+    <p class="bv-small bv-center" style="margin-top:18px">Индивидуалното усещане и резултатите могат да се различават. Продуктът е предназначен за външна козметична употреба и не е лекарство.</p>
 
-    <div class="life rv">
-      <div class="life__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/b2730c6b6a2f9718b9824176667f6d76_1774720055_shan9mwu-4720283.png?format=webp" width="1200" height="1200" alt="Активна възрастна двойка на разходка в селото"></div>
-      <div class="life__txt">
-        <h3>Повече движение. Повече увереност. <em class="accent" style="color:#FFC65C">Повече време за любимите хора.</em></h3>
+    <div class="bv-life bv-rv">
+      <div class="bv-life__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/b2730c6b6a2f9718b9824176667f6d76_1774720055_shan9mwu-4720283.png?format=webp" width="1200" height="1200" alt="Активна възрастна двойка на разходка в селото"></div>
+      <div class="bv-life__txt">
+        <h3>Повече движение. Повече увереност. <em class="bv-accent" style="color:#FFC65C">Повече време за любимите хора.</em></h3>
         <p>Не отлагай грижата за себе си. Нанасяй гела редовно върху колене, кръст, рамене, врат или други натоварени зони.</p>
-        <a class="btn" href="#offers">Виж специалната оферта <span class="arr">→</span></a>
+        <a class="bv-btn" href="#bv-offers">Виж специалната оферта <span class="bv-arr">→</span></a>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============ ОТЗИВИ ============ -->
-<section id="otzivi">
-  <div class="wrap">
-    <div class="rev-head center">
-      <span class="eyebrow">Какво споделят нашите клиенти</span>
-      <span class="stars" aria-hidden="true">★★★★★</span>
-      <h2 style="margin:0">Над 30 000 българи вече <em class="accent">го използват</em></h2>
-      <p class="small" style="margin:6px 0 0">Коментари на клиенти от нашата Facebook страница</p>
+<section id="bv-otzivi">
+  <div class="bv-wrap">
+    <div class="bv-rev-head bv-center">
+      <span class="bv-eyebrow">Какво споделят нашите клиенти</span>
+      <span class="bv-stars" aria-hidden="true">★★★★★</span>
+      <h2 style="margin:0">Над 30 000 българи вече <em class="bv-accent">го използват</em></h2>
+      <p class="bv-small" style="margin:6px 0 0">Коментари на клиенти от нашата Facebook страница</p>
     </div>
-    <div class="shots">
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-650-6407165.jpg?format=webp" width="1290" height="540" alt="Коментар: Взех го за дядо ми, защото има болки в колената… казва, че му става по-леко при движение"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-08-20_16-51-42-366-7245689.jpg?format=webp" width="1200" height="331" alt="Коментар: Взех на баща ми, на третия ден усети облекчение"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-483-6407165.jpg?format=webp" width="1290" height="425" alt="Коментар: Обичам да спортувам… този гел ми помогна да се възстановя по-бързо"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-294-6407165.jpg?format=webp" width="1290" height="359" alt="Коментар: Мажа се сутрин и вечер и се чувствам добре"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/viber_image_2025-12-04_15-04-48-480-4855197.jpg?format=webp" width="1248" height="308" alt="Коментар: Благодаря, много бързо си получих пратката"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2026-01-10_172653-8058985.jpg?format=webp" width="331" height="106" alt="Коментар: Ползвах го веднъж и съм като новороден"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2025-11-26_142042-4159712.jpg?format=webp" width="318" height="111" alt="Коментар: Доволна съм"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/viber_image_2025-12-07_23-48-07-422-5144112.jpg?format=webp" width="1290" height="250" alt="Коментар: Пробвах го и почувствах облекчение"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2025-11-28_093843-4324362.jpg?format=webp" width="339" height="98" alt="Коментар: Има ефект, доволна съм"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-08-20_16-51-42-589-7245689.jpg?format=webp" width="1218" height="255" alt="Коментар: Взех и съм много доволна"></figure>
-      <figure class="shot rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2026-01-10_172530-8058986.jpg?format=webp" width="323" height="116" alt="Коментар: Пробвам го и съм много доволна"></figure>
+    <div class="bv-shots">
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-650-6407165.jpg?format=webp" width="1290" height="540" alt="Коментар: Взех го за дядо ми, защото има болки в колената… казва, че му става по-леко при движение"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-08-20_16-51-42-366-7245689.jpg?format=webp" width="1200" height="331" alt="Коментар: Взех на баща ми, на третия ден усети облекчение"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-483-6407165.jpg?format=webp" width="1290" height="425" alt="Коментар: Обичам да спортувам… този гел ми помогна да се възстановя по-бързо"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-04-17_09-25-28-294-6407165.jpg?format=webp" width="1290" height="359" alt="Коментар: Мажа се сутрин и вечер и се чувствам добре"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/viber_image_2025-12-04_15-04-48-480-4855197.jpg?format=webp" width="1248" height="308" alt="Коментар: Благодаря, много бързо си получих пратката"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2026-01-10_172653-8058985.jpg?format=webp" width="331" height="106" alt="Коментар: Ползвах го веднъж и съм като новороден"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2025-11-26_142042-4159712.jpg?format=webp" width="318" height="111" alt="Коментар: Доволна съм"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/viber_image_2025-12-07_23-48-07-422-5144112.jpg?format=webp" width="1290" height="250" alt="Коментар: Пробвах го и почувствах облекчение"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2025-11-28_093843-4324362.jpg?format=webp" width="339" height="98" alt="Коментар: Има ефект, доволна съм"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/store/viber_image_2026-08-20_16-51-42-589-7245689.jpg?format=webp" width="1218" height="255" alt="Коментар: Взех и съм много доволна"></figure>
+      <figure class="bv-shot bv-rv"><img loading="lazy" src="https://content.app-sources.com/s/144311920170045151/uploads/Изображения/Screenshot_2026-01-10_172530-8058986.jpg?format=webp" width="323" height="116" alt="Коментар: Пробвам го и съм много доволна"></figure>
     </div>
 
-    <div class="stories">
-      <article class="story rv">
-        <span class="stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
+    <div class="bv-stories">
+      <article class="bv-story bv-rv">
+        <span class="bv-stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
         <p>Честно казано го взех без особени очаквания. Пробвала съм толкова неща – кремове, пластири, билкови мехлеми. Казах си – последен път. Няколко дни по-късно се събудих и си помислих… нещо е различно. Не планирах да пиша. Но ето ме тук.</p>
-        <div class="who"><span class="av">Е</span><div><strong>Елена, 61 г.</strong><span>Каварна</span></div></div>
+        <div class="bv-who"><span class="bv-av">Е</span><div><strong>Елена, 61 г.</strong><span>Каварна</span></div></div>
       </article>
-      <article class="story rv">
-        <span class="stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
+      <article class="bv-story bv-rv">
+        <span class="bv-stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
         <p>Цял живот сме на крак – животните не чакат. Синът ми го поръча, казах му, че няма да помогне. Ама го пробвах. Сега всяка сутрин го нанасям, преди да изляза на двора. Вече трети месец го купуваме.</p>
-        <div class="who"><span class="av">П</span><div><strong>Пенка, 72 г.</strong><span>с. Брестница</span></div></div>
+        <div class="bv-who"><span class="bv-av">П</span><div><strong>Пенка, 72 г.</strong><span>с. Брестница</span></div></div>
       </article>
-      <article class="story rv">
-        <span class="stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
+      <article class="bv-story bv-rv">
+        <span class="bv-stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
         <p>Внучето всяка събота иска да го нося на рамо, а аз се измъквах. Един ден гледам комшията на стълбата да реже асмата. Викам му – как така? От две седмици се мажел с гел с пчелна отрова. Същия ден поръчах. Сега внучето пак се качва на рамото ми.</p>
-        <div class="who"><span class="av">И</span><div><strong>Иван, 68 г.</strong><span>Копривщица</span></div></div>
+        <div class="bv-who"><span class="bv-av">И</span><div><strong>Иван, 68 г.</strong><span>Копривщица</span></div></div>
       </article>
-      <article class="story rv">
-        <span class="stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
+      <article class="bv-story bv-rv">
+        <span class="bv-stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span>
         <p>Цял живот съм пял фолклор. С годините сутрин ставах все по-трудно и качването на сцената стана предизвикателство. Колега от ансамбъла ми препоръча гела. Сега го нанасям всяка сутрин преди репетиция – и на сцената пак съм себе си.</p>
-        <div class="who"><span class="av">В</span><div><strong>Васил, 67 г.</strong><span>Смолян</span></div></div>
+        <div class="bv-who"><span class="bv-av">В</span><div><strong>Васил, 67 г.</strong><span>Смолян</span></div></div>
       </article>
     </div>
   </div>
 </section>
 
 <!-- ============ ОФЕРТИ (повторение) ============ -->
-<section class="offers" id="offers-2" aria-label="Оферти">
-  <div class="wrap">
-    <div class="center">
-      <span class="eyebrow">Количествата са ограничени</span>
-      <h2>Възстанови лекотата в движението <em class="accent">още днес</em></h2>
+<section class="bv-offers" id="bv-offers-2" aria-label="Оферти">
+  <div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Количествата са ограничени</span>
+      <h2>Възстанови лекотата в движението <em class="bv-accent">още днес</em></h2>
     </div>
-    <div data-clone="offers"></div>
+    <div class="bv-packs">
+      <article class="bv-pack">
+        <span class="bv-off">−11%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_02_42_PM-1049163.png?format=webp" width="512" height="640" alt="1 туба BeeVenom с кутия"></div>
+        <h3>1 туба</h3>
+        <p class="bv-pack__sub">40 дози · за да пробваш</p>
+        <ul>
+          <li>Натурална грижа за една зона</li>
+          <li>Попива бързо, без мазни следи</li>
+          <li>30 дни тест период</li>
+        </ul>
+        <div class="bv-price"><b>€15,90</b><s>€17,90</s></div>
+        <p class="bv-unit">Специална цена</p>
+        <a class="bv-btn" href="https://beevenombg.eu/checkout1">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
+      </article>
+
+      <article class="bv-pack bv-pack--hot">
+        <span class="bv-ribbon">⭐ Най-популярен</span>
+        <span class="bv-off">−57%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png?format=webp" width="640" height="640" alt="3 туби BeeVenom – 2 + 1 подарък"></div>
+        <h3>2 + 1 подарък</h3>
+        <p class="bv-pack__sub">3 туби · 120 дози</p>
+        <ul>
+          <li class="bv-gift">8 билкови пластира подарък (стойност €7,90)</li>
+          <li>За продължителна употреба</li>
+          <li>Спестяваш €30,80</li>
+        </ul>
+        <div class="bv-price"><b>€22,90</b><s>€53,70</s></div>
+        <p class="bv-unit">само €7,63 за туба</p>
+        <a class="bv-btn bv-pulse" href="https://beevenombg.eu/checkout2">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
+      </article>
+
+      <article class="bv-pack bv-pack--best">
+        <span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>
+        <span class="bv-off">−67%</span>
+        <div class="bv-pack__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/thumbnails/640x480/Коментари/ChatGPT_Image_Sep_28_2026_11_46_51_PM-1049172.png?format=webp" width="640" height="640" alt="5 туби BeeVenom – 3 + 2 подарък"></div>
+        <h3>3 + 2 подарък</h3>
+        <p class="bv-pack__sub">5 туби · 200 дози</p>
+        <ul>
+          <li class="bv-gift">16 билкови пластира подарък (стойност €14,90)</li>
+          <li>За цялото семейство или няколко зони</li>
+          <li>Спестяваш €59,60</li>
+        </ul>
+        <div class="bv-price"><b>€29,90</b><s>€89,50</s></div>
+        <p class="bv-unit">само €5,98 за туба</p>
+        <a class="bv-btn" href="https://beevenombg.eu/checkout3">Избирам този пакет</a>
+        <p class="bv-pack__note">Плащаш при получаване</p>
+      </article>
+    </div>
   </div>
 </section>
 
 <!-- ============ ВЪПРОСИ ============ -->
-<section class="faq" id="faq">
-  <div class="wrap faq__wrap">
-    <div class="center">
-      <span class="eyebrow">Питай спокойно</span>
+<section class="bv-faq" id="bv-faq">
+  <div class="bv-wrap bv-faq__wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">Питай спокойно</span>
       <h2>Често задавани въпроси</h2>
-      <p class="lead">Събрахме всичко, което клиентите ни питат преди първата поръчка – с честни отговори, без увъртане.</p>
+      <p class="bv-lead">Събрахме всичко, което клиентите ни питат преди първата поръчка – с честни отговори, без увъртане.</p>
     </div>
 
     <h3>За продукта</h3>
@@ -771,43 +837,50 @@ details>div p:last-child{margin:0}
 </section>
 
 <!-- ============ ФИНАЛ ============ -->
-<section class="final">
-  <div class="wrap">
-    <div class="final__media"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова"></div>
-    <h2>Хиляди българи вече се събуждат <em class="accent">с по-леко движение.</em> Заслужаваш същото.</h2>
-    <p class="lead" style="margin:0 auto">Поръчай сега – плащаш чак когато пратката е в ръцете ти.</p>
-    <div class="cta-row">
-      <a class="btn pulse" href="#offers">Виж офертите <span class="arr">→</span></a>
-      <a class="btn-ghost" href="tel:+359988880507">📞 0988 88 05 07</a>
+<section class="bv-final">
+  <div class="bv-wrap">
+    <div class="bv-final__media"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова"></div>
+    <h2>Хиляди българи вече се събуждат <em class="bv-accent">с по-леко движение.</em> Заслужаваш същото.</h2>
+    <p class="bv-lead" style="margin:0 auto">Поръчай сега – плащаш чак когато пратката е в ръцете ти.</p>
+    <div class="bv-cta-row">
+      <a class="bv-btn bv-pulse" href="#bv-offers">Виж офертите <span class="bv-arr">→</span></a>
+      <a class="bv-btn-ghost" href="tel:+359988880507">📞 0988 88 05 07</a>
     </div>
-    <div class="micro" style="justify-content:center"><span>Плащаш при получаване</span><span>Доставка 1–2 дни</span><span>30 дни тест период</span></div>
+    <div class="bv-micro" style="justify-content:center"><span>Плащаш при получаване</span><span>Доставка 1–2 дни</span><span>30 дни тест период</span></div>
   </div>
 </section>
 
 </main>
 
-<footer class="footer">
-  <div class="wrap">
+<footer class="bv-footer">
+  <div class="bv-wrap">
     <p><strong style="color:#fff">BeeVenom Care Gel</strong> · Поръчки по телефона: <a href="tel:+359988880507">0988 88 05 07</a> (всеки ден 10–21 ч.)</p>
     <p>Козметичен продукт за външна употреба. Не е лекарство и не замества лечение, предписано от лекар. Индивидуалните резултати могат да се различават.</p>
-    <p>© <span id="yr">2026</span> BeeVenom</p>
+    <p>© <span id="bv-yr">2026</span> BeeVenom</p>
   </div>
 </footer>
 
 <!-- лепкав бутон на телефон -->
-<div class="sticky" id="sticky" aria-hidden="true">
-  <a class="call" href="tel:+359988880507" aria-label="Обади се">📞</a>
-  <div class="sticky__txt"><strong>от €5,98 за туба</strong>плащаш при получаване</div>
-  <a class="btn" href="#offers" tabindex="-1">Избери пакет</a>
+<div class="bv-sticky" id="bv-sticky" aria-hidden="true">
+  <a class="bv-call" href="tel:+359988880507" aria-label="Обади се">📞</a>
+  <div class="bv-sticky__txt"><strong>от €5,98 за туба</strong>плащаш при получаване</div>
+  <a class="bv-btn" href="#bv-offers" tabindex="-1">Избери пакет</a>
+</div>
 </div>
 
 <script>
 (function(){
-  // второ копие на офертите (без дублиран HTML)
-  var src = document.querySelector('#offers .packs');
-  document.querySelectorAll('[data-clone="offers"]').forEach(function(slot){
-    if (src) slot.appendChild(src.cloneNode(true));
-  });
+  var root = document.getElementById('bvl');
+  if (!root) return;
+  root.classList.add('bv-js');
+
+  // фонът на цялата ширина на екрана, дори в колона на ConvertBuilder
+  function sbw(){ document.documentElement.style.setProperty('--bv-sbw', (window.innerWidth - document.documentElement.clientWidth) + 'px'); }
+  sbw(); window.addEventListener('resize', sbw);
+
+  // лепкавият бутон – директно в <body>, за да не зависи от обвивките на страницата
+  var sticky = document.getElementById('bv-sticky');
+  if (sticky) document.body.appendChild(sticky);
 
   // очаквана доставка: 1–2 работни дни
   function addWorkdays(d, n){ d = new Date(d); while(n > 0){ d.setDate(d.getDate()+1); var w = d.getDay(); if (w !== 0 && w !== 6) n--; } return d; }
@@ -815,28 +888,26 @@ details>div p:last-child{margin:0}
     var wd = new Intl.DateTimeFormat('bg-BG', {weekday:'short'}), mo = new Intl.DateTimeFormat('bg-BG', {month:'long'});
     var d1 = addWorkdays(new Date(),1), d2 = addWorkdays(new Date(),2);
     function day(d){ return wd.format(d) + ', ' + d.getDate(); }
-    document.getElementById('eta').textContent = d1.getMonth() === d2.getMonth()
+    document.getElementById('bv-eta').textContent = d1.getMonth() === d2.getMonth()
       ? day(d1) + ' – ' + day(d2) + ' ' + mo.format(d2)
       : day(d1) + ' ' + mo.format(d1) + ' – ' + day(d2) + ' ' + mo.format(d2);
   } catch(e) {}
-  document.getElementById('yr').textContent = new Date().getFullYear();
+  document.getElementById('bv-yr').textContent = new Date().getFullYear();
 
   // лепкав бутон: показва се след началния екран, крие се при офертите
-  var sticky = document.getElementById('sticky');
-  var hero = document.querySelector('.hero');
-  var offerEls = document.querySelectorAll('.offers');
+  var hero = root.querySelector('.bv-hero');
   var heroVisible = true, visibleOffers = new Set();
-  function upd(){ var on = !heroVisible && visibleOffers.size === 0; sticky.classList.toggle('show', on); sticky.setAttribute('aria-hidden', on ? 'false' : 'true'); }
+  function upd(){ if (!sticky) return; var on = !heroVisible && visibleOffers.size === 0; sticky.classList.toggle('bv-show', on); sticky.setAttribute('aria-hidden', on ? 'false' : 'true'); }
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(function(es){ heroVisible = es[0].isIntersecting; upd(); }).observe(hero);
     var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) visibleOffers.add(e.target); else visibleOffers.delete(e.target); }); upd(); });
-    offerEls.forEach(function(el){ io.observe(el); });
+    root.querySelectorAll('.bv-offers').forEach(function(el){ io.observe(el); });
 
     // плавно появяване
-    var rv = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); rv.unobserve(e.target); } }); }, {rootMargin:'0px 0px -8% 0px'});
-    document.querySelectorAll('.rv').forEach(function(el){ rv.observe(el); });
+    var rv = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('bv-in'); rv.unobserve(e.target); } }); }, {rootMargin:'0px 0px -8% 0px'});
+    root.querySelectorAll('.bv-rv').forEach(function(el){ rv.observe(el); });
   } else {
-    document.querySelectorAll('.rv').forEach(function(el){ el.classList.add('in'); });
+    root.classList.remove('bv-js');
   }
 })();
 </script>
