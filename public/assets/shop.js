@@ -239,6 +239,20 @@ for (const ana of $$(".anatomy")) {
   }
 }
 
+/* ---------- two kinds of cards side by side: the switch shows one anatomy at a time ---------- */
+for (const box of $$("[data-kinds]")) {
+  const btns = $$(".kind-switch button", box);
+  for (const b of btns) {
+    b.addEventListener("click", () => {
+      for (const x of btns) x.setAttribute("aria-pressed", String(x === b));
+      for (const ana of $$(".anatomy[data-kind]", box)) {
+        ana.hidden = ana.dataset.kind !== b.dataset.kind;
+        if (!ana.hidden) $$("[data-reveal]", ana).forEach((el) => el.classList.add("in"));
+      }
+    });
+  }
+}
+
 /* ---------- gallery rail: arrows, mouse drag, lightbox ---------- */
 for (const wrap of $$("[data-gallery]")) {
   const rail = $(".rail", wrap);
