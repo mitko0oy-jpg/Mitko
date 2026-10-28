@@ -284,3 +284,44 @@ test("lessons and texts: empty template, written lesson, locked text", async () 
   r = await kid(`learn/unit/${unit.slug}/lesson`);
   assert.equal(r.item, null);
 });
+
+test("shop: order with cash on delivery, admin list and status", async () => {
+  const order = (data) =>
+    fetch(`${BASE}/api/orders`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data) }).then(async (r) => ({ status: r.status, ...(await r.json()) }));
+  const good = { package: "duo", shipping: "address", name: "Иван Тестов", phone: "+359 888 12 34 56", city: "Пловдив", place: "ул. „Тестова“ 1", note: run, price: 1 };
+  let r = await order({ ...good, phone: "123" });
+  assert.equal(r.error, "phone");
+  r = await order({ ...good, package: "nope" });
+  assert.equal(r.error, "package");
+  r = await order(good);
+  assert.equal(r.status, 200);
+  assert.equal(r.total, 4490 + 590, "the server prices the order, the browser's price is ignored");
+  const id = r.id;
+
+  // Orders are only for admins: a parent gets 403 until the role is given.
+  const boss = client();
+  await boss("auth/register", { name: "Шеф", email: `boss.${run}@example.com`, password: "parola123", consent: true });
+  r = await boss("orders");
+  assert.equal(r.status, 403);
+  await admin("role", { email: `boss.${run}@example.com`, role: "admin" });
+  r = await boss("orders?status=new");
+  const mine = r.orders.find((o) => Number(o.id) === id);
+  assert.equal(mine.phone, "0888123456");
+  assert.equal(mine.note, run);
+  r = await boss(`orders/${id}`, { status: "sent" });
+  assert.equal(r.status, 200);
+  r = await boss("orders?status=sent");
+  assert.ok(r.orders.some((o) => Number(o.id) === id));
+  r = await boss(`orders/${id}`, { status: "lost" });
+  assert.equal(r.status, 400);
+});
+
+test("shop pages show the catalog prices", async () => {
+  const { PACKAGES, euro } = await import("../public/assets/shop-catalog.js");
+  for (const page of ["karti-nvo", "karti-nvo/literatura", "karti-nvo/balgarski-ezik"]) {
+    const html = await readFile(new URL(`../public/${page}/index.html`, import.meta.url), "utf8");
+    const found = [...html.matchAll(/data-price="([^"]+)">([^<]*)</g)];
+    assert.ok(found.length > 0, page);
+    for (const [, key, text] of found) assert.equal(text.replace(/&nbsp;/g, " "), euro(PACKAGES[key].price), `${page}: ${key}`);
+  }
+});

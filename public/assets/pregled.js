@@ -5,6 +5,7 @@ import { lessonHtml, readingHtml } from "./lesson-view.js";
 const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене" };
 let filter = "review";
 let current = null;
+let role = "";
 
 function itemBody(kind, d) {
   if (kind === "cards" || kind === "diagnostic") {
@@ -118,7 +119,7 @@ async function list() {
   const d = await api("review/modules");
   const total = d.modules.reduce((s, m) => s + m.total, 0);
   const approved = d.modules.reduce((s, m) => s + m.approved, 0);
-  $("main").innerHTML = `<h1>Преглед на съдържанието</h1>
+  $("main").innerHTML = `${role === "admin" ? '<p><a class="btn ghost" href="/poruchki/">Поръчки от сайта →</a></p>' : ""}<h1>Преглед на съдържанието</h1>
     <p class="lead">Отвори модул и прегледай всеки елемент. „Одобрено“ го пуска към децата. „Коментар“ ми казва какво да поправя – след поправката той пак идва тук за одобрение.</p>
     <p class="notice info">Одобрени <b>${approved}</b> от ${total}.</p>
     <div class="mods">${d.modules
@@ -135,6 +136,7 @@ async function list() {
 
 async function load() {
   const m = await guard("reviewer");
+  role = m.user?.role || "";
   topbar(m);
   await list();
 }

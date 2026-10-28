@@ -55,6 +55,12 @@ export default handle(async (req) => {
     return json({ users: rows });
   }
 
+  // Shop orders, newest first (the same list admins see on /poruchki/).
+  if (req.method === "GET" && parts[0] === "orders") {
+    const rows = await q("SELECT * FROM orders ORDER BY created_at DESC LIMIT 200");
+    return json({ orders: rows });
+  }
+
   if (req.method === "GET" && parts[0] === "export") {
     const modules = await q("SELECT * FROM modules ORDER BY grade, position");
     const items = await q("SELECT module_slug, ext_id, position, data, status, reviewed_at, updated_at FROM items ORDER BY module_slug, position");
@@ -142,6 +148,15 @@ export default handle(async (req) => {
     if (!email || b.confirm !== email) throw bad("confirm", "Повтори имейла в confirm.");
     const r = await q("DELETE FROM users WHERE email = $1 RETURNING id", [email]);
     return json({ ok: true, deleted: r.length });
+  }
+
+  // Give an existing account a role, e.g. admin for the person who handles the orders.
+  if (parts[0] === "role") {
+    const email = str(b.email, 200).toLowerCase();
+    if (!["parent", "reviewer", "admin"].includes(b.role)) throw bad("role", "Ролята е parent, reviewer или admin.");
+    const r = await q("UPDATE users SET role = $2 WHERE email = $1 RETURNING id", [email, b.role]);
+    if (!r.length) throw notFound("Няма профил с този имейл.");
+    return json({ ok: true });
   }
 
   if (parts[0] === "codes") {
