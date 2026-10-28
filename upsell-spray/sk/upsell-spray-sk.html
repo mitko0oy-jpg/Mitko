@@ -547,7 +547,7 @@
 
   function each(list, fn) { Array.prototype.forEach.call(list, fn); }
   // словашки формат: 12,90 € и 48 %
-  function money(n) { return n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency; }
+  function money(n) { return n.toFixed(2).replace('.', ',') + '\u00a0' + CONFIG.currency; }
 
   // Цени и имейл
   var save = CONFIG.priceOld - CONFIG.priceNew;
@@ -555,7 +555,7 @@
     'new': money(CONFIG.priceNew),
     old: money(CONFIG.priceOld),
     save: money(save),
-    pct: Math.round(save / CONFIG.priceOld * 100) + ' %',
+    pct: Math.round(save / CONFIG.priceOld * 100) + '\u00a0%',
     email: CONFIG.email
   };
   each(root.querySelectorAll('[data-bvu]'), function (el) {
