@@ -98,6 +98,34 @@ addEventListener("scroll", onScroll, { passive: true });
 addEventListener("resize", onScroll);
 frame();
 
+/* ---------- headings come in word by word: wrap each word, keep the inner spans and their styles ---------- */
+if (!reduce) {
+  for (const h of $$(".h2[data-reveal]")) {
+    let w = 0;
+    const walk = (node) => {
+      for (const n of [...node.childNodes]) {
+        if (n.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          for (const part of n.textContent.split(/(\s+)/)) {
+            if (!part) continue;
+            if (/^\s+$/.test(part)) frag.append(part);
+            else {
+              const sp = document.createElement("span");
+              sp.className = "wd";
+              sp.style.setProperty("--w", w++);
+              sp.textContent = part;
+              frag.append(sp);
+            }
+          }
+          n.replaceWith(frag);
+        } else if (n.nodeType === 1) walk(n);
+      }
+    };
+    walk(h);
+    h.classList.add("words");
+  }
+}
+
 /* ---------- reveal on scroll, counters, step dots ---------- */
 const io = new IntersectionObserver(
   (entries) => {
