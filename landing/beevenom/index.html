@@ -171,7 +171,10 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-stat{background:var(--night-2);border:1px solid rgba(255,198,92,.18);border-radius:var(--radius-s);padding:18px}
 #bvl .bv-stat b{display:block;font-size:40px;line-height:1;color:#FFC65C;letter-spacing:-.03em;margin-bottom:8px}
 #bvl .bv-stat span{font-size:15px;line-height:1.35;color:#E9D6B8}
-#bvl .bv-formula__media{border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.35);max-width:440px;margin:0 auto}
+#bvl .bv-formula__fig{margin:0 auto;max-width:440px;width:100%}
+#bvl .bv-formula__media{border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.35);background:var(--night)}
+#bvl .bv-formula__video{display:block;width:100%;height:auto;aspect-ratio:720/1274;object-fit:cover;background:var(--night)}
+#bvl .bv-formula__fig figcaption{margin-top:10px;text-align:center;font-size:13px;color:#BFA684}
 
 /* ---------- benefits ---------- */
 #bvl .bv-bens{display:grid;gap:14px;margin-top:36px}
@@ -487,9 +490,14 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       </div>
       <a class="bv-btn" href="#bv-offers">Поръчай сега <span class="bv-arr">→</span></a>
     </div>
-    <div class="bv-formula__media bv-rv">
-      <img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/1774544082684-mxmgyru2ff9-4544169.jpg?format=webp" width="670" height="1200" alt="Коляно и четирите съставки на гела: пчелна отрова, куркума, зелен чай, витамин D3">
-    </div>
+    <figure class="bv-formula__fig bv-rv">
+      <div class="bv-formula__media">
+        <video class="bv-formula__video" muted loop playsinline preload="none" width="720" height="1274" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@2611c9fb91083fb98bfc6e1fe1d3d065d9ace492/landing/beevenom/media/kak-deistva.jpg" aria-label="Анимация: пчелата пуска златисти частици в гела, а топлината прониква в дълбочина към коляното">
+          <source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@2611c9fb91083fb98bfc6e1fe1d3d065d9ace492/landing/beevenom/media/kak-deistva.mp4" type="video/mp4">
+        </video>
+      </div>
+      <figcaption>Илюстративна анимация на затоплящото действие</figcaption>
+    </figure>
   </div>
 </section>
 
@@ -902,6 +910,21 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     new IntersectionObserver(function(es){ heroVisible = es[0].isIntersecting; upd(); }).observe(hero);
     var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) visibleOffers.add(e.target); else visibleOffers.delete(e.target); }); upd(); });
     root.querySelectorAll('.bv-offers').forEach(function(el){ io.observe(el); });
+
+    // видеото: зарежда се чак когато наближи екрана, спира, когато не се вижда
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.querySelectorAll('video').forEach(function(v){
+      var loaded = false;
+      if (reduce) v.controls = true;
+      new IntersectionObserver(function(es){ es.forEach(function(e){
+        if (e.isIntersecting && !loaded) {
+          v.querySelectorAll('source[data-src]').forEach(function(s){ s.src = s.getAttribute('data-src'); });
+          v.load(); loaded = true;
+        }
+        if (reduce) return;
+        if (e.isIntersecting) { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } else v.pause();
+      }); }, {rootMargin:'300px 0px'}).observe(v);
+    });
 
     // плавно появяване
     var rv = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('bv-in'); rv.unobserve(e.target); } }); }, {rootMargin:'0px 0px -8% 0px'});
