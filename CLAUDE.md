@@ -38,7 +38,7 @@
 
 ## Магазин за картите (`/karti-nvo/`)
 
-- Страници: `/karti-nvo/` (двете тестета), `/karti-nvo/literatura/`, `/karti-nvo/balgarski-ezik/`. Общ дизайн и ефекти: `public/assets/shop.css` и `shop.js` (без външни библиотеки заради CSP). Палитра по `<body data-deck="lit|ezik|hub">`.
+- Страници: `/karti-nvo/` (двете тестета), `/karti-nvo/literatura/`, `/karti-nvo/balgarski-ezik/`. Началната с двете тестета е тъмна „витрина“: WebGL фон (`canvas[data-aurora]`), двете кутии в 3D, стена с истински карти (`[data-wall]`) и „Кое тесте?“ (`[data-chooser]`); тъмните блокове имат `data-dark`, за да е светла навигацията над тях. Общ дизайн и ефекти: `public/assets/shop.css` и `shop.js` (без външни библиотеки заради CSP). Палитра по `<body data-deck="lit|ezik|hub">`.
 - Цените и пакетите са **само** в `public/assets/shop-catalog.js` (евроценти). API-то за поръчки внася същия файл и смята сумата само на сървъра; тестът проверява, че цените в HTML съвпадат с каталога.
 - Поръчка: наложен платеж, Еконт/Спиди офис или адрес → `POST /api/orders` → таблица `orders`. Администраторите ги виждат на `/poruchki/` (линк и от `/pregled/`); от командния ред: `admin.mjs orders`. Роля admin: `admin.mjs role <имейл> admin`.
 - Медия (снимки и кратки видеа, генерирани с Higgsfield, и мостри на картите) е в `public/karti-nvo/media/`. Мострите са малко на брой – пълните тестета не влизат в git.

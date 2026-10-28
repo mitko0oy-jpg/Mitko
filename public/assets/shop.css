@@ -577,40 +577,7 @@ body[data-deck="lit"] .final p{color:#3B4A40}
 .buybar .bb-price{display:none}
 @media (min-width:900px){.buybar{left:auto;right:24px;bottom:24px;width:auto;padding:8px;border-radius:999px}.buybar>div{display:none}.buybar .bb-price{display:inline}}
 
-/* ---------- hub page ---------- */
-.split{position:relative;display:flex;min-height:min(100svh,920px);padding-top:var(--nav-h)}
-.half{position:relative;flex:1;display:grid;align-content:end;gap:18px;padding:clamp(28px,4vw,60px);overflow:hidden;isolation:isolate;text-decoration:none;transition:flex-grow .9s var(--ease)}
-.half.lit{color:#F5ECD7;background:radial-gradient(130% 100% at 30% 20%,#1F5A42,#0C1D16 70%)}
-.half.ezik{color:#2A1408;background:radial-gradient(130% 100% at 70% 20%,#FFC79A,#F28B45 55%,#DA581E)}
-.split:hover .half{flex-grow:.8}
-.split .half:hover{flex-grow:1.35}
-.half .box{position:absolute;left:50%;top:44%;width:clamp(200px,24vw,340px);translate:-50% -50%;filter:drop-shadow(0 40px 50px rgba(0,0,0,.45));transition:transform 1s var(--spring)}
-.half:hover .box{transform:translateY(-14px) rotate(-3deg) scale(1.05)}
-.half.ezik:hover .box{transform:translateY(-14px) rotate(3deg) scale(1.05)}
-.half .label{position:relative;z-index:2}
-.half .label small{display:block;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
-.half .label b{display:block;font-size:clamp(32px,4vw,56px);letter-spacing:-.04em;line-height:.95}
-.half .label span{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:700}
-.half::after{content:"";position:absolute;inset:auto 0 0 0;height:55%;z-index:1;background:linear-gradient(0deg,rgba(0,0,0,.35),transparent)}
-.half.ezik::after{background:linear-gradient(0deg,rgba(255,220,190,.55),transparent)}
-.split-title{position:absolute;left:50%;top:calc(var(--nav-h) + 4vh);translate:-50% 0;z-index:5;text-align:center;width:min(900px,92vw);pointer-events:none}
-.split-title h1{font-size:clamp(36px,5.4vw,74px);letter-spacing:-.04em;color:#fff;text-shadow:0 4px 40px rgba(0,0,0,.35)}
-.split-title p{margin:12px auto 0;color:#fff;font-weight:600;text-shadow:0 2px 20px rgba(0,0,0,.4);max-width:44ch}
-.vs{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:6;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#1D2340;font:700 34px/1 var(--sans);box-shadow:0 10px 40px rgba(0,0,0,.35);pointer-events:none}
-@media (max-width:760px){
-  .split{flex-direction:column;min-height:auto}
-  .half{min-height:0;grid-template-columns:1fr 40%;align-items:center;align-content:center;padding:26px 20px}
-  .half .box{position:relative;left:auto;top:auto;translate:none;width:100%;grid-column:2;grid-row:1}
-  .half .label{grid-column:1;grid-row:1}
-  .half::after{display:none}
-  .split:hover .half,.split .half:hover{flex-grow:1}
-  .split-title{position:relative;left:auto;top:auto;translate:none;padding:26px var(--gutter) 22px;width:auto;background:var(--bg)}
-  .split-title h1{color:var(--ink);text-shadow:none}
-  .split-title p{color:var(--muted);text-shadow:none}
-  .split{padding-top:var(--nav-h)}
-  .split{display:flex}
-  .vs{display:none}
-}
+/* ---------- hub: comparison table ---------- */
 .compare{width:100%;border-collapse:separate;border-spacing:0;border-radius:var(--r);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line);background:var(--surface)}
 .compare th,.compare td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--line);font-size:15.5px;vertical-align:top}
 .compare thead th{font-size:14px;letter-spacing:.06em;text-transform:uppercase}
@@ -634,20 +601,6 @@ body[data-deck="lit"] .final p{color:#3B4A40}
   .compare td[data-label="Литература"]::before{color:#1E5A42}
   .compare td[data-label="Български език"]::before{color:var(--accent)}
 }
-.hero-img-band{position:relative;border-radius:calc(var(--r) + 10px);overflow:hidden;box-shadow:var(--shadow);aspect-ratio:16/9}
-.hero-img-band video,.hero-img-band img{width:100%;height:100%;object-fit:cover}
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.duo-card{position:relative;padding:30px;border-radius:var(--r);overflow:hidden;isolation:isolate;min-height:420px;display:flex;flex-direction:column;justify-content:flex-end;text-decoration:none;transition:transform .6s var(--spring)}
-.duo-card:hover{transform:translateY(-6px)}
-.duo-card.lit{background:radial-gradient(120% 120% at 70% 10%,#1F5A42,#0C1D16 75%);color:#F5ECD7}
-.duo-card.ezik{background:radial-gradient(120% 120% at 70% 10%,#FFC79A,#E8662A 80%);color:#2A1408}
-.duo-card img{position:absolute;right:-4%;top:-6%;width:52%;z-index:-1;transform:rotate(8deg);filter:drop-shadow(0 30px 40px rgba(0,0,0,.4));transition:transform .9s var(--spring)}
-.duo-card:hover img{transform:rotate(2deg) scale(1.05)}
-.duo-card h3{font-size:clamp(26px,3vw,36px);margin-bottom:10px}
-.duo-card ul{margin:0 0 18px;padding:0 0 0 18px;font-weight:600}
-.duo-card .go{display:inline-flex;align-items:center;gap:8px;font-weight:800}
-@media (max-width:760px){.duo{grid-template-columns:1fr}.duo-card{min-height:0}.duo-card img{position:relative;right:auto;top:auto;width:48%;margin:0 auto 20px;transform:rotate(4deg)}}
-
 
 /* ---------- pain cards with pictures ---------- */
 .pain{padding:0;display:flex;flex-direction:column}

@@ -74,7 +74,7 @@ function scopeBlock(css) {
     }
     const close = matching(css, open);
     const inner = css.slice(open + 1, close);
-    if (/^@(media|supports)/.test(prelude)) out += `${prelude}{${scopeBlock(inner)}}`;
+    if (/^@(media|supports|container)/.test(prelude)) out += `${prelude}{${scopeBlock(inner)}}`;
     else if (prelude.startsWith("@")) out += `${prelude}{${inner}}`;
     else out += `${splitTop(prelude).map(scopeSelector).join(",")}{${inner}}`;
     i = close + 1;
@@ -82,8 +82,10 @@ function scopeBlock(css) {
   return out;
 }
 
-async function styles() {
-  let css = (await readFile(path.join(root, "public/assets/shop.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+// sheets: the stylesheets the page links (shop.css, and shop-hub.css on the home page), in order.
+async function styles(sheets) {
+  let css = "";
+  for (const s of sheets) css += (await readFile(path.join(root, "public", s), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "") + "\n";
   css = scopeBlock(css)
     .replace(/#ebl::after\{content:"";position:fixed;inset:-50%;/, '#ebl::after{content:"";position:absolute;inset:0;')
     .replace(/scroll-padding-top:calc\(var\(--nav-h\) \+ 12px\)/, "scroll-padding-top:80px");
@@ -150,11 +152,16 @@ window.EB_LANDING = {
 };
 </script>`;
 
-const css = await styles();
 const js = await script();
+const cssFor = new Map();
 await mkdir(path.join(root, "landing"), { recursive: true });
 for (const page of PAGES) {
-  const { deck, body } = markup(await readFile(path.join(root, "public", page.src, "index.html"), "utf8"));
+  const html = await readFile(path.join(root, "public", page.src, "index.html"), "utf8");
+  const sheets = [...html.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w-]+\.css)">/g)].map((m) => m[1]);
+  const key = sheets.join(",");
+  if (!cssFor.has(key)) cssFor.set(key, await styles(sheets));
+  const css = cssFor.get(key);
+  const { deck, body } = markup(html);
   const out = `<!-- ЕДУ БЕЛ · ${page.name} · цялият код отива в един HTML/Code блок в ConvertBuilder.
      Направен от scripts/build-landing.mjs – промените се правят в public/karti-nvo/ и после се генерира наново. -->
 <style>${css}</style>

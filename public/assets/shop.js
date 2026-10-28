@@ -39,6 +39,10 @@ for (const el of $$("[data-price]")) {
   const p = PACKAGES[el.dataset.price];
   if (p) el.textContent = euro(p.price);
 }
+for (const el of $$("[data-was]")) {
+  const p = PACKAGES[el.dataset.was];
+  if (p?.was) el.textContent = euro(p.was);
+}
 
 /* ---------- one scroll loop for nav, progress bar, hero parallax, the deck stage and the steps ---------- */
 const nav = $(".nav");
@@ -48,6 +52,7 @@ const decks = $$(".deck-scroll");
 const steps = $(".steps");
 const buybar = $(".buybar");
 const orderSec = $("#porachka");
+const darks = $$("[data-dark]");
 let lastY = scrollY;
 let ticking = false;
 
@@ -66,6 +71,9 @@ function frame() {
     nav.classList.toggle("scrolled", y > 24);
     nav.classList.toggle("hide", y > 500 && y > lastY + 4 && !document.activeElement?.closest?.(".nav"));
     if (y < lastY - 4) nav.classList.remove("hide");
+    // light text while a dark block is under the bar
+    const mid = nav.offsetHeight / 2;
+    nav.classList.toggle("on-dark", darks.some((d) => { const r = d.getBoundingClientRect(); return r.top <= mid && r.bottom >= mid; }));
   }
   if (hero && !reduce) {
     const h = hero.offsetHeight;
@@ -177,7 +185,7 @@ $$("video[data-src]").forEach((v) => {
 
 /* ---------- pointer effects: spotlight tiles, magnetic buttons, stage tilt, card shine ---------- */
 if (fine && !reduce) {
-  for (const el of $$(".tile, .reason")) {
+  for (const el of $$(".tile, .reason, .deck-card")) {
     el.addEventListener("pointermove", (e) => {
       const r = el.getBoundingClientRect();
       el.style.setProperty("--mx", `${e.clientX - r.left}px`);
@@ -219,6 +227,140 @@ if (fine && !reduce) {
     const k = (e.clientX - r.left) / r.width;
     f.style.setProperty("--shine", `${(k * 2 - 1) * 110}%`);
   });
+}
+
+/* ---------- home page: the two boxes on the 3D stage follow the pointer ---------- */
+const duoStage = $(".duo-stage");
+if (duoStage && fine && !reduce) {
+  const host = duoStage.closest(".hero") || duoStage;
+  host.addEventListener("pointermove", (e) => {
+    duoStage.style.setProperty("--px", ((e.clientX / innerWidth) * 2 - 1).toFixed(3));
+    duoStage.style.setProperty("--py", ((e.clientY / innerHeight) * 2 - 1).toFixed(3));
+  });
+  host.addEventListener("pointerleave", () => {
+    duoStage.style.setProperty("--px", "0");
+    duoStage.style.setProperty("--py", "0");
+  });
+}
+
+/* ---------- home page: a living gradient with gold sparkles behind the dark blocks (WebGL) ---------- */
+const AURORA_FS = `precision mediump float;
+uniform vec2 r;uniform float t;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float b(vec2 p,vec2 c,float s){vec2 d=p-c;return exp(-dot(d,d)/s);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/r;float a=r.x/r.y;vec2 p=vec2(uv.x*a,uv.y);
+  float m=mix(.5,1.,smoothstep(.6,1.5,a));float z=min(a,1.);
+  vec3 col=vec3(.024,.062,.045);
+  col+=m*vec3(.12,.38,.27)*b(p,vec2(a*(.2+.1*sin(t*.11)),.66+.1*cos(t*.13)),.13*z);
+  col+=m*vec3(.6,.22,.06)*b(p,vec2(a*(.82+.08*cos(t*.09)),.28+.12*sin(t*.12)),.1*z);
+  col+=m*vec3(.36,.27,.09)*b(p,vec2(a*(.56+.16*sin(t*.07+1.)),.9+.05*sin(t*.15+2.)),.05*z);
+  vec2 g=gl_FragCoord.xy/26.;vec2 id=floor(g);vec2 f=fract(g)-.5;float k=h(id);
+  vec2 o=vec2(h(id+3.1),h(id+7.7))-.5;
+  float s=smoothstep(.972,1.,k)*(.5+.5*sin(t*1.7+k*80.))*smoothstep(.2,0.,length(f-o*.6));
+  col+=vec3(1.,.84,.5)*s*.9;
+  col*=mix(.55,1.,smoothstep(1.35,.15,length((uv-.5)*vec2(a,1.))));
+  gl_FragColor=vec4(col,1.);
+}`;
+function aurora(canvas) {
+  const gl = canvas.getContext("webgl", { alpha: false, antialias: false, depth: false, powerPreference: "low-power" });
+  if (!gl) return void canvas.remove();
+  const shader = (type, src) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    return sh;
+  };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}"));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, AURORA_FS));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return void canvas.remove();
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, "p");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uR = gl.getUniformLocation(prog, "r");
+  const uT = gl.getUniformLocation(prog, "t");
+  // drawn at about half the screen resolution: the gradient is soft anyway, and phones stay cool
+  const scale = Math.min(1, devicePixelRatio) * 0.6;
+  let raf = 0, visible = false, last = 0;
+  const t0 = performance.now() - 20000 * Math.random();
+  const size = () => {
+    canvas.width = Math.max(1, Math.round(canvas.clientWidth * scale));
+    canvas.height = Math.max(1, Math.round(canvas.clientHeight * scale));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  const draw = (now) => {
+    raf = 0;
+    if (!visible) return;
+    if (now - last > 30) {
+      last = now;
+      gl.uniform2f(uR, canvas.width, canvas.height);
+      gl.uniform1f(uT, (now - t0) / 1000);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+    if (!reduce) raf = requestAnimationFrame(draw);
+  };
+  const wake = () => { if (visible && !raf) raf = requestAnimationFrame(draw); };
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; wake(); }).observe(canvas);
+  new ResizeObserver(() => { size(); last = 0; wake(); }).observe(canvas);
+}
+$$("canvas[data-aurora]").forEach(aurora);
+
+/* ---------- home page: wall of real cards; a click opens the card in the lightbox ---------- */
+for (const wall of $$("[data-wall]")) {
+  const cards = $$(".wall-card", wall);
+  // a second copy of each row makes the endless loop; the copies are only for the eye
+  for (const track of $$(".marquee-track", wall)) {
+    for (const c of [...track.children]) {
+      const k = c.cloneNode(true);
+      k.setAttribute("aria-hidden", "true");
+      k.tabIndex = -1;
+      track.append(k);
+    }
+  }
+  wall.addEventListener("click", (e) => {
+    const c = e.target.closest(".wall-card");
+    if (!c) return;
+    const i = cards.findIndex((x) => x.dataset.front === c.dataset.front);
+    openLightbox(cards, Math.max(0, i));
+  });
+}
+
+/* ---------- home page: which deck fits the child; the answer morphs with a view transition ---------- */
+const PICKS = {
+  lit: { title: "Карти по литература", desc: "22-те творби за НВО в 40 карти: резюме, герои, цитати, образи и въпроси за самопроверка.", pkg: "lit-1", c: "#1E5A42" },
+  ezik: { title: "Карти по български език", desc: "20 карти с правила и 20 с упражнения: граматика, правопис и пунктуация – тема по тема.", pkg: "ezik-1", c: "#E0561D" },
+  duo: { title: "Двете тестета заедно", desc: "80 карти за цялата подготовка по БЕЛ – литература и български език, с безплатна доставка.", pkg: "duo", c: "#D8B25C" },
+};
+for (const ch of $$("[data-chooser]")) {
+  const btns = $$("button[data-pick]", ch);
+  ["ch-boxes", "ch-title", "ch-desc", "ch-cta"].forEach((cls, i) => {
+    const el = $(`.${cls}`, ch);
+    if (el) el.style.viewTransitionName = `eb-pick-${i}`;
+  });
+  const pick = (k) => {
+    const p = PICKS[k];
+    ch.dataset.pick = k;
+    ch.style.setProperty("--pick-c", p.c);
+    for (const b of btns) b.setAttribute("aria-pressed", String(b.dataset.pick === k));
+    $(".ch-title", ch).textContent = p.title;
+    $(".ch-desc", ch).textContent = p.desc;
+    const price = $(".ch-price", ch);
+    price.dataset.price = p.pkg;
+    price.textContent = euro(PACKAGES[p.pkg].price);
+    $(".ch-go", ch).dataset.pkg = p.pkg;
+  };
+  for (const b of btns) {
+    b.addEventListener("click", () => {
+      if (document.startViewTransition && !reduce) document.startViewTransition(() => pick(b.dataset.pick));
+      else pick(b.dataset.pick);
+    });
+  }
+  pick("duo");
 }
 
 /* ---------- flip cards ---------- */
