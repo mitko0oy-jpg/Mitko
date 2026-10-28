@@ -391,7 +391,8 @@ function orderMarkup(root) {
         ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
         <input type="radio" name="package" value="${k}" ${k === def ? "checked" : ""}>
         <span class="radio" aria-hidden="true"></span>
-        <span><b>${esc(p.title)}</b><small>${esc(p.note)}</small>${save}</span>
+        ${boxesHtml(root, p)}
+        <span><b>${esc(p.title)}</b>${hasHtml(p)}${save}</span>
         <span class="price">${p.was ? `<s>${euro(p.was)}</s>` : ""}${euro(p.price)}</span>
       </label>`;
     })
@@ -451,6 +452,18 @@ const ICON_PERK = {
   size: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="11" height="15" rx="1.8"/><path d="M8 21h11V7"/></svg>',
 };
 
+// The boxes a package contains, overlapped like a product photo. The media folder comes from the
+// order block (data-media), so the same code works on our site and inside the builder.
+const BOX = { lit: ["kutiya-literatura.webp", "Кутия с карти по литература"], ezik: ["kutiya-ezik.webp", "Кутия с карти по български език"] };
+function boxesHtml(root, p) {
+  const base = root.dataset.media || "/karti-nvo/media/";
+  const n = p.boxes.length;
+  return `<span class="pack-boxes n${n}${new Set(p.boxes).size > 1 ? " mixed" : ""}" aria-hidden="true">${p.boxes
+    .map((b, i) => `<img class="b${i}" src="${esc(base + BOX[b][0])}" alt="" loading="lazy">`)
+    .join("")}${n > 1 && new Set(p.boxes).size === 1 ? `<span class="times">×${n}</span>` : ""}</span>`;
+}
+const hasHtml = (p) => `<ul class="pack-has">${p.has.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>`;
+
 function packCards(root) {
   const flags = JSON.parse(root.dataset.flags || "{}");
   const href = esc(CB.order || "#porachka-forma");
@@ -462,7 +475,8 @@ function packCards(root) {
       const was = p.was ? Math.max(p.was, p.price) : 0;
       return `<a class="pack-card${k === "duo" ? " best" : ""}" href="${href}">
         ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
-        <b>${esc(p.title)}</b><small>${esc(p.note)}</small>
+        ${boxesHtml(root, p)}
+        <b>${esc(p.title)}</b>${hasHtml(p)}
         <span class="price">${was > p.price ? `<s>${euro(was)}</s>` : ""}${euro(p.price)}</span>
         ${was > p.price ? `<span class="save">спестяваш ${euro(was - p.price)}</span>` : ""}
         <span class="go">Поръчай <span aria-hidden="true">→</span></span>

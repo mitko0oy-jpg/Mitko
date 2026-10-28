@@ -1,12 +1,18 @@
 // Packages and delivery for the card shop. Prices are euro cents.
 // The order API imports this same file and recomputes every total, so a price shown here
 // is the price charged. Change a price here and nowhere else.
+// boxes: which boxes are shown in the package picture; has: what the parent gets, line by line.
 export const PACKAGES = {
-  "lit-1": { title: "Карти по литература", note: "1 комплект · 40 карти", price: 2590 },
-  "lit-2": { title: "Карти по литература × 2", note: "2 комплекта – за двама ученици", price: 3880, was: 5180 },
-  "ezik-1": { title: "Карти по български език", note: "1 комплект · 40 карти", price: 2590 },
-  "ezik-2": { title: "Карти по български език × 2", note: "2 комплекта – за двама ученици", price: 3880, was: 5180 },
-  duo: { title: "Литература + Български език", note: "двете тестета · 80 карти", price: 4490, was: 5180 },
+  "lit-1": { title: "Карти по литература", note: "1 комплект · 40 карти", price: 2590, boxes: ["lit"],
+    has: ["1 кутия с 40 карти по литература", "27 карти с творбите + 13 с въпроси"] },
+  "lit-2": { title: "Карти по литература × 2", note: "2 комплекта – за двама ученици", price: 3880, was: 5180, boxes: ["lit", "lit"],
+    has: ["2 кутии · 80 карти по литература", "по една кутия за всеки ученик"] },
+  "ezik-1": { title: "Карти по български език", note: "1 комплект · 40 карти", price: 2590, boxes: ["ezik"],
+    has: ["1 кутия с 40 карти по български език", "20 карти с правила + 20 с упражнения"] },
+  "ezik-2": { title: "Карти по български език × 2", note: "2 комплекта – за двама ученици", price: 3880, was: 5180, boxes: ["ezik", "ezik"],
+    has: ["2 кутии · 80 карти по български език", "по една кутия за всеки ученик"] },
+  duo: { title: "Литература + Български език", note: "двете тестета · 80 карти", price: 4490, was: 5180, boxes: ["lit", "ezik"],
+    has: ["кутия по литература · 40 карти", "кутия по български език · 40 карти"] },
 };
 
 export const SHIPPING = {
