@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BeeVenom Care Gel – гел с пчелна отрова за стави | 10× формула</title>
-<meta name="description" content="Гел с пчелна отрова, куркума, зелен чай и витамин D3 в 10× концентрирана формула. Затопля, попива бързо и връща лекотата в движението. Плащане при получаване и 30 дни гаранция.">
+<meta name="description" content="Гел с пчелна отрова, куркума, зелен чай и витамин D3 в 10× концентрирана формула – една туба се равнява на 50 ужилвания. Първо разхлажда, после затопля. Не мирише, не цапа, попива бързо. Плащане при получаване и 30 дни гаранция.">
 <meta name="theme-color" content="#F5A623">
 <meta property="og:type" content="product">
 <meta property="og:title" content="BeeVenom Care Gel – гел с пчелна отрова">
@@ -204,7 +204,6 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-formula__fig{margin:0 auto;max-width:440px;width:100%}
 #bvl .bv-formula__media{border-radius:var(--radius);overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.35);background:var(--night)}
 #bvl .bv-formula__video{display:block;width:100%;height:auto;aspect-ratio:720/1274;object-fit:cover;background:var(--night)}
-#bvl .bv-formula__fig figcaption{margin-top:10px;text-align:center;font-size:13px;color:#BFA684}
 
 /* ---------- benefits ---------- */
 #bvl .bv-why{overflow:hidden;padding-top:120px}
@@ -223,6 +222,14 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-swipe{display:none;justify-content:center;align-items:center;gap:8px;margin-top:4px;font-size:14px;font-weight:700;color:var(--muted)}
 #bvl .bv-swipe span{display:inline-block;animation:bv-nudge 1.6s ease-in-out infinite}
 @keyframes bv-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+/* хлад → топлина */
+#bvl .bv-cwflip{display:grid;place-items:center}
+#bvl .bv-cwflip i{grid-area:1/1;font-style:normal;line-height:1;animation:bv-cwa 4.4s ease-in-out infinite}
+#bvl .bv-cwflip i+i{animation-name:bv-cwb}
+#bvl .bv-ben__ico.bv-cwflip{animation:bv-cwbg 4.4s ease-in-out infinite}
+@keyframes bv-cwa{0%,38%{opacity:1;transform:none}50%,88%{opacity:0;transform:scale(.5) rotate(-25deg)}100%{opacity:1;transform:none}}
+@keyframes bv-cwb{0%,38%{opacity:0;transform:scale(.5) rotate(25deg)}50%,88%{opacity:1;transform:none}100%{opacity:0;transform:scale(.5) rotate(25deg)}}
+@keyframes bv-cwbg{0%,38%{background-color:#E3F3FD}50%,88%{background-color:#FFEBCF}100%{background-color:#E3F3FD}}
 #bvl .bv-loop{display:block;width:100%;height:100%;object-fit:cover;background:var(--honey-50)}
 
 /* ---------- живи елементи ---------- */
@@ -346,7 +353,10 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-ing:hover{transform:translateY(-6px);box-shadow:var(--shadow-l)}
 #bvl .bv-ing__body{padding:14px 16px 18px}
 #bvl .bv-ing h3{font-size:19px;margin-bottom:6px}
-#bvl .bv-ing p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
+#bvl .bv-ing p{margin:0;font-size:15px;line-height:1.5;color:var(--ink-2)}
+#bvl .bv-ing__tag{display:inline-block;margin:0 0 8px;padding:3px 10px;border-radius:999px;background:var(--honey-100);color:#A35F00;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+#bvl .bv-ing__tag--main{background:var(--red);color:#fff}
+#bvl .bv-ing--main{border-color:#F4C978;box-shadow:0 0 0 4px rgba(245,166,35,.14),var(--shadow)}
 #bvl .bv-yes{color:var(--green);font-size:20px}
 
 /* ---------- силните страни: сравнение ---------- */
@@ -561,6 +571,9 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl.bv-js .bv-rv{opacity:1;transform:none;filter:none;transition:none}
   #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall,#bvl .bv-hstep__num,#bvl .bv-goldtext,#bvl .bv-stage__glow,#bvl .bv-seal10__ring,#bvl .bv-stage__bee img,#bvl .bv-hero__bg img,#bvl .bv-stage{animation:none!important}
   #bvl .bv-stage__glint,#bvl .bv-honeydrop,#bvl .bv-dust,#bvl .bv-vs__hl::after{display:none}
+  #bvl .bv-cwflip i,#bvl .bv-ben__ico.bv-cwflip{animation:none!important}
+  #bvl .bv-cwflip{display:flex;gap:1px}
+  #bvl .bv-cwflip i{opacity:1;transform:none;font-size:.72em}
   #bvl .bv-vs__head--us img{animation:none}
   #bvl.bv-js .bv-vs__u .bv-vs__ok{transform:none;transition:none}
   #bvl .bv-flyzone,#bvl .bv-fall{display:none}
@@ -616,7 +629,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     <div class="bv-hero__copy">
       <span class="bv-eyebrow bv-glass">🐝 BeeVenom Care Gel · 10× формула</span>
       <h1>За зоните на тялото, които <em class="bv-accent bv-goldtext">дават знак</em> всяка сутрин</h1>
-      <p class="bv-lead">Гел с пчелна отрова в 10× концентрирана формула – една туба се равнява на 50 ужилвания. Затопля още при първото нанасяне, не мирише и не цапа.</p>
+      <p class="bv-lead">Гел с пчелна отрова в 10× концентрирана формула – една туба се равнява на 50 ужилвания. Първо леко разхлажда, после идва дълбока, приятна топлина. Не мирише и не цапа.</p>
       <div class="bv-proof bv-glass">
         <span class="bv-stars" aria-hidden="true">★★★★★</span>
         <strong>Над 30 000 доволни клиенти в България</strong>
@@ -675,7 +688,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   <div class="bv-wrap bv-center">
     <span class="bv-eyebrow">Познато ли ти е?</span>
     <h2>Когато движението стане по-трудно, <em class="bv-accent">тялото изпраща сигнал</em></h2>
-    <p class="bv-lead">Ставите често се обаждат при съвсем обикновени неща. Може би ще се разпознаеш в някоя от тези ситуации.</p>
+    <p class="bv-lead">Ставите се обаждат при най-обикновените неща. Разпознаваш ли се?</p>
     <div class="bv-sits">
       <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-sutrin.jpg" aria-label="Мъж седи на ръба на леглото сутрин и разтрива коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-sutrin.mp4" type="video/mp4"></video></div><p>Сутрин ставаш от леглото по-трудно</p></figure>
       <figure class="bv-sit bv-rv"><div class="bv-sit__img"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-stalbi.jpg" aria-label="Жена спира на стълбите с торби в ръце"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/sit-stalbi.mp4" type="video/mp4"></video></div><p>Стълбите с торбите стават изпитание</p></figure>
@@ -686,7 +699,6 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
     <div class="bv-sits-foot">
       <a class="bv-btn" href="#bv-offers">Върни лекотата в движението си <span class="bv-arr">→</span></a>
-      <span class="bv-small">Илюстративни ситуации.</span>
     </div>
   </div>
 </section>
@@ -708,7 +720,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     <div>
       <span class="bv-eyebrow">BeeVenom 4 Max™</span>
       <h2>Нова висококонцентрирана формула, която <em class="bv-accent" style="color:#FFC65C">прониква в дълбочина</em></h2>
-      <p class="bv-lead">Усети разликата още след първото нанасяне. Малко количество е достатъчно, за да стигне там, откъдето идват неудобството и сковаността.</p>
+      <p class="bv-lead">Пчелна отрова, равна на 50 ужилвания в една туба. Малко количество стига дълбоко – точно там, откъдето идва сковаността. Усещаш го още при първото нанасяне: първо хлад, после топлина.</p>
       <div class="bv-stats">
         <div class="bv-stat"><b>10×</b><span>концентрирана формула</span></div>
         <div class="bv-stat"><b>50</b><span>ужилвания – на толкова се равнява пчелната отрова в 20 г</span></div>
@@ -723,7 +735,6 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           <source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@2611c9fb91083fb98bfc6e1fe1d3d065d9ace492/landing/beevenom/media/kak-deistva.mp4" type="video/mp4">
         </video>
       </div>
-      <figcaption>Илюстративна анимация на затоплящото действие</figcaption>
     </figure>
   </div>
 </section>
@@ -740,28 +751,28 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
     <div class="bv-bens">
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.jpg" aria-label="Ръце масажират коляното, което затопля"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌡️</span></div>
-        <div class="bv-ben__body"><h3>Топлина и релакс за минути</h3><p>Приятно затопляне още при първото нанасяне.</p></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.jpg" aria-label="Ръце масажират коляното, което затопля"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-toplina.mp4" type="video/mp4"></video><span class="bv-ben__ico bv-cwflip" aria-hidden="true"><i>❄️</i><i>🔥</i></span></div>
+        <div class="bv-ben__body"><h3>Първо хлад, после топлина</h3><p>Гелът леко разхлажда при нанасяне, а след малко идва приятна топлина – кръвообращението в зоната се раздвижва.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.jpg" aria-label="Златисти капки проникват през слоевете на кожата"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">✨</span></div>
-        <div class="bv-ben__body"><h3>Действа в дълбочина</h3><p>Не остава само на повърхността – малко количество е достатъчно.</p></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.jpg" aria-label="Златисти капки проникват през слоевете на кожата"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-dalbochina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🎯</span></div>
+        <div class="bv-ben__body"><h3>Прониква в дълбочина</h3><p>Не остава по повърхността като обикновените кремове. Малко количество стига до натоварената зона.</p></div>
       </article>
       <article class="bv-ben bv-rv">
         <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-zoni.jpg" aria-label="Усмихната жена разтрива врата и рамото си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-zoni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🙆</span></div>
-        <div class="bv-ben__body"><h3>Колене, кръст, рамене, врат</h3><p>Един гел за всички натоварени зони, включително глезени и лакти.</p></div>
+        <div class="bv-ben__body"><h3>Колене, кръст, рамене, врат</h3><p>Един гел за всички натоварени зони – и за глезени, лакти и китки.</p></div>
       </article>
       <article class="bv-ben bv-rv">
         <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-formula.jpg" aria-label="Тубата BeeVenom с пчелна пита, куркума, зелен чай и витамин D3"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-formula.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌿</span></div>
-        <div class="bv-ben__body"><h3>Висококонцентрирана 100% натурална формула</h3><p>Пчелна отрова, куркума, зелен чай и витамин D3.</p></div>
+        <div class="bv-ben__body"><h3>Висококонцентрирана 100% натурална формула</h3><p>Пчелна отрова, куркума, зелен чай и витамин D3. Една туба = 50 ужилвания.</p></div>
       </article>
       <article class="bv-ben bv-rv">
         <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-bez-mazni.jpg" aria-label="Жена нанася малко гел на коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-bez-mazni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">⏱️</span></div>
-        <div class="bv-ben__body"><h3>Попива бързо, без мазни следи</h3><p>Обличаш се минути след нанасянето.</p></div>
+        <div class="bv-ben__body"><h3>Попива бързо. Не мирише. Не цапа.</h3><p>Обличаш се веднага – без мазни петна по дрехите и без миризма.</p></div>
       </article>
       <article class="bv-ben bv-rv">
-        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.jpg" aria-label="Двойка над 50 на преход в планината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">❤️</span></div>
-        <div class="bv-ben__body"><h3>Предпочитан от хора над 50</h3><p>Хиляди българи го нанасят всяка сутрин.</p></div>
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.jpg" aria-label="Двойка над 50 на преход в планината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@773966aa56a56eca242a2bd2eadc606c5a6ab030/landing/beevenom/media/ben2-nad50.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">👥</span></div>
+        <div class="bv-ben__body"><h3>Хиляди българи го ползват всеки ден</h3><p>Преди работа, след работа, след натоварване, контузия или травма.</p></div>
       </article>
     </div>
     <p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>
@@ -880,25 +891,25 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Какво съдържа гелът?</span>
-      <h2>4 натурални съставки, <em class="bv-accent">подбрани да работят заедно</em></h2>
-      <p class="bv-lead">Всяка съставка е внимателно подбрана, за да подкрепя усещането за комфорт и да се грижи за тялото при всяко движение.</p>
+      <h2>4 съставки. <em class="bv-accent">Една мощна формула.</em></h2>
+      <p class="bv-lead">Всяка съставка има точна задача, а заедно усилват действието си. Затова BeeVenom прониква там, където обикновените кремове спират.</p>
     </div>
     <div class="bv-ings">
-      <article class="bv-ing bv-rv">
+      <article class="bv-ing bv-ing--main bv-rv">
         <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-pchela.jpg" aria-label="Пчела и пчелна пита"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-pchela.mp4" type="video/mp4"></video></div>
-        <div class="bv-ing__body"><h3>Пчелна отрова</h3><p>Звездата на формулата. Дава характерното затопляне и превръща масажа в дълбока грижа.</p></div>
+        <div class="bv-ing__body"><span class="bv-ing__tag bv-ing__tag--main">Основна съставка</span><h3>Пчелна отрова</h3><p>Една туба = 50 ужилвания, но без нито едно ужилване. Раздвижва кръвообращението и носи дълбока, приятна топлина точно там, където ти трябва.</p></div>
       </article>
       <article class="bv-ing bv-rv">
         <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-kurkuma.jpg" aria-label="Корен и прах от куркума"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-kurkuma.mp4" type="video/mp4"></video></div>
-        <div class="bv-ing__body"><h3>Куркума</h3><p>Златният корен, познат от векове в традиционната грижа за натоварените зони.</p></div>
+        <div class="bv-ing__body"><span class="bv-ing__tag">Успокоява</span><h3>Куркума</h3><p>Златният корен на Изтока. Успокоява натоварените стави и мускули и усилва действието на пчелната отрова.</p></div>
       </article>
       <article class="bv-ing bv-rv">
         <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-chai.jpg" aria-label="Чаша зелен чай и листа"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-chai.mp4" type="video/mp4"></video></div>
-        <div class="bv-ing__body"><h3>Зелен чай (EGCG)</h3><p>Богат на антиоксиданти, които се грижат за кожата в третираната зона.</p></div>
+        <div class="bv-ing__body"><span class="bv-ing__tag">Пази кожата</span><h3>Зелен чай (EGCG)</h3><p>Един от най-мощните природни антиоксиданти. Пази кожата и я поддържа свежа и еластична при ежедневна употреба.</p></div>
       </article>
       <article class="bv-ing bv-rv">
         <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-d3.jpg" aria-label="Капсула витамин D3"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-d3.mp4" type="video/mp4"></video></div>
-        <div class="bv-ing__body"><h3>Витамин D3</h3><p>Допълва формулата и подхранва кожата при ежедневна употреба.</p></div>
+        <div class="bv-ing__body"><span class="bv-ing__tag">Подхранва</span><h3>Витамин D3</h3><p>Витаминът на слънцето. Подхранва кожата и завършва формулата – за пълна грижа всеки ден.</p></div>
       </article>
     </div>
 
@@ -935,7 +946,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <div class="bv-vs__u bv-rv" style="--bv-d:0.58s"><span class="bv-vs__ok" aria-hidden="true">✓</span><div><b>Не цапа, попива бързо</b><small>обличаш се веднага</small></div></div>
       <div class="bv-vs__t bv-rv" style="--bv-d:0.58s"><span class="bv-vs__no" aria-hidden="true">✕</span><span>Често мазен, оставя следи по дрехите</span></div>
       <div class="bv-vs__f bv-rv" style="--bv-d:0.70s"><span class="bv-vs__ic" aria-hidden="true">⚡</span>Действие</div>
-      <div class="bv-vs__u bv-rv" style="--bv-d:0.70s"><span class="bv-vs__ok" aria-hidden="true">✓</span><div><b>Бързо действие</b><small>затопляне още при първото нанасяне</small></div></div>
+      <div class="bv-vs__u bv-rv" style="--bv-d:0.70s"><span class="bv-vs__ok" aria-hidden="true">✓</span><div><b>Бързо действие</b><small>разхлажда веднага, после затопля</small></div></div>
       <div class="bv-vs__t bv-rv" style="--bv-d:0.70s"><span class="bv-vs__no" aria-hidden="true">✕</span><span>Често усещане само на повърхността</span></div>
     </div>
     <div class="bv-vs__cta">
@@ -974,11 +985,11 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Как се променя ежедневието</span>
-      <h2>Какво можеш да усетиш <em class="bv-accent">при редовна употреба?</em></h2>
-      <p class="bv-lead">Последователната грижа може да помогне за по-комфортно движение, по-малко усещане за скованост и повече увереност в ежедневието.</p>
+      <h2>Какво ще усетиш <em class="bv-accent">при редовна употреба?</em></h2>
+      <p class="bv-lead">Ползвай го редовно – и с всяка седмица движението става по-леко.</p>
     </div>
     <div class="bv-tl">
-      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🌡️</span><span class="bv-tl__when">1-во нанасяне</span><h3>Приятно затопляне</h3><ul><li>Усещане за топлина в зоната</li><li>Повече комфорт още сега</li></ul></div>
+      <div class="bv-tl__item bv-rv"><span class="bv-tl__emo bv-cwflip" aria-hidden="true"><i>❄️</i><i>🔥</i></span><span class="bv-tl__when">1-во нанасяне</span><h3>Хлад, после топлина</h3><ul><li>Леко разхлаждане, после приятна топлина</li><li>Повече комфорт още сега</li></ul></div>
       <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🦵</span><span class="bv-tl__when">След 7 дни</span><h3>По-леко движение</h3><ul><li>По-спокойни първи стъпки</li><li>По-малко сутрешна скованост</li></ul></div>
       <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">👣</span><span class="bv-tl__when">След 14 дни</span><h3>Повече увереност</h3><ul><li>При ходене и по стълбите</li><li>Ежедневните задачи – по-лесно</li></ul></div>
       <div class="bv-tl__item bv-rv"><span class="bv-tl__emo" aria-hidden="true">🏡</span><span class="bv-tl__when">След 30 дни</span><h3>Грижата става навик</h3><ul><li>Комфортът се поддържа</li><li>Повече свобода за любимите неща</li></ul></div>
@@ -989,7 +1000,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <div class="bv-life__img"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/b2730c6b6a2f9718b9824176667f6d76_1774720055_shan9mwu-4720283.png?format=webp" width="1200" height="1200" alt="Активна възрастна двойка на разходка в селото"></div>
       <div class="bv-life__txt">
         <h3>Повече движение. Повече увереност. <em class="bv-accent" style="color:#FFC65C">Повече време за любимите хора.</em></h3>
-        <p>Не отлагай грижата за себе си. Нанасяй гела редовно върху колене, кръст, рамене, врат или други натоварени зони.</p>
+        <p>Не чакай сковаността да реши вместо теб. Нанасяй BeeVenom всеки ден – на колене, кръст, рамене и врат.</p>
         <a class="bv-btn" href="#bv-offers">Виж специалната оферта <span class="bv-arr">→</span></a>
       </div>
     </div>
@@ -1126,8 +1137,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
 
     <h3>За продукта</h3>
-    <details><summary>Какво представлява BeeVenom гелът?</summary><div><p>BeeVenom е козметичен гел за външна употреба, който съчетава пчелна отрова с куркума, зелен чай и витамин D3. Създаден е за ежедневна грижа в зоната на ставите – колене, кръст, рамене, лакти и врат.</p><p>При нанасяне дава приятно усещане за затопляне, попива бързо и превръща грижата за натоварените зони в лесен ежедневен ритуал.</p></div></details>
-    <details><summary>Какво ще усетя и колко бързо?</summary><div><p>Затоплящото усещане идва още при първото нанасяне – това е моментният ефект от масажа и активните съставки. Усещането за комфорт при движение обикновено се гради с редовна употреба в рамките на дни и седмици.</p><p>Всеки организъм е различен и индивидуалното усещане може да се различава – затова имаш 30 дни тест период.</p></div></details>
+    <details><summary>Какво представлява BeeVenom гелът?</summary><div><p>BeeVenom е козметичен гел за външна употреба, който съчетава пчелна отрова с куркума, зелен чай и витамин D3. Създаден е за ежедневна грижа в зоната на ставите – колене, кръст, рамене, лакти и врат.</p><p>При нанасяне първо леко разхлажда, а след малко идва приятна топлина. Попива бързо, не мирише и не цапа – грижата за натоварените зони става лесен ежедневен ритуал.</p></div></details>
+    <details><summary>Какво ще усетя и колко бързо?</summary><div><p>Веднага след нанасяне гелът леко разхлажда. След малко идва приятна топлина – знак, че кръвообращението в зоната се раздвижва. Лекотата в движението се гради с редовна употреба – дни и седмици.</p><p>Всеки организъм е различен и индивидуалното усещане може да се различава – затова имаш 30 дни тест период.</p></div></details>
     <details><summary>Лекарство ли е? Може ли да замести лечението ми?</summary><div><p>Не – и е важно да сме честни за това. BeeVenom е козметичен продукт за външна употреба, а не лекарствено средство. Не е предназначен за лечение на заболявания и не заменя терапия, предписана от лекар.</p><p>Ако имаш здравословен проблем, не спирай назначеното си лечение – гелът е допълнение към ежедневната грижа.</p></div></details>
     <details><summary>Мазен ли е? Има ли силна миризма?</summary><div><p>Не. Гелът е с лека текстура, попива бързо и не оставя мазен филм – можеш да се облечеш минути след нанасянето. И не мирише – околните няма да усетят нищо.</p></div></details>
 
