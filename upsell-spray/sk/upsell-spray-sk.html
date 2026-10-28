@@ -235,7 +235,7 @@
   .bvu-steps{display:flex;justify-content:center;gap:28px;padding:14px 16px}
   .bvu-step{flex-direction:row;gap:8px;font-size:14px}
   .bvu-sits{grid-template-columns:repeat(3,1fr)}
-  .bvu-sit{grid-template-columns:1fr}
+  .bvu-sit{grid-template-columns:1fr;align-content:start}
   .bvu-sit__ico{display:none}
   .bvu-why2{grid-template-columns:1fr 1fr;gap:24px}
   .bvu-day{grid-template-columns:repeat(4,1fr)}
@@ -369,12 +369,12 @@
           <div><h3>Miesto je na chrbte</h3><p>Kríže, lopatky, krk — sám tam s gélom a masážou ťažko dosiahneš. <b>Sprej nastriekaš z diaľky, bez cudzej pomoci.</b></p></div>
         </div>
         <div class="bvu-sit">
-          <div class="bvu-sit__img"><img data-bvu-img="sitGarden" alt="Muž v záhrade si strieka sprej na koleno" width="1000" height="747" loading="lazy"></div>
+          <div class="bvu-sit__img"><img data-bvu-img="sitGarden" alt="Muž v záhrade si strieka sprej na lakeť" width="1000" height="747" loading="lazy"></div>
           <div class="bvu-sit__ico">🌳</div>
           <div><h3>Si vonku alebo máš plné ruky</h3><p>V záhrade, na cestách, v práci. Nemáš ako masírovať a umývať si ruky. <b>Sprej máš v taške — dvakrát strekneš a ideš ďalej.</b></p></div>
         </div>
         <div class="bvu-sit">
-          <div class="bvu-sit__img"><img data-bvu-img="sitAfter" alt="Žena po prechádzke si strieka sprej na koleno" width="1000" height="747" loading="lazy"></div>
+          <div class="bvu-sit__img"><img data-bvu-img="sitAfter" alt="Žena po prechádzke si strieka sprej na lýtko" width="1000" height="747" loading="lazy"></div>
           <div class="bvu-sit__ico">🥵</div>
           <div><h3>Po námahe</h3><p>Keď je miesto unavené a „páli“, chceš chlad, nie ďalšie zahriatie. <b>Mentol v spreji okamžite chladí.</b></p></div>
         </div>
@@ -515,7 +515,7 @@
   /* ============ НАСТРОЙКИ – промени само тук ============ */
   // Снимките се зареждат от GitHub през CDN-а jsDelivr (фиксиран commit, не се променят).
   // Ако качиш снимките в ConvertBuilder, смени линковете в images с твоите.
-  var IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@8ca0b079e144b25c4bda5b0a56d5394d37a4966e/upsell-spray/sk/images/';
+  var IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@53981b89350874cb950b46c85d8232491169419d/upsell-spray/sk/images/';
   var CONFIG = {
     priceNew: 12.90,          // цена в ъпсела (трябва да съвпада с цената на ъпсел бутона в ConvertBuilder)
     priceOld: 24.90,          // редовна цена на спрея
