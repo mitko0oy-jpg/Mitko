@@ -52,7 +52,7 @@
   color-scheme:light;
 }
 /* ---------- защита от стиловете на ConvertBuilder ---------- */
-html{overflow-x:hidden}
+#bvl{overflow-x:clip}
 #bvl{display:block;position:relative;float:none;clear:both;text-align:left;margin-left:calc(50% - 50vw + var(--bv-sbw,0px)/2);margin-right:calc(50% - 50vw + var(--bv-sbw,0px)/2)}
 #bvl h1,#bvl h2,#bvl h3,#bvl h4,#bvl p,#bvl ul,#bvl ol,#bvl li,#bvl figure,#bvl table,#bvl th,#bvl td,#bvl a,#bvl span,#bvl strong,#bvl b,#bvl em,#bvl s,#bvl small,#bvl summary,#bvl details,#bvl div,#bvl article,#bvl section,#bvl header,#bvl footer,#bvl nav,#bvl main,#bvl ol,#bv-sticky,#bv-sticky *{font-family:inherit;text-transform:none;text-shadow:none;float:none}
 #bvl strong,#bvl b,#bv-sticky strong{font-weight:800}
@@ -117,7 +117,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-header .bv-btn{min-height:46px;padding:10px 20px;font-size:16px}
 
 /* ---------- hero ---------- */
-#bvl .bv-hero{position:relative;isolation:isolate;overflow:hidden;padding:26px 0 100px;background:var(--cream)}
+#bvl .bv-hero{position:relative;isolation:isolate;overflow:hidden;overflow:clip;padding:26px 0 100px;background:var(--cream)}
 #bvl .bv-hero__bg{position:absolute;inset:-24px;z-index:-2;translate:calc(var(--px,0) * -16px) calc(var(--py,0) * -10px);transition:translate .9s cubic-bezier(.2,.8,.2,1)}
 #bvl .bv-hero__bg picture,#bvl .bv-hero__bg img{display:block;width:100%;height:100%}
 #bvl .bv-hero__bg img{object-fit:cover;object-position:62% 50%}
@@ -191,7 +191,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-eta__box .bv-ico{background:#fff}
 
 /* ---------- formula (dark) ---------- */
-#bvl .bv-formula{background:var(--night);color:#FBEBD2;overflow:hidden}
+#bvl .bv-formula{background:var(--night);color:#FBEBD2;overflow:hidden;overflow:clip}
 #bvl .bv-formula::before{content:"";position:absolute;inset:0;opacity:.6}
 #bvl .bv-formula h2{color:#fff}
 #bvl .bv-formula .bv-eyebrow{background:rgba(245,166,35,.16);color:#FFC65C}
@@ -206,7 +206,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-formula__video{display:block;width:100%;height:auto;aspect-ratio:720/1274;object-fit:cover;background:var(--night)}
 
 /* ---------- benefits ---------- */
-#bvl .bv-why{overflow:hidden;padding-top:120px}
+#bvl .bv-why{overflow:hidden;overflow:clip;padding-top:120px}
 #bvl .bv-why .bv-wrap{position:relative}
 #bvl .bv-bens{display:grid;gap:18px;margin-top:40px}
 #bvl .bv-ben{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:var(--shadow);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
@@ -234,7 +234,10 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 /* ---------- живи елементи ---------- */
 #bvl .bv-hexes{position:absolute;inset:0;pointer-events:none}
-#bvl .bv-hex{position:absolute;fill:none;stroke:var(--honey);stroke-width:2.5;opacity:.28;animation:bv-float 10s ease-in-out infinite}
+#bvl .bv-hexes{perspective:700px}
+#bvl .bv-hex{position:absolute;fill:none;stroke:var(--honey);stroke-width:2.5;opacity:.3;animation:bv-tumble 10s linear infinite}
+#bvl .bv-hex.bv-hex--fill{fill:url(#bv-hexg);stroke:none;opacity:.22;filter:blur(1.5px)}
+@keyframes bv-tumble{0%{transform:translateY(0) rotateX(0) rotateY(0) rotateZ(0)}50%{transform:translateY(-24px) rotateX(180deg) rotateY(90deg) rotateZ(20deg)}100%{transform:translateY(0) rotateX(360deg) rotateY(180deg) rotateZ(0)}}
 @keyframes bv-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(12deg)}}
 #bvl .bv-flyzone{position:absolute;right:4%;top:-34px;width:320px;height:150px;pointer-events:none;z-index:3}
 #bvl .bv-flybee{position:absolute;left:0;top:0;offset-path:path("M30 90 C 60 10, 160 10, 160 75 S 270 140, 290 70 S 220 0, 160 75 S 40 150, 30 90 Z");offset-rotate:auto;animation:bv-fly 14s linear infinite;filter:drop-shadow(0 6px 6px rgba(60,35,5,.25))}
@@ -443,7 +446,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl summary{list-style:none;cursor:pointer;padding:18px 56px 18px 20px;font-weight:800;font-size:18px;position:relative}
 #bvl summary::-webkit-details-marker{display:none}
 #bvl summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:20px;color:var(--honey-d);transition:transform .2s}
-#bvl details[open] summary::after{content:"–"}
+#bvl details[open] summary::after{transform:translateY(-50%) rotate(135deg)}
 #bvl details>div{padding:0 20px 18px;color:var(--ink-2);font-size:17px}
 #bvl details>div p:last-child{margin:0}
 
@@ -469,6 +472,82 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 /* reveal on scroll */
 #bvl.bv-js .bv-rv{opacity:0;transform:translateY(34px) scale(.97);filter:blur(6px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1),filter .8s ease;transition-delay:var(--bv-d,0s)}
 #bvl.bv-js .bv-rv.bv-in{opacity:1;transform:none;filter:none}
+
+/* ---------- 3D сцени и живи елементи ---------- */
+.page-layout:has(#bvl){overflow:clip}
+#bvl{interpolate-size:allow-keywords}
+#bvl section>.bv-wrap{position:relative;z-index:1}
+#bvl .bv-gl{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#bvl .bv-gl--hero{z-index:-1;-webkit-mask:linear-gradient(90deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.12) 44%,#000 64%);mask:linear-gradient(90deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,.12) 44%,#000 64%)}
+#bvl .bv-hero.bv-has3d .bv-dust{display:none}
+#bvl .bv-gl--dark{z-index:0;-webkit-mask:linear-gradient(90deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.3) 44%,#000 64%);mask:linear-gradient(90deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.3) 44%,#000 64%)}
+#bvl .bv-gl--final{z-index:0;-webkit-mask:radial-gradient(ellipse 44% 56% at 50% 46%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.22) 55%,#000 100%);mask:radial-gradient(ellipse 44% 56% at 50% 46%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.22) 55%,#000 100%)}
+#bvl .bv-bees{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#bvl .bv-bee{position:absolute;left:0;top:0;will-change:transform}
+#bvl .bv-bee img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 8px rgba(90,45,0,.22))}
+#bvl .bv-bees--glow .bv-bee img{filter:drop-shadow(0 0 7px rgba(255,190,80,.8))}
+#bvl .bv-floaters{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;overflow:clip}
+#bvl .bv-floater{position:absolute;left:var(--fx);top:var(--fy);width:var(--fs);margin-left:calc(var(--fs) / -2)}
+#bvl .bv-floater img{display:block;width:100%;height:auto;filter:drop-shadow(0 16px 16px rgba(90,45,0,.24)) blur(calc((1 - var(--fz)) * 2.6px));animation:bv-floatbob 7s ease-in-out infinite;animation-delay:calc(var(--fz) * -9s)}
+@keyframes bv-floatbob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-16px) rotate(6deg)}}
+@supports (animation-timeline: view()){
+  #bvl .bv-floater{animation:bv-par linear both;animation-timeline:view();animation-range:cover}
+}
+@keyframes bv-par{from{translate:0 calc(var(--fz) * 150px)}to{translate:0 calc(var(--fz) * -150px)}}
+#bvl .bv-tapes{position:relative;height:170px;margin:72px 0 -24px;overflow:hidden;pointer-events:none}
+#bvl .bv-tape{position:absolute;left:-10%;right:-10%;top:50%;height:58px;margin-top:-29px;display:flex;align-items:center;overflow:hidden;box-shadow:0 14px 34px rgba(90,45,0,.2)}
+#bvl .bv-tape--a{background:linear-gradient(90deg,#F5A623,#FFC24A 50%,#F5A623);color:var(--night);rotate:-4deg}
+#bvl .bv-tape--b{background:var(--night);color:#FFC65C;rotate:3deg}
+#bvl .bv-tape__track{display:flex;flex:none;align-items:center;white-space:nowrap;font-weight:800;font-size:22px;letter-spacing:.08em;animation:bv-tape 44s linear infinite;will-change:transform}
+#bvl .bv-tape--b .bv-tape__track{animation-direction:reverse;animation-duration:52s}
+#bvl .bv-tape__track>*{margin-inline-end:26px}
+#bvl .bv-tape i{font-style:normal;opacity:.75}
+@keyframes bv-tape{to{transform:translateX(-50%)}}
+#bvl .bv-split .bv-w{display:inline-block;opacity:0;transform:translateY(.5em) rotate(3deg);filter:blur(6px);transition:opacity .7s ease,transform .9s cubic-bezier(.2,.8,.2,1),filter .7s ease;transition-delay:calc(var(--wi) * 55ms + 80ms)}
+#bvl .bv-split.bv-in .bv-w{opacity:1;transform:none;filter:none}
+#bvl .bv-ing,#bvl .bv-sit{position:relative}
+#bvl .bv-bens,#bvl .bv-ings,#bvl .bv-sits,#bvl .bv-hsteps{perspective:1300px}
+#bvl .bv-glare{position:absolute;inset:0;z-index:5;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.32),rgba(255,255,255,0) 46%)}
+#bvl :is(.bv-ben,.bv-ing,.bv-sit,.bv-hstep):hover .bv-glare{opacity:1}
+#bvl.bv-js :is(.bv-ben,.bv-ing,.bv-sit,.bv-hstep).bv-rv.bv-in{transition-property:opacity,transform,filter,rotate,box-shadow;transition-duration:.8s,.8s,.8s,.45s,.35s;transition-timing-function:cubic-bezier(.2,.8,.2,1);transition-delay:var(--bv-d,0s),var(--bv-d,0s),var(--bv-d,0s),0s,0s}
+#bvl .bv-btn{transition:transform .15s ease,box-shadow .15s ease,translate .3s cubic-bezier(.2,.8,.2,1)}
+#bvl .bv-spot{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(560px circle at var(--sx,70%) var(--sy,40%),rgba(255,186,70,.2),rgba(255,186,70,0) 62%)}
+#bvl .bv-spot-on .bv-spot{opacity:1}
+#bvl .bv-wall{display:grid;grid-template-columns:1fr 1fr;gap:16px;height:640px;overflow:hidden;-webkit-mask:linear-gradient(180deg,transparent 0,#000 13%,#000 87%,transparent 100%);mask:linear-gradient(180deg,transparent 0,#000 13%,#000 87%,transparent 100%)}
+#bvl .bv-wall__set{display:flex;flex-direction:column;gap:16px;padding-bottom:16px}
+#bvl .bv-wall .bv-shot{margin:0}
+#bvl .bv-wall__track{animation:bv-wall 70s linear infinite}
+#bvl .bv-wall__col--down .bv-wall__track{animation-direction:reverse;animation-duration:84s}
+#bvl .bv-wall:hover .bv-wall__track{animation-play-state:paused}
+@keyframes bv-wall{to{transform:translateY(-50%)}}
+#bvl .bv-progress{position:absolute;left:0;right:0;bottom:-1px;height:3px;transform-origin:0 50%;transform:scaleX(var(--bvp,0));background:linear-gradient(90deg,#E08A00,#FFC24A 50%,#D62A1E);pointer-events:none}
+@supports (animation-timeline: scroll()){
+  #bvl .bv-progress{animation:bv-prog linear both;animation-timeline:scroll(root block)}
+}
+@keyframes bv-prog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+#bvl details::details-content{block-size:0;overflow-y:clip;transition:block-size .45s cubic-bezier(.2,.8,.2,1),content-visibility .45s allow-discrete}
+#bvl details[open]::details-content{block-size:auto}
+#bvl .bv-hero__copy>*{animation:bv-enter .9s cubic-bezier(.2,.8,.2,1) both}
+#bvl .bv-hero__copy>:nth-child(2){animation-delay:.08s}
+#bvl .bv-hero__copy>:nth-child(3){animation-delay:.16s}
+#bvl .bv-hero__copy>:nth-child(4){animation-delay:.24s}
+#bvl .bv-hero__copy>:nth-child(5){animation-delay:.32s}
+#bvl .bv-hero__copy>:nth-child(6){animation-delay:.4s}
+#bvl .bv-hero__copy>:nth-child(7){animation-delay:.48s}
+#bvl .bv-stage__inner{animation:bv-enter-stage 1.2s cubic-bezier(.2,.8,.2,1) .2s both}
+#bvl .bv-inglegend{animation:bv-enter .9s cubic-bezier(.2,.8,.2,1) .7s both}
+@keyframes bv-enter{from{opacity:0;transform:translateY(26px);filter:blur(8px)}}
+@keyframes bv-enter-stage{from{opacity:0;transform:translateY(40px) scale(.92)}}
+@media (max-width:719px){
+  #bvl .bv-gl--hero{-webkit-mask:linear-gradient(180deg,#000 0%,#000 34%,rgba(0,0,0,.14) 54%,rgba(0,0,0,.08) 100%);mask:linear-gradient(180deg,#000 0%,#000 34%,rgba(0,0,0,.14) 54%,rgba(0,0,0,.08) 100%)}
+  #bvl .bv-gl--dark{opacity:.75;-webkit-mask:none;mask:none}
+  #bvl .bv-floater{width:calc(var(--fs) * .62);margin-left:calc(var(--fs) * -.31);opacity:.85}
+  #bvl .bv-floater:nth-child(n+3){display:none}
+  #bvl .bv-tapes{height:118px;margin-top:48px}
+  #bvl .bv-tape{height:44px;margin-top:-22px}
+  #bvl .bv-tape__track{font-size:15px}
+  #bvl .bv-tape__track>*{margin-inline-end:18px}
+}
 
 /* ---------- breakpoints ---------- */
 @media (max-width:719px){
@@ -572,6 +651,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall,#bvl .bv-hstep__num,#bvl .bv-goldtext,#bvl .bv-stage__glow,#bvl .bv-seal10__ring,#bvl .bv-stage__bee img,#bvl .bv-hero__bg img,#bvl .bv-stage{animation:none!important}
   #bvl .bv-stage__glint,#bvl .bv-honeydrop,#bvl .bv-dust,#bvl .bv-vs__hl::after{display:none}
   #bvl .bv-cwflip i,#bvl .bv-ben__ico.bv-cwflip{animation:none!important}
+  #bvl .bv-tape__track,#bvl .bv-floater,#bvl .bv-floater img,#bvl .bv-hero__copy>*,#bvl .bv-stage__inner,#bvl .bv-inglegend,#bvl .bv-hex,#bvl .bv-wall__track{animation:none!important}
+  #bvl details::details-content{transition:none}
   #bvl .bv-cwflip{display:flex;gap:1px}
   #bvl .bv-cwflip i{opacity:1;transform:none;font-size:.72em}
   #bvl .bv-vs__head--us img{animation:none}
@@ -612,6 +693,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <a class="bv-btn" href="#bv-offers">Поръчай</a>
     </div>
   </div>
+  <span class="bv-progress" aria-hidden="true"></span>
 </header>
 
 <main id="bv-top">
@@ -684,7 +766,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 </div>
 
 <!-- ============ ПОЗНАТО ЛИ ТИ Е ============ -->
-<section>
+<section class="bv-situ">
   <div class="bv-wrap bv-center">
     <span class="bv-eyebrow">Познато ли ти е?</span>
     <h2>Когато движението стане по-трудно, <em class="bv-accent">тялото изпраща сигнал</em></h2>
@@ -742,9 +824,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <!-- ============ ЗАЩО ГО ИЗБИРАТ ============ -->
 <section class="bv-why">
   <div class="bv-drip" aria-hidden="true"><svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0 0H1440V16H1376C1366 16 1368 52 1360 52C1352 52 1354 16 1344 16H1246C1239 16 1240 34 1235 34C1230 34 1231 16 1224 16H1125C1112 16 1115 70 1105 70C1095 70 1098 16 1085 16H972C964 16 966 40 960 40C954 40 956 16 948 16H857C846 16 848 58 840 58C832 58 834 16 823 16H700C694 16 695 30 690 30C685 30 686 16 680 16H579C567 16 570 66 560 66C550 66 553 16 541 16H432C424 16 426 42 420 42C414 42 416 16 408 16H316C306 16 308 56 300 56C292 56 294 16 284 16H181C174 16 176 36 170 36C164 36 166 16 159 16H75C65 16 68 50 60 50C52 50 55 16 45 16H0Z"/><circle cx="1360" cy="50" r="8.8"/><circle cx="1235" cy="32" r="6.1"/><circle cx="1105" cy="68" r="11.0"/><circle cx="960" cy="38" r="6.6"/><circle cx="840" cy="56" r="9.4"/><circle cx="690" cy="28" r="5.5"/><circle cx="560" cy="64" r="10.5"/><circle cx="420" cy="40" r="6.6"/><circle cx="300" cy="54" r="8.8"/><circle cx="170" cy="34" r="6.1"/><circle cx="60" cy="48" r="8.2"/></svg><span class="bv-fall" style="left:94.44%;top:56px;animation-delay:0.0s"></span><span class="bv-fall" style="left:76.74%;top:74px;animation-delay:1.4s"></span><span class="bv-fall" style="left:58.33%;top:62px;animation-delay:2.8s"></span><span class="bv-fall" style="left:38.89%;top:70px;animation-delay:4.2s"></span><span class="bv-fall" style="left:20.83%;top:60px;animation-delay:5.6s"></span><span class="bv-fall" style="left:4.17%;top:54px;animation-delay:7.0s"></span></div>
-  <div class="bv-hexes" aria-hidden="true"><svg class="bv-hex" style="left:4%;top:12%;width:46px;animation-delay:0s;animation-duration:9s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:90%;top:8%;width:34px;animation-delay:1.5s;animation-duration:11s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:82%;top:46%;width:54px;animation-delay:0.8s;animation-duration:10s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:8%;top:62%;width:30px;animation-delay:2.2s;animation-duration:12s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:48%;top:92%;width:40px;animation-delay:3s;animation-duration:9.5s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:94%;top:86%;width:26px;animation-delay:1.1s;animation-duration:13s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg></div>
+  <div class="bv-hexes" aria-hidden="true"><svg class="bv-hex" style="left:4%;top:12%;width:46px;animation-delay:0s;animation-duration:9s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:90%;top:8%;width:34px;animation-delay:1.5s;animation-duration:11s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:82%;top:46%;width:54px;animation-delay:0.8s;animation-duration:10s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:8%;top:62%;width:30px;animation-delay:2.2s;animation-duration:12s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:48%;top:92%;width:40px;animation-delay:3s;animation-duration:9.5s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:94%;top:86%;width:26px;animation-delay:1.1s;animation-duration:13s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="bv-hexg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD983"/><stop offset="1" stop-color="#E08A00"/></linearGradient></defs></svg><svg class="bv-hex bv-hex--fill" style="left:14%;top:34%;width:38px;animation-delay:-2s;animation-duration:12s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex bv-hex--fill" style="left:78%;top:18%;width:30px;animation-delay:-5s;animation-duration:14s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex bv-hex--fill" style="left:60%;top:80%;width:44px;animation-delay:-8s;animation-duration:13s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg></div>
   <div class="bv-wrap">
-    <div class="bv-flyzone" aria-hidden="true"><svg class="bv-flybee" viewBox="0 0 64 48" width="44" height="33"><g class="bv-wing bv-wing--a"><ellipse cx="28" cy="12" rx="11" ry="7" fill="#FFF5DC" fill-opacity=".85" stroke="#E0A030" stroke-width="1.2"/></g><g class="bv-wing bv-wing--b"><ellipse cx="38" cy="11" rx="10" ry="6.5" fill="#FFF5DC" fill-opacity=".85" stroke="#E0A030" stroke-width="1.2"/></g><ellipse cx="32" cy="28" rx="17" ry="11" fill="#F5A623"/><path d="M25 18.5c-2 6-2 13 0 19M33 17.5c-2 6.5-2 14 0 21M41 19c-1.6 5.5-1.6 12 0 17" stroke="#24180C" stroke-width="4" stroke-linecap="round" fill="none"/><circle cx="50" cy="26" r="7" fill="#24180C"/><circle cx="52.5" cy="24" r="1.6" fill="#fff"/><path d="M14 28l-6 2 6 2z" fill="#24180C"/></svg></div>
     <div class="bv-center">
       <span class="bv-eyebrow">Защо хората го избират?</span>
       <h2>Една туба за всяка зона, която <em class="bv-accent">те спира</em></h2>
@@ -808,11 +889,16 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <div><small>всеки ден от 10:00 до 21:00 ч.</small><strong>🚚 Доставка 1–2 дни · Плащане при получаване</strong></div>
     </div>
   </div>
+  <div class="bv-tapes" aria-hidden="true">
+    <div class="bv-tape bv-tape--b"><div class="bv-tape__track"><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i></div></div>
+    <div class="bv-tape bv-tape--a"><div class="bv-tape__track"><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i></div></div>
+  </div>
 </section>
 
 <!-- ============ ОФЕРТИ ============ -->
 <section class="bv-offers" id="bv-offers">
   <div class="bv-wave" aria-hidden="true" style="color:var(--honey-50)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
+  <div class="bv-floaters" aria-hidden="true"><span class="bv-floater" style="--fx:3%;--fy:20%;--fs:74px;--fz:0.8"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:97%;--fy:38%;--fs:54px;--fz:0.5"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:95%;--fy:84%;--fs:124px;--fz:0.9"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-honey.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:4%;--fy:82%;--fs:48px;--fz:0.45"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Специални цени</span>
@@ -888,6 +974,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <!-- ============ СЪСТАВ ============ -->
 <section id="bv-sastav">
   <div class="bv-wave" aria-hidden="true" style="color:var(--cream)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
+  <div class="bv-floaters" aria-hidden="true"><span class="bv-floater" style="--fx:4%;--fy:14%;--fs:124px;--fz:0.95"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-tea.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:95%;--fy:10%;--fs:112px;--fz:0.7"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-turmeric.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:5%;--fy:78%;--fs:84px;--fz:0.55"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-d3.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:94%;--fy:74%;--fs:70px;--fz:0.85"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Какво съдържа гелът?</span>
@@ -919,6 +1006,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <!-- ============ СИЛНИТЕ СТРАНИ: BeeVenom срещу обикновен крем ============ -->
 <section class="bv-vs" id="bv-sravni">
   <div class="bv-wave" aria-hidden="true" style="color:#fff"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
+  <div class="bv-floaters" aria-hidden="true"><span class="bv-floater" style="--fx:4%;--fy:30%;--fs:62px;--fz:0.6"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:96%;--fy:62%;--fs:110px;--fz:0.85"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-honey.webp" alt="" loading="lazy" decoding="async"></span></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Сравни сам</span>
@@ -1161,6 +1249,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <!-- ============ ФИНАЛ ============ -->
 <section class="bv-final">
   <div class="bv-wave" aria-hidden="true" style="color:var(--cream)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
+  <div class="bv-floaters" aria-hidden="true"><span class="bv-floater" style="--fx:9%;--fy:34%;--fs:150px;--fz:0.9"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-honey.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:90%;--fy:26%;--fs:82px;--fz:0.75"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/honey-drop.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:92%;--fy:74%;--fs:116px;--fz:0.6"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-tea.webp" alt="" loading="lazy" decoding="async"></span><span class="bv-floater" style="--fx:10%;--fy:78%;--fs:74px;--fz:0.5"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/hero-d3.webp" alt="" loading="lazy" decoding="async"></span></div>
   <div class="bv-wrap">
     <div class="bv-final__media"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова"></div>
     <h2>Хиляди българи вече се събуждат <em class="bv-accent">с по-леко движение.</em> Заслужаваш същото.</h2>
@@ -1267,7 +1356,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     size();
     window.addEventListener('resize', size);
     new IntersectionObserver(function(es){
-      var vis = es[0].isIntersecting && !document.hidden;
+      var vis = es[0].isIntersecting && !document.hidden && !hero.classList.contains('bv-has3d');
       if (vis && !running) { running = true; requestAnimationFrame(frame); } else if (!vis) running = false;
     }).observe(hero);
   })();
@@ -1346,6 +1435,405 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     root.querySelectorAll('.bv-rv').forEach(function(el){ rv.observe(el); });
   } else {
     root.classList.remove('bv-js');
+  }
+})();
+</script>
+<script>
+/* BeeVenom: 3D пчелни пити (WebGL2, без външни библиотеки), пчели и движения */
+(function(){
+  var root = document.getElementById('bvl');
+  if (!root || !('IntersectionObserver' in window)) return;
+  var CDN = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@fad5a9f2cdd872d032892cded908969915ad974a/landing/beevenom/media/';
+  var mm = function(q){ return !!(window.matchMedia && matchMedia(q).matches); };
+  var reduce = mm('(prefers-reduced-motion: reduce)'), fine = mm('(hover: hover) and (pointer: fine)'), mob = mm('(max-width: 719px)');
+
+  /* ---- един общ кадър за всички анимации; работят само видимите блокове ---- */
+  var tasks = [], running = false, last = 0;
+  function loop(now){
+    if (!tasks.length) { running = false; return; }
+    var dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
+    for (var i = 0; i < tasks.length; i++) tasks[i](dt, now / 1000);
+    requestAnimationFrame(loop);
+  }
+  function on(f){ if (tasks.indexOf(f) < 0) tasks.push(f); if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
+  function off(f){ var i = tasks.indexOf(f); if (i >= 0) tasks.splice(i, 1); }
+  function whenVisible(el, f, margin){
+    new IntersectionObserver(function(es){ if (es[es.length - 1].isIntersecting) on(f); else off(f); }, {rootMargin: margin || '120px 0px'}).observe(el);
+  }
+
+  /* ================= 3D пчелни пити ================= */
+  var CELL_VS = [
+    '#version 300 es',
+    'layout(location=0) in vec3 aP; layout(location=1) in vec3 aN;',
+    'layout(location=2) in vec4 aI; layout(location=3) in vec4 aR; layout(location=4) in vec2 aM;',
+    'uniform mat4 uProj, uView; uniform float uTime, uScroll;',
+    'out vec3 vN; out vec3 vP; out float vD;',
+    'mat3 rot(vec3 a, float t){ float c = cos(t), s = sin(t), k = 1. - c;',
+    '  return mat3(c + a.x*a.x*k, a.y*a.x*k + a.z*s, a.z*a.x*k - a.y*s,',
+    '              a.x*a.y*k - a.z*s, c + a.y*a.y*k, a.z*a.y*k + a.x*s,',
+    '              a.x*a.z*k + a.y*s, a.y*a.z*k - a.x*s, c + a.z*a.z*k); }',
+    'void main(){',
+    '  mat3 R = rot(aR.xyz, aM.x + uTime*aR.w);',
+    '  vec3 w = aI.xyz + R*(aP*aI.w);',
+    '  w.y += sin(uTime*.35 + aM.x*3.)*.28 - uScroll*(1. + (4. - aI.z)*.17);',
+    '  vec4 v = uView*vec4(w, 1.);',
+    '  vP = v.xyz; vD = -v.z; vN = mat3(uView)*(R*aN);',
+    '  gl_Position = uProj*v;',
+    '}'].join('\n');
+  var CELL_FS = [
+    '#version 300 es',
+    'precision highp float;',
+    'in vec3 vN; in vec3 vP; in float vD;',
+    'uniform vec3 uLight, uBase, uDeep, uSpec, uRim; uniform float uAlpha, uKind; uniform vec2 uFog;',
+    'out vec4 o;',
+    'void main(){',
+    '  vec3 n = normalize(vN), v = normalize(-vP), l = normalize(uLight);',
+    '  if (dot(n, v) < 0.) n = -n;',
+    '  float dif = max(dot(n, l), 0.);',
+    '  float sp = pow(max(dot(n, normalize(l + v)), 0.), 40.);',
+    '  float fr = pow(1. - max(dot(n, v), 0.), 3.);',
+    '  vec3 c; float a = uAlpha;',
+    '  if (uKind < .5) { c = mix(uDeep, uBase, .2 + .8*dif) + uSpec*sp + uRim*fr*.6; }',
+    '  else { c = mix(vec3(.62, .27, .02), vec3(1., .74, .26), .25 + .75*dif) + uSpec*sp*1.3 + uRim*fr; a *= .62 + .38*fr; }',
+    '  float f = clamp((vD - uFog.x)/(uFog.y - uFog.x), 0., 1.);',
+    '  a *= 1. - f*.82;',
+    '  o = vec4(c*a, a);',
+    '}'].join('\n');
+  var PT_VS = [
+    '#version 300 es',
+    'layout(location=0) in vec4 aP;',
+    'uniform mat4 uProj, uView; uniform float uTime, uScroll, uSize;',
+    'out float vA;',
+    'void main(){',
+    '  vec3 p = aP.xyz; float s = aP.w;',
+    '  p.y = mod(p.y + 7. + uTime*(.25 + fract(s*7.)*.45), 14.) - 7. - uScroll*(1.2 + (4. - p.z)*.15);',
+    '  p.x += sin(uTime*.4 + s*40.)*.35;',
+    '  vec4 v = uView*vec4(p, 1.);',
+    '  gl_Position = uProj*v;',
+    '  gl_PointSize = uSize*(.6 + fract(s*13.)*1.4)*(14./max(-v.z, 1.));',
+    '  vA = (.35 + .65*fract(s*31.))*(.55 + .45*sin(uTime*1.7 + s*60.));',
+    '}'].join('\n');
+  var PT_FS = [
+    '#version 300 es',
+    'precision mediump float;',
+    'in float vA; uniform vec3 uCol; uniform float uAlpha; out vec4 o;',
+    'void main(){ vec2 c = gl_PointCoord*2. - 1.; float d = dot(c, c); if (d > 1.) discard; float a = 1. - d; a = a*a*vA*uAlpha; o = vec4(uCol*a, a); }'].join('\n');
+
+  function compile(gl, type, src){
+    var sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { if (window.console) console.warn('BeeVenom 3D:', gl.getShaderInfoLog(sh)); return null; }
+    return sh;
+  }
+  function program(gl, vs, fs){
+    var a = compile(gl, gl.VERTEX_SHADER, vs), b = compile(gl, gl.FRAGMENT_SHADER, fs);
+    if (!a || !b) return null;
+    var pr = gl.createProgram(); gl.attachShader(pr, a); gl.attachShader(pr, b); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+    var u = {}, n = gl.getProgramParameter(pr, gl.ACTIVE_UNIFORMS);
+    for (var i = 0; i < n; i++) { var info = gl.getActiveUniform(pr, i); u[info.name] = gl.getUniformLocation(pr, info.name); }
+    return {p: pr, u: u};
+  }
+  // шестоъгълна клетка – рамка с дебелина (като стена на пчелна пита)
+  function hexRing(R, r, d){
+    var out = [], z1 = d / 2, z0 = -d / 2;
+    function P(rad, k, z){ var an = Math.PI / 3 * k + Math.PI / 6; return [Math.cos(an) * rad, Math.sin(an) * rad, z]; }
+    function quad(q, nn){ [q[0], q[1], q[2], q[0], q[2], q[3]].forEach(function(v){ out.push(v[0], v[1], v[2], nn[0], nn[1], nn[2]); }); }
+    for (var k = 0; k < 6; k++) {
+      var am = Math.PI / 3 * (k + 1), nx = Math.cos(am), ny = Math.sin(am);
+      quad([P(R, k, z0), P(R, k + 1, z0), P(R, k + 1, z1), P(R, k, z1)], [nx, ny, 0]);
+      quad([P(r, k, z1), P(r, k + 1, z1), P(r, k + 1, z0), P(r, k, z0)], [-nx, -ny, 0]);
+      quad([P(R, k, z1), P(R, k + 1, z1), P(r, k + 1, z1), P(r, k, z1)], [0, 0, 1]);
+      quad([P(r, k, z0), P(r, k + 1, z0), P(R, k + 1, z0), P(R, k, z0)], [0, 0, -1]);
+    }
+    return new Float32Array(out);
+  }
+  // плътна клетка – „мед“ в рамката
+  function hexSlab(r, d){
+    var out = [], z1 = d / 2, z0 = -d / 2;
+    function P(k, z){ var an = Math.PI / 3 * k + Math.PI / 6; return [Math.cos(an) * r, Math.sin(an) * r, z]; }
+    function tri(t, nn){ t.forEach(function(v){ out.push(v[0], v[1], v[2], nn[0], nn[1], nn[2]); }); }
+    for (var k = 0; k < 6; k++) {
+      var am = Math.PI / 3 * (k + 1), nx = Math.cos(am), ny = Math.sin(am);
+      tri([[0, 0, z1], P(k, z1), P(k + 1, z1)], [0, 0, 1]);
+      tri([[0, 0, z0], P(k + 1, z0), P(k, z0)], [0, 0, -1]);
+      tri([P(k, z0), P(k + 1, z0), P(k + 1, z1)], [nx, ny, 0]);
+      tri([P(k, z0), P(k + 1, z1), P(k, z1)], [nx, ny, 0]);
+    }
+    return new Float32Array(out);
+  }
+  function rng(seed){ return function(){ seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function persp(fy, asp, n, f){ var t = 1 / Math.tan(fy / 2), nf = 1 / (n - f); return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) * nf, -1, 0, 0, 2 * f * n * nf, 0]); }
+  function lookAt(e, c, up){
+    var zx = e[0] - c[0], zy = e[1] - c[1], zz = e[2] - c[2], l = Math.hypot(zx, zy, zz); zx /= l; zy /= l; zz /= l;
+    var xx = up[1] * zz - up[2] * zy, xy = up[2] * zx - up[0] * zz, xz = up[0] * zy - up[1] * zx; l = Math.hypot(xx, xy, xz); xx /= l; xy /= l; xz /= l;
+    var yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+    return new Float32Array([xx, yx, zx, 0, xy, yy, zy, 0, xz, yz, zz, 0,
+      -(xx * e[0] + xy * e[1] + xz * e[2]), -(yx * e[0] + yy * e[1] + yz * e[2]), -(zx * e[0] + zy * e[1] + zz * e[2]), 1]);
+  }
+  var PAL = {
+    light: {base: [.96, .71, .24], deep: [.62, .33, .03], spec: [1, .96, .84], rim: [1, .86, .56], alpha: .92, pt: [1, .86, .52], ptA: .9},
+    dark:  {base: [1, .78, .3],   deep: [.42, .2, .02],  spec: [1, .95, .8],  rim: [1, .72, .28], alpha: .9,  pt: [1, .8, .42],  ptA: 1}
+  };
+
+  function honey3D(sec, o){
+    if (!sec || !window.WebGL2RenderingContext) return false;
+    var cv = document.createElement('canvas');
+    cv.className = 'bv-gl ' + o.cls; cv.setAttribute('aria-hidden', 'true');
+    var gl = cv.getContext('webgl2', {alpha: true, antialias: true, premultipliedAlpha: true, depth: true, powerPreference: 'low-power'});
+    if (!gl) return false;
+    var P1 = program(gl, CELL_VS, CELL_FS), P2 = program(gl, PT_VS, PT_FS);
+    if (!P1 || !P2) return false;
+    if (o.after && o.after.parentNode === sec) o.after.insertAdjacentElement('afterend', cv); else sec.insertBefore(cv, sec.firstChild);
+    sec.classList.add('bv-has3d');
+
+    var pal = PAL[o.pal], FOV = 38 * Math.PI / 180, CAMZ = 14;
+    var ringG = hexRing(1, .78, .34), slabG = hexSlab(.74, .2);
+    function buf(data){ var bb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bb); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW); return bb; }
+    var gRing = buf(ringG), gSlab = buf(slabG), iRing = gl.createBuffer(), iSlab = gl.createBuffer(), bPts = gl.createBuffer();
+    function cellVAO(g, inst){
+      var v = gl.createVertexArray(); gl.bindVertexArray(v);
+      gl.bindBuffer(gl.ARRAY_BUFFER, g);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+      gl.bindBuffer(gl.ARRAY_BUFFER, inst);
+      [[2, 4, 0], [3, 4, 16], [4, 2, 32]].forEach(function(a){ gl.enableVertexAttribArray(a[0]); gl.vertexAttribPointer(a[0], a[1], gl.FLOAT, false, 40, a[2]); gl.vertexAttribDivisor(a[0], 1); });
+      gl.bindVertexArray(null); return v;
+    }
+    var vRing = cellVAO(gRing, iRing), vSlab = cellVAO(gSlab, iSlab);
+    var vPts = gl.createVertexArray(); gl.bindVertexArray(vPts);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bPts); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+    gl.bindVertexArray(null);
+
+    var nR = 0, nS = 0, nP = 0, asp = 1, W = 0, H = 0, dpr = 1, t = o.t0 || 4, px = 0, py = 0, tx = 0, ty = 0, dead = false;
+    function layout(){
+      var R = rng(o.seed), tanH = Math.tan(FOV / 2), rings = [], cnt = mob ? o.n[1] : o.n[0];
+      for (var i = 0; i < cnt; i++) {
+        var z = -14 + 18 * R(), hh = tanH * (CAMZ - z), hw = hh * asp;
+        var nx = o.bias ? o.bias(R()) : R() * 2.2 - 1.1, ny = R() * 2.2 - 1.1;
+        var ax = R() * 2 - 1, ay = R() * 2 - 1, az = R() * 2 - 1, al = Math.hypot(ax, ay, az) || 1;
+        rings.push([nx * hw, ny * hh, z, .32 + R() * .55, ax / al, ay / al, az / al, (.12 + R() * .33) * (R() < .5 ? -1 : 1), R() * 6.283, 0]);
+      }
+      rings.sort(function(a, b){ return a[2] - b[2]; });
+      var slabs = rings.filter(function(r, i){ return i % 3 === 1; });
+      nR = rings.length; nS = slabs.length;
+      gl.bindBuffer(gl.ARRAY_BUFFER, iRing); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([].concat.apply([], rings)), gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, iSlab); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([].concat.apply([], slabs)), gl.STATIC_DRAW);
+      var pts = [], np = mob ? o.p[1] : o.p[0];
+      for (var j = 0; j < np; j++) { var pz = -14 + 20 * R(), ph = tanH * (CAMZ - pz); pts.push((R() * 2.4 - 1.2) * ph * asp, R() * 14 - 7, pz, R()); }
+      nP = np;
+      gl.bindBuffer(gl.ARRAY_BUFFER, bPts); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pts), gl.STATIC_DRAW);
+    }
+    function resize(){
+      var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return false;
+      dpr = Math.min(mob ? 1.25 : 1.6, window.devicePixelRatio || 1);
+      var bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+      if (bw !== cv.width || bh !== cv.height || w !== W || h !== H) { W = w; H = h; cv.width = bw; cv.height = bh; asp = w / h; layout(); }
+      return true;
+    }
+    function draw(){
+      if (dead || !resize()) return;
+      var r = sec.getBoundingClientRect(), vh = window.innerHeight || 800;
+      var scr = Math.max(-1.2, Math.min(1.2, (vh / 2 - (r.top + r.height / 2)) / vh));
+      var ex = px * 2.4, ey = -py * 1.6;
+      var view = lookAt([ex, ey, CAMZ], [ex * .25, ey * .25, 0], [0, 1, 0]), proj = persp(FOV, asp, .5, 60);
+      var L = [.45, .7, .55], ll = Math.hypot(L[0], L[1], L[2]); L = [L[0] / ll, L[1] / ll, L[2] / ll];
+      var lv = [view[0] * L[0] + view[4] * L[1] + view[8] * L[2], view[1] * L[0] + view[5] * L[1] + view[9] * L[2], view[2] * L[0] + view[6] * L[1] + view[10] * L[2]];
+      gl.viewport(0, 0, cv.width, cv.height);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      var u = P1.u; gl.useProgram(P1.p);
+      gl.uniformMatrix4fv(u.uProj, false, proj); gl.uniformMatrix4fv(u.uView, false, view);
+      gl.uniform1f(u.uTime, t); gl.uniform1f(u.uScroll, scr); gl.uniform3fv(u.uLight, lv);
+      gl.uniform3fv(u.uBase, pal.base); gl.uniform3fv(u.uDeep, pal.deep); gl.uniform3fv(u.uSpec, pal.spec); gl.uniform3fv(u.uRim, pal.rim);
+      gl.uniform1f(u.uAlpha, pal.alpha); gl.uniform2f(u.uFog, 11, 31);
+      gl.depthMask(true); gl.uniform1f(u.uKind, 0); gl.bindVertexArray(vRing); gl.drawArraysInstanced(gl.TRIANGLES, 0, ringG.length / 6, nR);
+      gl.depthMask(false); gl.uniform1f(u.uKind, 1); gl.bindVertexArray(vSlab); gl.drawArraysInstanced(gl.TRIANGLES, 0, slabG.length / 6, nS);
+      u = P2.u; gl.useProgram(P2.p); gl.blendFunc(gl.ONE, gl.ONE);
+      gl.uniformMatrix4fv(u.uProj, false, proj); gl.uniformMatrix4fv(u.uView, false, view);
+      gl.uniform1f(u.uTime, t); gl.uniform1f(u.uScroll, scr); gl.uniform1f(u.uSize, 3.2 * dpr);
+      gl.uniform3fv(u.uCol, pal.pt); gl.uniform1f(u.uAlpha, pal.ptA);
+      gl.bindVertexArray(vPts); gl.drawArrays(gl.POINTS, 0, nP);
+      gl.bindVertexArray(null);
+    }
+    if (fine && !reduce) {
+      sec.addEventListener('pointermove', function(e){ var r = sec.getBoundingClientRect(); tx = (e.clientX - r.left) / r.width - .5; ty = (e.clientY - r.top) / r.height - .5; });
+      sec.addEventListener('pointerleave', function(){ tx = 0; ty = 0; });
+    }
+    function tick(dt){
+      t += dt;
+      if (!fine) { tx = Math.sin(t * .17) * .16; ty = Math.cos(t * .13) * .1; }
+      px += (tx - px) * Math.min(1, dt * 2.5); py += (ty - py) * Math.min(1, dt * 2.5);
+      draw();
+    }
+    cv.addEventListener('webglcontextlost', function(e){ e.preventDefault(); dead = true; off(tick); if (cv.parentNode) cv.parentNode.removeChild(cv); sec.classList.remove('bv-has3d'); });
+    if (reduce) { draw(); window.addEventListener('resize', draw); }
+    else whenVisible(sec, tick);
+    return true;
+  }
+
+  var toRight = function(r){ return -1.05 + 2.2 * Math.pow(r, .62); };
+  var heroSec = root.querySelector('.bv-hero');
+  try {
+    honey3D(heroSec, {cls: 'bv-gl--hero', pal: 'light', seed: 11, n: [34, 15], p: [150, 60], bias: toRight, after: heroSec && heroSec.querySelector('.bv-dust')});
+    honey3D(root.querySelector('.bv-formula'), {cls: 'bv-gl--dark', pal: 'dark', seed: 29, n: [26, 12], p: [170, 70], bias: toRight});
+    honey3D(root.querySelector('.bv-final'), {cls: 'bv-gl--final', pal: 'light', seed: 47, n: [24, 10], p: [90, 40]});
+  } catch (e) { if (window.console) console.warn('BeeVenom 3D:', e); }
+
+  /* ================= пчели на заден фон ================= */
+  var BEES = [CDN + 'bee-side.webp', CDN + 'hero-bee.webp', CDN + 'bee-top.webp'];
+  function swarm(sec, n, glow){
+    if (!sec) return;
+    if (mob) n = Math.max(1, Math.round(n * .6));
+    var box = document.createElement('div');
+    box.className = 'bv-bees' + (glow ? ' bv-bees--glow' : ''); box.setAttribute('aria-hidden', 'true');
+    var gl3 = sec.querySelector(':scope > .bv-gl');
+    if (gl3) gl3.insertAdjacentElement('afterend', box); else sec.insertBefore(box, sec.firstChild);
+    var W = sec.clientWidth, H = sec.clientHeight, bees = [], mx = -1e4, my = -1e4;
+    function pick(b){
+      var side = Math.max(0, (W - 1160) / 2), x;
+      if (side > 90 && Math.random() < .7) x = Math.random() < .5 ? Math.random() * (side + 40) : W - Math.random() * (side + 40);
+      else x = Math.random() * W;
+      b.tx = x; b.ty = 30 + Math.random() * Math.max(60, H - 60);
+    }
+    for (var i = 0; i < n; i++) {
+      var d = .3 + .7 * ((i + Math.random()) / n), size = Math.round((mob ? 22 : 28) + (mob ? 26 : 42) * d);
+      var el = document.createElement('span'); el.className = 'bv-bee';
+      var img = document.createElement('img'); img.src = BEES[i % BEES.length]; img.alt = ''; img.decoding = 'async';
+      el.style.width = el.style.height = size + 'px';
+      if (d < .55) el.style.filter = 'blur(' + ((.55 - d) * 5).toFixed(1) + 'px)';
+      el.style.opacity = (.5 + .5 * d).toFixed(2);
+      el.appendChild(img); box.appendChild(el);
+      var bee = {el: el, d: d, s: size, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, a: 0, f: 1, hold: 0, ph: Math.random() * 99};
+      pick(bee); bees.push(bee);
+    }
+    if (fine) {
+      sec.addEventListener('pointermove', function(e){ var r = sec.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; });
+      sec.addEventListener('pointerleave', function(){ mx = my = -1e4; });
+    }
+    function tick(dt, now){
+      W = sec.clientWidth; H = sec.clientHeight;
+      for (var i = 0; i < bees.length; i++) {
+        var b = bees[i], dx = b.tx - b.x, dy = b.ty - b.y, dist = Math.hypot(dx, dy) || 1, ax, ay;
+        if (b.hold > 0) { b.hold -= dt; ax = -b.vx * 4; ay = -b.vy * 4 + Math.sin(now * 3 + b.ph) * 30; }
+        else {
+          if (dist < 40) { b.hold = Math.random() < .55 ? .5 + Math.random() * 1.6 : 0; pick(b); }
+          var sp = 60 + 110 * b.d;
+          ax = (dx / dist * sp - b.vx) * 1.8; ay = (dy / dist * sp - b.vy) * 1.8;
+        }
+        ax += Math.sin(now * 2.3 + b.ph) * 55; ay += Math.cos(now * 1.9 + b.ph * 1.7) * 55;
+        var ex = b.x - mx, ey = b.y - my, ed = Math.hypot(ex, ey);
+        if (ed < 160 && ed > 0) { var f = (1 - ed / 160) * 1400; ax += ex / ed * f; ay += ey / ed * f; b.hold = 0; }
+        b.vx += ax * dt; b.vy += ay * dt;
+        var v = Math.hypot(b.vx, b.vy), vm = 140 + 160 * b.d;
+        if (v > vm) { b.vx *= vm / v; b.vy *= vm / v; }
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.x < -80 || b.x > W + 80 || b.y < -80 || b.y > H + 80) { b.x = Math.max(-60, Math.min(W + 60, b.x)); b.y = Math.max(-60, Math.min(H + 60, b.y)); pick(b); }
+        if (b.vx > 14) b.f = 1; else if (b.vx < -14) b.f = -1;
+        var ta = Math.max(-.55, Math.min(.55, Math.atan2(b.vy, Math.abs(b.vx) + 1) * .7));
+        b.a += (ta - b.a) * Math.min(1, dt * 6);
+        var buzz = Math.sin(now * 46 + b.ph) * .9;
+        b.el.style.transform = 'translate3d(' + (b.x - b.s / 2).toFixed(1) + 'px,' + (b.y - b.s / 2 + buzz).toFixed(1) + 'px,0) scaleX(' + b.f + ') rotate(' + b.a.toFixed(3) + 'rad)';
+      }
+    }
+    whenVisible(sec, tick, '0px');
+  }
+  if (!reduce) {
+    swarm(root.querySelector('.bv-situ'), 3);
+    swarm(root.querySelector('.bv-formula'), 3, true);
+    swarm(root.querySelector('.bv-why'), 3);
+    swarm(root.querySelector('#bv-offers'), 2);
+    swarm(root.querySelector('#bv-sastav'), 2);
+    swarm(root.querySelector('.bv-final'), 3);
+  }
+
+  /* ================= още движение ================= */
+  // лентите се ускоряват, докато човек превърта
+  var tapes = root.querySelector('.bv-tapes');
+  if (tapes && !reduce && tapes.querySelector('.bv-tape__track').getAnimations) {
+    var ly = window.scrollY, vel = 0, anims = [];
+    tapes.querySelectorAll('.bv-tape__track').forEach(function(tr){ var an = tr.getAnimations()[0]; if (an) anims.push(an); });
+    whenVisible(tapes, function(dt){
+      var y = window.scrollY, d = Math.abs(y - ly); ly = y; if (d > 3000) d = 0;
+      vel += (d / Math.max(dt, .008) - vel) * Math.min(1, dt * 5);
+      var rate = 1 + Math.min(5, vel / 450);
+      anims.forEach(function(an){ an.playbackRate = rate; });
+    });
+  }
+
+  // заглавията се появяват дума по дума
+  if (!reduce) {
+    var wio = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('bv-in'); wio.unobserve(e.target); } }); }, {rootMargin: '0px 0px -10% 0px'});
+    root.querySelectorAll('section h2').forEach(function(h){
+      var k = 0;
+      (function walk(node){
+        Array.prototype.slice.call(node.childNodes).forEach(function(c){
+          if (c.nodeType === 3) {
+            var fr = document.createDocumentFragment();
+            c.textContent.split(/(\s+)/).forEach(function(w){
+              if (!w) return;
+              if (/^\s+$/.test(w)) { fr.appendChild(document.createTextNode(w)); return; }
+              var sp = document.createElement('span'); sp.className = 'bv-w'; sp.style.setProperty('--wi', k++); sp.textContent = w; fr.appendChild(sp);
+            });
+            node.replaceChild(fr, c);
+          } else if (c.nodeType === 1) walk(c);
+        });
+      })(h);
+      h.classList.add('bv-split'); wio.observe(h);
+    });
+  }
+
+  if (fine && !reduce) {
+    // 3D наклон и отблясък на картите след мишката
+    root.querySelectorAll('.bv-ben, .bv-ing, .bv-sit, .bv-hstep').forEach(function(c){
+      var g = document.createElement('span'); g.className = 'bv-glare'; g.setAttribute('aria-hidden', 'true'); c.appendChild(g);
+      c.addEventListener('pointermove', function(e){
+        var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        c.style.setProperty('--mx', ((x + .5) * 100).toFixed(1) + '%'); c.style.setProperty('--my', ((y + .5) * 100).toFixed(1) + '%');
+        c.style.rotate = (-y).toFixed(3) + ' ' + x.toFixed(3) + ' 0 ' + (Math.hypot(x, y) * 10).toFixed(2) + 'deg';
+      });
+      c.addEventListener('pointerleave', function(){ c.style.rotate = ''; });
+    });
+    // бутоните леко „притеглят“ мишката
+    root.querySelectorAll('.bv-btn').forEach(function(btn){
+      btn.addEventListener('pointermove', function(e){ var r = btn.getBoundingClientRect(); btn.style.translate = ((e.clientX - r.left - r.width / 2) * .16).toFixed(1) + 'px ' + ((e.clientY - r.top - r.height / 2) * .3).toFixed(1) + 'px'; });
+      btn.addEventListener('pointerleave', function(){ btn.style.translate = ''; });
+    });
+    // светлина след мишката в тъмния блок
+    var fo = root.querySelector('.bv-formula');
+    if (fo) {
+      var spot = document.createElement('span'); spot.className = 'bv-spot'; spot.setAttribute('aria-hidden', 'true'); fo.appendChild(spot);
+      fo.addEventListener('pointermove', function(e){ var r = fo.getBoundingClientRect(); fo.style.setProperty('--sx', (e.clientX - r.left) + 'px'); fo.style.setProperty('--sy', (e.clientY - r.top) + 'px'); fo.classList.add('bv-spot-on'); });
+      fo.addEventListener('pointerleave', function(){ fo.classList.remove('bv-spot-on'); });
+    }
+  }
+
+  // отзивите – движеща се стена на компютър
+  var shots = root.querySelector('.bv-shots');
+  if (shots && !reduce && mm('(min-width: 960px)')) {
+    var figs = Array.prototype.slice.call(shots.children), wall = document.createElement('div');
+    wall.className = 'bv-wall';
+    [0, 1].forEach(function(ci){
+      var col = document.createElement('div'); col.className = 'bv-wall__col' + (ci ? ' bv-wall__col--down' : '');
+      var tr = document.createElement('div'); tr.className = 'bv-wall__track';
+      var set = document.createElement('div'); set.className = 'bv-wall__set';
+      figs.forEach(function(f, i){ if (i % 2 === ci) { f.classList.remove('bv-rv'); f.classList.add('bv-in'); set.appendChild(f); } });
+      var clone = set.cloneNode(true); clone.setAttribute('aria-hidden', 'true');
+      tr.appendChild(set); tr.appendChild(clone); col.appendChild(tr); wall.appendChild(col);
+    });
+    shots.parentNode.replaceChild(wall, shots);
+    // снимките в стената се зареждат малко преди нея, за да не се появяват празни карти
+    var lio = new IntersectionObserver(function(es){ if (es[0].isIntersecting) { lio.disconnect(); wall.querySelectorAll('img').forEach(function(im){ im.loading = 'eager'; }); } }, {rootMargin: '900px 0px'});
+    lio.observe(wall);
+  }
+
+  // лентата за напредък при браузъри без scroll-timeline
+  var pg = root.querySelector('.bv-progress');
+  if (pg && !(window.CSS && CSS.supports && CSS.supports('animation-timeline: scroll()'))) {
+    var pq = false;
+    window.addEventListener('scroll', function(){
+      if (pq) return; pq = true;
+      requestAnimationFrame(function(){ pq = false; var h = document.documentElement.scrollHeight - window.innerHeight; pg.style.setProperty('--bvp', h > 0 ? Math.min(1, window.scrollY / h).toFixed(4) : 0); });
+    }, {passive: true});
   }
 })();
 </script>
