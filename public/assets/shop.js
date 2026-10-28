@@ -246,7 +246,7 @@ function renderLightbox() {
   const hasBack = Boolean(it.dataset.back);
   $(".flip-face.back img", lb).src = it.dataset.back || it.dataset.front;
   $(".flip-face.back img", lb).alt = `${it.dataset.title} – гръб`;
-  flip.style.setProperty("--ar", it.dataset.ar || "720/1009");
+  flip.style.setProperty("--ar", it.dataset.ar || "10/14");
   flip.classList.remove("flipped");
   $(".lb-side", lb).hidden = !hasBack;
   flip.disabled = !hasBack;
