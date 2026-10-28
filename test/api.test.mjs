@@ -295,7 +295,7 @@ test("shop: order with cash on delivery, admin list and status", async () => {
   assert.equal(r.error, "package");
   r = await order(good);
   assert.equal(r.status, 200);
-  assert.equal(r.total, 4490 + 590, "the server prices the order, the browser's price is ignored");
+  assert.equal(r.total, 4490, "the server prices the order, the browser's price is ignored; delivery is free with both decks");
   const id = r.id;
 
   // Orders are only for admins: a parent gets 403 until the role is given.
@@ -314,6 +314,13 @@ test("shop: order with cash on delivery, admin list and status", async () => {
   assert.ok(r.orders.some((o) => Number(o.id) === id));
   r = await boss(`orders/${id}`, { status: "lost" });
   assert.equal(r.status, 400);
+});
+
+test("shop: delivery is free only with both decks", async () => {
+  const { PACKAGES, SHIPPING, shipPrice } = await import("../public/assets/shop-catalog.js");
+  assert.equal(shipPrice(PACKAGES.duo, SHIPPING.econt), 0);
+  assert.equal(shipPrice(PACKAGES["ezik-1"], SHIPPING.econt), SHIPPING.econt.price);
+  assert.equal(shipPrice(PACKAGES["lit-2"], SHIPPING.address), SHIPPING.address.price);
 });
 
 test("shop pages show the catalog prices", async () => {

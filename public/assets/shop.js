@@ -1,7 +1,7 @@
 // Card shop pages: scroll effects, the 3D card stage, flip cards, gallery, topic filter and the order form.
 // The same code also runs inside a ConvertBuilder code block (see scripts/build-landing.mjs): then
 // window.EB_LANDING holds the settings and ConvertBuilder's own checkout takes the orders.
-import { PACKAGES, SHIPPING, euro } from "/assets/shop-catalog.js";
+import { PACKAGES, SHIPPING, euro, shipPrice } from "/assets/shop-catalog.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -462,7 +462,8 @@ function boxesHtml(root, p) {
     .map((b, i) => `<img class="b${i}" src="${esc(base + BOX[b][0])}" alt="" loading="lazy">`)
     .join("")}${n > 1 && new Set(p.boxes).size === 1 ? `<span class="times">×${n}</span>` : ""}</span>`;
 }
-const hasHtml = (p) => `<ul class="pack-has">${p.has.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>`;
+const hasHtml = (p) =>
+  `<ul class="pack-has">${p.has.map((h) => `<li>${esc(h)}</li>`).join("")}${p.freeShip ? '<li class="free">Безплатна доставка</li>' : ""}</ul>`;
 
 function packCards(root) {
   const flags = JSON.parse(root.dataset.flags || "{}");
@@ -511,8 +512,10 @@ for (const root of $$("[data-order]")) {
     const s = SHIPPING[pick("shipping")];
     $(".s-title", form).textContent = p.title;
     $(".s-price", form).textContent = euro(p.price);
-    $(".s-ship", form).textContent = euro(s.price);
-    $(".s-total", form).textContent = euro(p.price + s.price);
+    const free = (cost) => (cost ? euro(cost) : "безплатно");
+    for (const r of $$('input[name="shipping"]', root)) $("small", r.parentElement).textContent = free(shipPrice(p, SHIPPING[r.value]));
+    $(".s-ship", form).textContent = free(shipPrice(p, s));
+    $(".s-total", form).textContent = euro(p.price + shipPrice(p, s));
     placeLabel.textContent = placeLabel.dataset[s.place];
     place.placeholder = s.place === "office" ? "напр. офис „Център“" : "ул. „Иван Вазов“ 12, вх. А, ет. 3";
     place.autocomplete = s.place === "office" ? "off" : "street-address";
