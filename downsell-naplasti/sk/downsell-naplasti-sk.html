@@ -698,7 +698,7 @@ body{overflow-x:hidden;overflow-x:clip}
     var native = document.querySelector('.upsell-positive-action');
     if (!native && !CONFIG.acceptUrl) {
       showFallback();
-      if (window.console) console.warn('BeeVenom downsell: на страницата няма ъпсел бутон на ConvertBuilder (.upsell-positive-action). Добави го и избери спрея в него.');
+      if (window.console) console.warn('BeeVenom downsell: на страницата няма ъпсел бутон на ConvertBuilder (.upsell-positive-action). Добави го и избери пластирите в него.');
       return;
     }
     if (native && document.cookie.indexOf('last-order-token') === -1 && window.console) {
