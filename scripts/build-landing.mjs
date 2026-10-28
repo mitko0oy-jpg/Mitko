@@ -24,8 +24,9 @@ const PAGES = [
   { src: "karti-nvo/literatura", out: "literatura.html", name: "Карти по литература" },
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
 ];
-// Addresses of the pages on the builder; the owner can change them in the settings of each block.
-const LINKS = { literatura: "https://edubel.site/", ezik: "https://edubel.site/ezik", dvete: "https://edubel.site/karti" };
+// Addresses of the pages on the builder: the two decks together are the home page. The owner can
+// change them in the settings of each block.
+const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/ezik", dvete: "https://edubel.site/" };
 const PATHS = { "/karti-nvo/literatura/": "literatura", "/karti-nvo/balgarski-ezik/": "ezik", "/karti-nvo/": "dvete" };
 const SCOPE = ":is(#ebl,#ebf)";
 

@@ -620,6 +620,20 @@ body[data-deck="lit"] .final p{color:#3B4A40}
 .compare td:first-child{font-weight:700;width:30%}
 .compare-wrap{overflow-x:auto;border-radius:var(--r)}
 .compare{min-width:600px}
+/* phones: one block per row, each value says which deck it belongs to */
+@media (max-width:620px){
+  .compare{min-width:0}
+  .compare thead{display:none}
+  .compare,.compare tbody,.compare tr,.compare td{display:block;width:100%}
+  .compare tr{padding:16px 18px;border-bottom:1px solid var(--line)}
+  .compare tr:last-child{border-bottom:0}
+  .compare th,.compare td{padding:0;border:0}
+  .compare td:first-child{width:auto;margin-bottom:10px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .compare td[data-label]{display:grid;grid-template-columns:118px 1fr;gap:12px;padding:5px 0;font-size:15px}
+  .compare td[data-label]::before{content:attr(data-label);font-weight:700;font-size:13.5px}
+  .compare td[data-label="Литература"]::before{color:#1E5A42}
+  .compare td[data-label="Български език"]::before{color:var(--accent)}
+}
 .hero-img-band{position:relative;border-radius:calc(var(--r) + 10px);overflow:hidden;box-shadow:var(--shadow);aspect-ratio:16/9}
 .hero-img-band video,.hero-img-band img{width:100%;height:100%;object-fit:cover}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -750,6 +764,15 @@ body[data-deck="lit"] .final p{color:#3B4A40}
   .reasons-pics .reason .k{width:34px;height:34px;font-size:13px;top:-17px;right:12px}
   .reasons-pics .reason h3{font-size:16.5px;margin-bottom:6px}
   .reasons-pics .reason p{font-size:13.5px;line-height:1.45}
+}
+/* three reasons: one wide card per row on phones instead of a lonely third card */
+@media (max-width:620px){
+  .reasons.reasons-pics.reasons-3{grid-template-columns:1fr;gap:16px}
+  .reasons-3 .reason-img{aspect-ratio:16/10}
+  .reasons-3 .reason-body{padding:20px 20px 22px}
+  .reasons-pics.reasons-3 .reason .k{width:40px;height:40px;font-size:15px;top:-20px;right:16px}
+  .reasons-pics.reasons-3 .reason h3{font-size:19px}
+  .reasons-pics.reasons-3 .reason p{font-size:15px}
 }
 
 /* ---------- package pictures: the boxes each package contains ---------- */
