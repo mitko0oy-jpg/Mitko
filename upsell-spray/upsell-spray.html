@@ -3,8 +3,8 @@
   Страница след поръчка на Гел с пчелна отрова 20 гр (beevenombg.eu)
 
   КАК СЕ ПОЛЗВА: целият код се поставя в един HTML / Custom code елемент
-  на ъпсел стъпката във фунията. Всички настройки (цени, снимки, линкове)
-  са в CONFIG най-долу в <script>. Подробно: README.md
+  на ъпсел стъпката във фунията. Снимките вече са вградени (CDN линкове).
+  Цените и линковете са в CONFIG най-долу в <script>. Подробно: README.md
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -466,6 +466,9 @@
 <script>
 (function () {
   /* ============ НАСТРОЙКИ – промени само тук ============ */
+  // Снимките се зареждат от GitHub през CDN-а jsDelivr (фиксиран commit, не се променят).
+  // Ако качиш снимките в ConvertBuilder, смени линковете в images с твоите.
+  var IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@8ca0b079e144b25c4bda5b0a56d5394d37a4966e/upsell-spray/images/';
   var CONFIG = {
     priceNew: 12.90,          // цена в ъпсела (трябва да съвпада с цената на ъпсел бутона в ConvertBuilder)
     priceOld: 24.90,          // редовна цена на спрея
@@ -473,11 +476,11 @@
     timerMinutes: 10,         // таймер за запазване на цената
     phone: '0988 88 05 07',   // показва се, ако бутонът не може да добави продукта
     images: {                 // сложи линковете от качените снимки в ConvertBuilder
-      spray: 'images/spray.webp',
-      infographic: 'images/infographic.webp',
-      arnica: 'images/arnica.webp',
-      menthol: 'images/menthol.webp',
-      msm: 'images/msm.webp'
+      spray: IMG + 'spray.webp',
+      infographic: IMG + 'infographic.webp',
+      arnica: IMG + 'arnica.webp',
+      menthol: IMG + 'menthol.webp',
+      msm: IMG + 'msm.webp'
     },
     hideNativeWidget: true,   // скрива вградения ъпсел бутон – натиска се от нашите бутони
     acceptUrl: '',            // резервно: линк при „ДА“, ако на страницата няма ъпсел бутон
