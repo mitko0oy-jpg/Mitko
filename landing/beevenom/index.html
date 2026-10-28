@@ -76,6 +76,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl em.bv-accent{font-feature-settings:"locl" 0;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:var(--honey-d);letter-spacing:0}
 #bvl .bv-wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
 #bvl section{padding:84px 0;position:relative}
+#bvl .bv-eta{padding-bottom:64px!important}
 #bvl .bv-center{text-align:center}
 #bvl .bv-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);background:var(--honey-100);padding:7px 14px;border-radius:999px;margin-bottom:18px}
 #bvl .bv-lead{font-size:20px;color:var(--ink-2);max-width:720px}
@@ -138,7 +139,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-badge--3{left:4%;bottom:6%}
 
 /* ---------- trust strip ---------- */
-#bvl .bv-trust{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0}
+#bvl .bv-trust{position:relative;z-index:2;margin-top:-36px;padding:0}
+#bvl .bv-trust .bv-wrap{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow-l);padding:20px 22px}
 #bvl .bv-trust__grid{display:grid;grid-template-columns:1fr;gap:14px}
 #bvl .bv-trust__item{display:flex;gap:12px;align-items:center;font-size:15px;line-height:1.3;color:var(--ink-2)}
 #bvl .bv-trust__item strong{display:block;color:var(--ink);font-size:16px}
@@ -177,11 +179,47 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-formula__fig figcaption{margin-top:10px;text-align:center;font-size:13px;color:#BFA684}
 
 /* ---------- benefits ---------- */
-#bvl .bv-bens{display:grid;gap:14px;margin-top:36px}
-#bvl .bv-ben{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-#bvl .bv-ben .bv-ico{width:52px;height:52px;font-size:26px}
-#bvl .bv-ben strong{display:block;font-size:18px;line-height:1.3;margin-bottom:4px}
-#bvl .bv-ben span{color:var(--muted);font-size:16px;line-height:1.5}
+#bvl .bv-why{overflow:hidden;padding-top:120px}
+#bvl .bv-why .bv-wrap{position:relative}
+#bvl .bv-bens{display:grid;gap:18px;margin-top:40px}
+#bvl .bv-ben{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:var(--shadow);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+#bvl .bv-ben:hover{transform:translateY(-6px);box-shadow:var(--shadow-l)}
+#bvl .bv-ben__media{position:relative;aspect-ratio:4/3;background:var(--honey-50)}
+#bvl .bv-ben__media .bv-loop{transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+#bvl .bv-ben:hover .bv-loop{transform:scale(1.05)}
+#bvl .bv-ben__media::after{content:"";position:absolute;inset:auto 0 0;height:40%;background:linear-gradient(0deg,rgba(36,23,11,.28),rgba(36,23,11,0));pointer-events:none}
+#bvl .bv-ben__ico{position:absolute;left:18px;bottom:-24px;z-index:2;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:#fff;box-shadow:0 8px 20px rgba(60,35,5,.18)}
+#bvl .bv-ben__body{padding:34px 20px 22px}
+#bvl .bv-ben h3{font-size:19px;line-height:1.3;margin:0 0 6px}
+#bvl .bv-ben p{margin:0;color:var(--muted);font-size:16px;line-height:1.5}
+#bvl .bv-swipe{display:none;justify-content:center;align-items:center;gap:8px;margin-top:4px;font-size:14px;font-weight:700;color:var(--muted)}
+#bvl .bv-swipe span{display:inline-block;animation:bv-nudge 1.6s ease-in-out infinite}
+@keyframes bv-nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+#bvl .bv-loop{display:block;width:100%;height:100%;object-fit:cover;background:var(--honey-50)}
+
+/* ---------- живи елементи ---------- */
+#bvl .bv-hexes{position:absolute;inset:0;pointer-events:none}
+#bvl .bv-hex{position:absolute;fill:none;stroke:var(--honey);stroke-width:2.5;opacity:.28;animation:bv-float 10s ease-in-out infinite}
+@keyframes bv-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(12deg)}}
+#bvl .bv-flyzone{position:absolute;right:4%;top:-34px;width:320px;height:150px;pointer-events:none;z-index:3}
+#bvl .bv-flybee{position:absolute;left:0;top:0;offset-path:path("M30 90 C 60 10, 160 10, 160 75 S 270 140, 290 70 S 220 0, 160 75 S 40 150, 30 90 Z");offset-rotate:auto;animation:bv-fly 14s linear infinite;filter:drop-shadow(0 6px 6px rgba(60,35,5,.25))}
+@keyframes bv-fly{from{offset-distance:0%}to{offset-distance:100%}}
+#bvl .bv-wing{transform-box:fill-box;transform-origin:50% 100%;animation:bv-flap .12s ease-in-out infinite alternate}
+#bvl .bv-wing--b{animation-delay:.06s}
+@keyframes bv-flap{from{transform:scaleY(1)}to{transform:scaleY(.35)}}
+#bvl .bv-seal__ring{transform-box:view-box;transform-origin:60px 60px;animation:bv-spin 24s linear infinite}
+@keyframes bv-spin{to{transform:rotate(360deg)}}
+
+/* ---------- преходи между блоковете ---------- */
+#bvl .bv-wave{position:absolute;left:0;right:0;top:-58px;height:60px;overflow:hidden;pointer-events:none;z-index:1}
+#bvl .bv-wave svg{position:absolute;left:0;bottom:0;width:200%;height:100%;fill:currentColor;animation:bv-drift 26s linear infinite}
+#bvl .bv-wave__back{opacity:.45;animation-duration:38s!important;animation-direction:reverse!important}
+@keyframes bv-drift{to{transform:translateX(-50%)}}
+#bvl .bv-drip{position:absolute;left:0;right:0;top:0;height:90px;pointer-events:none;z-index:1}
+#bvl .bv-drip svg{display:block;width:100%;height:100%;fill:var(--night)}
+#bvl .bv-fall{position:absolute;width:9px;height:12px;margin-left:-4.5px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:#3A2512;opacity:0;animation:bv-fall 4.2s ease-in infinite}
+@keyframes bv-fall{0%{opacity:0;transform:translateY(-6px) scale(.6)}15%{opacity:.9;transform:translateY(0) scale(1)}70%{opacity:.8}100%{opacity:0;transform:translateY(70px) scale(.8)}}
+#bvl footer.bv-footer{position:relative}
 
 /* ---------- quality + guarantee ---------- */
 #bvl .bv-assure{display:grid;gap:18px;margin-top:56px}
@@ -225,8 +263,9 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 /* ---------- ingredients ---------- */
 #bvl .bv-ings{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
 #bvl .bv-ing{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-#bvl .bv-ing__img{aspect-ratio:440/350;overflow:hidden;background:#fff}
-#bvl .bv-ing__img img{width:436.36%;max-width:none}
+#bvl .bv-ing__img{aspect-ratio:5/4;overflow:hidden;background:#fff}
+#bvl .bv-ing{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+#bvl .bv-ing:hover{transform:translateY(-6px);box-shadow:var(--shadow-l)}
 #bvl .bv-ing__body{padding:14px 16px 18px}
 #bvl .bv-ing h3{font-size:19px;margin-bottom:6px}
 #bvl .bv-ing p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
@@ -295,7 +334,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl details>div p:last-child{margin:0}
 
 /* ---------- final ---------- */
-#bvl .bv-final{background:radial-gradient(90% 80% at 50% 0%,#FFE2A3 0%,rgba(255,226,163,0) 70%),var(--cream);text-align:center}
+#bvl .bv-final{background:radial-gradient(80% 70% at 50% 40%,#FFE2A3 0%,rgba(255,226,163,0) 70%),var(--cream);text-align:center}
 #bvl .bv-final__media{position:relative;max-width:320px;margin:0 auto 10px}
 #bvl .bv-final__media::before{content:"";position:absolute;inset:6% 0 0;border-radius:50%;background:radial-gradient(circle,#FFD679 0%,rgba(255,214,121,.35) 45%,rgba(255,214,121,0) 70%)}
 #bvl .bv-final__media img{position:relative;mix-blend-mode:multiply}
@@ -314,14 +353,22 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bv-sticky .bv-call{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--green-50);border:1px solid #CFE6CF;text-decoration:none;font-size:22px}
 
 /* reveal on scroll */
-#bvl.bv-js .bv-rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
-#bvl.bv-js .bv-rv.bv-in{opacity:1;transform:none}
+#bvl.bv-js .bv-rv{opacity:0;transform:translateY(34px) scale(.97);filter:blur(6px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1),filter .8s ease;transition-delay:var(--bv-d,0s)}
+#bvl.bv-js .bv-rv.bv-in{opacity:1;transform:none;filter:none}
 
 /* ---------- breakpoints ---------- */
 @media (max-width:719px){
   #bvl .bv-pack--hot{order:-2}
   #bvl .bv-pack--best{order:-1}
   #bvl .bv-eta__box .bv-ico{display:none}
+  #bvl .bv-flyzone{right:-40px;top:-60px;transform:scale(.8)}
+  #bvl .bv-wave{top:-38px;height:40px}
+  #bvl .bv-drip{height:60px}
+  #bvl .bv-why{padding-top:96px}
+  #bvl .bv-bens{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:32px -20px 0;padding:6px 20px 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #bvl .bv-bens::-webkit-scrollbar{display:none}
+  #bvl .bv-ben{flex:0 0 80%;scroll-snap-align:center}
+  #bvl .bv-swipe{display:flex}
   #bvl .bv-eta__box strong{font-size:17px}
   #bvl .bv-compare table{font-size:15px}
   #bvl .bv-compare th,#bvl .bv-compare td{padding:12px 10px}
@@ -368,7 +415,9 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   #bvl .bv-ticker__track,#bvl .bv-pulse{animation:none}
-  #bvl.bv-js .bv-rv{opacity:1;transform:none;transition:none}
+  #bvl.bv-js .bv-rv{opacity:1;transform:none;filter:none;transition:none}
+  #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall{animation:none}
+  #bvl .bv-flyzone,#bvl .bv-fall{display:none}
 }
 </style>
 </head>
@@ -477,6 +526,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ ФОРМУЛА ============ -->
 <section class="bv-formula bv-honeycomb" id="bv-formula">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--night)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap bv-formula__grid">
     <div>
       <span class="bv-eyebrow">BeeVenom 4 Max™</span>
@@ -502,20 +552,42 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 </section>
 
 <!-- ============ ЗАЩО ГО ИЗБИРАТ ============ -->
-<section>
+<section class="bv-why">
+  <div class="bv-drip" aria-hidden="true"><svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0 0H1440V16H1376C1366 16 1368 52 1360 52C1352 52 1354 16 1344 16H1246C1239 16 1240 34 1235 34C1230 34 1231 16 1224 16H1125C1112 16 1115 70 1105 70C1095 70 1098 16 1085 16H972C964 16 966 40 960 40C954 40 956 16 948 16H857C846 16 848 58 840 58C832 58 834 16 823 16H700C694 16 695 30 690 30C685 30 686 16 680 16H579C567 16 570 66 560 66C550 66 553 16 541 16H432C424 16 426 42 420 42C414 42 416 16 408 16H316C306 16 308 56 300 56C292 56 294 16 284 16H181C174 16 176 36 170 36C164 36 166 16 159 16H75C65 16 68 50 60 50C52 50 55 16 45 16H0Z"/><circle cx="1360" cy="50" r="8.8"/><circle cx="1235" cy="32" r="6.1"/><circle cx="1105" cy="68" r="11.0"/><circle cx="960" cy="38" r="6.6"/><circle cx="840" cy="56" r="9.4"/><circle cx="690" cy="28" r="5.5"/><circle cx="560" cy="64" r="10.5"/><circle cx="420" cy="40" r="6.6"/><circle cx="300" cy="54" r="8.8"/><circle cx="170" cy="34" r="6.1"/><circle cx="60" cy="48" r="8.2"/></svg><span class="bv-fall" style="left:94.44%;top:56px;animation-delay:0.0s"></span><span class="bv-fall" style="left:76.74%;top:74px;animation-delay:1.4s"></span><span class="bv-fall" style="left:58.33%;top:62px;animation-delay:2.8s"></span><span class="bv-fall" style="left:38.89%;top:70px;animation-delay:4.2s"></span><span class="bv-fall" style="left:20.83%;top:60px;animation-delay:5.6s"></span><span class="bv-fall" style="left:4.17%;top:54px;animation-delay:7.0s"></span></div>
+  <div class="bv-hexes" aria-hidden="true"><svg class="bv-hex" style="left:4%;top:12%;width:46px;animation-delay:0s;animation-duration:9s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:90%;top:8%;width:34px;animation-delay:1.5s;animation-duration:11s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:82%;top:46%;width:54px;animation-delay:0.8s;animation-duration:10s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:8%;top:62%;width:30px;animation-delay:2.2s;animation-duration:12s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:48%;top:92%;width:40px;animation-delay:3s;animation-duration:9.5s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg><svg class="bv-hex" style="left:94%;top:86%;width:26px;animation-delay:1.1s;animation-duration:13s" viewBox="0 0 56 64" aria-hidden="true"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg></div>
   <div class="bv-wrap">
+    <div class="bv-flyzone" aria-hidden="true"><svg class="bv-flybee" viewBox="0 0 64 48" width="44" height="33"><g class="bv-wing bv-wing--a"><ellipse cx="28" cy="12" rx="11" ry="7" fill="#FFF5DC" fill-opacity=".85" stroke="#E0A030" stroke-width="1.2"/></g><g class="bv-wing bv-wing--b"><ellipse cx="38" cy="11" rx="10" ry="6.5" fill="#FFF5DC" fill-opacity=".85" stroke="#E0A030" stroke-width="1.2"/></g><ellipse cx="32" cy="28" rx="17" ry="11" fill="#F5A623"/><path d="M25 18.5c-2 6-2 13 0 19M33 17.5c-2 6.5-2 14 0 21M41 19c-1.6 5.5-1.6 12 0 17" stroke="#24180C" stroke-width="4" stroke-linecap="round" fill="none"/><circle cx="50" cy="26" r="7" fill="#24180C"/><circle cx="52.5" cy="24" r="1.6" fill="#fff"/><path d="M14 28l-6 2 6 2z" fill="#24180C"/></svg></div>
     <div class="bv-center">
       <span class="bv-eyebrow">Защо хората го избират?</span>
       <h2>Една туба за всяка зона, която <em class="bv-accent">те спира</em></h2>
     </div>
     <div class="bv-bens">
-      <div class="bv-ben bv-rv"><span class="bv-ico">🌡️</span><div><strong>Топлина и релакс за минути</strong><span>Приятно затопляне още при първото нанасяне.</span></div></div>
-      <div class="bv-ben bv-rv"><span class="bv-ico">💧</span><div><strong>Действа в дълбочина</strong><span>Не остава само на повърхността – малко количество е достатъчно.</span></div></div>
-      <div class="bv-ben bv-rv"><span class="bv-ico">🦵</span><div><strong>Колене, кръст, рамене, врат</strong><span>Един гел за всички натоварени зони, включително глезени и лакти.</span></div></div>
-      <div class="bv-ben bv-rv"><span class="bv-ico">🌿</span><div><strong>Натурална формула</strong><span>Пчелна отрова, куркума, зелен чай и витамин D3.</span></div></div>
-      <div class="bv-ben bv-rv"><span class="bv-ico">👕</span><div><strong>Попива бързо, без мазни следи</strong><span>Обличаш се минути след нанасянето.</span></div></div>
-      <div class="bv-ben bv-rv"><span class="bv-ico">👵</span><div><strong>Предпочитан от хора над 50</strong><span>Хиляди българи го нанасят всяка сутрин.</span></div></div>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-toplina.jpg" aria-label="Жена масажира гел в коляното си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-toplina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌡️</span></div>
+        <div class="bv-ben__body"><h3>Топлина и релакс за минути</h3><p>Приятно затопляне още при първото нанасяне.</p></div>
+      </article>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-dalbochina.jpg" aria-label="Златиста топлина прониква в коляното"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-dalbochina.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">✨</span></div>
+        <div class="bv-ben__body"><h3>Действа в дълбочина</h3><p>Не остава само на повърхността – малко количество е достатъчно.</p></div>
+      </article>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-zoni.jpg" aria-label="Жена нанася гел на врата и рамото си"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-zoni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🙆</span></div>
+        <div class="bv-ben__body"><h3>Колене, кръст, рамене, врат</h3><p>Един гел за всички натоварени зони, включително глезени и лакти.</p></div>
+      </article>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-formula.jpg" aria-label="Тубата BeeVenom с пчелна пита, куркума и зелен чай"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-formula.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">🌿</span></div>
+        <div class="bv-ben__body"><h3>Натурална формула</h3><p>Пчелна отрова, куркума, зелен чай и витамин D3.</p></div>
+      </article>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-bez-mazni.jpg" aria-label="Жена закопчава чиста бяла риза"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-bez-mazni.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">👕</span></div>
+        <div class="bv-ben__body"><h3>Попива бързо, без мазни следи</h3><p>Обличаш се минути след нанасянето.</p></div>
+      </article>
+      <article class="bv-ben bv-rv">
+        <div class="bv-ben__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-nad50.jpg" aria-label="Усмихната двойка на разходка в планината"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ben-nad50.mp4" type="video/mp4"></video><span class="bv-ben__ico" aria-hidden="true">❤️</span></div>
+        <div class="bv-ben__body"><h3>Предпочитан от хора над 50</h3><p>Хиляди българи го нанасят всяка сутрин.</p></div>
+      </article>
     </div>
+    <p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>
 
     <div class="bv-assure">
       <div class="bv-card bv-rv">
@@ -532,7 +604,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           <defs><path id="bv-sealc" d="M60 60m-43 0a43 43 0 1 1 86 0a43 43 0 1 1-86 0"/></defs>
           <circle cx="60" cy="60" r="57" fill="#F5A623"/><circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 4"/>
           <circle cx="60" cy="60" r="34" fill="#fff"/>
-          <text font-family="Manrope,sans-serif" font-weight="800" font-size="9.5" fill="#24180C" letter-spacing="1.6"><textPath href="#bv-sealc">ГАРАНЦИЯ · ВРЪЩАМЕ ПАРИТЕ · ГАРАНЦИЯ ·</textPath></text>
+          <g class="bv-seal__ring"><text font-family="Manrope,sans-serif" font-weight="800" font-size="9.5" fill="#24180C" letter-spacing="1.6"><textPath href="#bv-sealc">ГАРАНЦИЯ · ВРЪЩАМЕ ПАРИТЕ · ГАРАНЦИЯ ·</textPath></text></g>
           <text x="60" y="63" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="30" fill="#D62A1E">30</text>
           <text x="60" y="78" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="11" fill="#24180C">ДНИ</text>
         </svg>
@@ -552,6 +624,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ ОФЕРТИ ============ -->
 <section class="bv-offers" id="bv-offers">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--honey-50)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Специални цени</span>
@@ -617,6 +690,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ СЪСТАВ ============ -->
 <section id="bv-sastav">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--cream)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Какво съдържа гелът?</span>
@@ -625,19 +699,19 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
     <div class="bv-ings">
       <article class="bv-ing bv-rv">
-        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-2.27%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Пчела и пчелна пита"></div>
+        <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-pchela.jpg" aria-label="Пчела и пчелна пита"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-pchela.mp4" type="video/mp4"></video></div>
         <div class="bv-ing__body"><h3>Пчелна отрова</h3><p>Звездата на формулата. Дава характерното затопляне и превръща масажа в дълбока грижа.</p></div>
       </article>
       <article class="bv-ing bv-rv">
-        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-110.68%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Корен и прах от куркума"></div>
+        <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-kurkuma.jpg" aria-label="Корен и прах от куркума"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-kurkuma.mp4" type="video/mp4"></video></div>
         <div class="bv-ing__body"><h3>Куркума</h3><p>Златният корен, познат от векове в традиционната грижа за натоварените зони.</p></div>
       </article>
       <article class="bv-ing bv-rv">
-        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-224.55%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Чаша зелен чай и листа"></div>
+        <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-chai.jpg" aria-label="Чаша зелен чай и листа"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-chai.mp4" type="video/mp4"></video></div>
         <div class="bv-ing__body"><h3>Зелен чай (EGCG)</h3><p>Богат на антиоксиданти, които се грижат за кожата в третираната зона.</p></div>
       </article>
       <article class="bv-ing bv-rv">
-        <div class="bv-ing__img"><img loading="lazy" style="margin-left:-334.32%" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/Screenshot_2026-10-15_at_21.36.48-2089417.png?format=webp" width="1920" height="559" alt="Капсула витамин D3"></div>
+        <div class="bv-ing__img"><video class="bv-loop" muted loop playsinline preload="none" width="600" height="480" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-d3.jpg" aria-label="Капсула витамин D3"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@724358570562e83ad9dd2ec729cb4e671d01a62b/landing/beevenom/media/ing-d3.mp4" type="video/mp4"></video></div>
         <div class="bv-ing__body"><h3>Витамин D3</h3><p>Допълва формулата и подхранва кожата при ежедневна употреба.</p></div>
       </article>
     </div>
@@ -659,6 +733,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ КАК СЕ ИЗПОЛЗВА ============ -->
 <section style="background:var(--honey-50)">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--honey-50)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap bv-how__grid">
     <div>
       <span class="bv-eyebrow">Как BeeVenom се грижи за тялото?</span>
@@ -679,6 +754,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ КАК СЕ ПРОМЕНЯ ЕЖЕДНЕВИЕТО ============ -->
 <section class="bv-timeline">
+  <div class="bv-wave" aria-hidden="true" style="color:#fff"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Как се променя ежедневието</span>
@@ -706,6 +782,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ ОТЗИВИ ============ -->
 <section id="bv-otzivi">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--cream)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-rev-head bv-center">
       <span class="bv-eyebrow">Какво споделят нашите клиенти</span>
@@ -754,6 +831,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ ОФЕРТИ (повторение) ============ -->
 <section class="bv-offers" id="bv-offers-2" aria-label="Оферти">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--honey-50)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">Количествата са ограничени</span>
@@ -846,6 +924,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
 <!-- ============ ФИНАЛ ============ -->
 <section class="bv-final">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--cream)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <div class="bv-final__media"><img loading="lazy" src="https://content.app-sources.com/s/734703430186897261/uploads/Изображения/ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png?format=webp" width="960" height="1200" alt="BeeVenom гел с пчелна отрова"></div>
     <h2>Хиляди българи вече се събуждат <em class="bv-accent">с по-леко движение.</em> Заслужаваш същото.</h2>
@@ -861,6 +940,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 </main>
 
 <footer class="bv-footer">
+  <div class="bv-wave" aria-hidden="true" style="color:var(--night)"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>
   <div class="bv-wrap">
     <p><strong style="color:#fff">BeeVenom Care Gel</strong> · Поръчки по телефона: <a href="tel:+359988880507">0988 88 05 07</a> (всеки ден 10–21 ч.)</p>
     <p>Козметичен продукт за външна употреба. Не е лекарство и не замества лечение, предписано от лекар. Индивидуалните резултати могат да се различават.</p>
@@ -911,10 +991,11 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) visibleOffers.add(e.target); else visibleOffers.delete(e.target); }); upd(); });
     root.querySelectorAll('.bv-offers').forEach(function(el){ io.observe(el); });
 
-    // видеото: зарежда се чак когато наближи екрана, спира, когато не се вижда
+    // видеата: зареждат се чак когато наближат екрана, спират, когато не се виждат
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     root.querySelectorAll('video').forEach(function(v){
-      var loaded = false;
+      var loaded = false, isLoop = v.classList.contains('bv-loop');
+      if (reduce && isLoop) return;
       if (reduce) v.controls = true;
       new IntersectionObserver(function(es){ es.forEach(function(e){
         if (e.isIntersecting && !loaded) {
@@ -924,6 +1005,22 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
         if (reduce) return;
         if (e.isIntersecting) { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } else v.pause();
       }); }, {rootMargin:'300px 0px'}).observe(v);
+    });
+
+    // стъпаловидно появяване на картите в решетките
+    root.querySelectorAll('.bv-bens,.bv-ings,.bv-sits,.bv-tl,.bv-stories,.bv-packs,.bv-shots').forEach(function(g){
+      Array.prototype.forEach.call(g.children, function(c, i){ c.classList.add('bv-rv'); c.style.setProperty('--bv-d', (i % 6) * 0.09 + 's'); });
+    });
+    root.querySelectorAll('section .bv-center').forEach(function(c){ c.classList.add('bv-rv'); });
+
+    // числата във формулата броят нагоре
+    root.querySelectorAll('.bv-stat b').forEach(function(b){
+      var m = b.textContent.match(/^(\d+)(.*)$/); if (!m || reduce) return;
+      var to = +m[1], tail = m[2]; b.textContent = '0' + tail;
+      new IntersectionObserver(function(es, ob){ if (!es[0].isIntersecting) return; ob.disconnect();
+        var t0 = null; function step(t){ if (!t0) t0 = t; var k = Math.min(1, (t - t0) / 1200); b.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))) + tail; if (k < 1) requestAnimationFrame(step); }
+        requestAnimationFrame(step);
+      }).observe(b);
     });
 
     // плавно появяване
