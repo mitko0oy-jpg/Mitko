@@ -108,7 +108,8 @@ body[data-deck="hub"] .nav{background:color-mix(in srgb,var(--bg) 84%,transparen
 .nav-links a{display:block;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;color:var(--muted);transition:color .2s,background-color .2s}
 .nav-links a:hover,.nav-links a[aria-current="page"]{color:var(--ink);background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .nav-cta{display:flex;align-items:center;gap:10px}
-@media (max-width:960px){.nav-links{display:none}}
+.nav-links a{white-space:nowrap}
+@media (max-width:1080px){.nav-links{display:none}}
 @media (max-width:520px){.nav .btn-sm{padding:0 16px}.brand small{display:none}}
 
 /* ---------- hero ---------- */
