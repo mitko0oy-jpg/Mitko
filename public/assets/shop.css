@@ -737,7 +737,7 @@ body[data-deck="lit"] .final p{color:#3B4A40}
 .reasons.reasons-pics{gap:18px;background:none;box-shadow:none;border-radius:0;overflow:visible}
 .reasons-pics .reason{padding:0;border-radius:calc(var(--r) + 2px);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;transition:transform .6s var(--spring),box-shadow .4s}
 .reasons-pics .reason:hover{transform:translateY(-6px);box-shadow:inset 0 0 0 1px var(--line),var(--shadow-sm)}
-.reason-img{margin:0;aspect-ratio:16/10;overflow:hidden;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.reason-img{margin:0;aspect-ratio:4/3;overflow:hidden;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
 .reason-img img{width:100%;height:100%;object-fit:cover;transform:scale(1.12);transition:transform 1.6s var(--ease)}
 .reason.in .reason-img img{transform:scale(1);animation:bobImg 7s ease-in-out 1.6s infinite;animation-delay:calc(1.6s + var(--d,0) * -1.1s)}
 .reasons-pics .reason:hover .reason-img img{transform:scale(1.06)}
