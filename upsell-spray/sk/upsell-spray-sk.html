@@ -58,6 +58,9 @@ body{overflow-x:hidden;overflow-x:clip}
 /* --- Предупреждение --- */
 .bvu-alert{background:var(--brown);color:#fff;text-align:center;padding:12px 16px;font-size:16px;font-weight:700}
 .bvu-alert b{color:#ffd27a}
+.bvu-alert__timer{display:inline-block;margin-left:6px;white-space:nowrap}
+.bvu-alert__timer b{display:inline-block;background:#ffd27a;color:var(--brown);border-radius:6px;padding:0 7px;font-family:'Montserrat',Arial,sans-serif;font-weight:900;font-variant-numeric:tabular-nums}
+.bvu-alert__timer.is-expired{color:#ffd27a}
 
 /* --- Hero --- */
 .bvu-hero{padding:26px 0 40px;background-color:#fff8ed;background-image:radial-gradient(120% 70% at 50% 0,rgba(255,236,190,.95) 0,rgba(255,248,237,0) 62%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23e9a23b' stroke-opacity='.16' stroke-width='1.5'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23e9a23b' stroke-opacity='.16' stroke-width='1.5'/%3E%3C/svg%3E")}
@@ -232,6 +235,8 @@ body{overflow-x:hidden;overflow-x:clip}
 .bvu-sticky__price{line-height:1.1;flex:none}
 .bvu-sticky__price s{display:block;font-size:13px;color:#8c7b69;font-weight:700}
 .bvu-sticky__price b{font-family:'Montserrat',Arial,sans-serif;font-size:22px;color:var(--orange-d)}
+.bvu-sticky__timer{display:block;margin-top:3px;font-size:12px;font-weight:900;color:#fff;background:var(--brown);border-radius:6px;padding:1px 6px;text-align:center;font-variant-numeric:tabular-nums}
+.bvu-sticky__timer:empty{display:none}
 .bvu .bvu-sticky .bvu-cta{padding:12px 10px;animation:none;box-shadow:0 4px 0 #b8440a}
 .bvu-sticky .bvu-cta__main{font-size:16px}
 
@@ -288,7 +293,7 @@ body{overflow-x:hidden;overflow-x:clip}
     <div class="bvu-step is-active"><i>2</i>Špeciálna ponuka</div>
     <div class="bvu-step"><i>3</i>Hotovo</div>
   </div>
-  <div class="bvu-alert">✅ <b>Tvoja objednávka je prijatá</b> a nemusíš nič ďalšie robiť. Ešte pred odoslaním máš jednu jednorazovú ponuku.</div>
+  <div class="bvu-alert">✅ <b>Tvoja objednávka je prijatá</b> a nemusíš nič ďalšie robiť. Ešte pred odoslaním máš jednu jednorazovú ponuku. <span class="bvu-alert__timer" data-bvu-expired="Táto cena platí len na tejto stránke.">⏱ Ponuka platí ešte <b data-bvu-timer>10:00</b></span></div>
 
   <!-- 2. HERO + ОФЕРТА -->
   <section class="bvu-hero">
@@ -543,7 +548,7 @@ body{overflow-x:hidden;overflow-x:clip}
 
   <!-- Лепкава лента на телефон -->
   <div class="bvu-sticky" data-bvu-sticky aria-hidden="true">
-    <div class="bvu-sticky__price"><s data-bvu="old">24,90 €</s><b data-bvu="new">12,90 €</b></div>
+    <div class="bvu-sticky__price"><s data-bvu="old">24,90 €</s><b data-bvu="new">12,90 €</b><span class="bvu-sticky__timer" data-bvu-expired="">⏱ <span data-bvu-timer>10:00</span></span></div>
     <button type="button" class="bvu-cta" data-bvu-accept tabindex="-1"><span class="bvu-cta__main">PRIDAŤ DO OBJEDNÁVKY</span></button>
   </div>
 </div>
@@ -637,25 +642,45 @@ body{overflow-x:hidden;overflow-x:clip}
     });
   }
 
-  // Таймер – пази се при презареждане на страницата
-  var KEY = 'bvu_spray_deadline', now = Date.now(), deadline = 0;
-  try { deadline = parseInt(sessionStorage.getItem(KEY), 10) || 0; } catch (e) {}
-  if (!deadline) {
-    deadline = now + CONFIG.timerMinutes * 60000;
-    try { sessionStorage.setItem(KEY, String(deadline)); } catch (e) {}
+  // Таймер – всяка поръчка получава свои 10 минути (пазят се при презареждане на страницата).
+  // Без поръчка (редактор / преглед) таймерът започва отначало при всяко отваряне.
+  function orderToken() {
+    var m = document.cookie.match(/(?:^|;\s*)last-order-token=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
   }
-  var timers = root.querySelectorAll('[data-bvu-timer]');
+  var deadline = 0, timerToken = null;
+  function startTimer() {
+    var tok = orderToken();
+    if (tok === timerToken) return;
+    timerToken = tok;
+    var key = 'bvu_spray_deadline_' + tok;
+    deadline = 0;
+    if (tok) { try { deadline = parseInt(sessionStorage.getItem(key), 10) || 0; } catch (e) {} }
+    if (!deadline) {
+      deadline = Date.now() + CONFIG.timerMinutes * 60000;
+      if (tok) { try { sessionStorage.setItem(key, String(deadline)); } catch (e) {} }
+    }
+  }
+  var timerBoxes = [];
+  each(root.querySelectorAll('[data-bvu-expired]'), function (p) { timerBoxes.push({ el: p, html: p.innerHTML, off: false }); });
   function tick() {
     var left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
-    if (!left) {
-      each(timers, function (el) { var p = el.parentNode; p.textContent = p.getAttribute('data-bvu-expired'); });
-      return;
-    }
     var txt = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-    each(timers, function (el) { el.textContent = txt; });
-    setTimeout(tick, 1000);
+    timerBoxes.forEach(function (b) {
+      if (!left) {
+        if (!b.off) { b.el.textContent = b.el.getAttribute('data-bvu-expired'); b.el.classList.add('is-expired'); b.off = true; }
+        return;
+      }
+      if (b.off) { b.el.innerHTML = b.html; b.el.classList.remove('is-expired'); b.off = false; }
+      var t = b.el.querySelector('[data-bvu-timer]');
+      if (t) t.textContent = txt;
+    });
   }
+  startTimer();
   tick();
+  setInterval(tick, 1000);
+  // платформата може да запише поръчката малко след нашия код
+  window.addEventListener('load', function () { startTimer(); tick(); });
 
   function track(name) {
     try {
