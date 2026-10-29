@@ -2,14 +2,16 @@
    the same order with the builder's upsell button. Light literature palette (data-deck="lit"). */
 
 /* ---------- the order went through ---------- */
-.up-done{background:#1E5A42;color:#FFF8E8}
-.up-done .container{display:flex;align-items:center;gap:12px;padding:12px 0;font-size:15.5px;line-height:1.35}
+/* vertical padding sits on the bars, not on .container: the builder clears the padding of every .container on tablets and phones */
+.up-done{padding:12px 0;background:#1E5A42;color:#FFF8E8}
+.up-done .container{display:flex;align-items:center;gap:12px;font-size:15.5px;line-height:1.35}
 .up-done p{margin:0}
 .up-tick{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#E8CB85;color:#15291F}
 .up-tick svg{width:16px;height:16px}
 
 /* ---------- logo and the three steps ---------- */
-.up-head .container{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0}
+.up-head{padding:16px 0}
+.up-head .container{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .up-steps{display:flex;align-items:center;gap:8px;margin:0;padding:0;list-style:none;font-size:14px;font-weight:700;color:var(--muted)}
 .up-steps li{display:flex;align-items:center;gap:8px}
 .up-steps em{font-style:normal}
@@ -20,8 +22,9 @@
 .up-steps .now{color:var(--ink)}
 .up-steps .now span{box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent)}
 @media (max-width:620px){
-  .up-done .container{font-size:14px;padding:10px 0}
-  .up-head .container{padding:12px 0}
+  .up-done{padding:10px 0}
+  .up-done .container{font-size:14px}
+  .up-head{padding:12px 0}
   .up-head .brand{flex:none;white-space:nowrap}
   .up-steps,.up-steps li{gap:6px}
   .up-steps li:not(.now) em{display:none}
