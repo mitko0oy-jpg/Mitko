@@ -47,6 +47,12 @@ for (const el of $$("[data-was]")) {
   el.hidden = !onSale(p);
   if (onSale(p)) el.textContent = euro(p.was);
 }
+// "под 1,30 € на тема": the price of a package over n topics, rounded up to ten cents
+for (const el of $$("[data-per]")) {
+  const [k, n] = el.dataset.per.split(":");
+  const p = priceOf(k);
+  if (p && n > 0) el.textContent = euro(Math.ceil(p.price / n / 10) * 10);
+}
 for (const el of $$("[data-save]")) {
   const p = priceOf(el.dataset.save);
   (el.closest(".up-save") || el).hidden = !onSale(p);

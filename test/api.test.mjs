@@ -339,5 +339,9 @@ test("shop pages show the catalog prices", async () => {
     for (const [key, text] of prices) assert.equal(text, euro(of(key).price), `${page}: ${key}`);
     for (const [key, text] of shown("was")) assert.equal(text, euro(of(key).was), `${page}: old price of ${key}`);
     for (const [key, text] of shown("save")) assert.equal(text, euro(of(key).was - of(key).price), `${page}: saving on ${key}`);
+    for (const [spec, text] of shown("per")) {
+      const [key, n] = spec.split(":");
+      assert.equal(text, euro(Math.ceil(of(key).price / n / 10) * 10), `${page}: price per topic of ${key}`);
+    }
   }
 });

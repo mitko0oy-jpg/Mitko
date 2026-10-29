@@ -750,6 +750,9 @@ body[data-deck="lit"] .stage-glow{background:radial-gradient(closest-side,rgba(2
 .reasons-pics .reason:hover .reason-img img{transform:scale(1.06)}
 .reason-body{position:relative;padding:22px 24px 26px}
 .reasons-pics .reason .k{position:absolute;top:-22px;right:20px;display:grid;place-items:center;width:44px;height:44px;margin:0;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:16px;box-shadow:0 10px 22px -10px rgba(0,0,0,.4)}
+/* what the parent gets: three cards and the price per topic */
+.parents-note{max-width:720px;margin:clamp(26px,3vw,40px) auto 0;color:var(--muted);font-size:17px;text-align:center}
+.parents-note b{color:var(--ink)}
 @media (max-width:620px){
   .reasons.reasons-pics{grid-template-columns:1fr 1fr;gap:12px}
   .reason-img{aspect-ratio:1/1}
@@ -757,6 +760,10 @@ body[data-deck="lit"] .stage-glow{background:radial-gradient(closest-side,rgba(2
   .reasons-pics .reason .k{width:34px;height:34px;font-size:13px;top:-17px;right:12px}
   .reasons-pics .reason h3{font-size:16.5px;margin-bottom:6px}
   .reasons-pics .reason p{font-size:13.5px;line-height:1.45}
+  .reasons.reasons-pics.parents{grid-template-columns:1fr}
+  .parents .reason-img{aspect-ratio:16/9}
+  .parents .reason h3{font-size:19px}
+  .parents .reason p{font-size:15px}
 }
 /* three reasons: one wide card per row on phones instead of a lonely third card */
 @media (max-width:620px){
