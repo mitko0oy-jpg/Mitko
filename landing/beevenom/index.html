@@ -73,12 +73,12 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl h2{font-size:clamp(28px,3.8vw,44px)}
 #bvl h3{font-size:21px;letter-spacing:-.01em}
 #bvl p{margin:0 0 1em}
-#bvl em.bv-accent{font-feature-settings:"locl" 0;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:var(--honey-d);letter-spacing:0}
+#bvl em.bv-accent{font-feature-settings:"locl" 0;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:#C96F00;letter-spacing:0}
 #bvl .bv-wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
 #bvl section{padding:84px 0;position:relative}
 #bvl .bv-eta{padding-bottom:64px!important}
 #bvl .bv-center{text-align:center}
-#bvl .bv-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--honey-d);background:var(--honey-100);padding:7px 14px;border-radius:999px;margin-bottom:18px}
+#bvl .bv-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#B86400;background:var(--honey-100);padding:7px 14px;border-radius:999px;margin-bottom:18px}
 #bvl .bv-lead{font-size:20px;color:var(--ink-2);max-width:720px}
 #bvl .bv-center .bv-lead{margin-left:auto;margin-right:auto}
 #bvl .bv-small{font-size:14px;color:var(--muted)}
@@ -141,7 +141,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 #bvl .bv-fbadge__eq i{display:inline-block;margin-left:4px;padding:1px 9px;border-radius:999px;background:var(--green-50);color:var(--green);font-size:13px;font-style:normal;font-weight:800;white-space:nowrap}
 #bvl .bv-count{display:inline-block;min-width:6.3ch;text-align:right;font-variant-numeric:tabular-nums}
 #bvl .bv-glass{background:rgba(255,255,255,.58);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);border:1px solid rgba(255,255,255,.8);box-shadow:0 10px 30px rgba(110,60,0,.10)}
-#bvl .bv-hero .bv-eyebrow{color:var(--honey-d);text-wrap:balance}
+#bvl .bv-hero .bv-eyebrow{color:#B86400;text-wrap:balance}
 #bvl .bv-goldtext{background:linear-gradient(100deg,#A8360A 0%,#D2530E 25%,#F07A18 50%,#D2530E 75%,#A8360A 100%) 0 0/200% 100% repeat-x;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:bv-goldtext 6s linear infinite;padding-right:.08em}
 @keyframes bv-goldtext{from{background-position:100% 0}to{background-position:-100% 0}}
 #bvl .bv-proof{display:flex;align-items:center;gap:12px;margin-bottom:26px;flex-wrap:wrap}
@@ -567,6 +567,36 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-tape__track>*{margin-inline-end:18px}
 }
 
+/* ---------- пластири подарък ---------- */
+#bvl .bv-patch{background:radial-gradient(55% 65% at 22% 50%,rgba(245,166,35,.16),transparent 72%),var(--cream)}
+#bvl .bv-patch__grid{display:grid;gap:56px;align-items:center}
+#bvl .bv-patch__media{position:relative;width:min(100%,480px);margin:0 auto 20px}
+#bvl .bv-patch__photo{position:relative;aspect-ratio:896/1120;border-radius:30px;overflow:hidden;box-shadow:var(--shadow-l)}
+#bvl .bv-patch__photo img{display:block;width:100%;height:100%;object-fit:cover}
+#bvl .bv-patch__glow{position:absolute;left:61%;top:57%;width:58%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;background:radial-gradient(circle,rgba(255,168,60,.5),rgba(255,140,30,.16) 45%,transparent 70%);mix-blend-mode:screen;pointer-events:none;animation:bv-warm 3.4s ease-in-out infinite}
+@keyframes bv-warm{50%{opacity:.3;scale:.86}}
+#bvl .bv-patch__ribbon{position:absolute;top:28px;right:-50px;rotate:45deg;padding:8px 60px;background:linear-gradient(180deg,#E8402F,#B21E14);color:#fff;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;box-shadow:0 6px 16px rgba(120,20,10,.35)}
+#bvl .bv-patch__float{position:absolute;height:auto;pointer-events:none;filter:drop-shadow(0 18px 22px rgba(90,50,0,.3))}
+#bvl .bv-patch__float--p{width:44%;left:-14%;top:-6%;rotate:-14deg;animation:bv-bob 5s ease-in-out infinite}
+#bvl .bv-patch__float--t{width:19%;right:-8%;bottom:12%;rotate:12deg;animation:bv-bob 6s ease-in-out .8s infinite}
+@keyframes bv-bob{50%{translate:0 -12px}}
+#bvl .bv-patch__combo{position:absolute;left:50%;bottom:-22px;translate:-50% 0;white-space:nowrap;padding:12px 22px;border-radius:999px;font-size:16px;font-weight:700;color:var(--ink-2)}
+#bvl .bv-patch__combo b{color:var(--red)}
+#bvl .bv-patch__steps{list-style:none;counter-reset:bvp;display:grid;gap:16px;margin:26px 0 24px;padding:0}
+#bvl .bv-patch__steps li{counter-increment:bvp;position:relative;display:flex;flex-direction:column;justify-content:center;min-height:44px;padding-left:60px;line-height:1.35}
+#bvl .bv-patch__steps li::before{content:counter(bvp);position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#FFD983,#E9A21C 60%,#C77800);color:#3A2408;font-size:18px;font-weight:800;box-shadow:0 6px 14px rgba(200,120,0,.3)}
+#bvl .bv-patch__steps li:not(:last-child)::after{content:"";position:absolute;left:21px;top:50px;bottom:-14px;width:2px;background:repeating-linear-gradient(180deg,var(--honey) 0 5px,transparent 5px 10px)}
+#bvl .bv-patch__steps b{font-size:18px;color:var(--ink)}
+#bvl .bv-patch__steps span{font-size:16px;color:var(--muted)}
+#bvl .bv-patch__day{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+#bvl .bv-patch__day p,#bvl .bv-patch__val p{display:flex;flex-direction:column;gap:3px;margin:0;padding:12px 14px;border-radius:18px;font-size:14.5px;line-height:1.35;color:var(--ink-2)}
+#bvl .bv-patch__day p{background:#fff;border:1px solid var(--line)}
+#bvl .bv-patch__day b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--honey-d)}
+#bvl .bv-patch__val{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:24px}
+#bvl .bv-patch__val p{background:linear-gradient(135deg,#FFF4DC,#FFE3A6);border:1px dashed #E9B54F;font-weight:700}
+#bvl .bv-patch__val b{font-size:21px;color:var(--ink)}
+#bvl .bv-patch__note{margin:16px 0 0;font-size:14px;color:var(--muted)}
+#bvl .bv-pack li.bv-gift a{text-decoration:underline;text-decoration-color:rgba(224,138,0,.55);text-underline-offset:3px}
 /* ---------- breakpoints ---------- */
 @media (max-width:719px){
   #bvl .bv-pack--hot{order:-2}
@@ -602,6 +632,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-inglegend li b{font-size:14px}
   #bvl .bv-inglegend li small{font-size:12px}
   #bvl .bv-hero .bv-eyebrow{border-radius:18px}
+  #bvl .bv-patch__grid{gap:46px}
+  #bvl .bv-patch__media{width:min(86%,400px)}
+  #bvl .bv-patch__combo{font-size:14px;padding:10px 18px}
+  #bvl .bv-patch__day{grid-template-columns:1fr}
+  #bvl .bv-patch__day p{flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:8px}
+  #bvl .bv-patch__val b{font-size:19px}
+  #bvl .bv-patch .bv-btn{width:100%}
   #bvl .bv-fbadge{width:auto;gap:12px;padding:10px 16px 10px 10px;margin-bottom:16px}
   #bvl .bv-fbadge img{width:46px}
   #bvl .bv-fbadge strong{font-size:17px}
@@ -646,6 +683,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 }
 @media (min-width:960px){
   #bvl section{padding:104px 0}
+  #bvl .bv-patch__grid{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:80px}
+  #bvl .bv-patch__media{margin:0}
   #bvl .bv-nav{display:flex}
   #bvl .bv-phone{display:block}
   #bvl .bv-hero{display:flex;align-items:center;min-height:clamp(720px,86vh,900px);padding:40px 0 120px}
@@ -676,7 +715,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   #bvl .bv-hex,#bvl .bv-flybee,#bvl .bv-wing,#bvl .bv-seal__ring,#bvl .bv-wave svg,#bvl .bv-fall,#bvl .bv-hstep__num,#bvl .bv-goldtext,#bvl .bv-stage__glow,#bvl .bv-seal10__ring,#bvl .bv-stage__bee img,#bvl .bv-hero__bg img,#bvl .bv-stage{animation:none!important}
   #bvl .bv-stage__glint,#bvl .bv-honeydrop,#bvl .bv-dust,#bvl .bv-vs__hl::after{display:none}
   #bvl .bv-cwflip i,#bvl .bv-ben__ico.bv-cwflip{animation:none!important}
-  #bvl .bv-tape__track,#bvl .bv-floater,#bvl .bv-floater img,#bvl .bv-hero__copy>*,#bvl .bv-stage__inner,#bvl .bv-inglegend,#bvl .bv-hex,#bvl .bv-wall__track,#bvl .bv-fbadge img,#bvl .bv-fbadge::after{animation:none!important}
+  #bvl .bv-tape__track,#bvl .bv-floater,#bvl .bv-floater img,#bvl .bv-hero__copy>*,#bvl .bv-stage__inner,#bvl .bv-inglegend,#bvl .bv-hex,#bvl .bv-wall__track,#bvl .bv-fbadge img,#bvl .bv-fbadge::after,#bvl .bv-patch__glow,#bvl .bv-patch__float{animation:none!important}
   #bvl details::details-content{transition:none}
   #bvl .bv-cwflip{display:flex;gap:1px}
   #bvl .bv-cwflip i{opacity:1;transform:none;font-size:.72em}
@@ -696,8 +735,8 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <!-- ============ ЛЕНТА ГОРЕ ============ -->
 <div class="bv-ticker" aria-label="Предимства">
   <div class="bv-ticker__track">
-    <span>🎁 Подарък билкови пластири към пакетите</span><span>🚚 Доставка до 1–2 работни дни в цяла България</span><span>💶 Плащаш при получаване</span><span>🛡️ 30 дни тест период</span>
-    <span aria-hidden="true">🎁 Подарък билкови пластири към пакетите</span><span aria-hidden="true">🚚 Доставка до 1–2 работни дни в цяла България</span><span aria-hidden="true">💶 Плащаш при получаване</span><span aria-hidden="true">🛡️ 30 дни тест период</span>
+    <span>🎁 Подарък пластири за стави към пакетите</span><span>🚚 Доставка до 1–2 работни дни в цяла България</span><span>💶 Плащаш при получаване</span><span>🛡️ 30 дни тест период</span>
+    <span aria-hidden="true">🎁 Подарък пластири за стави към пакетите</span><span aria-hidden="true">🚚 Доставка до 1–2 работни дни в цяла България</span><span aria-hidden="true">💶 Плащаш при получаване</span><span aria-hidden="true">🛡️ 30 дни тест период</span>
   </div>
 </div>
 
@@ -818,7 +857,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 <section class="bv-eta">
   <div class="bv-wrap">
     <div class="bv-eta__box">
-      <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span id="bv-eta">до 2 работни дни</span></strong><span class="bv-eta__gift">🎁 Към пакетите 2+1 и 3+2 получаваш билкови пластири подарък.</span></div></div>
+      <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span id="bv-eta">до 2 работни дни</span></strong><span class="bv-eta__gift">🎁 Към пакетите 2+1 и 3+2 получаваш пластири за стави подарък.</span></div></div>
       <a class="bv-btn" href="#bv-offers">Избери пакет</a>
     </div>
   </div>
@@ -919,8 +958,48 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     </div>
   </div>
   <div class="bv-tapes" aria-hidden="true">
-    <div class="bv-tape bv-tape--b"><div class="bv-tape__track"><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: БИЛКОВИ ПЛАСТИРИ</span><i>✦</i></div></div>
+    <div class="bv-tape bv-tape--b"><div class="bv-tape__track"><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: ПЛАСТИРИ ЗА СТАВИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: ПЛАСТИРИ ЗА СТАВИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: ПЛАСТИРИ ЗА СТАВИ</span><i>✦</i><span>ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ</span><i>✦</i><span>ДОСТАВКА 1–2 ДНИ</span><i>✦</i><span>30 ДНИ ТЕСТ ПЕРИОД</span><i>✦</i><span>ПОДАРЪК: ПЛАСТИРИ ЗА СТАВИ</span><i>✦</i></div></div>
     <div class="bv-tape bv-tape--a"><div class="bv-tape__track"><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i><span>ПЧЕЛНА ОТРОВА</span><i>✦</i><span>50 УЖИЛВАНИЯ В ЕДНА ТУБА</span><i>✦</i><span>НЕ МИРИШЕ</span><i>✦</i><span>НЕ ЦАПА</span><i>✦</i><span>ПОПИВА БЪРЗО</span><i>✦</i><span>10× ФОРМУЛА</span><i>✦</i></div></div>
+  </div>
+</section>
+
+<!-- ============ ПЛАСТИРИ ПОДАРЪК ============ -->
+<section class="bv-patch" id="bv-plastiri">
+  <div class="bv-wrap bv-patch__grid">
+    <figure class="bv-patch__media">
+      <div class="bv-patch__photo">
+        <picture>
+          <source type="image/avif" srcset="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch-knee-560.avif 560w, https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch-knee-896.avif 896w" sizes="(min-width:960px) 480px, 92vw">
+          <img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch-knee-896.webp" srcset="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch-knee-560.webp 560w, https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch-knee-896.webp 896w" sizes="(min-width:960px) 480px, 92vw" width="896" height="1120" alt="Пластир, залепен върху коляното" loading="lazy" decoding="async">
+        </picture>
+        <span class="bv-patch__glow" aria-hidden="true"></span>
+        <span class="bv-patch__ribbon" aria-hidden="true">Подарък</span>
+      </div>
+      <img class="bv-patch__float bv-patch__float--p" src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/patch.webp" alt="" width="420" height="303" loading="lazy" decoding="async">
+      <img class="bv-patch__float bv-patch__float--t" src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@5c9f951c7d6ae53a0cda4d60ac109f85bc401e8f/landing/beevenom/media/hero-tuba.webp" alt="" width="720" height="1218" loading="lazy" decoding="async">
+      <figcaption class="bv-patch__combo bv-glass"><b>Гел + пластир</b> = по-силен ефект</figcaption>
+    </figure>
+    <div class="bv-patch__copy">
+      <span class="bv-eyebrow">🎁 Подарък към пакетите 2+1 и 3+2</span>
+      <h2>Пластири, които работят <em class="bv-accent">в синхрон с гела</em></h2>
+      <p class="bv-lead">За стави, мускули и сухожилия. Гелът действа още при нанасяне, а пластирът продължава след него – заедно ефектът е по-силен.</p>
+      <ol class="bv-patch__steps">
+        <li><b>Почисти и подсуши кожата</b><span>там, където ще лепиш пластира</span></li>
+        <li><b>Отлепи фолиото и залепи</b><span>върху коляното, кръста, рамото или друга натоварена зона</span></li>
+        <li><b>Носи го до 8 часа</b><span>после го махни – по един пластир на ден</span></li>
+      </ol>
+      <div class="bv-patch__day">
+        <p><b>☀️ Сутрин</b>гел + пластир</p>
+        <p><b>🚶 През деня</b>пластирът работи под дрехите</p>
+        <p><b>🌙 Вечер</b>гел</p>
+      </div>
+      <div class="bv-patch__val">
+        <p><b>8 пластира</b>с пакет 2+1 · стойност €7,90</p>
+        <p><b>16 пластира</b>с пакет 3+2 · стойност €14,90</p>
+      </div>
+      <a class="bv-btn" href="#bv-offers">Избери пакет с подарък <span class="bv-arr">→</span></a>
+      <p class="bv-patch__note">Не лепи пластира върху наранена или раздразнена кожа. При зачервяване го махни.</p>
+    </div>
   </div>
 </section>
 
@@ -957,13 +1036,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <article class="bv-pack bv-pack--hot">
         <span class="bv-ribbon">⭐ Най-популярен</span>
         <span class="bv-off">−57%</span>
-        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.jpg" aria-label="3 туби BeeVenom, едната с подаръчна панделка, и 8 билкови пластира"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
+        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.jpg" aria-label="3 туби BeeVenom, едната с подаръчна панделка, и 8 пластира за стави"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
         <div class="bv-pack__body">
           <h3>2 + 1 подарък</h3>
           <p class="bv-pack__sub">3 туби · 120 дози</p>
           <div class="bv-tubes" aria-hidden="true"><span class="bv-tube" style="--i:0"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:1"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-plus" style="--i:2">+</span><span class="bv-tube bv-tube--gift" style="--i:3"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-plus" style="--i:4">+</span><span class="bv-patchchip" style="--i:5"><svg viewBox="0 0 40 28" aria-hidden="true"><path d="M20 7.5C16.5 1.5 6.5 1 3.6 8.4 1 15.5 6.6 24 13 24c3 0 5.2-1.9 7-4 1.8 2.1 4 4 7 4 6.4 0 12-8.5 9.4-15.6C33.5 1 23.5 1.5 20 7.5z" fill="#BE8752" stroke="#7E5128" stroke-width="1.4"/><path d="M20 10v8" stroke="#7E5128" stroke-width="1.1" stroke-dasharray="1.6 1.8" opacity=".7"/></svg>×8</span></div>
           <ul>
-            <li class="bv-gift">8 билкови пластира подарък (стойност €7,90)</li>
+            <li class="bv-gift"><a href="#bv-plastiri">8 пластира за стави</a> подарък (стойност €7,90)</li>
             <li>За продължителна употреба</li>
             <li class="bv-save">Спестяваш €30,80</li>
           </ul>
@@ -977,13 +1056,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <article class="bv-pack bv-pack--best">
         <span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>
         <span class="bv-off">−67%</span>
-        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.jpg" aria-label="5 туби BeeVenom, две с подаръчни панделки, и 16 билкови пластира"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
+        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.jpg" aria-label="5 туби BeeVenom, две с подаръчни панделки, и 16 пластира за стави"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
         <div class="bv-pack__body">
           <h3>3 + 2 подарък</h3>
           <p class="bv-pack__sub">5 туби · 200 дози</p>
           <div class="bv-tubes" aria-hidden="true"><span class="bv-tube" style="--i:0"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:1"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:2"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-plus" style="--i:3">+</span><span class="bv-tube bv-tube--gift" style="--i:4"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-tube bv-tube--gift" style="--i:5"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-plus" style="--i:6">+</span><span class="bv-patchchip" style="--i:7"><svg viewBox="0 0 40 28" aria-hidden="true"><path d="M20 7.5C16.5 1.5 6.5 1 3.6 8.4 1 15.5 6.6 24 13 24c3 0 5.2-1.9 7-4 1.8 2.1 4 4 7 4 6.4 0 12-8.5 9.4-15.6C33.5 1 23.5 1.5 20 7.5z" fill="#BE8752" stroke="#7E5128" stroke-width="1.4"/><path d="M20 10v8" stroke="#7E5128" stroke-width="1.1" stroke-dasharray="1.6 1.8" opacity=".7"/></svg>×16</span></div>
           <ul>
-            <li class="bv-gift">16 билкови пластира подарък (стойност €14,90)</li>
+            <li class="bv-gift"><a href="#bv-plastiri">16 пластира за стави</a> подарък (стойност €14,90)</li>
             <li>За цялото семейство или няколко зони</li>
             <li class="bv-save">Спестяваш €59,60</li>
           </ul>
@@ -1204,13 +1283,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <article class="bv-pack bv-pack--hot">
         <span class="bv-ribbon">⭐ Най-популярен</span>
         <span class="bv-off">−57%</span>
-        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.jpg" aria-label="3 туби BeeVenom, едната с подаръчна панделка, и 8 билкови пластира"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
+        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.jpg" aria-label="3 туби BeeVenom, едната с подаръчна панделка, и 8 пластира за стави"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-2.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
         <div class="bv-pack__body">
           <h3>2 + 1 подарък</h3>
           <p class="bv-pack__sub">3 туби · 120 дози</p>
           <div class="bv-tubes" aria-hidden="true"><span class="bv-tube" style="--i:0"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:1"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-plus" style="--i:2">+</span><span class="bv-tube bv-tube--gift" style="--i:3"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-plus" style="--i:4">+</span><span class="bv-patchchip" style="--i:5"><svg viewBox="0 0 40 28" aria-hidden="true"><path d="M20 7.5C16.5 1.5 6.5 1 3.6 8.4 1 15.5 6.6 24 13 24c3 0 5.2-1.9 7-4 1.8 2.1 4 4 7 4 6.4 0 12-8.5 9.4-15.6C33.5 1 23.5 1.5 20 7.5z" fill="#BE8752" stroke="#7E5128" stroke-width="1.4"/><path d="M20 10v8" stroke="#7E5128" stroke-width="1.1" stroke-dasharray="1.6 1.8" opacity=".7"/></svg>×8</span></div>
           <ul>
-            <li class="bv-gift">8 билкови пластира подарък (стойност €7,90)</li>
+            <li class="bv-gift"><a href="#bv-plastiri">8 пластира за стави</a> подарък (стойност €7,90)</li>
             <li>За продължителна употреба</li>
             <li class="bv-save">Спестяваш €30,80</li>
           </ul>
@@ -1224,13 +1303,13 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
       <article class="bv-pack bv-pack--best">
         <span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>
         <span class="bv-off">−67%</span>
-        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.jpg" aria-label="5 туби BeeVenom, две с подаръчни панделки, и 16 билкови пластира"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
+        <div class="bv-pack__media"><video class="bv-loop" muted loop playsinline preload="none" width="640" height="512" poster="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.jpg" aria-label="5 туби BeeVenom, две с подаръчни панделки, и 16 пластира за стави"><source data-src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/pack-3.mp4" type="video/mp4"></video><span class="bv-sparks" aria-hidden="true"><i style="left:9%;width:5px;height:5px;animation-delay:0.0s"></i><i style="left:22%;width:7px;height:7px;animation-delay:1.3s"></i><i style="left:35%;width:4px;height:4px;animation-delay:2.4s"></i><i style="left:48%;width:6px;height:6px;animation-delay:0.6s"></i><i style="left:61%;width:5px;height:5px;animation-delay:1.9s"></i><i style="left:74%;width:7px;height:7px;animation-delay:0.9s"></i><i style="left:88%;width:4px;height:4px;animation-delay:2.9s"></i><i style="left:55%;width:3px;height:3px;animation-delay:3.3s"></i></span></div>
         <div class="bv-pack__body">
           <h3>3 + 2 подарък</h3>
           <p class="bv-pack__sub">5 туби · 200 дози</p>
           <div class="bv-tubes" aria-hidden="true"><span class="bv-tube" style="--i:0"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:1"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-tube" style="--i:2"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"></span><span class="bv-plus" style="--i:3">+</span><span class="bv-tube bv-tube--gift" style="--i:4"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-tube bv-tube--gift" style="--i:5"><img src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@de90b05d03180f6b137dd2648cd76481d5145351/landing/beevenom/media/mini-tuba.webp" alt="" width="16" height="60"><svg class="bv-bow" viewBox="0 0 24 16" aria-hidden="true"><path d="M12 8C9 2.5 3 .5 1.6 4.4 .4 8 6 10.2 12 8z" fill="#E0352A"/><path d="M12 8c3-5.5 9-7.5 10.4-3.6C23.6 8 18 10.2 12 8z" fill="#B21E14"/><path d="M11 9l-3.4 6M13 9l3.4 6" stroke="#D62A1E" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2.6" fill="#F04A3E"/></svg></span><span class="bv-plus" style="--i:6">+</span><span class="bv-patchchip" style="--i:7"><svg viewBox="0 0 40 28" aria-hidden="true"><path d="M20 7.5C16.5 1.5 6.5 1 3.6 8.4 1 15.5 6.6 24 13 24c3 0 5.2-1.9 7-4 1.8 2.1 4 4 7 4 6.4 0 12-8.5 9.4-15.6C33.5 1 23.5 1.5 20 7.5z" fill="#BE8752" stroke="#7E5128" stroke-width="1.4"/><path d="M20 10v8" stroke="#7E5128" stroke-width="1.1" stroke-dasharray="1.6 1.8" opacity=".7"/></svg>×16</span></div>
           <ul>
-            <li class="bv-gift">16 билкови пластира подарък (стойност €14,90)</li>
+            <li class="bv-gift"><a href="#bv-plastiri">16 пластира за стави</a> подарък (стойност €14,90)</li>
             <li>За цялото семейство или няколко зони</li>
             <li class="bv-save">Спестяваш €59,60</li>
           </ul>
@@ -1261,6 +1340,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
     <h3>Употреба и безопасност</h3>
     <details><summary>Как се използва правилно?</summary><div><p>Нанеси малко количество върху чиста и суха кожа и масажирай с леки кръгови движения 30–60 секунди до пълно попиване. Използвай 2–3 пъти дневно или като вечерен ритуал преди лягане.</p><p>След употреба измий ръцете си и избягвай контакт с очите и лигавиците. Не нанасяй върху наранена или раздразнена кожа.</p></div></details>
+    <details><summary>Какви са пластирите подарък и как се ползват?</summary><div><p>Това са пластири за стави, мускули и сухожилия, които работят в синхрон с гела за по-силен ефект. Получаваш 8 броя с пакета 2+1 и 16 броя с пакета 3+2.</p><p>Почисти и подсуши кожата, отлепи фолиото и залепи пластира върху зоната. Носи го до 8 часа и после го махни – по един пластир на ден. Не го лепи върху наранена или раздразнена кожа.</p></div></details>
     <details><summary>Алергичен съм към пчелни ужилвания – мога ли да го ползвам?</summary><div><p>Не и без разговор с лекар. Ако имаш известна алергия към пчелна отрова или пчелни продукти, не използвай гела, преди да се консултираш с лекар или алерголог. Безопасността е на първо място.</p></div></details>
     <details><summary>Подходящ ли е за чувствителна кожа?</summary><div><p>При чувствителна кожа препоръчваме първо тест върху малък участък (например вътрешната страна на предмишницата) и изчакване 24 часа. Ако няма зачервяване или дискомфорт – използвай спокойно. При раздразнение прекрати употребата.</p></div></details>
     <details><summary>Мога ли да го комбинирам с други кремове или с лекарствата си?</summary><div><p>Гелът е за външна употреба и не се приема през устата. Ако ползваш друг продукт върху същата зона, остави време между двете нанасяния.</p><p>При лекарства, прилагани върху кожата в същата зона, или при каквото и да е съмнение – попитай своя лекар или фармацевт.</p></div></details>
@@ -1416,7 +1496,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
     });
 
     // стъпаловидно появяване на картите в решетките
-    root.querySelectorAll('.bv-bens,.bv-ings,.bv-sits,.bv-tl,.bv-stories,.bv-packs,.bv-shots,.bv-hsteps').forEach(function(g){
+    root.querySelectorAll('.bv-bens,.bv-ings,.bv-sits,.bv-tl,.bv-stories,.bv-packs,.bv-shots,.bv-hsteps,.bv-patch__steps').forEach(function(g){
       Array.prototype.forEach.call(g.children, function(c, i){ c.classList.add('bv-rv'); c.style.setProperty('--bv-d', (i % 6) * 0.09 + 's'); });
     });
     root.querySelectorAll('section .bv-center').forEach(function(c){ c.classList.add('bv-rv'); });
