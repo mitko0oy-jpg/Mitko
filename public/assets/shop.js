@@ -27,7 +27,11 @@ if (CB && shell) {
   for (const el of $$(".progress, .nav, .buybar, #lightbox", shell)) fixed.appendChild(el);
   document.body.appendChild(fixed);
   // position: sticky needs every ancestor to let overflow through; otherwise the deck opens as it scrolls into view.
-  for (let el = shell.parentElement; el && el !== document.body; el = el.parentElement) {
+  // body counts too, unless its overflow passes to the viewport (it does only while html's overflow is visible).
+  const root = getComputedStyle(document.documentElement);
+  const bodyToViewport = root.overflowX === "visible" && root.overflowY === "visible";
+  for (let el = shell.parentElement; el && el !== document.documentElement; el = el.parentElement) {
+    if (el === document.body && bodyToViewport) continue;
     const cs = getComputedStyle(el);
     if (![cs.overflowX, cs.overflowY].every((o) => o === "visible" || o === "clip")) noSticky = true;
   }
@@ -95,6 +99,14 @@ function frame() {
     if (y < h) hero.style.setProperty("--hp", (y / h).toFixed(3));
   }
   for (const d of decks) {
+    // last resort: the host still stops position: sticky and the stage scrolls away, leaving its section empty
+    const r = shell && !noSticky ? d.getBoundingClientRect() : null;
+    if (r && r.top < -40 && r.bottom > innerHeight + 40 && Math.abs(d.firstElementChild.getBoundingClientRect().top) > 20) {
+      noSticky = true;
+      shell.classList.add("no-sticky");
+      scrollTo(0, y + d.getBoundingClientRect().top);
+      return;
+    }
     const p = reduce ? 1 : progressOf(d);
     // ease-out so the fan opens quickly and settles slowly
     const eased = 1 - Math.pow(1 - clamp(p / 0.8), 3);

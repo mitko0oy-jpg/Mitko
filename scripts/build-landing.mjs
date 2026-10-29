@@ -56,6 +56,7 @@ function scopeSelector(sel) {
   if (sel.startsWith(":root")) return SCOPE + sel.slice(5);
   if (sel.startsWith("body")) return SCOPE + sel.slice(4);
   if (sel.startsWith(".js ")) return `${SCOPE}.js ${sel.slice(4)}`;
+  if (sel.startsWith(".no-sticky ")) return `${SCOPE}.no-sticky ${sel.slice(11)}`;
   return `${SCOPE} ${sel}`;
 }
 
@@ -95,7 +96,10 @@ async function styles(sheets) {
   for (const s of sheets) css += (await readFile(path.join(root, "public", s), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "") + "\n";
   css = scopeBlock(css)
     .replace(/#ebl::after\{content:"";position:fixed;inset:-50%;/, '#ebl::after{content:"";position:absolute;inset:0;')
-    .replace(/scroll-padding-top:calc\(var\(--nav-h\) \+ 12px\)/, "scroll-padding-top:80px");
+    .replace(/scroll-padding-top:calc\(var\(--nav-h\) \+ 12px\)/, "scroll-padding-top:80px")
+    // The builder's body has overflow-x:hidden. Overflow on html would keep that from passing to the
+    // viewport, body would become a scroll container and position:sticky would stop working.
+    .replace(/(^|\})html\{([^}]*)\}/, (m, before, rules) => `${before}html{${rules.replace(/;?overflow-x:clip/, "")}}`);
   const names = [...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]);
   const re = new RegExp(`\\b(${names.join("|")})\\b`, "g");
   css = css.replace(/@keyframes\s+([\w-]+)/g, "@keyframes eb-$1").replace(/(animation(?:-name)?\s*:)([^;}]*)/g, (m, p, v) => p + v.replace(re, "eb-$1"));
