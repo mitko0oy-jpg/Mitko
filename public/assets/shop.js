@@ -638,13 +638,14 @@ const hasHtml = (p) =>
 
 function packCards(root) {
   const flags = JSON.parse(root.dataset.flags || "{}");
-  const href = esc(CB.order || "#porachka-forma");
+  // "order" in the settings: one address for every package, or one per package (its order page)
+  const orderOf = (k) => esc((CB.order && typeof CB.order === "object" ? CB.order[k] : CB.order) || "#porachka-forma");
   root.className = "packs-cb";
   root.innerHTML = root.dataset.packs
     .split(",")
     .map((k) => {
       const p = PACKAGES[k];
-      return `<a class="pack-card${k === "duo" ? " best" : ""}" href="${href}">
+      return `<a class="pack-card${k === "duo" ? " best" : ""}" href="${orderOf(k)}">
         ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
         ${boxesHtml(root, p)}
         <b>${esc(p.title)}</b>${hasHtml(p)}

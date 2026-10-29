@@ -19,15 +19,19 @@ const repo = git("remote get-url origin").match(/github\.com[/:]([^/]+\/[^/.]+)/
 const sha = git("log -1 --format=%H -- public/karti-nvo/media public/fonts");
 const CDN = `https://cdn.jsdelivr.net/gh/${repo}@${sha}/public`;
 
+// order: where "Поръчай" at each package leads – its order page on the builder (otherwise the
+// builder's form right under the block).
 const PAGES = [
-  { src: "karti-nvo/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език" },
+  { src: "karti-nvo/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език",
+    order: { "ezik-1": "https://edubel.site/bg", "ezik-2": "https://edubel.site/bg2", duo: "https://edubel.site/bgl" } },
   { src: "karti-nvo/literatura", out: "literatura.html", name: "Карти по литература" },
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
   // shown after an order of the language cards; sells through the builder's upsell button
   { src: "karti-nvo/oferta-literatura", out: "upsell-literatura.html", name: "Ъпсел – карти по литература", upsell: true },
 ];
 // Addresses of the pages on the builder. The owner can change them in the settings of each block.
-const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/b-lgarski-ezik", dvete: "https://edubel.site/karti" };
+const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/karti-balgarski-ezik", dvete: "https://edubel.site/karti" };
+const PACK_NAMES = { "lit-1": "1 тесте", "lit-2": "2 тестета", "ezik-1": "1 тесте", "ezik-2": "2 тестета", duo: "литература + български език" };
 const PATHS = { "/karti-nvo/literatura/": "literatura", "/karti-nvo/balgarski-ezik/": "ezik", "/karti-nvo/": "dvete" };
 const SCOPE = ":is(#ebl,#ebf)";
 
@@ -151,9 +155,12 @@ window.EB_LANDING = {
 </script>` : `<script>
 /* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
 window.EB_LANDING = {
-  // Къде водят бутоните „Поръчай“ при цените: котвата точно под този блок (там постави формата
+${page.order ? `  // Къде води „Поръчай“ при всеки пакет – страницата с поръчката му в ConvertBuilder:
+  // ${Object.keys(page.order).map((k) => `"${k}" – ${PACK_NAMES[k]}`).join(", ")}.
+  // "#porachka-forma" вместо адрес води до формата точно под този блок.
+  order: ${JSON.stringify(page.order, null, 1).replace(/\n\s*/g, " ")},` : `  // Къде водят бутоните „Поръчай“ при цените: котвата точно под този блок (там постави формата
   // за поръчка на ConvertBuilder) или адрес на поръчката, например "https://edubel.site/checkout".
-  order: "#porachka-forma",
+  order: "#porachka-forma",`}
   // Адресите на другите страници с карти.
   links: ${JSON.stringify(LINKS, null, 1).replace(/\n\s*/g, " ")},
   // Цени в евро без доставката. Трябва да са същите като в ConvertBuilder.
