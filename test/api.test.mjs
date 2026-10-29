@@ -293,6 +293,8 @@ test("shop: order with cash on delivery, admin list and status", async () => {
   assert.equal(r.error, "phone");
   r = await order({ ...good, package: "nope" });
   assert.equal(r.error, "package");
+  r = await order({ ...good, package: "upsell" });
+  assert.equal(r.error, "package", "the upsell price is only for the builder's upsell page");
   r = await order(good);
   assert.equal(r.status, 200);
   assert.equal(r.total, 4490, "the server prices the order, the browser's price is ignored; delivery is free with both decks");
@@ -324,11 +326,15 @@ test("shop: delivery is free only with both decks", async () => {
 });
 
 test("shop pages show the catalog prices", async () => {
-  const { PACKAGES, euro } = await import("../public/assets/shop-catalog.js");
-  for (const page of ["karti-nvo", "karti-nvo/literatura", "karti-nvo/balgarski-ezik"]) {
+  const { PACKAGES, UPSELL, euro } = await import("../public/assets/shop-catalog.js");
+  const of = (key) => (key === "upsell" ? UPSELL : PACKAGES[key]);
+  for (const page of ["karti-nvo", "karti-nvo/literatura", "karti-nvo/balgarski-ezik", "karti-nvo/oferta-literatura"]) {
     const html = await readFile(new URL(`../public/${page}/index.html`, import.meta.url), "utf8");
-    const found = [...html.matchAll(/data-price="([^"]+)">([^<]*)</g)];
-    assert.ok(found.length > 0, page);
-    for (const [, key, text] of found) assert.equal(text.replace(/&nbsp;/g, " "), euro(PACKAGES[key].price), `${page}: ${key}`);
+    const shown = (attr) => [...html.matchAll(new RegExp(`data-${attr}="([^"]+)">([^<]*)<`, "g"))].map(([, key, text]) => [key, text.replace(/&nbsp;/g, " ")]);
+    const prices = shown("price");
+    assert.ok(prices.length > 0, page);
+    for (const [key, text] of prices) assert.equal(text, euro(of(key).price), `${page}: ${key}`);
+    for (const [key, text] of shown("was")) assert.equal(text, euro(of(key).was), `${page}: old price of ${key}`);
+    for (const [key, text] of shown("save")) assert.equal(text, euro(of(key).was - of(key).price), `${page}: saving on ${key}`);
   }
 });

@@ -1,7 +1,7 @@
 // Card shop pages: scroll effects, the 3D card stage, flip cards, gallery, topic filter and the order form.
 // The same code also runs inside a ConvertBuilder code block (see scripts/build-landing.mjs): then
 // window.EB_LANDING holds the settings and ConvertBuilder's own checkout takes the orders.
-import { PACKAGES, SHIPPING, euro, shipPrice } from "/assets/shop-catalog.js";
+import { PACKAGES, SHIPPING, UPSELL, euro, shipPrice } from "/assets/shop-catalog.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -18,6 +18,8 @@ if (CB && shell) {
   PACKAGES["lit-2"].was = 2 * PACKAGES["lit-1"].price;
   PACKAGES["ezik-2"].was = 2 * PACKAGES["ezik-1"].price;
   PACKAGES.duo.was = PACKAGES["lit-1"].price + PACKAGES["ezik-1"].price;
+  if (CB.prices?.upsell > 0) UPSELL.price = Math.round(CB.prices.upsell * 100);
+  UPSELL.was = PACKAGES["lit-1"].price;
   for (const a of $$("[data-link]", shell)) if (CB.links?.[a.dataset.link]) a.href = CB.links[a.dataset.link];
   // Fixed bars and the lightbox go straight under <body>: a builder wrapper with a transform would pin them to itself.
   const fixed = document.createElement("div");
@@ -34,14 +36,19 @@ if (CB && shell) {
   shell.classList.toggle("no-sticky", noSticky);
 }
 
-// Prices on the page always come from the catalog.
+// Prices on the page always come from the catalog ("upsell" is the offer after an order).
+const priceOf = (k) => (k === "upsell" ? UPSELL : PACKAGES[k]);
 for (const el of $$("[data-price]")) {
-  const p = PACKAGES[el.dataset.price];
+  const p = priceOf(el.dataset.price);
   if (p) el.textContent = euro(p.price);
 }
 for (const el of $$("[data-was]")) {
-  const p = PACKAGES[el.dataset.was];
+  const p = priceOf(el.dataset.was);
   if (p?.was) el.textContent = euro(p.was);
+}
+for (const el of $$("[data-save]")) {
+  const p = priceOf(el.dataset.save);
+  if (p?.was) el.textContent = euro(p.was - p.price);
 }
 
 /* ---------- one scroll loop for nav, progress bar, hero parallax, the deck stage and the steps ---------- */
@@ -361,6 +368,20 @@ for (const ch of $$("[data-chooser]")) {
     });
   }
   pick("duo");
+}
+
+/* ---------- upsell page: our buttons press the builder's upsell button placed under the block ---------- */
+let upsellPressed = false;
+for (const b of $$("[data-upsell]")) {
+  b.addEventListener("click", (e) => {
+    const real = document.querySelector(b.dataset.upsell === "yes" ? ".upsell-positive-action" : ".upsell-negative-action");
+    if (!real) return; // no builder button on the page: the link scrolls to its place under the block
+    e.preventDefault();
+    if (upsellPressed) return; // one tap adds the cards once
+    upsellPressed = true;
+    setTimeout(() => (upsellPressed = false), 4000);
+    real.click();
+  });
 }
 
 /* ---------- flip cards ---------- */

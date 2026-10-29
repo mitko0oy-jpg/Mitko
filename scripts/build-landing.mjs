@@ -23,10 +23,11 @@ const PAGES = [
   { src: "karti-nvo/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език" },
   { src: "karti-nvo/literatura", out: "literatura.html", name: "Карти по литература" },
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
+  // shown after an order of the language cards; sells through the builder's upsell button
+  { src: "karti-nvo/oferta-literatura", out: "upsell-literatura.html", name: "Ъпсел – карти по литература", upsell: true },
 ];
-// Addresses of the pages on the builder: the two decks together are the home page. The owner can
-// change them in the settings of each block.
-const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/ezik", dvete: "https://edubel.site/" };
+// Addresses of the pages on the builder. The owner can change them in the settings of each block.
+const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/b-lgarski-ezik", dvete: "https://edubel.site/karti" };
 const PATHS = { "/karti-nvo/literatura/": "literatura", "/karti-nvo/balgarski-ezik/": "ezik", "/karti-nvo/": "dvete" };
 const SCOPE = ":is(#ebl,#ebf)";
 
@@ -130,17 +131,24 @@ function markup(html) {
     .replace(/<footer class="foot">[\s\S]*?<\/footer>\n?/, "")
     .replace('<main id="main">', "<main>")
     .replace(/<a class="brand" href="\/karti-nvo\/"/g, '<a class="brand" href="#top"');
-  // Prices go last, right above the builder's own checkout form.
-  const order = body.match(/<section class="section alt" id="porachka">[\s\S]*?<\/section>\n?/)[0];
-  body = body.replace(order, "").replace("</main>", `${order}<div id="porachka-forma"></div>\n</main>`);
+  // Prices go last, right above the builder's own checkout form (on the pages that sell through it).
+  const order = body.match(/<section class="section alt" id="porachka">[\s\S]*?<\/section>\n?/)?.[0];
+  if (order) body = body.replace(order, "").replace("</main>", `${order}<div id="porachka-forma"></div>\n</main>`);
   body = body.replace(/"\/karti-nvo\/media\//g, `"${CDN}/karti-nvo/media/`);
   body = body.replace(/href="(\/karti-nvo\/(?:literatura\/|balgarski-ezik\/)?)"/g, (m, p) => `href="${LINKS[PATHS[p]]}" data-link="${PATHS[p]}"`);
   if (/(src|href|poster)="\/(?!\/)/.test(body)) throw new Error(`Relative link left: ${body.match(/(src|href|poster)="\/[^"]*"/)[0]}`);
   return { deck, body: body.replace(/\n\s*\n/g, "\n").trim() };
 }
 
-const settings = (name) => `<script>
-/* ===== НАСТРОЙКИ – „${name}“. Можеш да ги променяш. ===== */
+const settings = (page) => page.upsell ? `<script>
+/* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
+window.EB_LANDING = {
+  // Цени в евро. "upsell" е цената на офертата – същата като в ъпсел бутона в ConvertBuilder.
+  // "lit-1" е обикновената цена на картите по литература; показва се зачеркната.
+  prices: { "upsell": 19.90, "lit-1": 25.90 }
+};
+</script>` : `<script>
+/* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
 window.EB_LANDING = {
   // Къде водят бутоните „Поръчай“ при цените: котвата точно под този блок (там постави формата
   // за поръчка на ConvertBuilder) или адрес на поръчката, например "https://edubel.site/checkout".
@@ -169,7 +177,7 @@ for (const page of PAGES) {
 <script>document.getElementById("ebl").classList.add("js")</script>
 ${body}
 </div>
-${settings(page.name)}
+${settings(page)}
 <script>${js}</script>
 `;
   await writeFile(path.join(root, "landing", page.out), out);

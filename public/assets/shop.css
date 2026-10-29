@@ -595,7 +595,7 @@ body[data-deck="lit"] .final .btn-primary{background:linear-gradient(135deg,#F7E
 .buybar.show{transform:none}
 .buybar b{display:block;font-size:18px;letter-spacing:-.02em}
 .buybar small{display:block;color:var(--muted);font-size:12.5px;font-weight:600}
-.buybar .btn{--bh:48px;padding:0 22px}
+.buybar .btn{--bh:48px;padding:0 22px;gap:0}
 .buybar .bb-price{display:none}
 @media (min-width:900px){.buybar{left:auto;right:24px;bottom:24px;width:auto;padding:8px;border-radius:999px}.buybar>div{display:none}.buybar .bb-price{display:inline}}
 

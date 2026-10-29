@@ -16,6 +16,10 @@ export const PACKAGES = {
     has: ["кутия по литература · 40 карти", "кутия по български език · 40 карти"] },
 };
 
+// The offer after an order of the language cards (the ConvertBuilder upsell page). It is sold only
+// there, through the builder's upsell button, so it stays out of PACKAGES and the order API.
+export const UPSELL = { title: "Карти по литература", price: 1990, was: PACKAGES["lit-1"].price };
+
 export const SHIPPING = {
   econt: { title: "До офис на Еконт", price: 390, place: "office" },
   speedy: { title: "До офис на Спиди", price: 390, place: "office" },
