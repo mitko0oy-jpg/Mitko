@@ -28,6 +28,8 @@ const PAGES = [
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
   // shown after an order of the language cards; sells through the builder's upsell button
   { src: "karti-nvo/oferta-literatura", out: "upsell-literatura.html", name: "Ъпсел – карти по литература", upsell: true },
+  // the thank-you step after an order of the language cards
+  { src: "karti-nvo/blagodarim-ezik", out: "blagodarim-ezik.html", name: "Благодарим – карти по български език", thanks: true },
 ];
 // Addresses of the pages on the builder. The owner can change them in the settings of each block.
 const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/karti-balgarski-ezik", dvete: "https://edubel.site/karti" };
@@ -144,7 +146,7 @@ function markup(html) {
   return { deck, body: body.replace(/\n\s*\n/g, "\n").trim() };
 }
 
-const settings = (page) => page.upsell ? `<script>
+const settings = (page) => page.thanks ? "<script>window.EB_LANDING = {};</script>" : page.upsell ? `<script>
 /* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
 window.EB_LANDING = {
   // Цени в евро. "upsell" е цената на офертата – същата като в ъпсел бутона в ConvertBuilder.
