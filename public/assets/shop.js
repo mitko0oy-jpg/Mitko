@@ -19,7 +19,7 @@ if (CB && shell) {
   PACKAGES["ezik-2"].was = 2 * PACKAGES["ezik-1"].price;
   PACKAGES.duo.was = PACKAGES["lit-1"].price + PACKAGES["ezik-1"].price;
   if (CB.prices?.upsell > 0) UPSELL.price = Math.round(CB.prices.upsell * 100);
-  UPSELL.was = PACKAGES["lit-1"].price;
+  if (CB.prices?.redovna > 0) UPSELL.was = Math.round(CB.prices.redovna * 100);
   for (const a of $$("[data-link]", shell)) if (CB.links?.[a.dataset.link]) a.href = CB.links[a.dataset.link];
   // Fixed bars and the lightbox go straight under <body>: a builder wrapper with a transform would pin them to itself.
   const fixed = document.createElement("div");

@@ -18,7 +18,8 @@ export const PACKAGES = {
 
 // The offer after an order of the language cards (the ConvertBuilder upsell page). It is sold only
 // there, through the builder's upsell button, so it stays out of PACKAGES and the order API.
-export const UPSELL = { title: "Карти по литература", price: 1990, was: PACKAGES["lit-1"].price };
+// "was" is the regular price of the literature cards; on the shop pages they sell on sale (lit-1).
+export const UPSELL = { title: "Карти по литература", price: 1990, was: 3990 };
 
 export const SHIPPING = {
   econt: { title: "До офис на Еконт", price: 390, place: "office" },
