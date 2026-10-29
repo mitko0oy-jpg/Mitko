@@ -594,6 +594,7 @@ body[data-deck="lit"] .final .btn-primary{background:linear-gradient(135deg,#F7E
 .buybar{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:80;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 18px;border-radius:20px;background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 0 0 1px var(--line),var(--shadow);transform:translateY(140%);transition:transform .6s var(--ease)}
 .buybar.show{transform:none}
 .buybar b{display:block;font-size:18px;letter-spacing:-.02em}
+.buybar b s{margin-right:4px;font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted)}
 .buybar small{display:block;color:var(--muted);font-size:12.5px;font-weight:600}
 .buybar .btn{--bh:48px;padding:0 22px;gap:0}
 .buybar .bb-price{display:none}

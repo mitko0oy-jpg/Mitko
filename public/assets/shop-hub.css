@@ -149,6 +149,7 @@ body[data-deck="hub"] .nav.scrolled.on-dark{background:rgba(7,18,13,.62);color:#
 .dc-list li::after{content:"";position:absolute;left:5.5px;top:.36em;width:8px;height:4.5px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
 .dc-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:auto}
 .dc-price{margin-right:auto;font-size:32px;font-weight:800;letter-spacing:-.035em}
+.dc-price s{display:block;margin-bottom:3px;font-size:15px;font-weight:600;letter-spacing:0;line-height:1;color:color-mix(in srgb,currentColor 55%,transparent)}
 .dc-more{background:rgba(255,255,255,.1);color:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .dc-more:hover{background:rgba(255,255,255,.2)}
 .deck-card.ezik .dc-more{background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
@@ -207,6 +208,7 @@ body[data-deck="hub"] .nav.scrolled.on-dark{background:rgba(7,18,13,.62);color:#
 .ch-desc{max-width:42ch;margin:0 auto 18px;color:var(--muted)}
 .ch-cta{display:flex;align-items:center;justify-content:center;gap:16px}
 .ch-price{font-size:30px;font-weight:800;letter-spacing:-.035em}
+.ch-was{margin-right:-6px;font-size:17px;font-weight:600;color:var(--muted)}
 @media (max-width:860px){.chooser{grid-template-columns:1fr}.ch-boxes{height:180px}.ch-boxes img{height:165px}}
 
 /* ---------- numbers above the reasons ---------- */
@@ -220,6 +222,7 @@ body[data-deck="hub"] .nav.scrolled.on-dark{background:rgba(7,18,13,.62);color:#
 .duo-compare .compare tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 .duo-compare .compare td:nth-child(2){background:color-mix(in srgb,#1E5A42 4%,transparent)}
 .duo-compare .compare td:nth-child(3){background:color-mix(in srgb,#E0561D 5%,transparent)}
+.duo-compare .compare td s{margin-right:4px;color:var(--muted)}
 
 /* ---------- the full set over the video ---------- */
 /* the picture shows both boxes in its middle two thirds: the video keeps them in view and the offer

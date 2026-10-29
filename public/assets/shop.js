@@ -1,7 +1,7 @@
 // Card shop pages: scroll effects, the 3D card stage, flip cards, gallery, topic filter and the order form.
 // The same code also runs inside a ConvertBuilder code block (see scripts/build-landing.mjs): then
 // window.EB_LANDING holds the settings and ConvertBuilder's own checkout takes the orders.
-import { PACKAGES, SHIPPING, UPSELL, euro, shipPrice } from "/assets/shop-catalog.js";
+import { PACKAGES, SHIPPING, UPSELL, REGULAR, setRegular, euro, shipPrice } from "/assets/shop-catalog.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -15,11 +15,9 @@ const shell = document.getElementById("ebl");
 let noSticky = false;
 if (CB && shell) {
   for (const [k, v] of Object.entries(CB.prices || {})) if (PACKAGES[k] && v > 0) PACKAGES[k].price = Math.round(v * 100);
-  PACKAGES["lit-2"].was = 2 * PACKAGES["lit-1"].price;
-  PACKAGES["ezik-2"].was = 2 * PACKAGES["ezik-1"].price;
-  PACKAGES.duo.was = PACKAGES["lit-1"].price + PACKAGES["ezik-1"].price;
   if (CB.prices?.upsell > 0) UPSELL.price = Math.round(CB.prices.upsell * 100);
-  if (CB.prices?.redovna > 0) UPSELL.was = Math.round(CB.prices.redovna * 100);
+  // "redovna" is the regular price of one deck, struck through next to the prices; 0 turns it off.
+  setRegular(CB.prices && "redovna" in CB.prices ? Math.round(CB.prices.redovna * 100) || 0 : REGULAR);
   for (const a of $$("[data-link]", shell)) if (CB.links?.[a.dataset.link]) a.href = CB.links[a.dataset.link];
   // Fixed bars and the lightbox go straight under <body>: a builder wrapper with a transform would pin them to itself.
   const fixed = document.createElement("div");
@@ -37,18 +35,22 @@ if (CB && shell) {
 }
 
 // Prices on the page always come from the catalog ("upsell" is the offer after an order).
+// An old price shows only while it is above the price.
 const priceOf = (k) => (k === "upsell" ? UPSELL : PACKAGES[k]);
+const onSale = (p) => p?.was > p?.price;
 for (const el of $$("[data-price]")) {
   const p = priceOf(el.dataset.price);
   if (p) el.textContent = euro(p.price);
 }
 for (const el of $$("[data-was]")) {
   const p = priceOf(el.dataset.was);
-  if (p?.was) el.textContent = euro(p.was);
+  el.hidden = !onSale(p);
+  if (onSale(p)) el.textContent = euro(p.was);
 }
 for (const el of $$("[data-save]")) {
   const p = priceOf(el.dataset.save);
-  if (p?.was) el.textContent = euro(p.was - p.price);
+  (el.closest(".up-save") || el).hidden = !onSale(p);
+  if (onSale(p)) el.textContent = euro(p.was - p.price);
 }
 
 /* ---------- one scroll loop for nav, progress bar, hero parallax, the deck stage and the steps ---------- */
@@ -359,6 +361,12 @@ for (const ch of $$("[data-chooser]")) {
     const price = $(".ch-price", ch);
     price.dataset.price = p.pkg;
     price.textContent = euro(PACKAGES[p.pkg].price);
+    const was = $(".ch-was", ch);
+    if (was) {
+      was.dataset.was = p.pkg;
+      was.hidden = !onSale(PACKAGES[p.pkg]);
+      was.textContent = euro(PACKAGES[p.pkg].was || 0);
+    }
     $(".ch-go", ch).dataset.pkg = p.pkg;
   };
   for (const b of btns) {
@@ -549,14 +557,14 @@ function orderMarkup(root) {
   const packHtml = packs
     .map((k) => {
       const p = PACKAGES[k];
-      const save = p.was ? `<span class="save">спестяваш ${euro(p.was - p.price)}</span>` : "";
+      const save = onSale(p) ? `<span class="save">спестяваш ${euro(p.was - p.price)}</span>` : "";
       return `<label class="pack">
         ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
         <input type="radio" name="package" value="${k}" ${k === def ? "checked" : ""}>
         <span class="radio" aria-hidden="true"></span>
         ${boxesHtml(root, p)}
         <span><b>${esc(p.title)}</b>${hasHtml(p)}${save}</span>
-        <span class="price">${p.was ? `<s>${euro(p.was)}</s>` : ""}${euro(p.price)}</span>
+        <span class="price">${onSale(p) ? `<s>${euro(p.was)}</s>` : ""}${euro(p.price)}</span>
       </label>`;
     })
     .join("");
@@ -636,13 +644,12 @@ function packCards(root) {
     .split(",")
     .map((k) => {
       const p = PACKAGES[k];
-      const was = p.was ? Math.max(p.was, p.price) : 0;
       return `<a class="pack-card${k === "duo" ? " best" : ""}" href="${href}">
         ${flags[k] ? `<span class="flag">${esc(flags[k])}</span>` : ""}
         ${boxesHtml(root, p)}
         <b>${esc(p.title)}</b>${hasHtml(p)}
-        <span class="price">${was > p.price ? `<s>${euro(was)}</s>` : ""}${euro(p.price)}</span>
-        ${was > p.price ? `<span class="save">спестяваш ${euro(was - p.price)}</span>` : ""}
+        <span class="price">${onSale(p) ? `<s>${euro(p.was)}</s>` : ""}${euro(p.price)}</span>
+        ${onSale(p) ? `<span class="save">спестяваш ${euro(p.was - p.price)}</span>` : ""}
         <span class="go">Поръчай <span aria-hidden="true">→</span></span>
       </a>`;
     })
