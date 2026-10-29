@@ -378,6 +378,15 @@ body[data-deck="lit"] .solution .serif,body[data-deck="lit"] .solution svg{color
 .topic h3{font-size:18.5px;line-height:1.25;margin:6px 0 8px;letter-spacing:-.015em}
 .topic p{margin:0;font-size:14px;color:var(--muted)}
 .topic.hide{display:none}
+/* the 22 works: a painting across the top of each tile; on phones a small picture on the left */
+.works .topic-pic{display:block;width:calc(100% + 44px);max-width:none;height:auto;aspect-ratio:3/2;margin:-20px -20px 16px -24px;object-fit:cover;transition:transform .8s var(--ease)}
+.works .topic:hover .topic-pic{transform:scale(1.04)}
+@media (max-width:560px){
+  .works .topic{display:grid;grid-template-columns:84px 1fr;column-gap:14px;align-items:center;padding:12px 14px 12px 18px}
+  .works .topic-pic{grid-row:1 / span 3;width:84px;height:84px;aspect-ratio:1;margin:0;border-radius:12px}
+  .works .topic:hover .topic-pic{transform:none}
+  .works .topic h3{margin:2px 0 4px}
+}
 .topic[data-area="leksika"]{--tc:var(--c-rose)}
 .topic[data-area="tekst"]{--tc:var(--c-navy)}
 .topic[data-area="pravopis"]{--tc:var(--c-teal)}
