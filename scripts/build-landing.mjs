@@ -28,8 +28,8 @@ const PAGES = [
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
   // shown after an order of the language cards; sells through the builder's upsell button
   { src: "karti-nvo/oferta-literatura", out: "upsell-literatura.html", name: "Ъпсел – карти по литература", upsell: true },
-  // the thank-you step after an order of the language cards
-  { src: "karti-nvo/blagodarim-ezik", out: "blagodarim-ezik.html", name: "Благодарим – карти по български език", thanks: true },
+  // the thank-you step after an order: one page for both decks
+  { src: "karti-nvo/blagodarim", out: "blagodarim.html", name: "Благодарим – поръчка на картите", thanks: true },
 ];
 // Addresses of the pages on the builder. The owner can change them in the settings of each block.
 const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/karti-balgarski-ezik", dvete: "https://edubel.site/karti" };
