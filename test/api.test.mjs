@@ -318,11 +318,14 @@ test("shop: order with cash on delivery, admin list and status", async () => {
   assert.equal(r.status, 400);
 });
 
-test("shop: delivery is free only with both decks", async () => {
-  const { PACKAGES, SHIPPING, shipPrice } = await import("../public/assets/shop-catalog.js");
-  assert.equal(shipPrice(PACKAGES.duo, SHIPPING.econt), 0);
+test("shop: two decks cost the same and ship free, one deck pays delivery", async () => {
+  const { PACKAGES, SHIPPING, UPSELL, shipPrice } = await import("../public/assets/shop-catalog.js");
+  for (const k of ["duo", "lit-2", "ezik-2"]) {
+    assert.equal(shipPrice(PACKAGES[k], SHIPPING.address), 0, k);
+    assert.equal(PACKAGES[k].price, PACKAGES.duo.price, `${k}: two decks, same or different, have one price`);
+  }
   assert.equal(shipPrice(PACKAGES["ezik-1"], SHIPPING.econt), SHIPPING.econt.price);
-  assert.equal(shipPrice(PACKAGES["lit-2"], SHIPPING.address), SHIPPING.address.price);
+  assert.ok(PACKAGES.duo.price / 2 > UPSELL.price, "no pack sells a deck below the upsell price");
 });
 
 test("shop pages show the catalog prices", async () => {
