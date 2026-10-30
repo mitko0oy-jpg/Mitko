@@ -25,7 +25,7 @@ const PAGES = [
   { src: "karti-nvo/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език",
     order: { "ezik-1": "https://edubel.site/bg", "ezik-2": "https://edubel.site/bg2", duo: "https://edubel.site/bgl" } },
   { src: "karti-nvo/literatura", out: "literatura.html", name: "Карти по литература",
-    order: { "lit-1": "https://edubel.site/karti-literatura", "lit-2": "https://edubel.site/karti-literatura2", duo: "https://edubel.site/karti-literatura3" } },
+    order: { "lit-1": "https://edubel.site/karti-literatura", "lit-2": "https://edubel.site/karti-literatura2", duo: "https://edubel.site/karti-balgarski-literatura" } },
   { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета",
     order: { duo: "https://edubel.site/karti-bel", "lit-1": "https://edubel.site/karti-literatura", "ezik-1": "https://edubel.site/bg" } },
   // shown after an order of the language cards; sells through the builder's upsell button
