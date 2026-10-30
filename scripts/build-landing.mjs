@@ -26,7 +26,8 @@ const PAGES = [
     order: { "ezik-1": "https://edubel.site/bg", "ezik-2": "https://edubel.site/bg2", duo: "https://edubel.site/bgl" } },
   { src: "karti-nvo/literatura", out: "literatura.html", name: "Карти по литература",
     order: { "lit-1": "https://edubel.site/karti-literatura", "lit-2": "https://edubel.site/karti-literatura2", duo: "https://edubel.site/karti-literatura3" } },
-  { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета" },
+  { src: "karti-nvo", out: "dvete-testeta.html", name: "Двете тестета",
+    order: { duo: "https://edubel.site/karti-bel", "lit-1": "https://edubel.site/karti-literatura", "ezik-1": "https://edubel.site/bg" } },
   // shown after an order of the language cards; sells through the builder's upsell button
   { src: "karti-nvo/oferta-literatura", out: "upsell-literatura.html", name: "Ъпсел – карти по литература", upsell: true },
   // the thank-you step after an order: one page for both decks
@@ -34,7 +35,7 @@ const PAGES = [
 ];
 // Addresses of the pages on the builder. The owner can change them in the settings of each block.
 const LINKS = { literatura: "https://edubel.site/literatura", ezik: "https://edubel.site/karti-balgarski-ezik", dvete: "https://edubel.site/karti" };
-const PACK_NAMES = { "lit-1": "1 тесте", "lit-2": "2 тестета", "ezik-1": "1 тесте", "ezik-2": "2 тестета", duo: "литература + български език" };
+const PACK_NAMES = { "lit-1": "1 тесте по литература", "lit-2": "2 тестета по литература", "ezik-1": "1 тесте по език", "ezik-2": "2 тестета по език", duo: "литература + български език" };
 const PATHS = { "/karti-nvo/literatura/": "literatura", "/karti-nvo/balgarski-ezik/": "ezik", "/karti-nvo/": "dvete" };
 const SCOPE = ":is(#ebl,#ebf)";
 

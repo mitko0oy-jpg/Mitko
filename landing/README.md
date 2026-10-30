@@ -25,7 +25,7 @@
 
 Най-долу в кода има част **НАСТРОЙКИ**:
 
-- `order` – къде водят бутоните „Поръчай“ при цените: един адрес за всички (формата под блока или адрес като `https://edubel.site/checkout`) или отделна оферта за всеки пакет. При картите по език: 1 тесте → `edubel.site/bg`, 2 тестета → `edubel.site/bg2`, литература + език → `edubel.site/bgl`. При картите по литература: 1 тесте → `edubel.site/karti-literatura`, 2 тестета → `edubel.site/karti-literatura2`, литература + език → `edubel.site/karti-literatura3`;
+- `order` – къде водят бутоните „Поръчай“ при цените: един адрес за всички (формата под блока или адрес като `https://edubel.site/checkout`) или отделна оферта за всеки пакет. При картите по език: 1 тесте → `edubel.site/bg`, 2 тестета → `edubel.site/bg2`, литература + език → `edubel.site/bgl`. При картите по литература: 1 тесте → `edubel.site/karti-literatura`, 2 тестета → `edubel.site/karti-literatura2`, литература + език → `edubel.site/karti-literatura3`. При двете тестета: литература + език → `edubel.site/karti-bel`, само литература → `edubel.site/karti-literatura`, само език → `edubel.site/bg`;
 - `links` – адресите на другите страници с карти;
 - `prices` – цените в евро. Трябва да са същите като в ConvertBuilder. `redovna` е редовната цена на едно тесте (39,90 €): показва се зачеркната до цените, при две тестета – двойна. С 0 зачеркнатите цени изчезват.
 

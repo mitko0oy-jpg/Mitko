@@ -270,23 +270,17 @@ if (duoStage && fine && !reduce) {
   });
 }
 
-/* ---------- home page: a living gradient with gold sparkles behind the dark blocks (WebGL) ---------- */
+/* ---------- home page: a living light gradient behind the hero and the last block (WebGL) ---------- */
+// warm paper with soft sage (literature), peach (language) and pale gold light that drift slowly
 const AURORA_FS = `precision mediump float;
 uniform vec2 r;uniform float t;
-float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float b(vec2 p,vec2 c,float s){vec2 d=p-c;return exp(-dot(d,d)/s);}
 void main(){
-  vec2 uv=gl_FragCoord.xy/r;float a=r.x/r.y;vec2 p=vec2(uv.x*a,uv.y);
-  float m=mix(.5,1.,smoothstep(.6,1.5,a));float z=min(a,1.);
-  vec3 col=vec3(.024,.062,.045);
-  col+=m*vec3(.12,.38,.27)*b(p,vec2(a*(.2+.1*sin(t*.11)),.66+.1*cos(t*.13)),.13*z);
-  col+=m*vec3(.6,.22,.06)*b(p,vec2(a*(.82+.08*cos(t*.09)),.28+.12*sin(t*.12)),.1*z);
-  col+=m*vec3(.36,.27,.09)*b(p,vec2(a*(.56+.16*sin(t*.07+1.)),.9+.05*sin(t*.15+2.)),.05*z);
-  vec2 g=gl_FragCoord.xy/26.;vec2 id=floor(g);vec2 f=fract(g)-.5;float k=h(id);
-  vec2 o=vec2(h(id+3.1),h(id+7.7))-.5;
-  float s=smoothstep(.972,1.,k)*(.5+.5*sin(t*1.7+k*80.))*smoothstep(.2,0.,length(f-o*.6));
-  col+=vec3(1.,.84,.5)*s*.9;
-  col*=mix(.55,1.,smoothstep(1.35,.15,length((uv-.5)*vec2(a,1.))));
+  vec2 uv=gl_FragCoord.xy/r;float a=r.x/r.y;vec2 p=vec2(uv.x*a,uv.y);float z=min(a,1.);
+  vec3 col=vec3(.985,.963,.925);
+  col=mix(col,vec3(.80,.90,.84),.75*b(p,vec2(a*(.18+.08*sin(t*.11)),.70+.08*cos(t*.13)),.16*z));
+  col=mix(col,vec3(1.,.84,.70),.8*b(p,vec2(a*(.84+.06*cos(t*.09)),.30+.10*sin(t*.12)),.13*z));
+  col=mix(col,vec3(.99,.91,.70),.55*b(p,vec2(a*(.55+.14*sin(t*.07+1.)),.95+.04*sin(t*.15+2.)),.07*z));
   gl_FragColor=vec4(col,1.);
 }`;
 function aurora(canvas) {
