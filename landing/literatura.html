@@ -456,9 +456,10 @@
 <script>
 /* ===== НАСТРОЙКИ – „Карти по литература“. Можеш да ги променяш. ===== */
 window.EB_LANDING = {
-  // Къде водят бутоните „Поръчай“ при цените: котвата точно под този блок (там постави формата
-  // за поръчка на ConvertBuilder) или адрес на поръчката, например "https://edubel.site/checkout".
-  order: "#porachka-forma",
+  // Къде води „Поръчай“ при всеки пакет – страницата с поръчката му в ConvertBuilder:
+  // "lit-1" – 1 тесте, "lit-2" – 2 тестета, "duo" – литература + български език.
+  // "#porachka-forma" вместо адрес води до формата точно под този блок.
+  order: { "lit-1": "https://edubel.site/karti-literatura", "lit-2": "https://edubel.site/karti-literatura2", "duo": "https://edubel.site/karti-literatura3" },
   // Адресите на другите страници с карти.
   links: { "literatura": "https://edubel.site/literatura", "ezik": "https://edubel.site/karti-balgarski-ezik", "dvete": "https://edubel.site/karti" },
   // Цени в евро без доставката. Трябва да са същите като в ConvertBuilder.
