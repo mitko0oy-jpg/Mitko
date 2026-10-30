@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeeVenom – крем с пчелна отрова за суха и проблемна кожа</title>
+<meta name="description" content="Концентриран крем с пчелна отрова, чаено дърво, арника и биота ориенталис. Хидратира, успокоява и подхранва. Плащане при получаване, доставка 1–3 работни дни, 30 дни за връщане.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BeeVenom – крем с пчелна отрова за суха и проблемна кожа">
+<meta property="og:description" content="Хидратира, успокоява и подхранва. Плащане при получаване, 30 дни за връщане.">
+<meta property="og:image" content="https://content.app-sources.com/s/214855129573686961/uploads/%D0%98%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/ChatGPT_Image_May_31_2026_01_32_19_PM-2035112.png">
+<meta name="theme-color" content="#FFF9EF">
+
+<link rel="preconnect" href="https://content.app-sources.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,600;1,700&family=Manrope:wght@400;500;700;800&display=swap">
+<link rel="preload" as="image" href="https://content.app-sources.com/s/214855129573686961/uploads/%D0%98%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/ChatGPT_Image_May_31_2026_01_32_19_PM-2035112.png?format=webp">
+
+<style>
+  :root {
+    --honey: #F6A609;
+    --honey-soft: #FFD978;
+    --amber: #D35F00;
+    --ink: #1F232B;
+    --ink-2: #3E434D;
+    --muted: #666B76;
+    --cream: #FFF9EF;
+    --cream-2: #FFF1D6;
+    --line: #F0E1C2;
+    --leaf: #1E7A35;
+    --leaf-dark: #17622A;
+    --leaf-soft: #E7F4EA;
+    --white: #FFFFFF;
+    --radius: 22px;
+    --shadow: 0 14px 40px rgba(122, 74, 0, .12);
+    --shadow-sm: 0 4px 14px rgba(122, 74, 0, .08);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--cream); }
+
+  .bv {
+    font-family: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    /* стандартни кирилски букви (без българските курсивни форми на д, т, к) – по-познати за повечето читатели */
+    font-feature-settings: "locl" 0;
+  }
+  .bv h1, .bv h2, .bv h3 {
+    font-family: Lora, Georgia, "Times New Roman", serif;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    margin: 0 0 .5em;
+  }
+  .bv h2 { font-size: clamp(28px, 4.4vw, 42px); }
+  .bv h3 { font-size: 20px; }
+  .bv p { margin: 0 0 1em; }
+  .bv img { max-width: 100%; height: auto; display: block; }
+  .bv a { color: inherit; }
+  .bv em { font-style: italic; color: var(--amber); }
+  .bv :focus-visible { outline: 3px solid var(--honey); outline-offset: 3px; border-radius: 8px; }
+
+  .bv .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .bv .sec { padding: 64px 0; }
+  .bv .sec-head { text-align: center; max-width: 720px; margin: 0 auto 40px; }
+  .bv .sec-head p { color: var(--ink-2); font-size: 18px; margin: 0; }
+  .bv .kicker {
+    display: inline-block;
+    font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 12px;
+  }
+  .bv .alt { background: var(--white); }
+
+  /* Бутони */
+  .bv .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 58px; padding: 16px 30px;
+    border: 0; border-radius: 999px;
+    background: var(--leaf); color: var(--white);
+    font-family: Manrope, system-ui, sans-serif; font-weight: 800; font-size: 18px; line-height: 1.2;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 10px 24px rgba(30, 122, 53, .32), inset 0 -3px 0 rgba(0, 0, 0, .15);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .bv .btn:hover { background: var(--leaf-dark); transform: translateY(-2px); }
+  .bv .btn:active { transform: translateY(0); }
+  .bv .btn svg { width: 22px; height: 22px; flex: none; }
+  .bv .btn-block { width: 100%; }
+  .bv .btn-pulse { animation: bv-pulse 2.4s ease-in-out infinite; }
+  @keyframes bv-pulse {
+    0%, 100% { box-shadow: 0 10px 24px rgba(30, 122, 53, .32), 0 0 0 0 rgba(30, 122, 53, .35); }
+    50% { box-shadow: 0 10px 24px rgba(30, 122, 53, .32), 0 0 0 12px rgba(30, 122, 53, 0); }
+  }
+
+  /* Лента и хедър */
+  .bv .topbar {
+    background: var(--ink); color: #FFF3D6;
+    font-size: 13.5px; font-weight: 700;
+  }
+  .bv .topbar ul {
+    list-style: none; margin: 0 auto; padding: 9px 16px;
+    display: flex; justify-content: center; gap: 22px; flex-wrap: wrap;
+  }
+  .bv .topbar li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .bv .header { background: var(--cream); border-bottom: 1px solid var(--line); }
+  .bv .header .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .bv .logo { font-family: Lora, Georgia, serif; font-weight: 700; font-size: 24px; line-height: 1; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+  .bv .logo span b { font-weight: inherit; }
+  .bv .logo b { color: var(--amber); }
+  .bv .phone {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 800; font-size: 15px; text-decoration: none;
+    padding: 9px 14px; border-radius: 999px; background: var(--white); border: 1px solid var(--line);
+  }
+  .bv .phone svg { width: 18px; height: 18px; color: var(--leaf); }
+
+  /* Hero */
+  .bv .hero {
+    position: relative;
+    padding: 36px 0 56px;
+    background:
+      radial-gradient(60% 55% at 78% 40%, rgba(255, 201, 74, .55), rgba(255, 201, 74, 0) 70%),
+      linear-gradient(180deg, var(--cream) 0%, var(--cream-2) 100%);
+    overflow: hidden;
+  }
+  .bv .hero::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cg fill='none' stroke='%23E0A100' stroke-opacity='.16' stroke-width='1.4'%3E%3Cpath d='M28 0 56 16.2v32.3L28 64.7 0 48.5V16.2z'/%3E%3Cpath d='M28 64.7V97'/%3E%3C/g%3E%3C/svg%3E");
+    mask-image: linear-gradient(90deg, transparent 0%, #000 55%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 55%);
+  }
+  .bv .hero-grid {
+    position: relative;
+    display: grid; gap: 28px;
+    grid-template-columns: 1.05fr .95fr;
+    grid-template-areas: "copy media";
+    align-items: center;
+  }
+  .bv .hero-copy { grid-area: copy; }
+  .bv .hero-media { grid-area: media; position: relative; }
+  .bv .hero-pain {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; font-weight: 700; font-size: 14.5px; color: var(--ink-2);
+    box-shadow: var(--shadow-sm); margin-bottom: 18px;
+  }
+  .bv .hero h1 { font-size: clamp(34px, 5.6vw, 58px); margin-bottom: 16px; }
+  .bv .hero-sub { font-size: 18.5px; color: var(--ink-2); max-width: 540px; }
+  .bv .ticks { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 10px; }
+  .bv .ticks li { display: flex; align-items: flex-start; gap: 10px; font-weight: 700; }
+  .bv .ticks svg { width: 24px; height: 24px; flex: none; color: var(--leaf); margin-top: 1px; }
+  .bv .price-tease { display: flex; align-items: baseline; gap: 10px; margin: 0 0 14px; flex-wrap: wrap; }
+  .bv .price-tease strong { font-size: 30px; font-weight: 800; color: var(--ink); }
+  .bv .price-tease span { color: var(--muted); font-weight: 600; }
+  .bv .trust-row { list-style: none; padding: 0; margin: 20px 0 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .bv .trust-row li { display: inline-flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 700; color: var(--ink-2); }
+  .bv .trust-row svg { width: 20px; height: 20px; color: var(--leaf); flex: none; }
+
+  .bv .hero-img {
+    mix-blend-mode: multiply;
+    width: 100%;
+    animation: bv-float 6s ease-in-out infinite;
+  }
+  @keyframes bv-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .bv .chip-float {
+    position: absolute;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--white); border-radius: 999px; padding: 8px 14px;
+    font-weight: 800; font-size: 14px; box-shadow: var(--shadow);
+  }
+  .bv .chip-float.c1 { top: 6%; left: -2%; }
+  .bv .chip-float.c2 { bottom: 12%; left: 4%; }
+  .bv .chip-float.c3 { top: 18%; right: -2%; }
+
+  /* Проблем */
+  .bv .pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .bv .card {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 26px; box-shadow: var(--shadow-sm);
+  }
+  .bv .alt .card { background: var(--cream); }
+  .bv .pain .emo {
+    width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center;
+    font-size: 28px; background: var(--cream-2); margin-bottom: 14px;
+  }
+  .bv .pain h3 { margin-bottom: 6px; }
+  .bv .pain p { color: var(--ink-2); margin: 0; }
+  .bv .bridge {
+    margin: 36px auto 0; max-width: 820px; text-align: center;
+    font-size: 19px; color: var(--ink-2);
+  }
+  .bv .bridge strong { color: var(--ink); }
+
+  /* Ползи */
+  .bv .benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .bv .benefit { display: flex; gap: 14px; align-items: flex-start; }
+  .bv .benefit .ic {
+    flex: none; width: 46px; height: 46px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--leaf-soft); color: var(--leaf);
+  }
+  .bv .benefit .ic svg { width: 24px; height: 24px; }
+  .bv .benefit h3 { font-family: Manrope, system-ui, sans-serif; font-size: 18px; font-weight: 800; margin: 2px 0 4px; letter-spacing: 0; }
+  .bv .benefit p { margin: 0; color: var(--ink-2); font-size: 16px; }
+
+  /* Съставки */
+  .bv .ingr { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .bv .ingr .card { text-align: center; padding: 30px 22px; }
+  .bv .ingr .orb {
+    width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 40px;
+    background: radial-gradient(circle at 35% 30%, #FFF6DA, var(--honey-soft));
+    box-shadow: inset 0 -6px 14px rgba(214, 140, 0, .25);
+  }
+  .bv .ingr .lat { display: block; font-size: 13px; color: var(--muted); font-style: italic; margin: -4px 0 10px; }
+  .bv .ingr p { margin: 0; color: var(--ink-2); font-size: 16px; }
+
+  /* Къде и как */
+  .bv .split { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
+  .bv .zones { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
+  .bv .zones li {
+    background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+    padding: 9px 16px; font-weight: 700; font-size: 15.5px;
+  }
+  .bv .alt .zones li { background: var(--cream); }
+  .bv .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; counter-reset: st; }
+  .bv .steps li {
+    counter-increment: st;
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px;
+  }
+  .bv .alt .steps li { background: var(--cream); }
+  .bv .steps li::before {
+    content: counter(st);
+    flex: none; width: 40px; height: 40px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--honey); color: var(--ink); font-weight: 800; font-size: 18px;
+  }
+  .bv .steps b { display: block; }
+  .bv .steps span { color: var(--ink-2); font-size: 16px; }
+  .bv .note {
+    margin-top: 16px; padding: 14px 16px; border-radius: 14px;
+    background: #FFF4E5; border: 1px dashed #E8B76A; color: var(--ink-2); font-size: 15px;
+  }
+  .bv .tube-wrap { position: relative; display: grid; place-items: center; }
+  .bv .tube-wrap::before {
+    content: ""; position: absolute; width: 78%; aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 201, 74, .55), rgba(255, 201, 74, 0) 70%);
+  }
+  .bv .tube-wrap img { position: relative; max-height: 460px; width: auto; mix-blend-mode: multiply; }
+
+  /* Очаквания */
+  .bv .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .bv .timeline .card { position: relative; padding-top: 30px; }
+  .bv .timeline .when {
+    position: absolute; top: -14px; left: 22px;
+    background: var(--ink); color: #FFF3D6; border-radius: 999px; padding: 5px 14px;
+    font-size: 13px; font-weight: 800; letter-spacing: .02em;
+  }
+  .bv .timeline p { margin: 0; color: var(--ink-2); }
+  .bv .small-print { text-align: center; color: var(--muted); font-size: 14px; margin-top: 18px; }
+
+  /* Сравнение */
+  .bv .compare {
+    max-width: 820px; margin: 0 auto;
+    background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; border: 1px solid var(--line);
+  }
+  .bv .compare table { width: 100%; border-collapse: collapse; }
+  .bv .compare th, .bv .compare td { padding: 15px 16px; text-align: center; border-bottom: 1px solid var(--line); }
+  .bv .compare tr:last-child td { border-bottom: 0; }
+  .bv .compare th { font-size: 15px; font-weight: 800; background: var(--cream); }
+  .bv .compare th.us { background: var(--honey); color: var(--ink); }
+  .bv .compare td:first-child, .bv .compare th:first-child { text-align: left; font-weight: 700; }
+  .bv .compare td.us { background: #FFFAEB; }
+  .bv .yes, .bv .no { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
+  .bv .yes { background: var(--leaf-soft); color: var(--leaf); }
+  .bv .no { background: #F6ECEC; color: #B4483E; }
+  .bv .yes svg, .bv .no svg { width: 18px; height: 18px; }
+
+  /* Оферти */
+  .bv .offers-sec {
+    background:
+      radial-gradient(50% 40% at 50% 0%, rgba(255, 201, 74, .45), rgba(255, 201, 74, 0) 70%),
+      var(--cream-2);
+  }
+  .bv .offer-box {
+    max-width: 640px; margin: 0 auto;
+    background: var(--white); border-radius: 28px; box-shadow: var(--shadow);
+    padding: 26px; border: 1px solid var(--line);
+  }
+  .bv .packs { border: 0; padding: 0; margin: 0 0 20px; display: grid; gap: 12px; }
+  .bv .packs legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .bv .pack { position: relative; display: block; cursor: pointer; }
+  .bv .pack input { position: absolute; opacity: 0; pointer-events: none; }
+  .bv .pack-body {
+    display: grid; grid-template-columns: auto 72px 1fr auto; align-items: center; gap: 14px;
+    padding: 16px 18px; border-radius: 18px;
+    border: 2px solid var(--line); background: var(--white);
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .bv .pack:hover .pack-body { border-color: #E9C77F; }
+  .bv .pack input:checked + .pack-body {
+    border-color: var(--leaf); background: #F6FBF7;
+    box-shadow: 0 0 0 4px rgba(30, 122, 53, .12);
+  }
+  .bv .pack input:focus-visible + .pack-body { outline: 3px solid var(--honey); outline-offset: 2px; }
+  .bv .radio {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid #C9BFA9;
+    display: grid; place-items: center; background: var(--white);
+  }
+  .bv .pack input:checked + .pack-body .radio { border-color: var(--leaf); }
+  .bv .pack input:checked + .pack-body .radio::after {
+    content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--leaf);
+  }
+  .bv .pack-img { width: 72px; height: 72px; object-fit: contain; mix-blend-mode: multiply; }
+  .bv .pack-name { font-weight: 800; font-size: 18px; line-height: 1.25; }
+  .bv .pack-meta { font-size: 14.5px; color: var(--muted); font-weight: 600; }
+  .bv .pack-save { white-space: nowrap; display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 800; color: var(--leaf); background: var(--leaf-soft); border-radius: 6px; padding: 2px 8px; }
+  .bv .pack-price { text-align: right; white-space: nowrap; }
+  .bv .pack-price strong { display: block; font-size: 22px; font-weight: 800; }
+  .bv .pack-price s { color: var(--muted); font-size: 14px; }
+  .bv .pack-badge {
+    position: absolute; top: -11px; right: 18px; z-index: 1;
+    background: var(--amber); color: var(--white);
+    font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .bv .assure { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
+  .bv .assure li { display: flex; gap: 10px; align-items: flex-start; font-size: 15.5px; color: var(--ink-2); }
+  .bv .assure svg { width: 22px; height: 22px; flex: none; color: var(--leaf); margin-top: 1px; }
+  .bv .assure b { color: var(--ink); }
+  .bv .or-phone { text-align: center; margin: 20px 0 0; font-size: 15.5px; color: var(--ink-2); }
+  .bv .or-phone a { font-weight: 800; color: var(--leaf); white-space: nowrap; }
+
+  /* Гаранция */
+  .bv .guarantee {
+    display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center;
+    max-width: 820px; margin: 0 auto;
+    background: var(--white); border: 2px dashed #E8B76A; border-radius: 28px; padding: 30px;
+  }
+  .bv .seal {
+    width: 132px; height: 132px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #FFE7A3, var(--honey));
+    display: grid; place-items: center; text-align: center;
+    box-shadow: 0 0 0 8px #FFF1C9, var(--shadow);
+    color: var(--ink); font-weight: 800; line-height: 1.05;
+  }
+  .bv .seal big { display: block; font: 700 46px/1 Lora, Georgia, serif; }
+  .bv .seal small { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+  .bv .guarantee h2 { font-size: clamp(24px, 3.4vw, 32px); }
+  .bv .guarantee p { margin: 0; color: var(--ink-2); }
+
+  /* Отзиви (показват се само ако има истински отзиви в REVIEWS) */
+  .bv .reviews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .bv .review .stars { color: var(--honey); letter-spacing: 2px; font-size: 18px; }
+  .bv .review p { color: var(--ink-2); margin: 8px 0 14px; }
+  .bv .review .who { font-weight: 800; font-size: 15px; }
+  .bv .review .who span { color: var(--muted); font-weight: 600; }
+  .bv .review img { border-radius: 14px; margin-bottom: 12px; width: 100%; }
+
+  /* Въпроси */
+  .bv .faq { max-width: 820px; margin: 0 auto; display: grid; gap: 12px; }
+  .bv .faq details {
+    background: var(--white); border: 1px solid var(--line); border-radius: 18px;
+    padding: 0 20px; box-shadow: var(--shadow-sm);
+  }
+  .bv .faq summary {
+    cursor: pointer; list-style: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 0; font-weight: 800; font-size: 17px;
+  }
+  .bv .faq summary::-webkit-details-marker { display: none; }
+  .bv .faq summary::after {
+    content: "+"; flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; background: var(--cream-2); font-size: 20px; font-weight: 700;
+    transition: transform .2s ease;
+  }
+  .bv .faq details[open] summary::after { transform: rotate(45deg); }
+  .bv .faq details p { margin: 0 0 18px; color: var(--ink-2); }
+
+  /* Финал */
+  .bv .final {
+    background: linear-gradient(135deg, #2A2E37 0%, var(--ink) 100%);
+    color: #FFF3D6; border-radius: 32px; padding: 44px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center;
+    overflow: hidden; position: relative;
+  }
+  .bv .final h2 { color: var(--white); }
+  .bv .final p { color: #EADFC8; font-size: 18px; }
+  .bv .final .final-img {
+    background: radial-gradient(circle, rgba(255, 201, 74, .65), rgba(255, 201, 74, 0) 68%);
+    border-radius: 24px;
+  }
+  .bv .final .final-img img { filter: drop-shadow(0 20px 30px rgba(0, 0, 0, .35)); border-radius: 18px; }
+  .bv .final .trust-row li { color: #EADFC8; }
+  .bv .final .trust-row svg { color: var(--honey-soft); }
+
+  /* Футър */
+  .bv .footer { padding: 40px 0 120px; color: var(--muted); font-size: 14px; text-align: center; }
+  .bv .footer p { max-width: 760px; margin: 0 auto 10px; }
+  .bv .footer nav { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+  .bv .footer nav a { color: var(--ink-2); font-weight: 700; }
+
+  /* Лепкава лента (телефон) */
+  .bv .sticky {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255, 255, 255, .96); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0, 0, 0, .08);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    transform: translateY(110%); transition: transform .25s ease;
+  }
+  .bv .sticky.show { transform: translateY(0); }
+  .bv .sticky .in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .bv .sticky img { width: 34px; height: 56px; object-fit: contain; mix-blend-mode: multiply; }
+  .bv .sticky .txt { flex: 1; line-height: 1.25; min-width: 0; }
+  .bv .sticky .txt b { display: block; font-size: 15px; }
+  .bv .sticky .txt span { font-size: 13.5px; color: var(--muted); font-weight: 600; }
+  .bv .sticky .btn { min-height: 48px; padding: 12px 20px; font-size: 16px; }
+
+  /* Поява при скрол (само ако JS работи) */
+  .bv.js .rv { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+  .bv.js .rv.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .bv *, .bv *::before, .bv *::after { animation: none !important; transition: none !important; }
+    .bv.js .rv { opacity: 1; transform: none; }
+  }
+
+  /* Таблет */
+  @media (max-width: 960px) {
+    .bv .benefits { grid-template-columns: repeat(2, 1fr); }
+    .bv .ingr { grid-template-columns: repeat(2, 1fr); }
+    .bv .reviews { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Телефон */
+  @media (max-width: 760px) {
+    .bv { font-size: 16.5px; }
+    .bv .sec { padding: 52px 0; }
+    .bv .sec-head { margin-bottom: 28px; }
+    .bv .sec-head p { font-size: 17px; }
+    .bv .wrap { padding: 0 16px; }
+    .bv .topbar ul { gap: 14px; font-size: 12.5px; padding: 8px 10px; }
+    .bv .topbar .opt { display: none; }
+    .bv .header .wrap { height: 58px; }
+    .bv .logo { font-size: 21px; }
+    .bv .phone { padding: 8px 12px; font-size: 14px; }
+
+    .bv .hero { padding: 22px 0 40px; }
+    /* на телефон: заглавие → снимка → текст и бутон */
+    .bv .hero-grid { display: flex; flex-direction: column; gap: 0; }
+    .bv .hero-copy { display: contents; }
+    .bv .hero-top { order: 1; }
+    .bv .hero-media { order: 2; margin: 4px -6px 14px; }
+    .bv .hero-bottom { order: 3; }
+    .bv .hero-pain { font-size: 13.5px; margin-bottom: 14px; }
+    .bv .hero-sub { font-size: 17px; }
+    .bv .chip-float { font-size: 12.5px; padding: 6px 11px; }
+    .bv .chip-float.c1 { left: 2%; top: 2%; }
+    .bv .chip-float.c3 { right: 2%; top: auto; bottom: 6%; }
+    .bv .chip-float.c2 { display: none; }
+    .bv .hero .btn { width: 100%; }
+
+    .bv .pains, .bv .timeline, .bv .reviews { grid-template-columns: 1fr; }
+    .bv .timeline { gap: 26px; }
+    .bv .benefits { grid-template-columns: 1fr; gap: 18px; }
+    .bv .ingr { gap: 12px; }
+    .bv .ingr .card { padding: 22px 14px; }
+    .bv .ingr .orb { width: 66px; height: 66px; font-size: 32px; }
+    .bv .ingr h3 { font-size: 17px; }
+    .bv .ingr p { font-size: 14.5px; }
+    .bv .split { grid-template-columns: 1fr; gap: 28px; }
+    .bv .tube-wrap img { max-height: 320px; }
+
+    .bv .compare th, .bv .compare td { padding: 12px 10px; font-size: 14.5px; }
+
+    .bv .offer-box { padding: 18px 14px; border-radius: 22px; }
+    .bv .pack-body { grid-template-columns: auto 52px 1fr auto; gap: 10px; padding: 14px 12px; }
+    .bv .pack-img { width: 52px; height: 52px; }
+    .bv .pack-name { font-size: 16.5px; }
+    .bv .pack-meta { font-size: 13.5px; }
+    .bv .pack-price strong { font-size: 19px; }
+    .bv .radio { width: 22px; height: 22px; }
+
+    .bv .guarantee { grid-template-columns: 1fr; text-align: center; justify-items: center; padding: 26px 20px; }
+    .bv .final { grid-template-columns: 1fr; padding: 30px 20px; border-radius: 24px; text-align: center; }
+    .bv .final .trust-row { justify-content: center; }
+    .bv .final .btn { width: 100%; }
+  }
+
+  @media (min-width: 761px) {
+    .bv .sticky { display: none; }
+    .bv .footer { padding-bottom: 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="bv" id="bv">
+
+  <!-- Иконки, които се ползват многократно -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="currentColor" opacity=".14"/><path d="M7 12.5l3.2 3.2L17.5 8.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-yes" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-no" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="2" fill="#fff" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17.5" r="2" fill="#fff" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 9.5v5M18 9.5v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-return" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1.6 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5l2.6.4 1.3 4-2 1.5a12 12 0 0 0 6.1 6.1l1.5-2 4 1.3.4 2.6c-.2 1.6-1.6 2.6-3.2 2.6C10.2 20 4 13.8 4 6.7c0-1.6 1-3 2.6-3.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 15-14-1 10-6 15-14 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M5 19l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/></symbol>
+    <symbol id="i-feather" viewBox="0 0 24 24"><path d="M20 4C12 4 6 9 6 17v3M6 17h7c4-1 7-6 7-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 13h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.4-3 8-7 9-4-1-7-4.6-7-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-face" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 14.5c1.9 2 5.1 2 7 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  </svg>
+
+  <div class="topbar">
+    <ul>
+      <li><svg width="16" height="16"><use href="#i-cash"/></svg>Плащане при получаване</li>
+      <li><svg width="16" height="16"><use href="#i-truck"/></svg>Доставка 1–3<span class="opt"> работни</span> дни</li>
+      <li class="opt"><svg width="16" height="16"><use href="#i-return"/></svg>30 дни за връщане</li>
+    </ul>
+  </div>
+
+  <header class="header">
+    <div class="wrap">
+      <a class="logo" href="#bv" aria-label="BeeVenom – начало">🐝 <span>Bee<b>Venom</b></span></a>
+      <a class="phone" href="tel:+359988880507"><svg><use href="#i-phone"/></svg>0988 88 05 07</a>
+    </div>
+  </header>
+
+  <!-- 1. HERO -->
+  <section class="hero" id="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="hero-top">
+          <span class="hero-pain">😣 Суха, зачервена или раздразнена кожа?</span>
+          <h1>Мека и спокойна кожа със <em>силата на пчелната отрова</em></h1>
+        </div>
+        <div class="hero-bottom">
+          <p class="hero-sub">BeeVenom е концентриран крем с пчелна отрова, масло от чаено дърво, арника и биота ориенталис – за суха, чувствителна и проблемна кожа.</p>
+          <ul class="ticks">
+            <li><svg><use href="#i-check"/></svg>Успокоява раздразнената кожа</li>
+            <li><svg><use href="#i-check"/></svg>Хидратира, подхранва и подпомага възстановяването ѝ</li>
+            <li><svg><use href="#i-check"/></svg>Попива бързо и не оставя мазен слой</li>
+          </ul>
+          <p class="price-tease"><strong>от 6,63 €</strong><span>на брой при пакет от 3</span></p>
+          <a class="btn btn-pulse" href="#oferti" data-scroll>Избери пакет <svg><use href="#i-arrow"/></svg></a>
+          <ul class="trust-row">
+            <li><svg><use href="#i-cash"/></svg>Плащаш при получаване</li>
+            <li><svg><use href="#i-truck"/></svg>Еконт / Спиди</li>
+            <li><svg><use href="#i-return"/></svg>30 дни за връщане</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img class="hero-img"
+             src="https://content.app-sources.com/s/214855129573686961/uploads/%D0%98%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F/ChatGPT_Image_May_31_2026_01_32_19_PM-2035112.png?format=webp"
+             width="1448" height="1086" fetchpriority="high"
+             alt="BeeVenom крем с пчелна отрова – туба и кутия, 30 g">
+        <span class="chip-float c1">🐝 Пчелна отрова</span>
+        <span class="chip-float c2">🌿 Натурална формула</span>
+        <span class="chip-float c3">💧 Без мазен слой</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. ПРОБЛЕМ -->
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Познато ли ти е?</span>
+        <h2>Кожата ти дава знак, че има нужда от повече грижа</h2>
+      </div>
+      <div class="pains">
+        <article class="card pain rv">
+          <div class="emo">🏜️</div>
+          <h3>Сухота и опъване</h3>
+          <p>Кожата се лющи, опъва след измиване и обикновеният крем помага само за час-два.</p>
+        </article>
+        <article class="card pain rv">
+          <div class="emo">🔥</div>
+          <h3>Зачервяване и раздразнение</h3>
+          <p>Чувствителни участъци, които се зачервяват лесно и не изглеждат спокойни.</p>
+        </article>
+        <article class="card pain rv">
+          <div class="emo">✋</div>
+          <h3>Загрубели участъци</h3>
+          <p>Лакти, колене и ръце, които остават груби и сухи, колкото и крем да слагаш.</p>
+        </article>
+      </div>
+      <p class="bridge rv">Затова създадохме <strong>BeeVenom</strong> – <strong>един крем с 4 активни съставки</strong>, които се допълват: пчелна отрова и три растителни екстракта за ежедневна грижа, която кожата усеща.</p>
+    </div>
+  </section>
+
+  <!-- 3. ПОЛЗИ -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Какво получаваш</span>
+        <h2>Какво прави BeeVenom за кожата ти</h2>
+      </div>
+      <div class="benefits">
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-drop"/></svg></span><div><h3>Хидратира и подхранва</h3><p>Връща комфорта на сухата и опъната кожа.</p></div></div>
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-leaf"/></svg></span><div><h3>Успокоява</h3><p>Грижа за раздразнена и чувствителна кожа.</p></div></div>
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-spark"/></svg></span><div><h3>Подпомага обновяването</h3><p>Подкрепя естественото обновяване на кожата.</p></div></div>
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-feather"/></svg></span><div><h3>Лека текстура</h3><p>Попива бързо, без тежко или мазно усещане.</p></div></div>
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-face"/></svg></span><div><h3>За лице и тяло</h3><p>Лице, ръце, лакти, колене и други сухи участъци.</p></div></div>
+        <div class="benefit rv"><span class="ic"><svg><use href="#i-shield"/></svg></span><div><h3>Концентрирана формула</h3><p>Стига малко количество – тубата от 30 g е за дълго.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. СЪСТАВКИ -->
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Активна формула, вдъхновена от природата</span>
+        <h2>4 активни съставки, които работят заедно</h2>
+      </div>
+      <div class="ingr">
+        <article class="card rv">
+          <div class="orb">🐝</div>
+          <h3>Пчелна отрова</h3>
+          <span class="lat">Bee Venom</span>
+          <p>Звездата на формулата. Подпомага естественото обновяване на кожата.</p>
+        </article>
+        <article class="card rv">
+          <div class="orb">🌿</div>
+          <h3>Масло от чаено дърво</h3>
+          <span class="lat">Tea Tree Oil</span>
+          <p>Почиства кожата и ѝ помага да изглежда спокойна.</p>
+        </article>
+        <article class="card rv">
+          <div class="orb">🌼</div>
+          <h3>Арника</h3>
+          <span class="lat">Arnica Chamissonis</span>
+          <p>Успокоява раздразнената кожа и намалява видимото зачервяване.</p>
+        </article>
+        <article class="card rv">
+          <div class="orb">🍃</div>
+          <h3>Биота ориенталис</h3>
+          <span class="lat">Biota Orientalis</span>
+          <p>Подкрепя естествената защитна бариера на кожата.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. КЪДЕ И КАК -->
+  <section class="sec">
+    <div class="wrap split">
+      <div class="tube-wrap rv">
+        <img src="https://content.app-sources.com/s/214855129573686961/uploads/store/ChatGPT_Image_Aug_27_2026_10_20_23_PM-8007870.png?format=webp"
+             width="475" height="1200" loading="lazy" alt="Туба BeeVenom крем с пчелна отрова, 30 g">
+      </div>
+      <div class="rv">
+        <span class="kicker">Един крем – много приложения</span>
+        <h2>Къде и как се използва</h2>
+        <ul class="zones">
+          <li>😊 Лице</li><li>🤲 Ръце</li><li>💪 Лакти</li><li>🦵 Колене</li><li>✨ Други сухи участъци</li>
+        </ul>
+        <ol class="steps">
+          <li><div><b>Почисти и подсуши кожата</b><span>Нанася се върху чиста и суха кожа.</span></div></li>
+          <li><div><b>Нанеси малко количество</b><span>Равномерно върху нужната зона.</span></div></li>
+          <li><div><b>Масажирай до попиване</b><span>С леки кръгови движения. 1–2 пъти дневно.</span></div></li>
+        </ol>
+        <p class="note">На лицето избягвай зоната около очите, устните и раздразнени открити участъци. При чувствителна кожа първо направи тест на малък участък.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. КАКВО ДА ОЧАКВАШ -->
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Какво да очакваш</span>
+        <h2>Грижа, която кожата усеща</h2>
+      </div>
+      <div class="timeline">
+        <article class="card rv"><span class="when">Първите нанасяния</span><h3>По-мека и комфортна кожа</h3><p>Кремът попива бързо, а кожата се усеща по-мека и по-малко опъната.</p></article>
+        <article class="card rv"><span class="when">Редовна употреба</span><h3>По-спокоен и поддържан вид</h3><p>С ежедневната грижа кожата изглежда по-гладка, хидратирана и спокойна.</p></article>
+        <article class="card rv"><span class="when">До 30 дни</span><h3>Решаваш без риск</h3><p>Ако продуктът не ти хареса, имаш 30 дни тест период и ти връщаме парите.</p></article>
+      </div>
+      <p class="small-print">Резултатите са индивидуални и зависят от типа кожа и редовната употреба.</p>
+    </div>
+  </section>
+
+  <!-- 7. СРАВНЕНИЕ -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Защо хората го избират</span>
+        <h2>BeeVenom срещу обикновен крем</h2>
+      </div>
+      <div class="compare rv">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col" class="us">BeeVenom</th><th scope="col">Обикновен крем</th></tr></thead>
+          <tbody>
+            <tr><td>Пчелна отрова във формулата</td><td class="us"><span class="yes"><svg><use href="#i-yes"/></svg></span></td><td><span class="no"><svg><use href="#i-no"/></svg></span></td></tr>
+            <tr><td>4 активни съставки с допълващо действие</td><td class="us"><span class="yes"><svg><use href="#i-yes"/></svg></span></td><td><span class="no"><svg><use href="#i-no"/></svg></span></td></tr>
+            <tr><td>Хидратира, успокоява и подхранва</td><td class="us"><span class="yes"><svg><use href="#i-yes"/></svg></span></td><td>Само хидратира</td></tr>
+            <tr><td>Лека текстура без мазен слой</td><td class="us"><span class="yes"><svg><use href="#i-yes"/></svg></span></td><td>Не винаги</td></tr>
+            <tr><td>30 дни за връщане на парите</td><td class="us"><span class="yes"><svg><use href="#i-yes"/></svg></span></td><td><span class="no"><svg><use href="#i-no"/></svg></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. ОФЕРТИ -->
+  <section class="sec offers-sec" id="oferti">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Поръчай сега</span>
+        <h2>Избери своя пакет</h2>
+        <p>Колкото повече вземеш, толкова по-изгодно излиза. Плащаш чак когато получиш пратката.</p>
+      </div>
+
+      <div class="offer-box rv">
+        <fieldset class="packs">
+          <legend>Избери пакет</legend>
+
+          <label class="pack">
+            <input type="radio" name="bv-pack" value="1"
+                   data-url="https://bioshop.site/checkout1" data-qty="1" data-value="11.90" data-price="11,90 €">
+            <span class="pack-body">
+              <span class="radio" aria-hidden="true"></span>
+              <img class="pack-img" src="https://content.app-sources.com/s/214855129573686961/uploads/store/ChatGPT_Image_Aug_27_2026_10_20_23_PM-8007870.png?format=webp" width="475" height="1200" loading="lazy" alt="">
+              <span>
+                <span class="pack-name">1 брой</span><br>
+                <span class="pack-meta">Да опиташ</span>
+              </span>
+              <span class="pack-price"><strong>11,90 €</strong><span class="pack-meta">за брой</span></span>
+            </span>
+          </label>
+
+          <label class="pack">
+            <input type="radio" name="bv-pack" value="2"
+                   data-url="https://bioshop.site/checkout2" data-qty="2" data-value="16.90" data-price="16,90 €">
+            <span class="pack-body">
+              <span class="radio" aria-hidden="true"></span>
+              <img class="pack-img" src="https://content.app-sources.com/s/214855129573686961/thumbnails/640x480/store/ChatGPT_Image_Aug_27_2026_10_06_01_PM-7857761.png?format=webp" width="640" height="427" loading="lazy" alt="">
+              <span>
+                <span class="pack-name">2 броя</span><br>
+                <span class="pack-meta">8,45 € за брой</span><br>
+                <span class="pack-save">Спестяваш 6,90 €</span>
+              </span>
+              <span class="pack-price"><strong>16,90 €</strong><s>23,80 €</s></span>
+            </span>
+          </label>
+
+          <label class="pack">
+            <span class="pack-badge">Най-изгодно</span>
+            <input type="radio" name="bv-pack" value="3" checked
+                   data-url="https://bioshop.site/checkout3" data-qty="3" data-value="19.90" data-price="19,90 €">
+            <span class="pack-body">
+              <span class="radio" aria-hidden="true"></span>
+              <img class="pack-img" src="https://content.app-sources.com/s/214855129573686961/thumbnails/640x480/store/ChatGPT_Image_Aug_27_2026_10_08_49_PM-8007899.png?format=webp" width="640" height="480" loading="lazy" alt="">
+              <span>
+                <span class="pack-name">3 броя</span><br>
+                <span class="pack-meta">само 6,63 € за брой</span><br>
+                <span class="pack-save">Спестяваш 15,80 €</span>
+              </span>
+              <span class="pack-price"><strong>19,90 €</strong><s>35,70 €</s></span>
+            </span>
+          </label>
+        </fieldset>
+
+        <a class="btn btn-block btn-pulse" id="bv-buy" href="https://bioshop.site/checkout3">
+          <span id="bv-buy-label">Поръчай 3 броя – 19,90 €</span> <svg><use href="#i-arrow"/></svg>
+        </a>
+
+        <ul class="assure">
+          <li><svg><use href="#i-lock"/></svg><span><b>Плащаш при получаване</b> – без карта и без предплащане.</span></li>
+          <li><svg><use href="#i-truck"/></svg><span><b>Еконт или Спиди</b> – до офис 3,90 €, до адрес 5,90 €. Пристига за 1–3 работни дни.</span></li>
+          <li><svg><use href="#i-return"/></svg><span><b>30 дни тест период</b> – ако не си доволен, връщаме парите.</span></li>
+        </ul>
+        <p class="or-phone">Предпочиташ по телефона? Обади се на <a href="tel:+359988880507">0988 88 05 07</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. ГАРАНЦИЯ -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="guarantee rv">
+        <div class="seal" aria-hidden="true"><div><big>30</big><small>дни<br>гаранция</small></div></div>
+        <div>
+          <h2>Пробвай без риск</h2>
+          <p>Използвай BeeVenom 30 дни. Ако не си доволен, обади ни се и ще ти върнем парите. Без излишни въпроси.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. ОТЗИВИ (скрито, докато в REVIEWS няма истински отзиви) -->
+  <section class="sec alt" id="otzivi" hidden>
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="kicker">Какво казват клиентите</span>
+        <h2>Истински отзиви от наши клиенти</h2>
+      </div>
+      <div class="reviews" id="bv-reviews"></div>
+    </div>
+  </section>
+
+  <!-- 11. ВЪПРОСИ -->
+  <section class="sec alt">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <span class="kicker">Често задавани въпроси</span>
+        <h2>Имаш въпрос? Ето отговорите</h2>
+      </div>
+      <div class="faq">
+        <details class="rv"><summary>За каква кожа е подходящ BeeVenom?</summary><p>За суха, чувствителна, раздразнена и проблемна кожа. Може да се използва върху лице, ръце, лакти, колене и други сухи участъци.</p></details>
+        <details class="rv"><summary>Колко често се използва?</summary><p>1–2 пъти дневно върху чиста и суха кожа. Нанеси малко количество и масажирай до попиване.</p></details>
+        <details class="rv"><summary>Оставя ли мазен слой?</summary><p>Не. Формулата е лека, попива бързо и не оставя тежко или мазно усещане.</p></details>
+        <details class="rv"><summary>След колко време ще усетя разлика?</summary><p>Много клиенти усещат по-мека и комфортна кожа още след първите нанасяния. За по-видима промяна е нужна редовна употреба. Резултатите са индивидуални.</p></details>
+        <details class="rv"><summary>Подходящ ли е за чувствителна кожа и за лицето?</summary><p>Да. Ако кожата ти е силно чувствителна, първо направи тест на малък участък. На лицето избягвай зоната около очите, устните и раздразнени открити участъци.</p></details>
+        <details class="rv"><summary>Има ли пчелна отрова в състава?</summary><p>Да, пчелната отрова е една от четирите активни съставки. Ако си алергичен към пчели или пчелни продукти, не използвай крема.</p></details>
+        <details class="rv"><summary>Колко струва доставката и кога ще пристигне?</summary><p>Изпращаме с Еконт или Спиди: до офис за 3,90 €, до адрес за 5,90 €. Пратката обикновено пристига за 1–3 работни дни. Плащаш на куриера при получаване.</p></details>
+        <details class="rv"><summary>Какво става, ако не съм доволен?</summary><p>Имаш 30 дни тест период. Ако продуктът не ти хареса, обади се на 0988 88 05 07 и ще ти върнем парите.</p></details>
+        <details class="rv"><summary>Мога ли да поръчам по телефона?</summary><p>Да, обади се на <a href="tel:+359988880507">0988 88 05 07</a> и ще приемем поръчката ти.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. ФИНАЛ -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="final rv">
+        <div class="final-img">
+          <img src="https://content.app-sources.com/s/214855129573686961/thumbnails/640x480/store/ChatGPT_Image_Aug_27_2026_10_08_49_PM-8007899.png?format=webp"
+               width="640" height="480" loading="lazy" alt="3 туби BeeVenom крем с пчелна отрова">
+        </div>
+        <div>
+          <h2>Дай на кожата си грижата, която заслужава</h2>
+          <p>Вземи BeeVenom днес. Плащаш при получаване, а ако не си доволен, имаш 30 дни да върнеш продукта.</p>
+          <a class="btn" href="#oferti" data-scroll>Избери пакет <svg><use href="#i-arrow"/></svg></a>
+          <ul class="trust-row">
+            <li><svg><use href="#i-cash"/></svg>Плащане при получаване</li>
+            <li><svg><use href="#i-truck"/></svg>1–3 работни дни</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <nav id="bv-legal" aria-label="Правна информация"></nav>
+      <p><b>BioShopBee · BeeVenom Skin Care Cream</b> · Поръчки: <a href="tel:+359988880507">0988 88 05 07</a></p>
+      <p>Продуктът е козметично средство за външна употреба и не замества консултация с дерматолог. Не използвай при алергия към пчели или пчелни продукти. При чувствителна кожа първо направи тест на малък участък. Резултатите са индивидуални.</p>
+    </div>
+  </footer>
+
+  <!-- Лепкава лента с бутон (само на телефон) -->
+  <div class="sticky" id="bv-sticky" aria-hidden="true">
+    <div class="in">
+      <img src="https://content.app-sources.com/s/214855129573686961/uploads/store/ChatGPT_Image_Aug_27_2026_10_20_23_PM-8007870.png?format=webp" width="475" height="1200" loading="lazy" alt="">
+      <div class="txt"><b>BeeVenom крем</b><span>от 6,63 € · плащане при получаване</span></div>
+      <a class="btn" href="#oferti" data-scroll tabindex="-1">Поръчай</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ===== НАСТРОЙКИ ===== */
+
+  // Meta пиксел. Ако страницата е вътре в ConvertBuilder и пикселът вече е зареден, не се зарежда втори път.
+  var PIXEL_ID = '2143193759793835';
+
+  // Линкове към условията (оставени празни, не се показват). Пример: { text: 'Поверителност', url: 'https://bioshop.site/...' }
+  var LEGAL = [];
+
+  // Само ИСТИНСКИ отзиви, с разрешение на клиента. Докато списъкът е празен, секцията е скрита.
+  // Пример: { name: 'Мария', city: 'Пловдив', text: '…', photo: 'https://…' }
+  var REVIEWS = [];
+
+  /* ===== КОД ===== */
+  var root = document.getElementById('bv');
+  root.classList.add('js');
+
+  // Meta пиксел
+  if (PIXEL_ID && !window.fbq) {
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+      t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', PIXEL_ID);
+    fbq('track', 'PageView');
+  }
+  function track(name, data) { try { if (window.fbq) fbq('track', name, data); } catch (e) {} }
+
+  // Пренасяме utm_ и fbclid към поръчката, за да се вижда откъде е дошла
+  function withQuery(url) {
+    var q = location.search.replace(/^\?/, '');
+    return q ? url + (url.indexOf('?') > -1 ? '&' : '?') + q : url;
+  }
+
+  // Избор на пакет
+  var buy = document.getElementById('bv-buy');
+  var buyLabel = document.getElementById('bv-buy-label');
+  var packs = root.querySelectorAll('input[name="bv-pack"]');
+  function selected() { return root.querySelector('input[name="bv-pack"]:checked'); }
+  function update() {
+    var p = selected();
+    var qty = p.dataset.qty;
+    buy.href = withQuery(p.dataset.url);
+    buyLabel.textContent = 'Поръчай ' + qty + (qty === '1' ? ' брой' : ' броя') + ' – ' + p.dataset.price;
+  }
+  for (var i = 0; i < packs.length; i++) packs[i].addEventListener('change', update);
+  update();
+
+  buy.addEventListener('click', function (e) {
+    var p = selected();
+    track('AddToCart', {
+      value: parseFloat(p.dataset.value), currency: 'EUR',
+      content_name: 'BeeVenom крем ' + p.dataset.qty + ' бр.', num_items: parseInt(p.dataset.qty, 10)
+    });
+    // малка пауза, за да тръгне събитието към Meta преди да сменим страницата
+    if (window.fbq && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      var href = buy.href;
+      setTimeout(function () { location.href = href; }, 250);
+    }
+  });
+
+  // Плавно превъртане до офертите
+  var links = root.querySelectorAll('[data-scroll]');
+  for (var j = 0; j < links.length; j++) {
+    links[j].addEventListener('click', function (e) {
+      var target = document.getElementById('oferti');
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  // Отзиви
+  if (REVIEWS.length) {
+    var box = document.getElementById('bv-reviews');
+    REVIEWS.forEach(function (r) {
+      var card = document.createElement('article');
+      card.className = 'card review';
+      if (r.photo) {
+        var img = document.createElement('img');
+        img.src = r.photo; img.alt = 'Снимка от ' + r.name; img.loading = 'lazy';
+        card.appendChild(img);
+      }
+      var stars = document.createElement('div');
+      stars.className = 'stars'; stars.textContent = '★★★★★'; stars.setAttribute('aria-hidden', 'true');
+      var text = document.createElement('p'); text.textContent = '„' + r.text + '“';
+      var who = document.createElement('div'); who.className = 'who'; who.textContent = r.name;
+      if (r.city) { var c = document.createElement('span'); c.textContent = ', ' + r.city; who.appendChild(c); }
+      card.appendChild(stars); card.appendChild(text); card.appendChild(who);
+      box.appendChild(card);
+    });
+    document.getElementById('otzivi').hidden = false;
+  }
+
+  // Правни линкове
+  if (LEGAL.length) {
+    var nav = document.getElementById('bv-legal');
+    LEGAL.forEach(function (l) {
+      var a = document.createElement('a'); a.href = l.url; a.textContent = l.text; nav.appendChild(a);
+    });
+  }
+
+  // Поява при скрол
+  var rv = root.querySelectorAll('.rv');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    for (var k = 0; k < rv.length; k++) io.observe(rv[k]);
+
+    // Лепкавата лента: видима след hero, скрита когато офертите са на екрана
+    var sticky = document.getElementById('bv-sticky');
+    var heroOut = false, offersIn = false;
+    function syncSticky() { sticky.classList.toggle('show', heroOut && !offersIn); }
+    new IntersectionObserver(function (en) { heroOut = !en[0].isIntersecting; syncSticky(); })
+      .observe(document.getElementById('hero'));
+    new IntersectionObserver(function (en) { offersIn = en[0].isIntersecting; syncSticky(); }, { threshold: 0.15 })
+      .observe(document.getElementById('oferti'));
+  } else {
+    for (var m = 0; m < rv.length; m++) rv[m].classList.add('in');
+  }
+})();
+</script>
+</body>
+</html>
