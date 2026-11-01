@@ -4,11 +4,11 @@
 // boxes: which boxes are shown in the package picture; has: what the parent gets, line by line;
 // freeShip: delivery is free with this package.
 export const PACKAGES = {
-  "lit-1": { title: "Карти по литература", note: "1 комплект · 40 карти", price: 2590, boxes: ["lit"],
+  "lit-1": { title: "Карти по литература", note: "1 комплект · 40 карти", price: 2790, boxes: ["lit"],
     has: ["1 кутия с 40 карти по литература", "27 карти с творбите + 13 с въпроси"] },
   "lit-2": { title: "Карти по литература × 2", note: "2 комплекта – за двама ученици", price: 4490, boxes: ["lit", "lit"], freeShip: true,
     has: ["2 кутии · 80 карти по литература", "по една кутия за всеки ученик"] },
-  "ezik-1": { title: "Карти по български език", note: "1 комплект · 40 карти", price: 2590, boxes: ["ezik"],
+  "ezik-1": { title: "Карти по български език", note: "1 комплект · 40 карти", price: 2790, boxes: ["ezik"],
     has: ["1 кутия с 40 карти по български език", "20 карти с правила + 20 с упражнения"] },
   "ezik-2": { title: "Карти по български език × 2", note: "2 комплекта – за двама ученици", price: 4490, boxes: ["ezik", "ezik"], freeShip: true,
     has: ["2 кутии · 80 карти по български език", "по една кутия за всеки ученик"] },
@@ -39,5 +39,5 @@ export const SHIPPING = {
 // What delivery costs with a package.
 export const shipPrice = (pkg, ship) => (pkg.freeShip ? 0 : ship.price);
 
-// 2590 -> "25,90 €" (Bulgarian style, non-breaking space before the sign).
+// 2790 -> "27,90 €" (Bulgarian style, non-breaking space before the sign).
 export const euro = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
