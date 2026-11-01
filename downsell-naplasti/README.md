@@ -1,4 +1,4 @@
-# Даунсел: Bylinné náplasti na kolená (12 ks) – SK
+# Даунсел: билкови пластири (12 бр.) – SK и BG
 
 Показва се, ако клиентът откаже спрея на ъпсел стъпката (`upsell-spray/sk/`).
 
@@ -6,6 +6,8 @@
 |---|---|
 | `sk/downsell-naplasti-sk.html` | Целият код за един HTML / Custom code елемент |
 | `sk/images/` | Снимки (Higgsfield) и видео `apply.mp4` – как се лепи пластирът |
+| `bg/downsell-naplasti-bg.html` | Българската версия (beevenombg.eu) – кутията BeeHerb от BG магазина, резервен контакт е телефон |
+| `bg/images/` | Снимки за BG (гелът и кутията с български етикети + общите снимки и видео) |
 
 ## Настройка в ConvertBuilder
 
