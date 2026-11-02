@@ -14,6 +14,7 @@
 | Част | Къде |
 |---|---|
 | Страници (статичен HTML + JS модули, без build стъпка) | `public/` |
+| Продажбени страници за edubel.site (ConvertBuilder), не се деплойват тук | `marketing/` |
 | API (Netlify Functions, TypeScript) | `netlify/functions/*.mts` |
 | Обща сървърна логика | `netlify/lib/` (db, auth, access, ai, codes, http) |
 | База данни (Netlify Database = Postgres) | миграции в `netlify/database/migrations/` |
