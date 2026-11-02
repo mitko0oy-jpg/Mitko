@@ -9,3 +9,5 @@ private/
 content/
 *.pdf
 *.docx
+# Browser tool output (screenshots, page snapshots).
+.playwright-mcp/

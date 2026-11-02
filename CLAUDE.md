@@ -60,6 +60,8 @@ ADMIN_TOKEN=local-admin-token-local-admin-token-0000 EDUBEL_URL=http://localhost
 EDUBEL_URL=http://localhost:8899 npm test
 ```
 
+Браузър: `.mcp.json` пуска Playwright MCP (`scripts/browser-mcp.mjs`), т.е. инструменти `browser_*` – отваряне на страници, кликане, попълване, снимки на екрана. В облачните сесии ползва вградения Chromium без прозорец. За истинския Chrome на Митко (с влезли акаунти) е разширението Claude in Chrome, но то работи само с Claude Code на неговия компютър, не в облака.
+
 ## Бранд
 
 Цветове и шрифтове – `public/assets/app.css` (Literata + Golos Text, хостнати при нас). Тон: топъл, ясен; типографски кавички „…“ и тире –. Не използвай думата „теза“ за задача 25 (официално: „задача с разширен свободен отговор“).
