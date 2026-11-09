@@ -14,4 +14,5 @@ python3 -I tools/nvo-trener/build.py                                     # -> pr
 - `nvo-trener.html` е за публикуване като Artifact (без `<html>`/`<head>` – добавят се при публикуване).
 - `nvo-trener-file.html` е пълен документ за изпращане на клиенти.
 - `bank-all.json` (също в `private/`) е за сайта: `node scripts/admin.mjs trener-bank private/nvo-trener/bank-all.json`.
+- `print.mjs` прави PDF-и за печат за кодове от живия сайт (през `/kodove/` на локален сървър): `node tools/nvo-trener/print.mjs pdf out.pdf КОД1,КОД2 --each` (по един PDF на клиент), `sheet` (A4 стикери) или `single`.
 - Ако папката със задачите липсва (нов контейнер), `extract.py` ги вади обратно от готов файл.
