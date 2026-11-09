@@ -391,7 +391,7 @@ function buildPages(P, solved) {
       }
       rows += `<div class="map-row"><span class="check">${solved ? '✓' : ''}</span><span class="no">${pad(d.no)}</span><span class="w">${q(d.title)} <small>· ${esc(d.author)}</small></span><span class="pg">${c.pg(`d${d.no}a`)}</span></div>`;
     }
-    return `<div class="kicker">Избери творба / отбелязвай напредъка</div>${img(i ? 'tetradka' : 'papka')}<h1>Картата на досиетата · ${esc(grade)} клас</h1><div class="gap2"></div>
+    return `<div class="kicker">Избери творба / отбелязвай напредъка</div>${img(i ? 'tetradka' : 'papka')}<h1>Картата на досиетата</h1><div class="tagline">${esc(grade)}. клас · ${new Set(g.map((d) => d.theme)).size} теми · ${g.length} творби</div><div class="gap2"></div>
       <p>След задачи 1–3 и проверката сложи отметка. Можеш да решаваш досиетата в избран от теб ред.</p>${rows}
       <div class="footnote push" style="font-weight:600;color:#5b6468;font-size:8.4pt">Числото вдясно е страницата, на която започва досието.</div>`;
   }
@@ -404,7 +404,7 @@ function buildPages(P, solved) {
       ${themes
         .map((t) => {
           const ds = dossiers.filter((d) => d.theme === t);
-          return `<div class="map-theme" style="margin-top:2.6mm">${esc(t)} · ${esc(ds[0].grade)} клас</div><div style="font-weight:800;font-size:9.6pt">${esc(QS[t] || '')}</div><div class="small muted">${ds.map((d) => q(d.title)).join(' · ')}</div>`;
+          return `<div class="map-theme" style="margin-top:2.6mm">${esc(t)} · ${esc(ds[0].grade)}. клас</div><div style="font-weight:800;font-size:9.6pt">${esc(QS[t] || '')}</div><div class="small muted">${ds.map((d) => q(d.title)).join(' · ')}</div>`;
         })
         .join('')}`;
   }
@@ -493,7 +493,7 @@ function buildPages(P, solved) {
     const longTitle = d.title.length > 26;
     return `<div class="kicker">Досие ${pad(d.no)} / ${esc(d.author)}</div>${img(ICONS[(d.no - 1) % ICONS.length])}
       <h1 class="${longTitle ? 'long' : ''}">${q(d.title)}</h1>
-      <div class="dossier-meta">Тема „${esc(d.theme)}“ <span>· ${esc(d.grade)} клас · ${esc(d.genre)}${d.part ? ` · ${esc(d.part)}` : ''}</span></div>
+      <div class="dossier-meta">Тема „${esc(d.theme)}“ <span>· ${esc(d.grade)}. клас · ${esc(d.genre)}${d.part ? ` · ${esc(d.part)}` : ''}</span></div>
       <div class="gap2"></div><div><span class="pill">Накратко за творбата</span></div>
       <p class="summary">${esc(d.summary)}</p>${d.gloss ? `<p class="gloss">${esc(d.gloss)}</p>` : ''}
       <div class="gap2"></div><div><span class="pill">1 · Огради трите думи със звездичка</span></div>
@@ -509,7 +509,7 @@ function buildPages(P, solved) {
   function dossierB(c, d) {
     const th = d.thesis;
     return `<div class="kicker">Досие ${pad(d.no)} / ${q(upper(d.title))}</div>
-      <div class="gap3"></div><div><span class="pill red">3 · Избери верния отговор</span></div>
+      <div class="gap2"></div><div><span class="pill red">3 · Избери верния отговор</span></div>
       <p class="task-note">Огради по една буква. Препиши ги долу по ред 1–5.</p>
       <div class="mcq">${mcqHtml(d.mcqL, solved)}</div>
       <div class="coderow"><span class="lbl">Кодът на досието:</span>${codeSlots(d.code, d.key, solved)}<span class="hint">Вземи буква № ${d.key} (жълтата).<br>Запиши я в поле ${d.no} на стр. ${c.pg('secret')}.</span></div>
@@ -517,7 +517,7 @@ function buildPages(P, solved) {
       <div class="b4">${bonus4Html(d, solved)}</div>
       <div class="gap2"></div><div><span class="pill gold">5 · Бонус: една теза</span></div>
       <div class="thesis-q">${esc(th.q)}</div>
-      ${solved ? `<div class="thesis-a">Пример: ${esc(th.example)}</div>` : `<div class="thesis-s">Начало: ${esc(th.start)}…</div><div class="wline"></div><div class="wline"></div>`}
+      ${solved ? `<div class="thesis-a">Пример: ${esc(th.example)}</div>` : `<div class="thesis-s">Начало: ${esc(th.start)}…</div><div class="wline thin"></div><div class="wline thin"></div>`}
       <div class="endnote push">Буквата е от жълтото квадратче в кода на задача 3. Проверка: стр. ${c.ansOf(d.no)}.</div>`;
   }
 
@@ -532,7 +532,7 @@ function buildPages(P, solved) {
 
   function reviewA(c, g, gi) {
     const { order, L, traces } = reviewMap(g, gi);
-    return `<div class="kicker">Преговор ${gi + 1} / ${esc(g[0].grade)} клас / по желание</div>${img('papka')}<h1>Върни се по следите.</h1><div class="gap2"></div>
+    return `<div class="kicker">Преговор ${gi + 1} / ${esc(g[0].grade)}. клас / по желание</div>${img('papka')}<h1>Върни се по следите.</h1><div class="gap2"></div>
       <p class="teal bold">Използвай решените досиета. Този преговор не носи буква.</p><div class="gap2"></div>
       <div class="rv-list">${order.map((d) => `<b>${L.get(d.no)}</b><span>${q(d.title)} <span class="muted small">· ${esc(d.author)}</span></span>`).join('')}</div>
       <div class="gap3"></div><div><span class="pill">1 · От кое досие е следата?</span></div><div class="gap1"></div>

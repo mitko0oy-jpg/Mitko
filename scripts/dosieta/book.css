@@ -194,6 +194,7 @@ p { margin: 0; }
 .thesis-s { font-size: 9.2pt; margin-top: 1.2mm; }
 .thesis-a { font-size: 9.2pt; color: var(--ok); margin-top: 1.2mm; line-height: 1.32; }
 .wline { border-bottom: .3mm solid var(--line); height: 6.4mm; }
+.wline.thin { height: 5.6mm; }
 .endnote { font-size: 8.6pt; font-weight: 800; color: var(--teal); padding-top: 2mm; }
 
 /* ----- Преговор ----- */
