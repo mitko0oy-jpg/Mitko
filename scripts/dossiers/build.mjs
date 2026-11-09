@@ -100,7 +100,7 @@ function prepDossier(d) {
   }
   if (t4.type === "groups") t4.bank = shuffle(t4.answer.flat(), rand);
   if (t4.type === "quote") t4.bank = shuffle([...t4.lines.map((l) => l.a), ...(t4.extra || [])], rand);
-  if (t4.type === "who") t4.bank = [...new Set(t4.lines.map((l) => l.a)), ...(t4.extra || [])];
+  if (t4.type === "who") t4.bank = shuffle([...new Set([...t4.lines.map((l) => l.a), ...(t4.extra || [])])], rand);
   if (t4.type === "match") {
     const right = shuffle(t4.pairs.map((p, i) => ({ r: p.r, i })), rand);
     t4.right = right.map((x, k) => ({ ...x, l: LIST_LETTERS[k] }));
