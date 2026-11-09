@@ -96,7 +96,8 @@ function prepDossier(d) {
   const t4 = { ...d.t4 };
   if (t4.type === "order") {
     t4.shown = shuffle(t4.items.map((t, i) => ({ t, n: i + 1 })), rand);
-    if (t4.shown.every((x, i) => x.n === i + 1)) t4.shown.reverse();
+    // Never start with the first event already in place.
+    while (t4.shown[0].n === 1) t4.shown.push(t4.shown.shift());
   }
   if (t4.type === "groups") t4.bank = shuffle(t4.answer.flat(), rand);
   if (t4.type === "quote") t4.bank = shuffle([...t4.lines.map((l) => l.a), ...(t4.extra || [])], rand);
@@ -124,12 +125,14 @@ function plan(book, ds) {
   });
   add("finalA", { id: "final" });
   add("finalB", { id: "finalB" });
-  const per = 3;
+  const per = book.answersPerPage || 5;
   for (let i = 0; i < ds.length; i += per) add("answers", { list: ds.slice(i, i + per), id: `ans${i}` });
   add("answersRest", { id: "ansRest" });
   add("diploma");
   add("notes");
   add("notebook");
+  // A printed booklet needs a page count divisible by 4: fill up with notebook pages.
+  while ((pages.length + 1) % 4) add("notebook", { id: `notebook${pages.length}` });
   add("back", {}, false);
   let n = 0;
   for (const p of pages) p.num = p.numbered ? ++n : null;
