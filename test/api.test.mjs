@@ -284,3 +284,75 @@ test("lessons and texts: empty template, written lesson, locked text", async () 
   r = await kid(`learn/unit/${unit.slug}/lesson`);
   assert.equal(r.item, null);
 });
+
+test("НВО тренажор: personal code, three devices, merged grades, support page", async () => {
+  const bank = await admin("trener-bank", {
+    passages: { p1: { title: "Текст", text: ["Абзац."] } },
+    questions: Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото." })),
+    modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }],
+  });
+  assert.ok(bank.id > 0);
+  const { codes } = await admin("trener-codes", { count: 2, batch: `test-${run}` });
+  const [code, other] = codes;
+  const t = client();
+  const dev = (n) => `${n}`.padStart(2, "0").repeat(24);
+
+  let r = await t("trener/open", { code: "AAAAA-BBBBB", device: dev(1) });
+  assert.equal(r.status, 404, "unknown code");
+  r = await t("trener/open", { code: code.toLowerCase().replace("-", ""), device: dev(1), label: "iPhone · Safari" });
+  assert.equal(r.code, code, "code typed in lower case without the dash");
+  assert.equal(r.bank.questions.length, 12);
+  assert.equal(r.devices.length, 1);
+  r = await t("trener/open", { code, device: dev(1), have: bank.id });
+  assert.equal(r.bank, undefined, "the bank is not sent again when the browser has it");
+
+  // Device 1 saves a result, device 2 another one: both are kept.
+  const d1 = Date.now() - 5000, d2 = Date.now() - 1000;
+  r = await t("trener/save", { code, device: dev(1), state: { name: "Ива", hist: [{ m: "pravopis", d: d1, p: 18, n: 20, s: 300, w: [] }], mist: {}, at: d1 } });
+  assert.equal(r.state.hist.length, 1);
+  await t("trener/open", { code, device: dev(2) });
+  r = await t("trener/save", { code, device: dev(2), state: { name: "Ива", hist: [{ m: "glagol", d: d2, p: 11, n: 20, s: 300, w: ["glagol-01"] }], mist: { "glagol-01": { n: 1, ok: 0, d: d2 } }, at: d2 } });
+  assert.deepEqual(r.state.hist.map((h) => h.m), ["pravopis", "glagol"], "results from both devices are merged");
+
+  // Third device fits, the fourth does not.
+  await t("trener/open", { code, device: dev(3) });
+  r = await t("trener/open", { code, device: dev(4) });
+  assert.equal(r.status, 409);
+  assert.equal(r.error, "devices_full");
+  assert.equal(r.devices.length, 3);
+
+  // From device 1, free device 3: device 4 gets in, device 3 is told it was removed.
+  r = await t("trener/open", { code, device: dev(1) });
+  const third = r.devices[2].id;
+  r = await t("trener/forget", { code, device: dev(1), target: third });
+  assert.equal(r.devices.length, 2);
+  r = await t("trener/open", { code, device: dev(4) });
+  assert.equal(r.devices.length, 3);
+  r = await t("trener/save", { code, device: dev(3), state: {} });
+  assert.equal(r.error, "device_removed");
+
+  // A reset on one device clears the older results everywhere.
+  r = await t("trener/save", { code, device: dev(2), state: { name: "Ива", hist: [], mist: {}, resetAt: Date.now(), at: Date.now() } });
+  assert.equal(r.state.hist.length, 0);
+
+  // Support page: only for admins.
+  const owner = client();
+  await owner("auth/register", { name: "Собственик", email: `owner.${run}@example.com`, password: "parola123", consent: true });
+  r = await owner("trener/admin/summary");
+  assert.equal(r.status, 403, "a parent cannot open the support page");
+  await admin("role", { email: `owner.${run}@example.com`, role: "admin" });
+  r = await owner("trener/admin/summary");
+  assert.ok(r.batches.some((b) => b.batch === `test-${run}` && b.total === 2 && b.used === 1));
+  r = await owner(`trener/admin/key?code=${code}`);
+  assert.equal(r.devices.length, 3);
+  r = await owner("trener/admin/key", { code, action: "free" });
+  assert.equal(r.devices.length, 0);
+  r = await owner("trener/admin/key", { code: other, action: "disable" });
+  assert.equal(r.key.disabled, true);
+  r = await t("trener/open", { code: other, device: dev(1) });
+  assert.equal(r.error, "disabled");
+  r = await owner("trener/admin/codes", { count: 3, batch: `stickers-${run}` });
+  assert.equal(r.codes.length, 3);
+  r = await owner(`trener/admin/batch?batch=stickers-${run}&unused=1`);
+  assert.equal(r.codes.length, 3);
+});

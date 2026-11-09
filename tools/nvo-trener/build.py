@@ -22,11 +22,18 @@ questions.sort(key=lambda q: (order[q["m"]], q["id"]))
 for k in ("nvo",):
     for q in questions: q.pop(k, None)
 js = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+bank = {"passages": passages, "questions": questions, "modules": mods}
+assets = os.path.join(here, "..", "..", "public", "assets")
+css = open(os.path.join(assets, "trener.css"), encoding="utf8").read()
+app_js = open(os.path.join(assets, "trener.js"), encoding="utf8").read()
 html = open(os.path.join(here, "app.html"), encoding="utf8").read()
-logo = base64.b64encode(open(os.path.join(here, "..", "..", "public", "assets", "logo.png"), "rb").read()).decode()
-html = (html.replace("/*__BANK__*/null", js({"passages": passages, "questions": questions}))
-            .replace("/*__MODULES__*/[]", js(mods))
-            .replace("__LOGO__", "data:image/png;base64," + logo))
+logo = base64.b64encode(open(os.path.join(assets, "logo.png"), "rb").read()).decode()
+html = (html.replace("/*__CSS__*/", css)
+            .replace("/*__BANK__*/null", js(bank))
+            .replace("__LOGO__", "data:image/png;base64," + logo)
+            .replace("/*__JS__*/", app_js.replace("</script", "<\\/script")))
+# The same bank for the site: python3 tools/nvo-trener/build.py, then scripts/admin.mjs trener-bank <bank-all.json>
+json.dump(bank, open(os.path.join(os.path.dirname(out), "bank-all.json"), "w", encoding="utf8"), ensure_ascii=False)
 open(out, "w", encoding="utf8").write(html)
 # The same page as a complete document, for sending as a file (the artifact publish adds this skeleton itself).
 head = ('<!doctype html>\n<html lang="bg">\n<head>\n<meta charset="utf-8">\n'

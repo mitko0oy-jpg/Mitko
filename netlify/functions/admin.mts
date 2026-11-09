@@ -55,6 +55,18 @@ export default handle(async (req) => {
     return json({ users: rows });
   }
 
+  // НВО тренажор: list the codes of a batch (for printing and for checking which were opened).
+  if (req.method === "GET" && parts[0] === "trener-codes") {
+    const batch = new URL(req.url).searchParams.get("batch") || "";
+    const rows = await q<any>(
+      `SELECT k.code, k.batch, k.note, k.created_at, k.first_used, k.last_used, k.disabled_at, count(d.device)::int AS devices
+         FROM trener_keys k LEFT JOIN trener_devices d ON d.code = k.code
+        WHERE ($1 = '' OR k.batch = $1) GROUP BY k.code ORDER BY k.created_at, k.code`,
+      [batch],
+    );
+    return json({ codes: rows.map((r) => ({ ...r, code: formatCode(r.code) })) });
+  }
+
   if (req.method === "GET" && parts[0] === "export") {
     const modules = await q("SELECT * FROM modules ORDER BY grade, position");
     const items = await q("SELECT module_slug, ext_id, position, data, status, reviewed_at, updated_at FROM items ORDER BY module_slug, position");
@@ -142,6 +154,37 @@ export default handle(async (req) => {
     if (!email || b.confirm !== email) throw bad("confirm", "Повтори имейла в confirm.");
     const r = await q("DELETE FROM users WHERE email = $1 RETURNING id", [email]);
     return json({ ok: true, deleted: r.length });
+  }
+
+  // НВО тренажор: a new version of the question bank (the newest one is served).
+  if (parts[0] === "trener-bank") {
+    const questions = Array.isArray(b.questions) ? b.questions : [];
+    if (questions.length < 10 || !b.passages || typeof b.passages !== "object") throw bad("bank", "Липсват задачите.");
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null })]);
+    return json({ ok: true, id: Number(row.id), questions: questions.length });
+  }
+
+  // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.
+  if (parts[0] === "trener-codes") {
+    const count = Math.max(1, Math.min(2000, Number(b.count) || 1));
+    const batch = str(b.batch, 60);
+    const maxDevices = Math.max(1, Math.min(10, Number(b.maxDevices) || 3));
+    const codes: string[] = [];
+    while (codes.length < count) {
+      const c = newCode();
+      const r = await q("INSERT INTO trener_keys (code, batch, max_devices) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING RETURNING code", [c, batch, maxDevices]);
+      if (r.length) codes.push(formatCode(c));
+    }
+    return json({ ok: true, batch, codes });
+  }
+
+  // Gives an existing account the admin role (for the /kodove/ support page).
+  if (parts[0] === "role") {
+    const email = str(b.email, 200).toLowerCase();
+    if (!["parent", "reviewer", "admin"].includes(b.role)) throw bad("role", "Непозната роля.");
+    const r = await q("UPDATE users SET role = $2 WHERE email = $1 RETURNING email, role", [email, b.role]);
+    if (!r.length) throw notFound("Няма профил с този имейл.");
+    return json({ ok: true, user: r[0] });
   }
 
   if (parts[0] === "codes") {
