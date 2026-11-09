@@ -208,7 +208,8 @@ function t4Answer(t) {
 }
 
 const cell = (r, c) => `(${r + 1},${c + 1})`;
-const workTitle = (d) => `${q(d.title)}${d.part ? ` · ${d.part}` : ""}`;
+// `short` is the title used in lists (map, reviews, answers) when `part` is long.
+const workTitle = (d) => d.short || `${q(d.title)}${d.part ? ` · ${d.part}` : ""}`;
 
 // ---------- pages ----------
 function renderPage(p, ctx) {
@@ -274,7 +275,7 @@ function renderPage(p, ctx) {
     case "map": {
       let rows = "", grade = null;
       for (const d of ds) {
-        if (d.grade !== grade) { grade = d.grade; rows += `<tr class="gr"><td colspan="5">${grade}. клас</td></tr>`; }
+        if (book.mapByGrade && d.grade !== grade) { grade = d.grade; rows += `<tr class="gr"><td colspan="5">${grade}. клас</td></tr>`; }
         rows += `<tr><td class="ck"><span>${solved ? "✓" : ""}</span></td><td class="n">${pad2(d.no)}</td><td>${h(workTitle(d))}</td><td class="au">${h(d.author)}</td><td class="p">${P.at(`d${d.no}`)}</td></tr>`;
       }
       return wrap("Избери творба / отбелязвай напредъка", `<h1>Картата на досиетата</h1><p>След задачи 1–3 и проверката сложи отметка. Можеш да решаваш досиетата в избран от теб ред.</p><table class="map">${rows}</table><p class="small" style="margin-top:2mm">Числото вдясно е страницата, на която започва досието.</p>`);
