@@ -52,6 +52,12 @@
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
 
+## Книгата-игра „Литературни досиета“ (PDF)
+
+- Генератор: `scripts/dossiers/` (описание на данните – `scripts/dossiers/README.md`). От JSON прави B5 PDF в два варианта: ученическо копие и копие с решения. Сам подрежда решетките (неоградените букви дават скритата следа), буквите на отговорите, кодовете, преговорите, финала и отговорите.
+- Данните, картинките и шрифтовете са платено съдържание: `private/dossiers10/` (извън git). Изданието за НВО 10: 27 досиета, послание „Чета, мисля и доказвам убедително.“.
+- `node scripts/dossiers/build.mjs private/dossiers10/content` → `private/dossiers10/out/`. За едно досие: `--dossiers 5 --png-dossiers --out /tmp/prev`.
+
 ## Тестове
 
 ```
