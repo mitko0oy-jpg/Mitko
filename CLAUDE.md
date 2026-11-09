@@ -51,6 +51,7 @@
 5. Правилата за съдържанието и AI безопасността: `docs/CONTENT_RULES.md`, `docs/AI_SAFETY.md`.
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
+8. НВО тренажор (самостоятелен HTML файл, 200 задачи в 10 модула, с оценки и бележник): кодът е в `tools/nvo-trener/` (виж README там), задачите – в `private/nvo-trener/bank/` (не са в git). Публикуван е като Artifact „НВО тренажор по БЕЛ“; ако задачите липсват, `extract.py` ги вади от готовия файл.
 
 ## Тестове
 
