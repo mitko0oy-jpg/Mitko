@@ -1167,8 +1167,13 @@ const Game = (() => {
     if (!b) return "";
     const s = st(d.id), a = s.b4a || {}, ok = !!s.b4, checked = !!s.b4c;
     let body = "";
+    // The paper prompts say "write 1–5 in the boxes"; on a screen the moves are different.
+    const prompt = b.type === "order" ? "Подреди събитията от първото до последното със стрелките ↑ ↓."
+      : b.type === "groups" ? "Към коя група е всяка дума? Докосни групата до нея." : b.prompt || "";
     if (b.type === "order") {
-      const ord = s.b4o || shuffle(b.items.map((_, i) => i)).map((x) => x);
+      // Start from the mixed order printed on paper (the same for every child), or a random one.
+      const printed = (b.printed || []).map((t) => b.items.indexOf(t));
+      const ord = s.b4o || (printed.length === b.items.length && !printed.includes(-1) ? printed : shuffle(b.items.map((_, i) => i)));
       if (!s.b4o) s.b4o = ord;
       body = `<ol class="ord">${ord.map((k, pos) => `<li class="${checked || ok ? (k === pos ? "right" : "wrong") : ""}"><span>${esc(b.items[k])}</span><span class="mv">${ok ? "" : `<button data-act="gameMove" data-id="${d.id}" data-k="${pos}" data-d="-1" ${pos === 0 ? "disabled" : ""} aria-label="Нагоре">↑</button><button data-act="gameMove" data-id="${d.id}" data-k="${pos}" data-d="1" ${pos === ord.length - 1 ? "disabled" : ""} aria-label="Надолу">↓</button>`}</span></li>`).join("")}</ol>`;
     } else if (b.type === "groups") {
@@ -1190,7 +1195,7 @@ const Game = (() => {
       }).join("")}</div>`;
     }
     return `<section class="dtask bonus" id="t4"><h3><span class="tn">4</span> Бонус: още следи ${ok ? `<i class="tick">★</i>` : ""}</h3>
-      <p class="small muted">${esc(b.prompt || "")}</p>${body}
+      <p class="small muted">${esc(prompt)}</p>${body}
       ${ok ? `<p class="okbox">Браво – бонусът е решен!</p>` : `<button class="btn line" data-act="gameBonus" data-id="${d.id}">Провери бонуса</button>${checked ? `<p class="small muted">Поправи червените и провери пак.</p>` : ""}`}</section>`;
   }
   function bonus5(d) {
@@ -1219,19 +1224,36 @@ const Game = (() => {
     app.innerHTML = h;
   }
 
+  // Review rows: a letter for each clue (some clues accept a second letter), or – for "who is the author" –
+  // the author of each listed work (on paper the child writes letters next to the authors; one pick per work is easier on a phone).
+  function reviewRows(rv, t, ti) {
+    if (t.multi) {
+      const author = {};
+      for (const it of t.items) for (const k of it.a) author[k] = it.q;
+      const choices = t.items.map((it) => ({ v: it.q, t: it.q }));
+      return rv.list.filter((x) => author[x.k]).map((x) => ({ key: `${ti}.${x.k}`, q: x.t, ok: [author[x.k]], choices }));
+    }
+    const choices = rv.list.map((x) => ({ v: x.k, t: `${x.k} – ${x.t}` }));
+    return t.items.map((it, i) => ({ key: `${ti}.${i}`, q: it.q, ok: [it.a, ...(it.alt || [])], choices }));
+  }
+  const sentence = (t) => (t ? t[0] + t.slice(1).toLowerCase() : "");
   function reviewView(id) {
-    const rv = D().reviews.find((x) => x.id === id), s = st(id);
+    const rv = D().reviews.find((x) => x.id === id), s = st(id), a = s.a || {};
     view = { kind: "review", id };
     let h = top("gameHome", rv.title);
-    h += `<section class="dhero"><h1>${esc(rv.title)}</h1><p class="lead">По желание. Използвай решените досиета – този преговор не носи буква.</p></section>`;
-    h += `<section class="dtask"><ul class="dlistk">${rv.list.map((x) => `<li><b>${esc(x.k)}</b> ${esc(x.t)}</li>`).join("")}</ul></section>`;
+    h += `<section class="dhero"><h1>${esc(rv.title)}</h1><p class="lead">По желание. ${esc(rv.intro || "Използвай решените досиета – този преговор не носи буква.")}</p></section>`;
+    h += `<section class="dtask"><h3>Досиетата в този преговор</h3><ul class="dlistk">${rv.list.map((x) => `<li><b>${esc(x.k)}</b> ${esc(x.t)}</li>`).join("")}</ul></section>`;
     rv.tasks.forEach((t, ti) => {
-      h += `<section class="dtask"><h3>${esc(t.prompt)}</h3><div class="dfill">${t.items.map((it, i) => {
-        const key = `${ti}.${i}`, pick = (s.a || {})[key], st_ = s.c ? (pick === it.a ? "right" : "wrong") : "";
-        return `<div class="dline who ${st_}"><q>${esc(it.q)}</q><select data-act-change="gameSel" data-id="${id}" data-key="${key}" aria-label="Буква"><option value="">…</option>${rv.list.map((x) => `<option value="${esc(x.k)}" ${pick === x.k ? "selected" : ""}>${esc(x.k)} – ${esc(x.t)}</option>`).join("")}</select></div>`;
+      h += `<section class="dtask"><h3><span class="tn">${ti + 1}</span> ${esc(sentence(t.title) || t.prompt)}</h3>
+        <p class="small muted">${t.multi ? "Избери автора на всяка творба." : "Избери досието от списъка – можеш да надникнеш в решените досиета."}</p><div class="dfill">${reviewRows(rv, t, ti).map((r) => {
+        const pick = a[r.key], st_ = s.c || s.done ? (r.ok.includes(pick) ? "right" : "wrong") : "";
+        return `<div class="dline who ${st_}"><q>${esc(r.q)}</q><select data-act-change="gameSel" data-id="${id}" data-key="${esc(r.key)}" ${s.done ? "disabled" : ""} aria-label="${t.multi ? "Автор" : "Досие"}"><option value="">…</option>${r.choices.map((x) => `<option value="${esc(x.v)}" ${pick === x.v ? "selected" : ""}>${esc(x.t)}</option>`).join("")}</select></div>`;
       }).join("")}</div></section>`;
     });
     h += s.done ? `<p class="okbox">Всичко е вярно. Отличен преговор!</p>` : `<div class="row"><button class="btn" data-act="gameReview" data-id="${id}">Провери</button></div>${s.c ? `<p class="small muted">Поправи червените и провери пак.</p>` : ""}`;
+    if (s.done && rv.more) {
+      h += `<section class="dtask bonus"><p><b>${esc(rv.more.q)}</b></p><textarea class="field dthink" data-more="${id}" rows="3" aria-label="Твоят отговор">${esc(s.moreT || rv.more.start || "")}</textarea><p class="small muted">Тук няма грешен отговор – пиши със свои думи.</p></section>`;
+    }
     app.innerHTML = h;
   }
 
@@ -1240,7 +1262,7 @@ const Game = (() => {
     view = { kind: "final", id: "final" };
     const all = D().dossiers.length, n = solvedCount(), L = letters();
     let h = top("gameHome", f.title || "Финал");
-    h += `<section class="dhero"><h1>${esc(f.title || "Финал")}</h1><p class="lead">Последният ключ: пет познати автора. Буквите на верните отговори дават последната буква на посланието.</p></section>`;
+    h += `<section class="dhero"><h1>${esc(f.title || "Финал")}</h1><p class="lead">Пет въпроса за последния ключ. Буквите на верните отговори дават последната буква на посланието – можеш да проверяваш в досиетата.</p></section>`;
     h += `<section class="dtask">${quizHtml("final", f.quiz, f.code, f.take, f.field)}</section>`;
     const full = Object.keys(L).length === D().message.fields;
     h += `<section class="dpanel"><h3>Тайното послание</h3>${board()}
@@ -1248,8 +1270,8 @@ const Game = (() => {
     if (full) {
       for (const [i, q] of (f.after || []).entries()) {
         const s = st("final"), shown = (s.after || {})[i];
-        h += `<section class="dtask bonus"><p><b>${esc(q.q)}</b></p><textarea class="field dthink" rows="3" aria-label="Твоят отговор">${esc(((s.afterT || {})[i]) || "")}</textarea>
-          ${shown && q.sample ? `<div class="fb ok"><b class="t">Един добър отговор</b><span>${esc(q.sample)}</span></div>` : q.sample ? `<button class="btn line" data-act="gameAfter" data-i="${i}">Покажи примерен отговор</button>` : ""}</section>`;
+        h += `<section class="dtask bonus"><p><b>${esc(q.q)}</b>${q.optional ? ` <span class="small muted">(по желание)</span>` : ""}</p><textarea class="field dthink" data-after="${i}" rows="3" aria-label="Твоят отговор">${esc(((s.afterT || {})[i]) || q.start || "")}</textarea>
+          ${shown && q.sample ? `<div class="fb ok"><b class="t">Един добър отговор</b><span>${esc(q.sample)}</span><span class="small muted">Сравни смисъла, не точните думи.</span></div>` : q.sample ? `<button class="btn line" data-act="gameAfter" data-i="${i}">Покажи примерен отговор</button>` : `<p class="small muted">Тук няма грешен отговор – пиши със свои думи.</p>`}</section>`;
       }
       if (solved("final") && n === all) {
         h += `<section class="diploma"><span class="eyebrow">Бюро за литературни разследвания</span><h2>Диплома</h2><p>присъжда се на</p><p class="dname">${esc(S.name.trim() || "детектива")}</p>
@@ -1382,7 +1404,7 @@ const Game = (() => {
     },
     gameReview: (b) => {
       const id = b.dataset.id, rv = D().reviews.find((x) => x.id === id), s = st(id), a = s.a || {};
-      const ok = rv.tasks.every((t, ti) => t.items.every((it, i) => a[`${ti}.${i}`] === it.a));
+      const ok = rv.tasks.every((t, ti) => reviewRows(rv, t, ti).every((r) => r.ok.includes(a[r.key])));
       if (ok) s.done = Date.now();
       else s.c = true;
       save();
@@ -1400,7 +1422,11 @@ const Game = (() => {
     save();
   });
   app.addEventListener("input", (e) => {
-    if (e.target.id === "b5in" && view) { st(view.id).b5t = e.target.value.slice(0, 1000); save(); }
+    if (!view) return;
+    const el = e.target, v = el.value.slice(0, 1000);
+    if (el.id === "b5in") { st(view.id).b5t = v; save(); }
+    else if (el.dataset.more) { st(el.dataset.more).moreT = v; save(); }
+    else if (el.dataset.after != null) { const s = st("final"); s.afterT = { ...(s.afterT || {}), [el.dataset.after]: v }; save(); }
   });
 
   return { card, home, act: (b, e) => { const f = ACT[b.dataset.act]; if (f) { f(b, e); return true; } return false; }, leave: () => { view = null; } };
