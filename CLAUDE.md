@@ -20,7 +20,7 @@
 | AI | Claude през Netlify AI Gateway (без отделен ключ); модели в `netlify/lib/ai.mts` |
 
 - Netlify проект: `edubel-app` (site id `55509ac3-c1b8-48a7-b0f6-6bc120e685c9`), отбор `mitko0oy`. Публичен адрес: `app.edubel.site` (CNAME `app` → `edubel-app.netlify.app` в SuperHosting); `edubel-app.netlify.app` продължава да работи. QR кодовете на стикерите и PDF-ите водят към `https://app.edubel.site/t/?k=КОД`.
-- Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска от корена. Всеки деплой е production и струва 15 кредита (безплатният план има 300 на месец), затова тествай локално и деплойвай рядко.
+- Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска от корена. Всеки деплой е production и струва 15 кредита (планът е Personal: 1000 кредита на месец, период от 9-о до 8-о число), затова тествай локално и деплойвай рядко. Ориентир: ~0,3 кредита на активно дете на месец в тренажора.
 - Env променливи в Netlify: `ADMIN_TOKEN` (таен), `TEST_MODE=1` (показва и непрегледаното съдържание с банер). По желание: `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_FREE_TOTAL`, `AI_PAID_DAILY`, `AI_GLOBAL_DAILY`.
 
 ## Модел на данните
