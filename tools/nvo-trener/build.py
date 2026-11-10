@@ -23,6 +23,10 @@ for k in ("nvo",):
     for q in questions: q.pop(k, None)
 js = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 bank = {"passages": passages, "questions": questions, "modules": mods}
+# The game „Литературни досиета“ (made from the printed book, see README), if it is there.
+dos_file = os.path.join(os.path.dirname(os.path.abspath(bank_dir)), "dossiers.json")
+if os.path.exists(dos_file):
+    bank["dossiers"] = json.load(open(dos_file, encoding="utf8"))
 assets = os.path.join(here, "..", "..", "public", "assets")
 css = open(os.path.join(assets, "trener.css"), encoding="utf8").read()
 app_js = open(os.path.join(assets, "trener.js"), encoding="utf8").read()

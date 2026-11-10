@@ -32,7 +32,7 @@ const ts = (v: unknown) => {
 };
 
 export function cleanState(s: any) {
-  const out: any = { name: "", hist: [], mist: {}, resetAt: 0, resets: {}, at: 0 };
+  const out: any = { name: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 };
   if (!s || typeof s !== "object") return out;
   out.name = typeof s.name === "string" ? s.name.trim().slice(0, 40) : "";
   out.at = ts(s.at);
@@ -55,6 +55,12 @@ export function cleanState(s: any) {
       }
       out.hist.push(e);
     }
+  }
+  // Progress in the game „Литературни досиета“: small objects per dossier, kept as they are if the whole is small.
+  if (s.dos && typeof s.dos === "object" && !Array.isArray(s.dos)) {
+    const ids = Object.keys(s.dos).filter((k) => ID.test(k)).slice(0, 60);
+    const dos = Object.fromEntries(ids.map((k) => [k, s.dos[k]]).filter(([, v]) => v && typeof v === "object" && !Array.isArray(v)));
+    if (JSON.stringify(dos).length <= 80_000) out.dos = dos;
   }
   if (s.mist && typeof s.mist === "object") {
     for (const [k, v] of Object.entries<any>(s.mist).slice(0, 400)) {
@@ -79,7 +85,7 @@ export function mergeState(a: any, b: any) {
     .sort((x, y) => x.d - y.d)
     .slice(-1000);
   const newer = b.at >= a.at ? b : a;
-  return { name: newer.name, hist, mist: newer.mist, resetAt, resets, at: Math.max(a.at, b.at) };
+  return { name: newer.name, hist, mist: newer.mist, dos: newer.dos, resetAt, resets, at: Math.max(a.at, b.at) };
 }
 
 // "iPhone · Safari", "Android · Chrome" – just enough for the family to recognise its devices.

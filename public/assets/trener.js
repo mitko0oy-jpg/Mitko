@@ -31,7 +31,7 @@ const KEY = "edubel-nvo-trener-v1";
 /* ---------- saved progress ---------- */
 // Standalone file: this browser only. On the site: a copy in this browser, synced to the server with the code.
 let canSave = true;
-const blank = () => ({ v: 1, name: "", hist: [], mist: {}, resetAt: 0, resets: {}, at: 0 });
+const blank = () => ({ v: 1, name: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 });
 const ls = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
@@ -39,7 +39,7 @@ const ls = {
 };
 function normState(o) {
   if (!o || typeof o !== "object" || !Array.isArray(o.hist)) return blank();
-  return { ...blank(), ...o, v: 1, name: o.name || "", mist: o.mist || {}, resets: o.resets || {} };
+  return { ...blank(), ...o, v: 1, name: o.name || "", mist: o.mist || {}, dos: o.dos && typeof o.dos === "object" ? o.dos : {}, resets: o.resets || {} };
 }
 function loadLocal() {
   try {
@@ -109,6 +109,7 @@ let sess = null, timer = null, histAll = false;
 function home(scrollTo) {
   stopTimer();
   sess = null;
+  Game.leave();
   const nvoCount = BANK.questions.filter((q) => MOD[q.m] && isNvo(MOD[q.m])).length;
   const cardCount = BANK.questions.length - nvoCount;
   const f = forecast();
@@ -123,11 +124,12 @@ function home(scrollTo) {
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
   h += forecastPanel(f, mist);
+  h += Game.card();
   h += modulesSection();
   h += gradebook();
   if (ONLINE) h += Online.accessSection();
   h += `<section class="reset" id="reset"><h3>Започни отначало</h3>
-      <p class="small muted">Изтрива всички оценки, датите и тетрадката с грешки на това устройство. Задачите остават. Ако искаш да изчистиш само един модул, използвай „Нулирай“ до него.</p>
+      <p class="small muted">Изтрива всички оценки, датите, тетрадката с грешки и напредъка в играта. Задачите остават. Ако искаш да изчистиш само един модул, използвай „Нулирай“ до него.</p>
       <div id="resetZone"><button class="btn line danger sm" data-act="resetAllAsk">Нулирай целия прогрес</button></div></section>`;
   app.innerHTML = h;
   drawChart();
@@ -694,6 +696,7 @@ app.addEventListener("click", (e) => {
   if (!b || b.disabled || !app.contains(b)) return;
   const f = ACT[b.dataset.act];
   if (f) f(b, e);
+  else if (Game.act(b, e)) return;
   else if (ONLINE) Online.act(b, e);
 });
 app.addEventListener("input", (e) => {
@@ -1010,6 +1013,397 @@ const Online = (() => {
     syncNow: () => syncNow(),
     act: (b, e) => { const f = ACTS[b.dataset.act]; if (f) f(b, e); },
   });
+})();
+
+/* ---------- the game „Литературни досиета“ (bank.dossiers) ---------- */
+// Each dossier: 1 find the three ★ words in the grid (tap the first and the last letter), 2 answer the clues with them,
+// 3 five questions whose letters give the dossier's code; one letter of the code goes to the secret message.
+// 4 and 5 are bonuses. Progress is kept in S.dos, so it syncs like the grades.
+const Game = (() => {
+  const DIRS = [[0, 1], [1, 0], [1, 1], [-1, 1]];
+  let view = null; // {kind: "home"|"dossier"|"review"|"final", id}
+  let sel = null; // first tapped cell [r, c] in the grid
+  const D = () => BANK.dossiers;
+  const st = (id) => {
+    S.dos = S.dos || {};
+    S.dos[id] = S.dos[id] || {};
+    return S.dos[id];
+  };
+  const dossier = (id) => D().dossiers.find((x) => x.id === id);
+  const solved = (id) => !!(S.dos && S.dos[id] && S.dos[id].done);
+  const solvedCount = () => D().dossiers.filter((d) => solved(d.id)).length;
+  function rank() {
+    const n = solvedCount(), all = D().dossiers.length;
+    if (n >= all && solved("final")) return { t: "Главен инспектор", next: "" };
+    if (n >= 12) return { t: "Инспектор", next: `още ${all - n} ${all - n === 1 ? "досие" : "досиета"} и финалът до „Главен инспектор“` };
+    if (n >= 5) return { t: "Детектив", next: `още ${12 - n} до „Инспектор“` };
+    return { t: "Стажант", next: `още ${5 - n} до „Детектив“` };
+  }
+  // Letter for message field N, if the dossier that gives it is solved.
+  function letters() {
+    const out = {};
+    for (const d of D().dossiers) if (solved(d.id)) out[d.field] = d.code[d.take - 1];
+    const f = D().final;
+    if (f && solved("final")) out[f.field] = f.code[f.take - 1];
+    return out;
+  }
+  function board() {
+    const L = letters(), m = D().message;
+    return `<div class="dmsg" aria-label="Тайното послание">${m.groups.map((g) => `<span class="dword">${g.map((n) => `<span class="dbox ${L[n] ? "on" : ""}"><i>${n}</i><b>${L[n] || ""}</b></span>`).join("")}</span>`).join("")}</div>`;
+  }
+
+  function card() {
+    if (!BANK.dossiers) return "";
+    const n = solvedCount(), all = D().dossiers.length, r = rank();
+    return `<section class="game" aria-labelledby="gameT"><div class="game-in">
+      <span class="eyebrow">Игра · ${all} досиета · 1 таен код</span>
+      <h2 id="gameT">Литературни досиета</h2>
+      <p>Разследвай творбите като детектив: намери думите, събери уликите и разбий кода. Всяко разкрито досие дава буква от тайното послание.</p>
+      <div class="game-row"><span class="rank">${esc(r.t)}</span><span class="small">Разкрити: <b>${n} от ${all}</b></span></div>
+      <button class="btn gold" data-act="gameHome">${n ? "Продължи разследването" : "Започни разследването"}</button></div></section>`;
+  }
+
+  function top(back, title) {
+    return `<div class="qbar"><button class="back" data-act="${back}">← ${back === "home" ? "Табло" : "Досиетата"}</button><span class="qtitle">${esc(title)}</span><span></span></div>`;
+  }
+
+  function home() {
+    view = { kind: "home" };
+    stopTimer();
+    sess = null;
+    const r = rank(), all = D().dossiers.length, n = solvedCount();
+    let h = top("home", "Литературни досиета");
+    h += `<section class="dhero"><h1>Литературни <em>досиета</em></h1>
+      <p class="lead">${all} досиета. Един таен код. Разследването започва с теб.</p>
+      <div class="game-row"><span class="rank">${esc(r.t)}</span><span class="small">Разкрити: <b>${n} от ${all}</b>${r.next ? ` · ${esc(r.next)}` : ""}</span></div></section>
+      <section class="dpanel"><h3>Тайното послание</h3><p class="small muted">Всяко разкрито досие попълва едно поле. Последната буква е във финала.</p>${board()}</section>
+      <details class="dpanel how"><summary>Как се играе</summary><ol>
+        <li><b>Следата.</b> Намери трите думи със звездичка: докосни първата им буква (тя е отбелязана), после последната. Думите вървят → ↓ ↘ ↗.</li>
+        <li><b>Уликите.</b> Отговори на трите въпроса с тези думи.</li>
+        <li><b>Разпитът.</b> Избери верните отговори – буквите им дават кода на досието и буква за тайното послание.</li>
+        <li><b>Бонуси.</b> Задачи 4 и 5 са по желание. Можеш да гледаш в текста и да поправяш – няма таймер и наказания.</li></ol></details>
+      <section class="dlist" aria-label="Досиетата">`;
+    for (const d of D().dossiers) {
+      const s = (S.dos || {})[d.id] || {};
+      const stars = (s.b4 ? "★" : "") + (s.b5 ? "★" : "");
+      h += `<button class="dcase ${solved(d.id) ? "done" : ""}" data-act="gameOpen" data-id="${d.id}"><span class="dno">${String(d.no).padStart(2, "0")}</span>
+        <span class="dt"><b>${esc(d.work)}</b><small>${esc(d.author)}</small></span>
+        <span class="dst">${solved(d.id) ? `<i class="stamp-s">Разкрито</i>` : s.t1 || s.t3 ? "започнато" : ""}${stars ? `<em>${stars}</em>` : ""}</span></button>`;
+    }
+    h += `</section>`;
+    for (const rv of D().reviews || []) {
+      const s = (S.dos || {})[rv.id] || {};
+      h += `<button class="dcase extra ${s.done ? "done" : ""}" data-act="gameOpen" data-id="${rv.id}"><span class="dno">★</span><span class="dt"><b>${esc(rv.title)}</b><small>по желание · не носи буква</small></span><span class="dst">${s.done ? `<i class="stamp-s">Готово</i>` : ""}</span></button>`;
+    }
+    if (D().final) h += `<button class="dcase final ${solved("final") ? "done" : ""}" data-act="gameOpen" data-id="final"><span class="dno">25</span><span class="dt"><b>${esc(D().final.title || "Финал")}</b><small>последната буква и посланието</small></span><span class="dst">${solved("final") ? `<i class="stamp-s">Разкрито</i>` : ""}</span></button>`;
+    h += `<div class="row"><button class="link" data-act="gameResetAsk">Започни играта отначало</button></div><div id="gameZone"></div>`;
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+  }
+
+  /* ----- one dossier ----- */
+  const found = (d) => new Set(st(d.id).t1 || []);
+  function gridHtml(d) {
+    const f = found(d), on = new Map();
+    d.words.forEach((w, wi) => { if (f.has(w.w)) w.cells.forEach(([r, c]) => on.set(`${r},${c}`, (wi % 5) + 1)); });
+    const marks = new Set(d.words.filter((w) => w.star).map((w) => `${w.cells[0][0]},${w.cells[0][1]}`));
+    let h = `<div class="dgrid" role="grid" aria-label="Решетка 10 на 10">`;
+    d.grid.forEach((row, r) => [...row].forEach((ch, c) => {
+      const k = `${r},${c}`;
+      h += `<button class="dcell ${on.has(k) ? `f f${on.get(k)}` : ""} ${marks.has(k) ? "mk" : ""} ${sel && sel[0] === r && sel[1] === c ? "sel" : ""}" data-act="gameCell" data-r="${r}" data-c="${c}" aria-label="ред ${r + 1}, колона ${c + 1}: ${ch}">${ch}</button>`;
+    }));
+    return h + `</div>`;
+  }
+  function trailHtml(d) {
+    if (!d.trail) return "";
+    const f = found(d);
+    if (!d.words.every((w) => f.has(w.w))) return `<p class="small muted">Бонус: намери и останалите думи – неоградените букви, прочетени ред по ред, дават скрита следа.</p>`;
+    return `<p class="okbox">Скритата следа: <b>${esc(d.trail)}</b></p>`;
+  }
+  function task1(d) {
+    const f = found(d), stars = d.words.filter((w) => w.star), ok = stars.every((w) => f.has(w.w));
+    return `<section class="dtask" id="t1"><h3><span class="tn">1</span> Открий трите думи със звездичка ${ok ? `<i class="tick">✓</i>` : ""}</h3>
+      <p class="small muted">Докосни отбелязаната първа буква, после последната буква на думата. Думите вървят → ↓ ↘ ↗.</p>
+      ${gridHtml(d)}<p class="dhint" id="gridMsg" role="status">${sel ? "Сега докосни последната буква на думата." : ""}</p>
+      <ul class="dwords">${d.words.map((w) => `<li class="${w.star ? "star" : ""} ${f.has(w.w) ? "got" : ""}">${w.star ? "★ " : ""}${esc(w.w)}</li>`).join("")}</ul>
+      ${ok ? "" : `<button class="link" data-act="gameHint">Подсказка</button>`}${trailHtml(d)}</section>`;
+  }
+  function task2(d) {
+    const s = st(d.id), a = s.t2 || {}, starWords = d.words.filter((w) => w.star).map((w) => w.w);
+    const ok = d.clues.every((c, i) => a[i] === c.a);
+    return `<section class="dtask" id="t2"><h3><span class="tn">2</span> Събери уликите ${ok ? `<i class="tick">✓</i>` : ""}</h3>
+      <p class="small muted">Отговори с трите думи със звездичка. Всяка се използва веднъж.</p>
+      <ol class="dclues">${d.clues.map((c, i) => `<li><p>${esc(c.q)}</p><div class="chips">${starWords.map((w) => {
+        const picked = a[i] === w, right = picked && w === c.a, wrong = picked && w !== c.a;
+        return `<button class="chip ${right ? "right" : wrong ? "wrong" : ""}" data-act="gameClue" data-i="${i}" data-w="${esc(w)}" ${a[i] === c.a ? "disabled" : ""}>${esc(w)}</button>`;
+      }).join("")}</div></li>`).join("")}</ol></section>`;
+  }
+  function codeBoxes(code, take, letters_, marked) {
+    return `<div class="dcode">${[0, 1, 2, 3, 4].map((i) => `<span class="dbox ${i === take - 1 ? "take" : ""} ${letters_[i] ? "on" : ""}"><i>${i + 1}</i><b>${letters_[i] || ""}</b></span>`).join("")}</div>`;
+  }
+  function quizHtml(id, quiz, code, take, field) {
+    const s = st(id), a = s.t3 || [], checked = !!s.t3c;
+    const lettersNow = quiz.map((q, i) => (a[i] != null ? q.o[a[i]].k : ""));
+    const done = solved(id);
+    let h = `<ol class="dquiz">${quiz.map((q, i) => `<li><p>${esc(q.q)}</p><div class="opts">${q.o.map((o, k) => {
+      const picked = a[i] === k;
+      const cls = picked ? (checked || done ? (k === q.a ? "right" : "wrong") : "sel") : "";
+      return `<button class="opt ${cls}" data-act="gameAns" data-id="${id}" data-i="${i}" data-k="${k}" ${done ? "disabled" : ""}><span class="key">${esc(o.k)}</span><span>${esc(o.t)}</span></button>`;
+    }).join("")}</div></li>`).join("")}</ol>
+      <p class="small muted">Кодът на досието (буквите на верните отговори от 1 до 5):</p>${codeBoxes(code, take, lettersNow)}`;
+    if (done) h += `<p class="okbox">Кодът е <b>${esc(code)}</b>. Буквата „${esc(code[take - 1])}“ отиде в поле ${field} на тайното послание.</p>`;
+    else if (checked) h += `<p class="warnbox">Не се получава дума. Провери отговорите в червено – можеш да гледаш в текста.</p>`;
+    if (!done) h += `<button class="btn" data-act="gameCheck" data-id="${id}" ${a.filter((x) => x != null).length === 5 ? "" : "disabled"}>Провери кода</button>`;
+    return h;
+  }
+  function task3(d) {
+    return `<section class="dtask" id="t3"><h3><span class="tn">3</span> Избери верния отговор ${solved(d.id) ? `<i class="tick">✓</i>` : ""}</h3>
+      ${quizHtml(d.id, d.quiz, d.code, d.take, d.field)}</section>`;
+  }
+
+  // Bonus 4: order the events, split into two groups, complete a quote, or who says it.
+  function bonus4(d) {
+    const b = d.bonus4;
+    if (!b) return "";
+    const s = st(d.id), a = s.b4a || {}, ok = !!s.b4, checked = !!s.b4c;
+    let body = "";
+    if (b.type === "order") {
+      const ord = s.b4o || shuffle(b.items.map((_, i) => i)).map((x) => x);
+      if (!s.b4o) s.b4o = ord;
+      body = `<ol class="ord">${ord.map((k, pos) => `<li class="${checked || ok ? (k === pos ? "right" : "wrong") : ""}"><span>${esc(b.items[k])}</span><span class="mv">${ok ? "" : `<button data-act="gameMove" data-id="${d.id}" data-k="${pos}" data-d="-1" ${pos === 0 ? "disabled" : ""} aria-label="Нагоре">↑</button><button data-act="gameMove" data-id="${d.id}" data-k="${pos}" data-d="1" ${pos === ord.length - 1 ? "disabled" : ""} aria-label="Надолу">↓</button>`}</span></li>`).join("")}</ol>`;
+    } else if (b.type === "groups") {
+      const all = b.groups.flatMap((g, gi) => g.items.map((w) => ({ w, gi })));
+      const order = s.b4w || shuffle(all.map((x) => x.w));
+      if (!s.b4w) s.b4w = order;
+      body = `<div class="dgroups">${order.map((w) => {
+        const right = all.find((x) => x.w === w).gi, pick = a[w];
+        return `<div class="dgw ${checked || ok ? (pick === right ? "right" : "wrong") : ""}"><span>${esc(w)}</span><span class="seg">${b.groups.map((g, gi) => `<button class="${pick === gi ? "on" : ""}" data-act="gamePick" data-id="${d.id}" data-key="${esc(w)}" data-v="${gi}" ${ok ? "disabled" : ""}>${esc(g.title)}</button>`).join("")}</span></div>`;
+      }).join("")}</div>`;
+    } else if (b.type === "fill" || b.type === "who") {
+      const choices = b.type === "fill" ? b.bank : b.names;
+      body = `<div class="dfill">${b.lines.map((l, i) => {
+        const pick = a[i], st_ = checked || ok ? (pick === l.a ? "right" : "wrong") : "";
+        const sel_ = `<select data-act-change="gameSel" data-id="${d.id}" data-key="${i}" ${ok ? "disabled" : ""} aria-label="Избери"><option value="">…</option>${choices.map((c) => `<option ${pick === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>`;
+        return b.type === "fill"
+          ? `<p class="dline ${st_}">${esc(l.before || "")} ${sel_} ${esc(l.after || "")}</p>`
+          : `<div class="dline who ${st_}"><q>${esc(l.q)}</q>${sel_}</div>`;
+      }).join("")}</div>`;
+    }
+    return `<section class="dtask bonus" id="t4"><h3><span class="tn">4</span> Бонус: още следи ${ok ? `<i class="tick">★</i>` : ""}</h3>
+      <p class="small muted">${esc(b.prompt || "")}</p>${body}
+      ${ok ? `<p class="okbox">Браво – бонусът е решен!</p>` : `<button class="btn line" data-act="gameBonus" data-id="${d.id}">Провери бонуса</button>${checked ? `<p class="small muted">Поправи червените и провери пак.</p>` : ""}`}</section>`;
+  }
+  function bonus5(d) {
+    const b = d.bonus5;
+    if (!b) return "";
+    const s = st(d.id);
+    return `<section class="dtask bonus" id="t5"><h3><span class="tn">5</span> Бонус: една мисъл ${s.b5 ? `<i class="tick">★</i>` : ""}</h3>
+      <p><b>${esc(b.q)}</b></p>
+      <textarea class="field dthink" id="b5in" rows="3" aria-label="Твоят отговор">${esc(s.b5t || b.start || "")}</textarea>
+      ${s.b5 && b.sample ? `<div class="fb ok"><b class="t">Един добър отговор</b><span>${esc(b.sample)}</span><span class="small muted">Сравни смисъла, не точните думи. Искаш ли още? Добави кратък цитат от творбата.</span></div>`
+        : `<button class="btn line" data-act="gameThink" data-id="${d.id}">${b.sample ? "Готово – покажи примерен отговор" : "Готово"}</button>`}</section>`;
+  }
+
+  function dossierView(id) {
+    const d = dossier(id);
+    view = { kind: "dossier", id };
+    stopTimer();
+    sess = null;
+    const idx = D().dossiers.indexOf(d), next = D().dossiers[idx + 1];
+    let h = top("gameHome", `Досие ${String(d.no).padStart(2, "0")}`);
+    h += `<section class="dhero"><span class="eyebrow">Досие ${String(d.no).padStart(2, "0")} · ${esc(d.author)}</span><h1>${esc(d.work)}</h1>
+      <div class="brief"><b>Накратко за творбата</b><p>${esc(d.brief)}</p>${(d.gloss || []).map((g) => `<p class="small">${esc(g)}</p>`).join("")}</div>
+      ${solved(id) ? `<p class="okbox">Досието е разкрито! Буквата „${esc(d.code[d.take - 1])}“ е в поле ${d.field} на тайното послание.</p>` : ""}</section>`;
+    h += task1(d) + task2(d) + task3(d) + bonus4(d) + bonus5(d);
+    h += `<div class="row">${next ? `<button class="btn gold" data-act="gameOpen" data-id="${next.id}">Следващо досие →</button>` : ""}<button class="btn line" data-act="gameHome">Всички досиета</button></div>`;
+    app.innerHTML = h;
+  }
+
+  function reviewView(id) {
+    const rv = D().reviews.find((x) => x.id === id), s = st(id);
+    view = { kind: "review", id };
+    let h = top("gameHome", rv.title);
+    h += `<section class="dhero"><h1>${esc(rv.title)}</h1><p class="lead">По желание. Използвай решените досиета – този преговор не носи буква.</p></section>`;
+    h += `<section class="dtask"><ul class="dlistk">${rv.list.map((x) => `<li><b>${esc(x.k)}</b> ${esc(x.t)}</li>`).join("")}</ul></section>`;
+    rv.tasks.forEach((t, ti) => {
+      h += `<section class="dtask"><h3>${esc(t.prompt)}</h3><div class="dfill">${t.items.map((it, i) => {
+        const key = `${ti}.${i}`, pick = (s.a || {})[key], st_ = s.c ? (pick === it.a ? "right" : "wrong") : "";
+        return `<div class="dline who ${st_}"><q>${esc(it.q)}</q><select data-act-change="gameSel" data-id="${id}" data-key="${key}" aria-label="Буква"><option value="">…</option>${rv.list.map((x) => `<option value="${esc(x.k)}" ${pick === x.k ? "selected" : ""}>${esc(x.k)} – ${esc(x.t)}</option>`).join("")}</select></div>`;
+      }).join("")}</div></section>`;
+    });
+    h += s.done ? `<p class="okbox">Всичко е вярно. Отличен преговор!</p>` : `<div class="row"><button class="btn" data-act="gameReview" data-id="${id}">Провери</button></div>${s.c ? `<p class="small muted">Поправи червените и провери пак.</p>` : ""}`;
+    app.innerHTML = h;
+  }
+
+  function finalView() {
+    const f = D().final;
+    view = { kind: "final", id: "final" };
+    const all = D().dossiers.length, n = solvedCount(), L = letters();
+    let h = top("gameHome", f.title || "Финал");
+    h += `<section class="dhero"><h1>${esc(f.title || "Финал")}</h1><p class="lead">Последният ключ: пет познати автора. Буквите на верните отговори дават последната буква на посланието.</p></section>`;
+    h += `<section class="dtask">${quizHtml("final", f.quiz, f.code, f.take, f.field)}</section>`;
+    const full = Object.keys(L).length === D().message.fields;
+    h += `<section class="dpanel"><h3>Тайното послание</h3>${board()}
+      ${full ? `<p class="okbox">Посланието е разкрито: <b>${esc(D().message.text)}</b></p>` : `<p class="small muted">Разкрити досиета: ${n} от ${all}. Празните полета се попълват, когато разкриеш досието им.</p>`}</section>`;
+    if (full) {
+      for (const [i, q] of (f.after || []).entries()) {
+        const s = st("final"), shown = (s.after || {})[i];
+        h += `<section class="dtask bonus"><p><b>${esc(q.q)}</b></p><textarea class="field dthink" rows="3" aria-label="Твоят отговор">${esc(((s.afterT || {})[i]) || "")}</textarea>
+          ${shown && q.sample ? `<div class="fb ok"><b class="t">Един добър отговор</b><span>${esc(q.sample)}</span></div>` : q.sample ? `<button class="btn line" data-act="gameAfter" data-i="${i}">Покажи примерен отговор</button>` : ""}</section>`;
+      }
+      if (solved("final") && n === all) {
+        h += `<section class="diploma"><span class="eyebrow">Бюро за литературни разследвания</span><h2>Диплома</h2><p>присъжда се на</p><p class="dname">${esc(S.name.trim() || "детектива")}</p>
+          <p>за разкриването на ${all}-те досиета и тайното послание</p><p class="drank">Главен инспектор по литература</p><p class="small muted">${fmtDate(Date.now())}</p></section>`;
+      }
+    }
+    app.innerHTML = h;
+  }
+
+  function show(id) {
+    if (id === "final") return finalView();
+    if ((D().reviews || []).some((x) => x.id === id)) return reviewView(id);
+    dossierView(id);
+  }
+  function open(id) {
+    sel = null;
+    show(id);
+    window.scrollTo(0, 0);
+  }
+  // Redraw the same screen in place (keeps the first tapped grid cell and the scroll position).
+  function rerender(anchor) {
+    const y = window.scrollY;
+    show(view.id);
+    window.scrollTo(0, y);
+    if (anchor) document.getElementById(anchor)?.scrollIntoView({ block: "nearest" });
+  }
+
+  // Two taps: the first and the last letter of a word, in one of the allowed directions (either order).
+  function tapCell(r, c) {
+    const d = dossier(view.id);
+    if (!sel) { sel = [r, c]; return rerender(); }
+    const [r0, c0] = sel;
+    sel = null;
+    if (r0 === r && c0 === c) return rerender();
+    const path = (a, b) => {
+      const dr = Math.sign(b[0] - a[0]), dc = Math.sign(b[1] - a[1]);
+      const len = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
+      if ((b[0] - a[0]) !== dr * len || (b[1] - a[1]) !== dc * len) return null;
+      if (!DIRS.some(([x, y]) => x === dr && y === dc)) return null;
+      return Array.from({ length: len + 1 }, (_, i) => [a[0] + dr * i, a[1] + dc * i]);
+    };
+    const p = path([r0, c0], [r, c]) || path([r, c], [r0, c0]);
+    const s = st(d.id), f = new Set(s.t1 || []);
+    const hit = p && d.words.find((w) => !f.has(w.w) && w.cells.length === p.length && w.cells.every(([x, y], i) => x === p[i][0] && y === p[i][1]));
+    if (hit) {
+      s.t1 = [...f, hit.w];
+      save();
+      rerender("t1");
+      const m = document.getElementById("gridMsg");
+      if (m) m.textContent = `Намери „${hit.w}“!${hit.star ? "" : " (бонус дума)"}`;
+    } else {
+      rerender("t1");
+      const m = document.getElementById("gridMsg");
+      if (m) m.textContent = p ? "Тук няма дума от списъка. Опитай пак." : "Думите вървят по права линия: → ↓ ↘ ↗.";
+    }
+  }
+
+  const ACT = {
+    gameHome: () => home(),
+    gameOpen: (b) => open(b.dataset.id),
+    gameCell: (b) => tapCell(+b.dataset.r, +b.dataset.c),
+    gameHint: () => {
+      const d = dossier(view.id), s = st(d.id), f = new Set(s.t1 || []);
+      const w = d.words.find((x) => x.star && !f.has(x.w));
+      if (!w) return;
+      s.t1 = [...f, w.w];
+      s.hints = (s.hints || 0) + 1;
+      save();
+      rerender("t1");
+    },
+    gameClue: (b) => {
+      const d = dossier(view.id), s = st(d.id);
+      s.t2 = { ...(s.t2 || {}), [b.dataset.i]: b.dataset.w };
+      save();
+      rerender("t2");
+    },
+    gameAns: (b) => {
+      const s = st(b.dataset.id);
+      s.t3 = s.t3 || [];
+      s.t3[+b.dataset.i] = +b.dataset.k;
+      s.t3c = false;
+      save();
+      rerender("t3");
+    },
+    gameCheck: (b) => {
+      const id = b.dataset.id, s = st(id), quiz = id === "final" ? D().final.quiz : dossier(id).quiz;
+      if (quiz.every((q, i) => s.t3 && s.t3[i] === q.a)) s.done = Date.now();
+      else s.t3c = true;
+      save();
+      if (id === "final") return rerender();
+      rerender("t3");
+    },
+    gameMove: (b) => {
+      const s = st(b.dataset.id), k = +b.dataset.k, j = k + +b.dataset.d;
+      [s.b4o[k], s.b4o[j]] = [s.b4o[j], s.b4o[k]];
+      s.b4c = false;
+      save();
+      rerender("t4");
+    },
+    gamePick: (b) => {
+      const s = st(b.dataset.id);
+      s.b4a = { ...(s.b4a || {}), [b.dataset.key]: +b.dataset.v };
+      s.b4c = false;
+      save();
+      rerender("t4");
+    },
+    gameBonus: (b) => {
+      const d = dossier(b.dataset.id), s = st(d.id), x = d.bonus4, a = s.b4a || {};
+      let ok = false;
+      if (x.type === "order") ok = (s.b4o || []).every((k, i) => k === i);
+      else if (x.type === "groups") ok = x.groups.every((g, gi) => g.items.every((w) => a[w] === gi));
+      else ok = x.lines.every((l, i) => a[i] === l.a);
+      if (ok) s.b4 = Date.now();
+      else s.b4c = true;
+      save();
+      rerender("t4");
+    },
+    gameThink: (b) => {
+      const s = st(b.dataset.id);
+      s.b5t = (document.getElementById("b5in")?.value || "").slice(0, 1000);
+      s.b5 = Date.now();
+      save();
+      rerender("t5");
+    },
+    gameAfter: (b) => {
+      const s = st("final");
+      s.after = { ...(s.after || {}), [b.dataset.i]: true };
+      save();
+      rerender();
+    },
+    gameReview: (b) => {
+      const id = b.dataset.id, rv = D().reviews.find((x) => x.id === id), s = st(id), a = s.a || {};
+      const ok = rv.tasks.every((t, ti) => t.items.every((it, i) => a[`${ti}.${i}`] === it.a));
+      if (ok) s.done = Date.now();
+      else s.c = true;
+      save();
+      rerender();
+    },
+    gameResetAsk: () => confirmBox("gameZone", "Да изтрия ли напредъка в играта? Оценките в бележника остават.", "gameReset", "Започни отначало"),
+    gameReset: () => { S.dos = {}; save(); home(); },
+  };
+  app.addEventListener("change", (e) => {
+    const el = e.target.closest("[data-act-change='gameSel']");
+    if (!el || !view) return;
+    const s = st(el.dataset.id);
+    if (view.kind === "review") { s.a = { ...(s.a || {}), [el.dataset.key]: el.value }; s.c = false; }
+    else { s.b4a = { ...(s.b4a || {}), [el.dataset.key]: el.value }; s.b4c = false; }
+    save();
+  });
+  app.addEventListener("input", (e) => {
+    if (e.target.id === "b5in" && view) { st(view.id).b5t = e.target.value.slice(0, 1000); save(); }
+  });
+
+  return { card, home, act: (b, e) => { const f = ACT[b.dataset.act]; if (f) { f(b, e); return true; } return false; }, leave: () => { view = null; } };
 })();
 
 if (EMBED) {
