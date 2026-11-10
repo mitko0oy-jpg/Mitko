@@ -5,10 +5,10 @@
 const EMBED = window.TRENER_BANK || null;
 const ONLINE = !EMBED;
 const LOGO = window.TRENER_LOGO || "/assets/logo.png";
-// Illustrations: on the site from /assets/trener/, in the standalone file built in (window.TRENER_IMG).
+// Illustrations, sounds and the video: on the site from /media/ (cached for 30 days), in the standalone file built in (window.TRENER_IMG).
 const IMGS = window.TRENER_IMG || null;
-const img = (n) => (IMGS ? IMGS[n] || "" : `/assets/trener/${n}.webp`);
-const asset = (path) => (IMGS ? IMGS[path] || "" : `/assets/trener/${path}`); // e.g. "sfx/right.mp3", "g-banner.mp4"
+const img = (n) => (IMGS ? IMGS[n] || "" : `/media/${n}.webp`);
+const asset = (path) => (IMGS ? IMGS[path] || "" : `/media/${path}`); // e.g. "sfx/right.mp3", "g-banner.mp4"
 const pic = (n, cls = "", alt = "", eager) => `<img class="${cls}" src="${img(n)}" alt="${alt.replace(/"/g, "&quot;")}" ${eager ? "" : `loading="lazy"`} decoding="async">`;
 // Erčo moves (animated WebP made from short clips, tools/nvo-trener/anim.py) unless the device asks for less motion.
 const ANIM = ["hi", "yay", "oops", "trophy", "detective"];
@@ -92,7 +92,7 @@ const FX = (() => {
     } catch (e) {}
   }
   const buzz = (p) => { try { if (on && navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
-  // Real sound effects (public/assets/trener/sfx/, made by tools/nvo-trener/sfx.py), loaded after the first tap.
+  // Real sound effects (public/media/sfx/, made by tools/nvo-trener/sfx.py), loaded after the first tap.
   // Until a file is ready, or if it cannot load, the short synthesized tones play instead.
   const SFX = ["right", "wrong", "tap", "found", "win", "levelup", "badge", "reveal", "stamp"], buf = {};
   let loading = false;
@@ -846,7 +846,7 @@ const ACT = {
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
   sound: () => { const y = scrollY; FX.toggle(); home(); scrollTo(0, y); },
   "go-badges": () => document.getElementById("badges")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-  avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
+  avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); if (ONLINE) Online.soon(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
   start: (b) => startModule(b.dataset.m),
   mock: () => startMock(),
   mist: () => startMistakes(),
@@ -908,10 +908,11 @@ const ACT = {
     S.resets = { ...(S.resets || {}), [m]: Date.now() };
     for (const id of Object.keys(S.mist)) if (!Q[id] || Q[id].m === m) delete S.mist[id];
     save();
+    if (ONLINE) Online.soon();
     home(`mod-${m}`);
   },
   resetAllAsk: () => confirmBox("resetZone", "Всички оценки, дати и грешки ще бъдат изтрити. Това не може да се върне.", "resetAll", "Да, изтрий всичко"),
-  resetAll: () => { const name = S.name; S = blank(); S.name = name; S.resetAt = Date.now(); save(); histAll = false; home(); },
+  resetAll: () => { const name = S.name; S = blank(); S.name = name; S.resetAt = Date.now(); save(); if (ONLINE) Online.soon(); histAll = false; home(); },
 };
 function restart() {
   if (!sess) return home();
@@ -928,7 +929,7 @@ app.addEventListener("click", (e) => {
   else if (ONLINE) Online.act(b, e);
 });
 app.addEventListener("input", (e) => {
-  if (e.target.id === "pupil") { S.name = e.target.value.slice(0, 40); save(); }
+  if (e.target.id === "pupil") { S.name = e.target.value.slice(0, 40); save(); if (ONLINE) Online.soon(); }
 });
 document.addEventListener("keydown", (e) => {
   if (!sess || e.target.closest("input,select,textarea")) return;
@@ -1149,12 +1150,20 @@ const Online = (() => {
     if (code) ls.set(K_DIRTY + code, "1");
     schedule();
   }
+  // At most one save in 90 seconds while the child works (every save is a paid request on the server);
+  // the end of a test, a solved dossier and leaving or hiding the page save at once.
   function schedule() {
+    if (timer) return;
+    timer = setTimeout(() => { timer = 0; syncNow(); }, o.offline ? 30000 : 90000);
+  }
+  // A few seconds, for rare changes that should reach the other devices quickly (the name, the avatar, a reset).
+  function soon() {
     clearTimeout(timer);
-    timer = setTimeout(() => syncNow(), o.offline ? 30000 : 4000);
+    timer = setTimeout(() => { timer = 0; syncNow(); }, 2500);
   }
   async function syncNow(keepalive) {
     clearTimeout(timer);
+    timer = 0;
     if (!code || !device || busy || !ls.get(K_DIRTY + code)) return;
     busy = true;
     const sentAt = S.at;
@@ -1240,6 +1249,7 @@ const Online = (() => {
   return Object.assign(o, {
     boot, changed, accessSection,
     syncNow: () => syncNow(),
+    soon: () => soon(),
     act: (b, e) => { const f = ACTS[b.dataset.act]; if (f) f(b, e); },
   });
 })();
@@ -1612,6 +1622,7 @@ const Game = (() => {
       if (ok) s.done = Date.now();
       else s.t3c = true;
       save();
+      if (ok && ONLINE) Online.syncNow();
       if (ok && id === "final") FX.win(true);
       else if (ok) { FX.stamp(); setTimeout(() => FX.reveal(), 380); }
       else FX.wrong();
@@ -1672,7 +1683,7 @@ const Game = (() => {
       rerender();
     },
     gameResetAsk: () => confirmBox("gameZone", "Да изтрия ли напредъка в играта? Оценките в бележника остават.", "gameReset", "Започни отначало"),
-    gameReset: () => { S.dos = {}; save(); home(); },
+    gameReset: () => { S.dos = {}; save(); if (ONLINE) Online.soon(); home(); },
   };
   app.addEventListener("change", (e) => {
     const el = e.target.closest("[data-act-change='gameSel']");

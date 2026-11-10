@@ -1,11 +1,11 @@
-"""Illustrations for the trainer: generated images (PNG with a transparent background) -> small WebP files in public/assets/trener/.
+"""Illustrations for the trainer: generated images (PNG with a transparent background) -> small WebP files in public/media/.
 Usage: python3 -I tools/nvo-trener/art.py <name>=<png path or https URL> [...] [--size 512]
 Each image is cut to its visible part (plus a small margin), scaled so the longer side is --size px and saved as <name>.webp."""
 import io, os, sys, urllib.request
 from PIL import Image
 
 here = os.path.dirname(os.path.abspath(__file__))
-out_dir = os.path.join(here, "..", "..", "public", "assets", "trener")
+out_dir = os.path.join(here, "..", "..", "public", "media")
 os.makedirs(out_dir, exist_ok=True)
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 size = 512

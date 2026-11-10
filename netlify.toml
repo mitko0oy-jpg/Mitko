@@ -20,6 +20,13 @@
   [headers.values]
     Cache-Control = "public, max-age=3600"
 
+# Pictures, animations, sounds and the video of the trainer: kept by the browser for 30 days
+# (a changed file gets a new name), so a child's daily visit does not ask for them again.
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
 [[headers]]
   for = "/fonts/*"
   [headers.values]

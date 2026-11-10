@@ -28,17 +28,18 @@ dos_file = os.path.join(os.path.dirname(os.path.abspath(bank_dir)), "dossiers.js
 if os.path.exists(dos_file):
     bank["dossiers"] = json.load(open(dos_file, encoding="utf8"))
 assets = os.path.join(here, "..", "..", "public", "assets")
+media = os.path.join(here, "..", "..", "public", "media")
 css = open(os.path.join(assets, "trener.css"), encoding="utf8").read()
 app_js = open(os.path.join(assets, "trener.js"), encoding="utf8").read()
 html = open(os.path.join(here, "app.html"), encoding="utf8").read()
 logo = base64.b64encode(open(os.path.join(assets, "logo.png"), "rb").read()).decode()
-# The illustrations (public/assets/trener/*.webp) go inside the file, so it works without the site.
+# The illustrations (public/media/*.webp) go inside the file, so it works without the site.
 imgs = {os.path.basename(f)[:-5]: "data:image/webp;base64," + base64.b64encode(open(f, "rb").read()).decode()
-        for f in sorted(glob.glob(os.path.join(assets, "trener", "*.webp")))}
+        for f in sorted(glob.glob(os.path.join(media, "*.webp")))}
 # Sounds and the short video, under their path ("sfx/right.mp3", "g-banner.mp4").
-for f in sorted(glob.glob(os.path.join(assets, "trener", "sfx", "*.mp3"))):
+for f in sorted(glob.glob(os.path.join(media, "sfx", "*.mp3"))):
     imgs["sfx/" + os.path.basename(f)] = "data:audio/mpeg;base64," + base64.b64encode(open(f, "rb").read()).decode()
-for f in sorted(glob.glob(os.path.join(assets, "trener", "*.mp4"))):
+for f in sorted(glob.glob(os.path.join(media, "*.mp4"))):
     imgs[os.path.basename(f)] = "data:video/mp4;base64," + base64.b64encode(open(f, "rb").read()).decode()
 html = (html.replace("/*__CSS__*/", css)
             .replace("/*__BANK__*/null", js(bank))

@@ -1,6 +1,6 @@
 /* НВО тренажор (/t/ and the standalone file built by tools/nvo-trener/build.py). */
 /* Look: a game for 11–14-year-olds that does not look babyish – deep violet "night" hero, one saturated colour per part of the exam,
-   3D illustrations (public/assets/trener/), chunky buttons you can press, stars and medals for grades. Light and dark ("Нощна смяна"). */
+   3D illustrations (public/media/), chunky buttons you can press, stars and medals for grades. Light and dark ("Нощна смяна"). */
 :root{
   --page:#F4F1FF; --paper:#FFFFFF; --edge:#E7E1FA; --line:#E1DBF5; --band:rgba(108,75,255,.07);
   --ink:#1C1440; --text:#2A2350; --muted:#6B6592;

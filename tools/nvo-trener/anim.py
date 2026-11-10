@@ -1,11 +1,11 @@
 """Short mascot clips on a green screen -> small animated WebP files with a transparent background (like GIFs, but sharp).
 Usage: python3 -I tools/nvo-trener/anim.py <name>=<mp4 path or https URL> [...] [--size 320] [--fps 14]
-Writes public/assets/trener/<name>.webp. Needs ffmpeg and Pillow."""
+Writes public/media/<name>.webp. Needs ffmpeg and Pillow."""
 import glob, os, subprocess, sys, tempfile, urllib.request
 from PIL import Image
 
 here = os.path.dirname(os.path.abspath(__file__))
-out_dir = os.path.join(here, "..", "..", "public", "assets", "trener")
+out_dir = os.path.join(here, "..", "..", "public", "media")
 args = [a for a in sys.argv[1:] if "=" in a]
 opt = lambda k, d: int(sys.argv[sys.argv.index(k) + 1]) if k in sys.argv else d
 size, fps = opt("--size", 260), opt("--fps", 10)

@@ -1,13 +1,13 @@
 """Sound effects for the trainer, made in code (no samples, no licences): bells, marimba, pops, sparkles, a whoosh and a stamp.
 Usage: python3 -I tools/nvo-trener/sfx.py [fanfare.mp3]
-Writes public/assets/trener/sfx/<name>.mp3 (mono, 64 kbit/s). The optional fanfare (generated elsewhere) is cleaned up and saved as fanfare.mp3.
+Writes public/media/sfx/<name>.mp3 (mono, 64 kbit/s). The optional fanfare (generated elsewhere) is cleaned up and saved as fanfare.mp3.
 Needs numpy and ffmpeg."""
 import os, subprocess, sys, tempfile, wave
 import numpy as np
 
 SR = 44100
 here = os.path.dirname(os.path.abspath(__file__))
-out_dir = os.path.join(here, "..", "..", "public", "assets", "trener", "sfx")
+out_dir = os.path.join(here, "..", "..", "public", "media", "sfx")
 os.makedirs(out_dir, exist_ok=True)
 rng = np.random.default_rng(7)
 
