@@ -27,7 +27,7 @@ for path in sys.argv[1:]:
         if t == "mc":
             o = q.get("o")
             if not (isinstance(o, list) and len(o) == 4 and all(isinstance(x, str) and x.strip() for x in o)): E("mc needs 4 options")
-            elif len(set(x.strip().lower() for x in o)) != 4: E("duplicate options")
+            elif len(set(x.strip() for x in o)) != 4: E("duplicate options")  # case matters: spelling tasks differ only in capitals
             if not isinstance(q.get("a"), int) or not 0 <= q["a"] <= 3: E("mc a must be 0..3")
             else: apos[q["a"]] += 1
             if o and any(re.match(r"^\s*[АБВГабвг][).]\s", x) for x in o): E("option starts with a letter")

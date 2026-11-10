@@ -14,5 +14,6 @@ python3 -I tools/nvo-trener/build.py                                     # -> pr
 - `nvo-trener.html` е за публикуване като Artifact (без `<html>`/`<head>` – добавят се при публикуване).
 - `nvo-trener-file.html` е пълен документ за изпращане на клиенти.
 - `bank-all.json` (също в `private/`) е за сайта: `node scripts/admin.mjs trener-bank private/nvo-trener/bank-all.json`.
+- `cards.py` взима картите от платформата (90 литературни, езиковите за 5.–7. клас) от `node scripts/admin.mjs export > private/content/export.json` и ги прави на модули „Карти за преговор“ в `private/nvo-trener/bank/cards.json` (извън прогнозата за НВО и пробната матура; махат се бъдеще предварително време и „преизказно наклонение“ като извън 5.–7. клас).
 - `print.mjs` прави PDF-и за печат за кодове от живия сайт (през `/kodove/` на локален сървър): `node tools/nvo-trener/print.mjs pdf out.pdf КОД1,КОД2 --each` (по един PDF на клиент), `sheet` (A4 стикери) или `single`.
 - Ако папката със задачите липсва (нов контейнер), `extract.py` ги вади обратно от готов файл.

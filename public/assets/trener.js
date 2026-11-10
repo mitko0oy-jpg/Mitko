@@ -11,6 +11,10 @@ const AREAS = {
   lang: { t: "Български език", nvo: "задачи 8–17 на НВО", w: 10, c: "var(--lang)" },
   lit:  { t: "Литература", nvo: "задачи 18–25 на НВО", w: 8, c: "var(--lit)" },
 };
+// Practice decks (the literature and language cards): graded and in the gradebook, but outside the NVO forecast and the mock exam.
+const EXTRA = { cards: { t: "Карти за преговор", nvo: "не влизат в прогнозата за НВО", c: "var(--gold)" } };
+const ALL_AREAS = { ...AREAS, ...EXTRA };
+const isNvo = (m) => !!AREAS[m.area];
 let BANK = null, MODULES = [], MOD = {}, Q = {};
 function setBank(b) {
   BANK = b;
@@ -91,7 +95,7 @@ function forecast() {
 }
 // The modules that give the most NVO points for the work: weight of the module on the exam × share still to win.
 function nextSteps() {
-  return MODULES.map((m) => {
+  return MODULES.filter(isNvo).map((m) => {
     const h = lastOf(m.id);
     const per = AREAS[m.area].w / MODULES.filter((x) => x.area === m.area).length;
     const p = h ? pct(h.p, h.n) : null;
@@ -105,13 +109,15 @@ let sess = null, timer = null, histAll = false;
 function home(scrollTo) {
   stopTimer();
   sess = null;
+  const nvoCount = BANK.questions.filter((q) => MOD[q.m] && isNvo(MOD[q.m])).length;
+  const cardCount = BANK.questions.length - nvoCount;
   const f = forecast();
   const mist = mistIds().length;
   let h = `<header class="hd">
       <div class="brand"><img src="${LOGO}" alt="Еду БЕЛ" width="60" height="60"><span class="eyebrow">НВО по БЕЛ · 7. клас</span></div>
       <h1>НВО тренажор <em>по БЕЛ</em></h1>
-      <p class="lead">${BANK.questions.length} задачи в ${MODULES.length} модула, подредени като трите части на националното външно оценяване. След всеки модул получаваш оценка, а тя се записва в бележника с датата.</p>
-      <div class="facts"><span>${BANK.questions.length} задачи</span><span>${MODULES.length} модула</span><span>Оценки от 2 до 6</span><span>Пробна матура с таймер</span></div>
+      <p class="lead">${nvoCount} задачи в ${MODULES.filter(isNvo).length} модула, подредени като трите части на националното външно оценяване${cardCount ? `, и ${cardCount} карти за преговор` : ""}. След всеки модул получаваш оценка, а тя се записва в бележника с датата.</p>
+      <div class="facts"><span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}<span>Оценки от 2 до 6</span><span>Пробна матура с таймер</span></div>
     </header>`;
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
@@ -184,15 +190,16 @@ function spark(m) {
 
 function modulesSection() {
   let h = `<section class="parts" id="modules" style="display:grid;gap:26px"><h2>Модули</h2>`;
-  for (const k in AREAS) {
-    h += `<div class="part"><div class="part-hd"><h3>${AREAS[k].t}</h3><span>като ${AREAS[k].nvo}</span></div><div class="mods">`;
+  for (const k in ALL_AREAS) {
+    if (!MODULES.some((x) => x.area === k)) continue;
+    h += `<div class="part"><div class="part-hd"><h3>${ALL_AREAS[k].t}</h3><span>${AREAS[k] ? "като " : ""}${ALL_AREAS[k].nvo}</span></div><div class="mods">`;
     for (const m of MODULES.filter((x) => x.area === k)) {
       const n = ofMod(m.id).length, last = lastOf(m.id), best = bestOf(m.id), cnt = attemptsOf(m.id).length;
       const g = last ? gradeOf(pct(last.p, last.n)) : null;
       h += `<article class="mod" id="mod-${m.id}">
-        <span class="no" style="--c:${AREAS[k].c}">${m.n}</span>
+        <span class="no" style="--c:${ALL_AREAS[k].c}">${m.n}</span>
         <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc)}</p>
-          <div class="meta"><span>${n} задачи</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span><span>${cnt} ${pl(cnt, "опит", "опита")}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
+          <div class="meta"><span>${n} ${k === "cards" ? "карти" : "задачи"}</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span><span>${cnt} ${pl(cnt, "опит", "опита")}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
           ${cnt ? `<div><button class="link" data-act="resetModAsk" data-m="${m.id}">Нулирай модула</button></div>` : ""}</div>
         <div class="side"><span class="gbox"><span class="g ${g ? "" : "none"}" aria-label="${g ? `Последна оценка: ${GW[g]} ${g}` : "Няма оценка"}">${g ?? "–"}</span><small>${g ? "оценка" : "без оценка"}</small></span>
           <button class="btn sm ${last ? "line" : ""}" data-act="start" data-m="${m.id}">${last ? "Реши пак" : "Започни"}</button></div>
