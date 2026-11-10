@@ -46,7 +46,7 @@
 
 ## Новият сайт edubel.bg (ConvertBuilder)
 
-- Отделен сайт от edubel.site (старият остава с данните и статистиката си). Страници: магазин в стил онлайн магазин `public/magazin/` (начало, `literatura/`, `balgarski-ezik/`, `komplekt/`), отделни лендинги `public/dosieta/` („Литературни досиета“ – книга-игра) и `public/prilozhenie/` (приложението).
+- Отделен сайт от edubel.site (старият остава с данните и статистиката си). Страници: магазин в стил онлайн магазин `public/magazin/` (начало, `literatura/`, `balgarski-ezik/`, `komplekt/`), отделни лендинги `public/dosieta/` („Литературни досиета“ – книга-игра), `public/trenazhor/` (НВО тренажорът на `app.edubel.site/t/`, планове 1/6/12 месеца – `trenazhor-config.js`, вид като тренажора: Unbounded, лилаво, Ерчо) и `public/prilozhenie/` (приложението).
 - Магазинът: `store.js` (меню с количка, количка до 2 тестета → поръчката на този комплект, страница на продукт с галерия и избор на комплект, долен край) + `shop.js` за ефектите; стилове `store.css`. Адресите, поръчките (checkout) и доставката – само в `public/assets/store-config.js`; цените – в `shop-catalog.js`. Досиетата: `dosieta-config.js` (комплекти, подвързия спирала/телче → своя поръчка), `dosieta.css/js`. Приложението: `prilozhenie.css/js` (адресът на приложението е в настройките на блока).
 - `node scripts/build-store.mjs` прави блоковете в `landing/edubel-bg/` (медията първо в GitHub). Ъпселите и „Благодарим“ са копия на тези за edubel.site с адрес edubel.bg. Упътване: `landing/edubel-bg/README.md`; заданието за Claude в Chrome (той работи в ConvertBuilder вместо Митко): `landing/edubel-bg/ZADANIE-CHROME.md`.
 - Мострите от досиетата (корица и 6 страници) са в `public/karti-nvo/media/dosieta/`; PDF файловете на книгата не влизат в git.

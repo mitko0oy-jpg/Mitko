@@ -365,3 +365,12 @@ dialog.cart.is-empty .cart-foot{display:none}
 .mdos .mgo{color:#E6C474}
 @media (max-width:980px){.more2{grid-template-columns:1fr}}
 @media (max-width:520px){.mcard{grid-template-columns:1fr}.mvis{min-height:180px}}
+.more2{grid-template-columns:repeat(3,minmax(0,1fr))}
+.more2 .mcard{grid-template-columns:1fr;align-content:start}
+.more2 .mvis{min-height:200px}
+.mtrn{background:linear-gradient(160deg,#E9E2FF,#F7EEFF)}
+.mtrn .mvis img{width:min(170px,70%);filter:drop-shadow(0 24px 24px rgba(76,47,214,.35));transition:transform .8s var(--spring)}
+.mtrn:hover .mvis img{transform:rotate(-6deg) scale(1.05)}
+.mtrn .mk{color:#6C4BFF}
+@media (max-width:980px){.more2{grid-template-columns:1fr}.more2 .mcard{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}}
+@media (max-width:520px){.more2 .mcard{grid-template-columns:1fr}}

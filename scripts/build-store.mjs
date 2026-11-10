@@ -12,6 +12,7 @@ import { build } from "esbuild";
 import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM } from "../public/assets/store-config.js";
 import { PACKAGES, REGULAR } from "../public/assets/shop-catalog.js";
 import { DOS } from "../public/assets/dosieta-config.js";
+import { TRN } from "../public/assets/trenazhor-config.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const git = (cmd) => execSync(`git ${cmd}`, { cwd: root }).toString().trim();
@@ -31,6 +32,7 @@ const PAGES = [
   { src: "magazin/komplekt", out: "komplekt.html", name: "Комплект: литература + език", url: LINKS.duo },
   { src: "dosieta", out: "literaturni-dosieta.html", name: "Литературни досиета", url: LINKS.dosieta, kind: "dos" },
   { src: "prilozhenie", out: "prilozhenie.html", name: "Приложението Еду БЕЛ", url: LINKS.app, kind: "app" },
+  { src: "trenazhor", out: "nvo-trenazhor.html", name: "НВО тренажор по БЕЛ", url: LINKS.trenazhor, kind: "trn" },
 ];
 // the address of the app (registration, sign-in, the programme)
 const APP_URL = "https://edubel-app.netlify.app/";
@@ -94,6 +96,7 @@ async function styles(sheets) {
     .replace(/#ebl::after\{content:"";position:fixed;inset:-50%;/, '#ebl::after{content:"";position:absolute;inset:0;')
     .replace(/scroll-padding-top:calc\(var\(--nav-h\) \+ 12px\)/, "scroll-padding-top:120px")
     .replace(/(^|\})html\{([^}]*)\}/, (m, before, rules) => `${before}html{${rules.replace(/;?overflow-x:clip/, "")}}`);
+  css = css.replace(/url\(\/fonts\//g, `url(${CDN}/fonts/`).replace(/url\(\/karti-nvo\/media\//g, `url(${CDN}/karti-nvo/media/`);
   const names = [...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]);
   const re = new RegExp(`\\b(${names.join("|")})\\b`, "g");
   css = css.replace(/@keyframes\s+([\w-]+)/g, "@keyframes eb-$1").replace(/(animation(?:-name)?\s*:)([^;}]*)/g, (m, p, v) => p + v.replace(re, "eb-$1"));
@@ -167,7 +170,22 @@ window.EB_LANDING = {
   }
 };
 </script>`;
-const settings = (page) => page.kind === "dos" ? dosSettings(page) : page.kind === "app" ? appSettings(page) : `<script>
+const trnSettings = (page) => `<script>
+/* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
+window.EB_LANDING = {
+  trn: {
+    // Цените на плановете в евро – същите като в продуктите в ConvertBuilder.
+    prices: ${JSON.stringify(Object.fromEntries(Object.entries(TRN.plans).map(([k, p]) => [k, euroVal(p.price)]))).replace(/,/g, ", ")},
+    // Страницата с поръчката в ConvertBuilder за всеки план.
+    checkout: ${JSON.stringify(TRN.checkout, null, 1).replace(/\n\s*/g, " ")},
+    // Тренажорът (отваря се с личния код).
+    app: "${TRN.app}",
+    // Магазинът с картите.
+    store: "${LINKS.home}"
+  }
+};
+</script>`;
+const settings = (page) => page.kind === "trn" ? trnSettings(page) : page.kind === "dos" ? dosSettings(page) : page.kind === "app" ? appSettings(page) : `<script>
 /* ===== НАСТРОЙКИ – „${page.name}“. Еднакви са във всички страници на магазина. ===== */
 window.EB_LANDING = {
   // Цени в евро без доставката. Трябва да са същите като в продуктите в ConvertBuilder.
