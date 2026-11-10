@@ -374,3 +374,4 @@ dialog.cart.is-empty .cart-foot{display:none}
 .mtrn .mk{color:#6C4BFF}
 @media (max-width:980px){.more2{grid-template-columns:1fr}.more2 .mcard{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}}
 @media (max-width:520px){.more2 .mcard{grid-template-columns:1fr}}
+img.logo{width:auto;max-width:none}

@@ -33,6 +33,7 @@ const PAGES = [
   { src: "dosieta", out: "literaturni-dosieta.html", name: "Литературни досиета", url: LINKS.dosieta, kind: "dos" },
   { src: "prilozhenie", out: "prilozhenie.html", name: "Приложението Еду БЕЛ", url: LINKS.app, kind: "app" },
   { src: "trenazhor", out: "nvo-trenazhor.html", name: "НВО тренажор по БЕЛ", url: LINKS.trenazhor, kind: "trn" },
+  { src: "trenazhor/blagodarim", out: "trenazhor-blagodarim.html", name: "Благодарим – поръчка на тренажора", url: "стъпката след поръчката на тренажора", kind: "trn" },
 ];
 // the address of the app (registration, sign-in, the programme)
 const APP_URL = "https://edubel-app.netlify.app/";
