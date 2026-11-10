@@ -44,6 +44,13 @@
 - Медия (снимки и кратки видеа, генерирани с Higgsfield, и мостри на картите) е в `public/karti-nvo/media/`. Мострите са малко на брой – пълните тестета не влизат в git.
 - Митко пуска лендингите в **ConvertBuilder** (edubel.site: `/karti` – двете тестета, `/literatura`, `/karti-balgarski-ezik`; офертите за езика: `/checkout-bg` – 1 тесте, `/checkout-bg2` – 2 тестета, `/checkout-bel` – литература + език; за литературата: `/karti-literatura`, `/karti-literatura2`, `/karti-balgarski-literatura`; за двете тестета: `/karti-bel` – по настройката `order` на блока; след поръчка на картите по език – ъпсел стъпка с `/karti-nvo/oferta-literatura/` ; благодарността е обща за всяка поръчка – `/karti-nvo/blagodarim/`), без нашия сървър и без регистрация; поръчките минават през формата на ConvertBuilder. `node scripts/build-landing.mjs` прави от `public/karti-nvo/` самостоятелни блокове в `landing/` (стилове само за блока, `window.EB_LANDING` с настройки, медия от jsDelivr на фиксиран commit). След промяна в страниците – commit на медията, после build. Упътване: `landing/README.md`.
 
+## Новият сайт edubel.bg (ConvertBuilder)
+
+- Отделен сайт от edubel.site (старият остава с данните и статистиката си). Страници: магазин в стил онлайн магазин `public/magazin/` (начало, `literatura/`, `balgarski-ezik/`, `komplekt/`), отделни лендинги `public/dosieta/` („Литературни досиета“ – книга-игра) и `public/prilozhenie/` (приложението).
+- Магазинът: `store.js` (меню с количка, количка до 2 тестета → поръчката на този комплект, страница на продукт с галерия и избор на комплект, долен край) + `shop.js` за ефектите; стилове `store.css`. Адресите, поръчките (checkout) и доставката – само в `public/assets/store-config.js`; цените – в `shop-catalog.js`. Досиетата: `dosieta-config.js` (комплекти, подвързия спирала/телче → своя поръчка), `dosieta.css/js`. Приложението: `prilozhenie.css/js` (адресът на приложението е в настройките на блока).
+- `node scripts/build-store.mjs` прави блоковете в `landing/edubel-bg/` (медията първо в GitHub). Ъпселите и „Благодарим“ са копия на тези за edubel.site с адрес edubel.bg. Упътване: `landing/edubel-bg/README.md`; заданието за Claude в Chrome (той работи в ConvertBuilder вместо Митко): `landing/edubel-bg/ZADANIE-CHROME.md`.
+- Мострите от досиетата (корица и 6 страници) са в `public/karti-nvo/media/dosieta/`; PDF файловете на книгата не влизат в git.
+
 ## Безплатно и платено
 
 - Всеки модул има `free_count` или `free_ratio` (по подразбиране 30%). Сървърът връща само отключените елементи; заключените не стигат до браузъра.

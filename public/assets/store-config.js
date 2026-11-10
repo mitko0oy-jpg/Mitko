@@ -8,13 +8,16 @@ export const LINKS = {
   lit: "/literatura",
   ezik: "/balgarski-ezik",
   duo: "/komplekt",
+  // the separate landings
+  dosieta: "/literaturni-dosieta",
+  app: "/prilozhenie",
   // legal pages: ConvertBuilder pages with the same text as on edubel.site
   terms: "/obshti-usloviya",
   privacy: "/poveritelnost",
   cookies: "/cookies",
   delivery: "/dostavka-i-vrashtane",
 };
-export const LOCAL = { home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/" };
+export const LOCAL = { home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/", dosieta: "/dosieta/", app: "/prilozhenie/" };
 
 // The checkout page in ConvertBuilder for each package. The cart holds at most two decks,
 // so every cart is one of these five packages.

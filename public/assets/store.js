@@ -148,7 +148,7 @@ host.insertAdjacentHTML(
         <p>Образователни карти по български език и литература за 5., 6. и 7. клас. Създадени от преподавател по БЕЛ и оценител на НВО.</p>
         <ul class="sf-chips"><li>Еконт</li><li>Спиди</li><li>Наложен платеж</li></ul>
       </div>
-      <div><h4>Магазин</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li></ul></div>
+      <div><h4>Магазин</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li><li><a href="${href("dosieta")}">Литературни досиета</a></li><li><a href="${href("app")}">Приложението Еду БЕЛ</a></li></ul></div>
       <div><h4>Помощ</h4><ul><li><a href="${href("delivery")}">Доставка и връщане</a></li><li><a href="${href("terms")}">Общи условия</a></li><li><a href="${href("privacy")}">Поверителност</a></li><li><a href="${href("cookies")}">Бисквитки</a></li></ul></div>
       <div><h4>Контакт</h4><ul><li><a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></li><li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li></ul></div>
     </div>

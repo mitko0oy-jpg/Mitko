@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM } from "../public/assets/store-config.js";
 import { PACKAGES, REGULAR } from "../public/assets/shop-catalog.js";
+import { DOS } from "../public/assets/dosieta-config.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const git = (cmd) => execSync(`git ${cmd}`, { cwd: root }).toString().trim();
@@ -28,7 +29,11 @@ const PAGES = [
   { src: "magazin/literatura", out: "literatura.html", name: "Карти по литература", url: LINKS.lit },
   { src: "magazin/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език", url: LINKS.ezik },
   { src: "magazin/komplekt", out: "komplekt.html", name: "Комплект: литература + език", url: LINKS.duo },
+  { src: "dosieta", out: "literaturni-dosieta.html", name: "Литературни досиета", url: LINKS.dosieta, kind: "dos" },
+  { src: "prilozhenie", out: "prilozhenie.html", name: "Приложението Еду БЕЛ", url: LINKS.app, kind: "app" },
 ];
+// the address of the app (registration, sign-in, the programme)
+const APP_URL = "https://edubel-app.netlify.app/";
 // local page address → the address on the live site
 const PATHS = Object.fromEntries(Object.entries(LOCAL).map(([k, v]) => [v, LINKS[k]]));
 const SCOPE = ":is(#ebl,#ebf)";
@@ -122,11 +127,7 @@ function markup(html) {
   const deck = html.match(/<body data-deck="(\w+)">/)[1];
   let body = html.slice(html.indexOf(">", html.indexOf("<body")) + 1, html.indexOf("</body>"));
   body = body.replace(/"\/karti-nvo\/media\//g, `"${CDN}/karti-nvo/media/`).replace(/"\/assets\/logo\.png"/g, `"${CDN}/assets/logo.png"`);
-  body = body.replace(/href="(\/magazin\/[^"]*)"/g, (m, p) => {
-    const [page, hash = ""] = p.split("#");
-    if (!PATHS[page]) throw new Error(`Unknown store page: ${p}`);
-    return `href="${PATHS[page]}${hash ? "#" + hash : ""}"`;
-  });
+  body = body.replace(/href="(\/[^"#]*)(#[^"]*)?"/g, (m, page, hash = "") => (PATHS[page] ? `href="${PATHS[page]}${hash}"` : m));
   const ownPaths = new Set(Object.values(LINKS));
   for (const m of body.matchAll(/(src|href|poster)="(\/[^"]*)"/g)) {
     if (m[2].startsWith("//")) continue;
@@ -136,7 +137,37 @@ function markup(html) {
 }
 
 const euroVal = (c) => Number((c / 100).toFixed(2));
-const settings = (page) => `<script>
+const dosSettings = (page) => `<script>
+/* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
+window.EB_LANDING = {
+  dos: {
+    // Цени в евро без доставката – същите като в продуктите в ConvertBuilder.
+    prices: ${JSON.stringify(Object.fromEntries(Object.entries(DOS.packages).map(([k, p]) => [k, euroVal(p.price)]))).replace(/,/g, ", ")},
+    // Зачеркнатата цена на комплекта с картите (0 = без зачеркната цена).
+    was: ${JSON.stringify({ "dos-lit": euroVal(DOS.packages["dos-lit"].was) })},
+    // Цената на корицата; показва се зачеркната, ако книгата е по-евтина от нея.
+    regular: ${euroVal(DOS.regular)},
+    // Страницата с поръчката в ConvertBuilder за всеки комплект и подвързия.
+    checkout: ${JSON.stringify(DOS.checkout, null, 1).replace(/\n\s*/g, " ")},
+    // Доставка с една книга (от … €).
+    delivery: ${euroVal(DOS.delivery)},
+    // Магазинът с картите.
+    store: "${LINKS.home}"
+  }
+};
+</script>`;
+const appSettings = (page) => `<script>
+/* ===== НАСТРОЙКИ – „${page.name}“. Можеш да ги променяш. ===== */
+window.EB_LANDING = {
+  app: {
+    // Адресът на приложението (регистрация, вход, програмата).
+    url: "${APP_URL}",
+    // Магазинът с картите.
+    store: "${LINKS.home}"
+  }
+};
+</script>`;
+const settings = (page) => page.kind === "dos" ? dosSettings(page) : page.kind === "app" ? appSettings(page) : `<script>
 /* ===== НАСТРОЙКИ – „${page.name}“. Еднакви са във всички страници на магазина. ===== */
 window.EB_LANDING = {
   // Цени в евро без доставката. Трябва да са същите като в продуктите в ConvertBuilder.

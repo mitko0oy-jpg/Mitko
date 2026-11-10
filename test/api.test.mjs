@@ -331,7 +331,7 @@ test("shop: two decks cost the same and ship free, one deck pays delivery", asyn
 test("shop pages show the catalog prices", async () => {
   const { PACKAGES, UPSELL, euro } = await import("../public/assets/shop-catalog.js");
   const of = (key) => (key === "upsell" ? UPSELL : PACKAGES[key]);
-  for (const page of ["karti-nvo", "karti-nvo/literatura", "karti-nvo/balgarski-ezik", "karti-nvo/oferta-literatura"]) {
+  for (const page of ["karti-nvo", "karti-nvo/literatura", "karti-nvo/balgarski-ezik", "karti-nvo/oferta-literatura", "magazin", "magazin/literatura", "magazin/balgarski-ezik", "magazin/komplekt"]) {
     const html = await readFile(new URL(`../public/${page}/index.html`, import.meta.url), "utf8");
     const shown = (attr) => [...html.matchAll(new RegExp(`data-${attr}="([^"]+)">([^<]*)<`, "g"))].map(([, key, text]) => [key, text.replace(/&nbsp;/g, " ")]);
     const prices = shown("price");

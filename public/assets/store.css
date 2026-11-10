@@ -341,3 +341,27 @@ dialog.cart.is-empty .cart-foot{display:none}
   .cart-note{margin-top:8px;font-size:12.5px}
   .gal-main{aspect-ratio:5/4.4}
 }
+
+/* ---------- home: the book-game and the app ---------- */
+.more2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2vw,24px)}
+.mcard{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:22px;align-items:center;padding:clamp(18px,2.4vw,28px);border-radius:28px;text-decoration:none;color:inherit;overflow:hidden;transition:transform .6s var(--spring),box-shadow .5s var(--ease)}
+.mcard:hover{transform:translateY(-5px);box-shadow:0 40px 70px -40px rgba(20,20,40,.55)}
+.mdos{background:radial-gradient(90% 120% at 20% 20%,#1D4A4C,#0C2124);color:#F3ECDD}
+.mapp{background:linear-gradient(150deg,#ECEAFD,#FDF0E6)}
+.mvis{position:relative;display:grid;place-items:center;min-height:220px}
+.mdos .mvis img{width:min(180px,90%);border-radius:3px 7px 7px 3px;box-shadow:0 30px 50px -20px rgba(0,0,0,.8);rotate:-4deg;transition:rotate .8s var(--spring)}
+.mdos:hover .mvis img{rotate:0deg}
+.mapp .mvis{align-content:center;gap:8px;justify-items:start}
+.mchip{padding:8px 12px;border-radius:12px;background:#fff;box-shadow:0 10px 20px -12px rgba(40,30,120,.4);font-size:13px;font-weight:700;color:#2B2482}
+.mchip:nth-child(2){margin-left:18px;background:#5146D9;color:#fff}
+.mchip:nth-child(3){margin-left:6px}
+.mbig{position:absolute;right:4%;bottom:0;font:italic 600 64px/1 var(--serif);color:#5146D9;opacity:.9}
+.mtxt{display:block}
+.mk{display:inline-block;margin-bottom:10px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.mdos .mk{color:#E6C474}
+.mtxt b{display:block;font-size:clamp(22px,2.2vw,28px);letter-spacing:-.025em;line-height:1.1}
+.mp{display:block;margin-top:10px;font-size:15px;opacity:.82}
+.mgo{display:inline-block;margin-top:16px;font-weight:800}
+.mdos .mgo{color:#E6C474}
+@media (max-width:980px){.more2{grid-template-columns:1fr}}
+@media (max-width:520px){.mcard{grid-template-columns:1fr}.mvis{min-height:180px}}
