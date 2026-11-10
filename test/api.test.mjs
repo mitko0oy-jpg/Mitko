@@ -355,4 +355,18 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   assert.equal(r.codes.length, 3);
   r = await owner(`trener/admin/batch?batch=stickers-${run}&unused=1`);
   assert.equal(r.codes.length, 3);
+
+  // Time-limited access: 12 months from the first opening; a fixed end date in the past is expired at once.
+  r = await owner("trener/admin/codes", { count: 1, batch: `year-${run}`, months: 12 });
+  const year = r.codes[0];
+  r = await t("trener/open", { code: year, device: dev(7) });
+  const days = (new Date(r.expiresAt) - Date.now()) / 86_400_000;
+  assert.ok(days > 360 && days < 370, "expires about a year after the first opening");
+  r = await owner("trener/admin/codes", { count: 1, batch: `old-${run}`, validUntil: "2026-01-31" });
+  const old = r.codes[0];
+  r = await t("trener/open", { code: old, device: dev(8) });
+  assert.equal(r.error, "expired");
+  r = await owner("trener/admin/key", { code: old, action: "extend", months: 12 });
+  r = await t("trener/open", { code: old, device: dev(8) });
+  assert.ok(r.expiresAt, "opens after the owner extends a code that was never opened");
 });

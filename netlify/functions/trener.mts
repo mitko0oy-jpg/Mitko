@@ -17,6 +17,20 @@ const devicesOf = async (code: string, me?: string) =>
     me: d.device === me,
   }));
 
+const bgDate = (d: string | Date) => new Intl.DateTimeFormat("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "numeric", year: "numeric" }).format(new Date(d));
+
+// Access runs for `months` from the first opening, or until the batch's fixed `valid_until`.
+const START_EXPIRY = `expires_at = COALESCE(expires_at, CASE WHEN valid_until IS NOT NULL THEN valid_until
+  WHEN months IS NOT NULL THEN now() + make_interval(months => months) END)`;
+
+// Validity for a new batch: {months: 12} or {validUntil: "2027-06-30"}; neither means no limit.
+function termOf(b: any) {
+  const months = Number(b.months);
+  if (Number.isInteger(months) && months >= 1 && months <= 60) return { months, validUntil: null };
+  if (typeof b.validUntil === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.validUntil)) return { months: null, validUntil: `${b.validUntil}T23:59:59+03:00` };
+  return { months: null, validUntil: null };
+}
+
 function codeOf(raw: unknown) {
   const code = normalizeCode(str(raw, 40));
   if (code.length < 8) throw bad("code", "Провери кода – той е от 10 букви и цифри.");
@@ -34,6 +48,7 @@ async function findKey(req: Request, ctx: any, code: string, forUpdate?: (text: 
     throw notFound("Няма такъв код. Провери буквите и цифрите.");
   }
   if (key.disabled_at) throw new HttpError(403, "disabled", "Този код е спрян. Свържи се с Еду БЕЛ.");
+  if (key.expires_at && new Date(key.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(key.expires_at)}`);
   return key;
 }
 
@@ -75,8 +90,10 @@ export default handle(async (req, ctx) => {
         state = mergeState(key.state, b.state);
         await t("UPDATE trener_keys SET state = $2 WHERE code = $1", [code, JSON.stringify(state)]);
       }
-      await t("UPDATE trener_keys SET first_used = COALESCE(first_used, now()), last_used = now() WHERE code = $1", [code]);
-      return { full: false, key, state: cleanState(state), isNew };
+      const [dates] = await t(`UPDATE trener_keys SET first_used = COALESCE(first_used, now()), last_used = now(), ${START_EXPIRY} WHERE code = $1 RETURNING expires_at`, [code]);
+      // A batch with a fixed end date can be opened for the first time after that date.
+      if (dates.expires_at && new Date(dates.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(dates.expires_at)}`);
+      return { full: false, key, state: cleanState(state), isNew, expiresAt: dates.expires_at };
     });
     if (res.full) {
       await event("trener_devices_full", { batch: res.key.batch });
@@ -98,6 +115,7 @@ export default handle(async (req, ctx) => {
       code: formatCode(code),
       maxDevices: res.key.max_devices,
       idleDays: DEVICE_IDLE_DAYS,
+      expiresAt: res.expiresAt,
       devices: await devicesOf(code, dev),
       state: res.state,
       bankId: bank.id,
@@ -144,7 +162,8 @@ async function admin(req: Request, parts: string[]) {
       `SELECT batch, count(*)::int AS total,
               count(first_used)::int AS used,
               count(*) FILTER (WHERE last_used > now() - interval '7 days')::int AS active7,
-              count(disabled_at)::int AS disabled, min(created_at) AS created_at
+              count(disabled_at)::int AS disabled, count(*) FILTER (WHERE expires_at < now())::int AS expired,
+              min(created_at) AS created_at, max(months) AS months, max(valid_until) AS valid_until
          FROM trener_keys GROUP BY batch ORDER BY min(created_at) DESC`,
     );
     const full = await one<{ n: number }>(
@@ -160,24 +179,28 @@ async function admin(req: Request, parts: string[]) {
     const b = await body(req);
     const count = Math.max(1, Math.min(500, Number(b.count) || 1));
     const batch = str(b.batch, 60) || `партида-${new Date().toISOString().slice(0, 10)}`;
+    const term = termOf(b);
     const codes: string[] = [];
     while (codes.length < count) {
       const c = newCode();
-      const r = await q("INSERT INTO trener_keys (code, batch, max_devices) VALUES ($1, $2, 3) ON CONFLICT (code) DO NOTHING RETURNING code", [c, batch]);
+      const r = await q(
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until) VALUES ($1, $2, 3, $3, $4) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, term.months, term.validUntil],
+      );
       if (r.length) codes.push(formatCode(c));
     }
     await event("trener_codes_created", { batch, count });
-    return json({ batch, codes });
+    return json({ batch, codes, months: term.months, validUntil: term.validUntil });
   }
 
   // The codes of one batch, to print them again (optionally only the ones nobody has opened yet).
   if (req.method === "GET" && parts[0] === "batch") {
     const sp = new URL(req.url).searchParams;
     const rows = await q<any>(
-      `SELECT code, first_used, disabled_at, note FROM trener_keys WHERE batch = $1 AND ($2 = '' OR first_used IS NULL) ORDER BY created_at, code`,
+      `SELECT code, first_used, disabled_at, note, months, valid_until FROM trener_keys WHERE batch = $1 AND ($2 = '' OR first_used IS NULL) ORDER BY created_at, code`,
       [sp.get("batch") || "", sp.get("unused") === "1" ? "1" : ""],
     );
-    return json({ codes: rows.map((r) => ({ code: formatCode(r.code), used: !!r.first_used, disabled: !!r.disabled_at, note: r.note })) });
+    return json({ codes: rows.map((r) => ({ code: formatCode(r.code), used: !!r.first_used, disabled: !!r.disabled_at, note: r.note, months: r.months, validUntil: r.valid_until })) });
   }
 
   if (req.method === "GET" && parts[0] === "key") {
@@ -196,6 +219,12 @@ async function admin(req: Request, parts: string[]) {
     else if (b.action === "disable") await q("UPDATE trener_keys SET disabled_at = now() WHERE code = $1", [code]);
     else if (b.action === "enable") await q("UPDATE trener_keys SET disabled_at = NULL WHERE code = $1", [code]);
     else if (b.action === "note") await q("UPDATE trener_keys SET note = $2 WHERE code = $1", [code, str(b.note, 300)]);
+    else if (b.action === "extend") {
+      // Opened: push the end date (from today if it already passed). Not opened yet: a longer term from the first opening.
+      const n = Math.max(1, Math.min(36, Number(b.months) || 12));
+      if (key.first_used) await q("UPDATE trener_keys SET expires_at = GREATEST(COALESCE(expires_at, now()), now()) + make_interval(months => $2) WHERE code = $1", [code, n]);
+      else await q("UPDATE trener_keys SET months = COALESCE(months, 0) + $2, valid_until = NULL WHERE code = $1", [code, n]);
+    }
     else throw bad("action", "Непознато действие.");
     const fresh = await one<any>("SELECT * FROM trener_keys WHERE code = $1", [code]);
     return json({ key: keyView(fresh), devices: await devicesOf(code) });
@@ -215,6 +244,10 @@ function keyView(k: any) {
     firstUsed: k.first_used,
     lastUsed: k.last_used,
     disabled: !!k.disabled_at,
+    months: k.months,
+    validUntil: k.valid_until,
+    expiresAt: k.expires_at,
+    expired: !!k.expires_at && new Date(k.expires_at) < new Date(),
     tests: hist.length,
     last: last ? { m: last.m, p: last.p, n: last.n, d: last.d } : null,
   };

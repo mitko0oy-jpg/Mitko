@@ -19,7 +19,7 @@
 | База данни (Netlify Database = Postgres) | миграции в `netlify/database/migrations/` |
 | AI | Claude през Netlify AI Gateway (без отделен ключ); модели в `netlify/lib/ai.mts` |
 
-- Netlify проект: `edubel-app` (site id `55509ac3-c1b8-48a7-b0f6-6bc120e685c9`), отбор `mitko0oy`.
+- Netlify проект: `edubel-app` (site id `55509ac3-c1b8-48a7-b0f6-6bc120e685c9`), отбор `mitko0oy`. Публичен адрес: `app.edubel.site` (CNAME `app` → `edubel-app.netlify.app` в SuperHosting); `edubel-app.netlify.app` продължава да работи. QR кодовете на стикерите и PDF-ите водят към `https://app.edubel.site/t/?k=КОД`.
 - Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска от корена. Всеки деплой е production и струва 15 кредита (безплатният план има 300 на месец), затова тествай локално и деплойвай рядко.
 - Env променливи в Netlify: `ADMIN_TOKEN` (таен), `TEST_MODE=1` (показва и непрегледаното съдържание с банер). По желание: `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_FREE_TOTAL`, `AI_PAID_DAILY`, `AI_GLOBAL_DAILY`.
 
@@ -51,7 +51,7 @@
 5. Правилата за съдържанието и AI безопасността: `docs/CONTENT_RULES.md`, `docs/AI_SAFETY.md`.
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
-8. НВО тренажор (200 задачи в 10 модула, оценки, бележник, прогноза, пробна матура): страница `/t/` (`public/assets/trener.js`), отваря се с личен код от PDF или стикер – без профил. Кодът работи на до 3 браузъра (`trener_devices`, само SHA-256 на ключа), неползвано 60 дни устройство се освобождава само; оценките се пазят към кода (`trener_keys.state`) и се сливат между устройствата. Задачите са в `trener_bank` (`admin.mjs trener-bank private/nvo-trener/bank-all.json`), кодовете – `admin.mjs trener-codes`. Митко (роля admin, `admin.mjs role <имейл> admin`) прави нови партиди, печата стикери/PDF-и и освобождава устройства на `/kodove/`. Самостоятелният файл и източникът на задачите: `tools/nvo-trener/` (README там), задачите – в `private/nvo-trener/bank/` (не са в git).
+8. НВО тренажор (200 задачи в 10 модула, оценки, бележник, прогноза, пробна матура): страница `/t/` (`public/assets/trener.js`), отваря се с личен код от PDF или стикер – без профил. Кодът работи на до 3 браузъра (`trener_devices`, само SHA-256 на ключа), неползвано 60 дни устройство се освобождава само; срокът е по партида – `months` от първото отваряне или `valid_until` (дата), `expires_at` се записва при първото отваряне, изтекъл код дава екран „Достъпът изтече“, удължава се от `/kodove/`; оценките се пазят към кода (`trener_keys.state`) и се сливат между устройствата. Задачите са в `trener_bank` (`admin.mjs trener-bank private/nvo-trener/bank-all.json`), кодовете – `admin.mjs trener-codes`. Митко (роля admin, `admin.mjs role <имейл> admin`) прави нови партиди, печата стикери/PDF-и и освобождава устройства на `/kodove/`. Самостоятелният файл и източникът на задачите: `tools/nvo-trener/` (README там), задачите – в `private/nvo-trener/bank/` (не са в git).
 
 ## Тестове
 
@@ -68,6 +68,5 @@ EDUBEL_URL=http://localhost:8899 npm test
 ## Следващи стъпки
 
 - Плащане с карта (Stripe) и имейли (Brevo) – изискват акаунти на Митко.
-- Свой домейн `app.edubel.site` – един DNS запис в SuperHosting.bg.
 - Още пробни матури, литература за 5. и 6. клас, после математика.
 - Преди официалния старт: `TEST_MODE` махнат, юрист за условията, базата в ЕС регион.

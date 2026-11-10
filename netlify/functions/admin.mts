@@ -169,13 +169,19 @@ export default handle(async (req) => {
     const count = Math.max(1, Math.min(2000, Number(b.count) || 1));
     const batch = str(b.batch, 60);
     const maxDevices = Math.max(1, Math.min(10, Number(b.maxDevices) || 3));
+    // Access: {months: 12} from the first opening, or {validUntil: "2027-06-30"}; neither = no limit.
+    const months = Number.isInteger(Number(b.months)) && Number(b.months) >= 1 && Number(b.months) <= 60 ? Number(b.months) : null;
+    const validUntil = !months && /^\d{4}-\d{2}-\d{2}$/.test(String(b.validUntil || "")) ? `${b.validUntil}T23:59:59+03:00` : null;
     const codes: string[] = [];
     while (codes.length < count) {
       const c = newCode();
-      const r = await q("INSERT INTO trener_keys (code, batch, max_devices) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING RETURNING code", [c, batch, maxDevices]);
+      const r = await q(
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, maxDevices, months, validUntil],
+      );
       if (r.length) codes.push(formatCode(c));
     }
-    return json({ ok: true, batch, codes });
+    return json({ ok: true, batch, codes, months, validUntil });
   }
 
   // Gives an existing account the admin role (for the /kodove/ support page).

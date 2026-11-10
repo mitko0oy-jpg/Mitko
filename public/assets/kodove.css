@@ -5,7 +5,8 @@
 .kstats span{font-size:13px;color:var(--muted)}
 #findForm{flex-wrap:nowrap}
 #findForm input{text-transform:uppercase;letter-spacing:.08em}
-.newform{display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:12px;align-items:end}
+.newform{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}
+.newform .btn{grid-column:1/-1;justify-self:start}
 .newform .field span{font-weight:600;font-size:15px;color:var(--ink)}
 .tblwrap{overflow-x:auto}
 .ktbl{width:100%;border-collapse:collapse;font-size:15px}

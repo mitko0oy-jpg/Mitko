@@ -707,7 +707,7 @@ const Online = (() => {
   const K_STATE = "edubel-trener-state:", K_DIRTY = "edubel-trener-dirty:";
   // Browsers built into apps keep their own storage and may forget it: every visit could take a new device place.
   const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Viber|Line\/|MicroMessenger|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Pinterest/i;
-  let code = "", device = "", devices = [], maxDevices = 3, idleDays = 60, timer = 0, busy = false, stay = false;
+  let code = "", device = "", devices = [], maxDevices = 3, idleDays = 60, expiresAt = null, timer = 0, busy = false, stay = false;
   const o = { offline: false };
 
   const norm = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -807,6 +807,14 @@ const Online = (() => {
       ${btns([["retryOpen", "Опитай пак"], ["otherCode", "Въведи друг код"]])}`);
   }
 
+  // The gradebook stays readable after the end date: the parent can still see and send it.
+  function expiredScreen(text) {
+    const local = readState();
+    const n = local ? local.hist.length : 0;
+    const sentence = /[.!?]$/.test(text) ? text : `${text}.`;
+    message("Достъпът до тренажора изтече", `${sentence} Свържи се с Еду БЕЛ, ако искаш да го удължиш.${n ? ` В бележника на това устройство има ${n} ${n === 1 ? "оценка" : "оценки"}.` : ""}`, [["otherCode", "Въведи друг код"]]);
+  }
+
   async function open() {
     screen(`<p class="lead">Отварям тренажора…</p>`);
     const cached = readBank(), local = readState();
@@ -820,6 +828,7 @@ const Online = (() => {
       devices = r.devices || [];
       maxDevices = r.maxDevices;
       idleDays = r.idleDays;
+      expiresAt = r.expiresAt || null;
       setBank(bank.data);
       S = normState(r.state);
       saveLocal();
@@ -833,6 +842,7 @@ const Online = (() => {
       if (e.code === "devices_full") return fullScreen(e.data);
       if (e.status === 404 || e.code === "code") { ls.del(K_CODE); code = ""; return codeScreen(e.message); }
       if (e.code === "disabled") return message("Този код е спрян", "Свържи се с Еду БЕЛ, за да го пуснем отново.", [["otherCode", "Въведи друг код"]]);
+      if (e.code === "expired") return expiredScreen(e.message);
       return message("Нещо се обърка", e.message, [["retryOpen", "Опитай пак"]]);
     }
   }
@@ -874,6 +884,7 @@ const Online = (() => {
       if (e.status === 0) { o.offline = true; schedule(); }
       else if (e.code === "device_removed") message("Това устройство беше премахнато от кода", "Някой от семейството е освободил мястото му. Натисни „Отвори отново“ – ако има свободно място, устройството ще се запише пак и оценките ще се заредят.", [["retryOpen", "Отвори отново"]]);
       else if (e.code === "disabled") message("Този код е спрян", "Свържи се с Еду БЕЛ, за да го пуснем отново.", []);
+      else if (e.code === "expired") expiredScreen(e.message);
       else schedule();
     } finally {
       busy = false;
@@ -884,7 +895,7 @@ const Online = (() => {
 
   function accessSection() {
     return `<section class="access" id="access"><h3>Твоят достъп</h3>
-      <p class="small muted">Код <b class="num">${esc(fmt(code))}</b>. Работи на до ${maxDevices} устройства. Устройство, което не е ползвано ${idleDays} дни, освобождава мястото си само.</p>
+      <p class="small muted">Код <b class="num">${esc(fmt(code))}</b>.${expiresAt ? ` Достъпът е до <b>${fmtDate(expiresAt)}</b>` : ""} Работи на до ${maxDevices} устройства. Устройство, което не е ползвано ${idleDays} дни, освобождава мястото си само.</p>
       <ul class="devlist">${devices.map((d) => `<li><span><b>${esc(d.label)}</b>${d.me ? ` <i class="me">това устройство</i>` : ""}<small>отворено за последно на ${fmtDate(d.lastSeen)}</small></span>
         ${d.me ? "" : `<button class="link" data-act="devForgetAsk" data-id="${esc(d.id)}">Премахни</button>`}<div class="zone" id="dz-${esc(d.id)}" hidden></div></li>`).join("")}</ul>
       <div class="linkbox"><pre class="preview" id="pv-link">${esc(link())}</pre><button class="btn line sm" data-act="copyLink">Копирай линка</button></div>

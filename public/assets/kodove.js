@@ -3,8 +3,9 @@ import { $, api, esc, go, me, toast, topbar } from "./app.js";
 import qrcode from "./vendor/qrcode.js";
 
 const params = new URLSearchParams(location.search);
-// Printed QR codes must point at the live site even when the sheets are made on a test server.
-const BASE = params.get("base") || (/^(localhost|127\.)/.test(location.hostname) ? "https://edubel-app.netlify.app" : location.origin);
+// Printed QR codes always point at the public address of the trainer, wherever this page is opened.
+const PUBLIC_BASE = "https://app.edubel.site";
+const BASE = params.get("base") || PUBLIC_BASE;
 const HOST = BASE.replace(/^https?:\/\//, "");
 const linkOf = (code) => `${BASE}/t/?k=${code}`;
 const fmtDate = (t) => (t ? new Date(t).toLocaleDateString("bg-BG") : "–");
@@ -21,12 +22,28 @@ function qrSvg(text, mm) {
   return `<svg class="qr" viewBox="0 0 ${n + 2 * q} ${n + 2 * q}" style="width:${mm}mm;height:${mm}mm" role="img" aria-label="QR код"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
 }
 
+/* ---------- access term ---------- */
+// A batch runs for N months from the first opening ({months}) or until a fixed date ({validUntil}).
+let TERM = { months: 12, validUntil: null };
+const termOf = (x) => ({ months: x && x.months ? Number(x.months) : null, validUntil: x && x.validUntil ? x.validUntil : null });
+const monthsWord = (n) => `${n} ${n === 1 ? "месец" : "месеца"}`;
+function termLong(t) {
+  if (t.months) return `Достъп за ${monthsWord(t.months)} от първото отваряне.`;
+  if (t.validUntil) return `Достъп до ${fmtDate(t.validUntil)}`; // the date already ends with "г."
+  return "";
+}
+function termShort(t) {
+  if (t.months) return `Достъп ${monthsWord(t.months)} · до 3 устройства`;
+  if (t.validUntil) return `Достъп до ${fmtDate(t.validUntil)} · до 3 устройства`;
+  return "Работи на до 3 устройства";
+}
+
 /* ---------- printing ---------- */
 function sticker(code) {
   return `<div class="stk">${qrSvg(linkOf(code), 30)}<div class="stk-t">
     <b>НВО тренажор по БЕЛ</b><span>7. клас · 200 задачи · оценки · пробна матура</span>
     <span class="go">Сканирай QR кода с камерата</span><span>или отвори <b>${esc(HOST)}/t</b></span>
-    <span class="code">Код: <b>${esc(code)}</b></span><span class="small">Работи на до 3 устройства</span></div></div>`;
+    <span class="code">Код: <b>${esc(code)}</b></span><span class="small">${esc(termShort(TERM))}</span></div></div>`;
 }
 function pdfPage(code) {
   return `<section class="pdfp">
@@ -37,7 +54,7 @@ function pdfPage(code) {
       <p class="big">Сканирай QR кода с камерата на телефона – тренажорът се отваря веднага.</p>
       <p>Или отвори <b>${esc(HOST)}/t</b> и въведи кода:</p>
       <p class="code">${esc(code)}</p>
-      <p class="small">Без регистрация и без парола. Кодът работи на до 3 устройства – телефон, таблет или компютър. Оценките се пазят към кода и те следват на всяко устройство.</p>
+      <p class="small">Без регистрация и без парола. ${esc(termLong(TERM))} Кодът работи на до 3 устройства – телефон, таблет или компютър. Оценките се пазят към кода и те следват на всяко устройство.</p>
     </div></div>
     <h2>Как да започнеш</h2>
     <ol><li>Сканирай кода или отвори линка в <b>Chrome</b> или <b>Safari</b>.</li><li>Реши първия модул и виж оценката си – тя се записва в бележника с датата.</li><li>Следи „Прогноза за НВО“: тя показва къде ще спечелиш най-много точки.</li></ol>
@@ -47,7 +64,8 @@ function pdfPage(code) {
       <li><b>Пази този документ</b> – с него отваряш тренажора навсякъде.</li></ul>
     <footer>Еду БЕЛ · edubel.site · Кодът е личен – не го публикувай.</footer></section>`;
 }
-function showPrint(kind, codes, title) {
+function showPrint(kind, codes, title, term) {
+  TERM = termOf(term);
   const p = $("print");
   const help = kind === "pdf"
     ? "Всяка страница е един PDF за един клиент. Натисни „Печат“ и избери „Запази като PDF“. За един клиент направи партида от 1 код."
@@ -57,7 +75,7 @@ function showPrint(kind, codes, title) {
   else if (kind === "single") body = codes.map((c) => `<div class="one">${sticker(c)}</div>`).join("");
   else body = codes.map(pdfPage).join("");
   p.className = `print-${kind}`;
-  p.innerHTML = `<div class="ptools"><b>${esc(title)}</b> · ${codes.length} ${codes.length === 1 ? "код" : "кода"}<p>${esc(help)}</p>
+  p.innerHTML = `<div class="ptools"><b>${esc(title)}</b> · ${codes.length} ${codes.length === 1 ? "код" : "кода"} · ${esc(termLong(TERM) || "без срок")}<p>${esc(help)}</p>
     <div class="row"><button class="btn" id="doPrint">Печат</button><button class="btn ghost" id="closePrint">Назад</button></div></div>${body}`;
   p.hidden = false;
   $("screen").hidden = true;
@@ -87,15 +105,17 @@ async function render(found) {
         <label class="field"><span>За какво</span><select id="newKind"><option value="sheet">Стикери за кутии (A4, 14 на лист)</option><option value="single">Стикери, по един на страница</option><option value="pdf">PDF за клиент (по една страница)</option></select></label>
         <label class="field"><span>Брой</span><input type="text" inputmode="numeric" id="newCount" value="140"></label>
         <label class="field"><span>Име на партидата</span><input type="text" id="newBatch" value="стикери-${new Date().toISOString().slice(0, 10)}"></label>
+        <label class="field"><span>Срок на достъпа</span><select id="newTerm"><option value="12">12 месеца от първото отваряне</option><option value="6">6 месеца от първото отваряне</option><option value="24">24 месеца от първото отваряне</option><option value="date">до дата…</option><option value="">без срок</option></select></label>
+        <label class="field" id="newDateBox" hidden><span>Важи до</span><input type="date" id="newDate"></label>
         <button class="btn gold">Направи кодовете</button></form>
       <p class="small muted">140 стикера = 10 листа. Кодовете се правят веднага и после се отварят за печат.</p><p class="formerr" id="newErr" role="alert"></p></section>
 
     <section class="panel"><h3>Партиди</h3>`;
   if (!summary.batches.length) h += `<p class="muted">Още няма кодове.</p>`;
   else {
-    h += `<div class="tblwrap"><table class="ktbl"><thead><tr><th>Партида</th><th>Общо</th><th>Отворени</th><th>Активни 7 дни</th><th>Неотворени</th><th>Спрени</th><th>Печат</th></tr></thead><tbody>`;
+    h += `<div class="tblwrap"><table class="ktbl"><thead><tr><th>Партида</th><th>Общо</th><th>Отворени</th><th>Активни 7 дни</th><th>Неотворени</th><th>Изтекли</th><th>Спрени</th><th>Печат</th></tr></thead><tbody>`;
     for (const x of summary.batches) {
-      h += `<tr><td><b>${esc(x.batch || "без име")}</b><small>${fmtDate(x.created_at)}</small></td><td>${x.total}</td><td>${x.used}</td><td>${x.active7}</td><td>${x.total - x.used}</td><td>${x.disabled}</td>
+      h += `<tr><td><b>${esc(x.batch || "без име")}</b><small>${fmtDate(x.created_at)} · ${esc(termLong(termOf({ months: x.months, validUntil: x.valid_until })) || "без срок")}</small></td><td>${x.total}</td><td>${x.used}</td><td>${x.active7}</td><td>${x.total - x.used}</td><td>${x.expired}</td><td>${x.disabled}</td>
         <td class="acts"><button class="linkbtn" data-print="sheet" data-batch="${esc(x.batch)}">стикери A4</button><button class="linkbtn" data-print="single" data-batch="${esc(x.batch)}">по един</button><button class="linkbtn" data-print="pdf" data-batch="${esc(x.batch)}">PDF</button></td></tr>`;
     }
     h += `</tbody></table></div><label class="chk"><input type="checkbox" id="onlyUnused" checked> Печатай само неотворените кодове</label>`;
@@ -115,21 +135,24 @@ async function render(found) {
     $("newErr").textContent = "";
     const kind = $("newKind").value;
     try {
-      const r = await api("trener/admin/codes", { count, batch: $("newBatch").value.trim() });
+      const t = $("newTerm").value;
+      if (t === "date" && !$("newDate").value) return ($("newErr").textContent = "Избери до коя дата важи достъпът.");
+      const r = await api("trener/admin/codes", { count, batch: $("newBatch").value.trim(), months: /^\d+$/.test(t) ? Number(t) : undefined, validUntil: t === "date" ? $("newDate").value : undefined });
       await render();
-      showPrint(kind, r.codes, r.batch);
+      showPrint(kind, r.codes, r.batch, r);
     } catch (err) {
       $("newErr").textContent = err.message;
     }
   });
+  $("newTerm").addEventListener("change", () => { $("newDateBox").hidden = $("newTerm").value !== "date"; });
   $("findForm").addEventListener("submit", (e) => { e.preventDefault(); find($("findIn").value); });
   document.querySelectorAll("[data-print]").forEach((btn) =>
     btn.addEventListener("click", async () => {
       const unused = $("onlyUnused")?.checked ? "1" : "";
       const r = await api(`trener/admin/batch?batch=${encodeURIComponent(btn.dataset.batch)}&unused=${unused}`);
-      const codes = r.codes.filter((c) => !c.disabled).map((c) => c.code);
-      if (!codes.length) return toast("В тази партида няма кодове за печат.");
-      showPrint(btn.dataset.print, codes, btn.dataset.batch);
+      const list = r.codes.filter((c) => !c.disabled);
+      if (!list.length) return toast("В тази партида няма кодове за печат.");
+      showPrint(btn.dataset.print, list.map((c) => c.code), btn.dataset.batch, list[0]);
     }),
   );
   if (found) find(found);
@@ -142,19 +165,22 @@ async function find(raw, action) {
     const r = action ? await api("trener/admin/key", { code, ...action }) : await api(`trener/admin/key?code=${encodeURIComponent(code)}`);
     const k = r.key;
     $("found").innerHTML = `<div class="kcard ${k.disabled ? "off" : ""}">
-      <p class="kcode">${esc(k.code)} ${k.disabled ? `<span class="tag bad">спрян</span>` : k.firstUsed ? `<span class="tag ok">отворен</span>` : `<span class="tag">неотворен</span>`}</p>
+      <p class="kcode">${esc(k.code)} ${k.disabled ? `<span class="tag bad">спрян</span>` : k.expired ? `<span class="tag bad">изтекъл</span>` : k.firstUsed ? `<span class="tag ok">отворен</span>` : `<span class="tag">неотворен</span>`}</p>
       <dl><dt>Партида</dt><dd>${esc(k.batch || "–")}</dd><dt>Създаден</dt><dd>${fmtDate(k.createdAt)}</dd><dt>Първо отваряне</dt><dd>${fmtTime(k.firstUsed)}</dd><dt>Последно</dt><dd>${fmtTime(k.lastUsed)}</dd>
+        <dt>Срок</dt><dd>${k.expiresAt ? `до ${fmtDate(k.expiresAt)}` : esc(termLong(termOf(k)) || "без срок")}</dd>
         <dt>Решени тестове</dt><dd>${k.tests}${k.last ? ` (последно ${k.last.p}/${k.last.n} на ${fmtDate(k.last.d)})` : ""}</dd></dl>
       <p><b>Устройства (${r.devices.length} от ${k.maxDevices})</b></p>
       ${r.devices.length ? `<ul class="kdev">${r.devices.map((d) => `<li>${esc(d.label)} <small>от ${fmtDate(d.since)}, последно ${fmtTime(d.lastSeen)}</small></li>`).join("")}</ul>` : `<p class="muted small">Няма записани устройства.</p>`}
       <label class="field"><span>Бележка (например номер на поръчка)</span><input type="text" id="noteIn" value="${esc(k.note)}" maxlength="300"></label>
       <div class="row"><button class="btn ghost" id="saveNote">Запази бележката</button>
         ${r.devices.length ? `<button class="btn" id="freeDev">Освободи устройствата</button>` : ""}
-        <button class="btn ghost" id="toggle">${k.disabled ? "Пусни кода" : "Спри кода"}</button></div>
+        <button class="btn ghost" id="toggle">${k.disabled ? "Пусни кода" : "Спри кода"}</button>
+        ${k.months || k.validUntil || k.expiresAt ? `<button class="btn ghost" id="extend">Удължи с 12 месеца</button>` : ""}</div>
       <p class="small muted">„Освободи устройствата“ изтрива списъка – следващите 3 отваряния заемат местата наново. Оценките остават.</p></div>`;
     $("saveNote").addEventListener("click", () => find(k.code, { action: "note", note: $("noteIn").value }).then(() => toast("Бележката е записана.")));
     $("freeDev")?.addEventListener("click", () => find(k.code, { action: "free" }).then(() => toast("Устройствата са освободени.")));
     $("toggle").addEventListener("click", () => find(k.code, { action: k.disabled ? "enable" : "disable" }));
+    $("extend")?.addEventListener("click", () => find(k.code, { action: "extend", months: 12 }).then(() => toast("Достъпът е удължен с 12 месеца.")));
   } catch (err) {
     $("found").innerHTML = "";
     $("findErr").textContent = err.message;
@@ -171,5 +197,8 @@ async function find(raw, action) {
   topbar(m);
   await render(params.get("code"));
   // Used by tools/nvo-trener to make the first PDFs and sticker sheets: ?print=pdf&codes=A,B,C
-  if (params.get("print") && params.get("codes")) showPrint(params.get("print"), params.get("codes").split(","), params.get("title") || "");
+  if (params.get("print") && params.get("codes")) {
+    const t = params.get("term") || "";
+    showPrint(params.get("print"), params.get("codes").split(","), params.get("title") || "", /^\d+$/.test(t) ? { months: t } : t ? { validUntil: t } : {});
+  }
 })();
