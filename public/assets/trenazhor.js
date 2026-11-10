@@ -21,8 +21,9 @@ for (const el of $$("[data-plan-month]")) {
 for (const el of $$("[data-plan-save]")) {
   const p = plans[el.dataset.planSave];
   const save = month * p.months - p.price;
-  el.hidden = !(save > 0);
-  if (save > 0) el.textContent = `Спестяваш ${euro(save)}`;
+  el.hidden = false;
+  el.classList.toggle("neutral", !(save > 0));
+  el.textContent = save > 0 ? `Спестяваш ${euro(save)}` : "Без обвързване";
 }
 for (const a of $$("[data-plan-go]")) a.href = checkout[a.dataset.planGo] || "#";
 for (const a of $$("[data-trn-app]")) a.href = app;
