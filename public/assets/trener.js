@@ -266,17 +266,76 @@ function nextSteps() {
   }).filter((x) => x.p === null || x.p < 0.9).sort((a, b) => b.gain - a.gain).slice(0, 3);
 }
 
-/* ---------- Erčo says hello: a short chime and a spoken line (public/media/voice/, made by tools/nvo-trener/voice.py) ---------- */
-// Once a day, on the board, only with the sound on. Browsers play sound only after a tap: if the first try is refused,
-// the greeting waits for the first tap (and is skipped if that tap switched the sound off). Tapping Erčo says it again.
+/* ---------- Erčo's voice: short lines (public/media/voice/, made by tools/nvo-trener/voice.py) ---------- */
+// Only with the sound on and "Ерчо говори" on (both remembered in this browser). One audio element for all lines:
+// once a tap has let it play, later lines may start on their own (phones allow sound only after a tap).
+const Voice = (() => {
+  const K = "edubel-trener-voice", V = 1;
+  const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  let on = ls.get(K) !== "0", el = null, queue = [], timer = 0, unlocked = false;
+  const can = () => FX.on && on;
+  const elem = () => {
+    if (!el) { el = new Audio(); el.preload = "auto"; el.addEventListener("ended", next); }
+    return el;
+  };
+  function next() {
+    const n = queue.shift();
+    if (!n || !can()) return;
+    const url = asset(`voice/${n}-${V}.mp3`);
+    if (!url) return next();
+    const a = elem();
+    a.src = url;
+    a.volume = 0.8;
+    a.play().catch(() => {});
+  }
+  // Says the lines one after the other (after `delay` ms); a new call replaces what is still waiting or playing –
+  // unless `wait`: then the lines come after the one playing now (the greeting is not cut off by the first task).
+  function say(names, delay = 0, wait = false) {
+    names = (Array.isArray(names) ? names : [names]).filter(Boolean);
+    if (wait && el && !el.paused && !el.ended && el.src.indexOf("data:audio/wav") !== 0) { queue = queue.concat(names); return; }
+    clearTimeout(timer);
+    if (el) el.pause();
+    queue = names;
+    if (!can() || !names.length) return;
+    if (delay) timer = setTimeout(next, delay);
+    else next();
+  }
+  // The first line right inside a tap; tells whether the browser let it play.
+  function now(name) {
+    const url = asset(`voice/${name}-${V}.mp3`);
+    if (!can() || !url) return Promise.resolve(false);
+    clearTimeout(timer);
+    queue = [];
+    const a = elem();
+    a.src = url;
+    a.volume = 0.8;
+    return a.play().then(() => { unlocked = true; return true; }, () => false);
+  }
+  // The first tap "unlocks" the audio element, so later lines (after a short pause) can play on phones too.
+  addEventListener("click", () => {
+    if (unlocked || !can()) return;
+    const a = elem();
+    if (!a.paused) { unlocked = true; return; }
+    a.src = SILENT;
+    a.play().then(() => { unlocked = true; }, () => {});
+  }, true);
+  return {
+    get on() { return on; },
+    toggle() { on = !on; ls.set(K, on ? "1" : "0"); if (!on) { queue = []; clearTimeout(timer); if (el) el.pause(); } else say("ok-0"); return on; },
+    say, now, stop: () => say([]),
+  };
+})();
+
+// The greeting: once a day, on the board. If the browser refuses sound before a tap, it waits for the first tap
+// (played right inside it, as Safari wants) – and is skipped if that tap is on the sound switch.
 const Hello = (() => {
-  const K = "edubel-trener-hello", V = 1;
+  const K = "edubel-trener-hello";
   const LINES = {
     hello: "Хей, здравей! Аз съм Ерчо. Хайде да учим и да играем!",
     back: "Ей, пак си тук! Супер. Да продължим ли?",
     math: "Здрасти! Днес сме с числата. Да започваме!",
   };
-  let audio = null, waiting = false;
+  let waiting = false;
   const day = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   const pick = (tap) => (mathOn() ? "math" : !ls.get(K) || (tap && !/^h-/.test(S.avatar || "")) ? "hello" : "back");
   function show(line) {
@@ -287,38 +346,62 @@ const Hello = (() => {
     void b.offsetWidth;
     b.classList.add("talk");
   }
-  function say(line) {
-    const url = asset(`voice/${line}-${V}.mp3`);
-    if (!FX.on || !url) return Promise.resolve(false);
-    try {
-      if (audio) audio.pause();
-      audio = new Audio(url);
-      audio.volume = 0.8;
-      return audio.play().then(() => { show(line); return true; }, () => false);
-    } catch (e) { return Promise.resolve(false); }
-  }
-  // Played right inside the tap (Safari allows sound only there). A tap on the sound switch itself greets nobody:
-  // switching off means quiet, and switching on redraws the board, which greets then.
   function onTap(e) {
     removeEventListener("click", onTap, true);
     removeEventListener("keydown", onTap, true);
     waiting = false;
-    if (e.target && e.target.closest && e.target.closest('[data-act="sound"]')) return;
+    if (e.target && e.target.closest && e.target.closest('[data-act="sound"],[data-act="voice"]')) return;
     greet();
   }
   function greet() {
-    if (!FX.on || ls.get(K) === day() || waiting) return;
-    say(pick()).then((ok) => {
-      if (ok) ls.set(K, day());
+    if (!FX.on || !Voice.on || ls.get(K) === day() || waiting) return;
+    const line = pick();
+    Voice.now(line).then((ok) => {
+      if (ok) { ls.set(K, day()); show(line); }
       else if (!waiting) { waiting = true; addEventListener("click", onTap, true); addEventListener("keydown", onTap, true); }
     });
   }
-  // A tap on Erčo: the line again (the words show in the bubble even with the sound off).
+  // A tap on Erčo: the line again (the words show in the bubble even when he is quiet).
   function tap() {
     const line = pick(true);
-    say(line).then((ok) => { if (!ok) show(line); else ls.set(K, day()); });
+    show(line);
+    Voice.now(line).then((ok) => { if (ok) ls.set(K, day()); });
   }
   return { greet, tap };
+})();
+
+// "Чуй задачата": the task read aloud by the device's own Bulgarian voice (free, nothing to download, works with every
+// task). The button shows only where the device has a Bulgarian voice.
+const Speak = (() => {
+  const has = "speechSynthesis" in window;
+  let bg = null;
+  const find = () => { try { bg = speechSynthesis.getVoices().find((v) => /^bg/i.test(v.lang)) || null; } catch (e) { bg = null; } };
+  if (has) { find(); try { speechSynthesis.addEventListener("voiceschanged", find); } catch (e) {} }
+  const plain = (html) => { const d = document.createElement("div"); d.innerHTML = html; d.querySelectorAll(".fr").forEach((f) => { const p = f.children; if (p.length === 2) f.textContent = ` ${p[0].textContent} върху ${p[1].textContent} `; }); return d.textContent; };
+  // Math said in words: "2 · 3" -> "2 по 3", "x²" -> "x на квадрат", "15%" -> "15 процента"…
+  const words = (t) => t.replace(/(\d)\s*·\s*(?=[\d(a-zа-я])/gi, "$1 по ").replace(/(\d)\s*:\s*(?=\d)/g, "$1 делено на ").replace(/\s[−–-]\s/g, " минус ").replace(/(^|[\s(=])[−-](?=\d)/g, "$1минус ")
+    .replace(/\+/g, " плюс ").replace(/=/g, " равно на ").replace(/</g, " по-малко от ").replace(/>/g, " по-голямо от ").replace(/²/g, " на квадрат").replace(/³/g, " на куб")
+    .replace(/%/g, " процента").replace(/€/g, " евро").replace(/°/g, " градуса").replace(/\bcm\b/g, "сантиметра").replace(/\bm\b/g, "метра").replace(/(\d)\s*\/\s*(\d)/g, "$1 върху $2");
+  function text(q, part, v, a) {
+    const T = (s) => (q.h ? words(plain(s)) : plain(String(s).replace(/<br\s*\/?>/g, ". ")));
+    if (part === "why") return T(q.why || "");
+    let t = (q.text ? T(q.text) + ". " : "") + T(q.q);
+    if (q.t === "mc") t += " " + (v && v.ord ? v.ord : q.o.map((_, i) => i)).map((oi, k) => `${LET[k]}: ${T(q.o[oi])}.`).join(" ");
+    if (q.t === "order") t += " " + (Array.isArray(a) ? a : q.items.map((_, i) => i)).map((k) => T(q.items[k]) + ".").join(" ");
+    if (q.t === "match") t += " " + q.pairs.map((p) => T(p[0]) + ".").join(" ");
+    return t;
+  }
+  function read(q, part, v, a) {
+    if (!has) return;
+    Voice.stop();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text(q, part, v, a).replace(/\s+/g, " ").trim());
+    u.lang = "bg-BG";
+    if (bg) u.voice = bg;
+    u.rate = 0.95;
+    speechSynthesis.speak(u);
+  }
+  return { ok: () => has && !!bg, read, stop: () => { if (has) speechSynthesis.cancel(); } };
 })();
 
 /* ---------- progress you can see: XP, levels, stars, badges (all worked out from the saved results – nothing to buy, nothing random) ---------- */
@@ -381,6 +464,7 @@ let sess = null, timer = null, histAll = false;
 
 function home(scrollTo) {
   stopTimer();
+  Speak.stop();
   sess = null;
   Game.leave();
   if (GOTO && hasMath()) {
@@ -401,7 +485,7 @@ function home(scrollTo) {
   const mx = M ? mathNext() : null;
   let h = `<header class="top">
       <div class="topbar"><img class="logo" src="${LOGO}" alt="Еду БЕЛ" width="44" height="44"><span class="eyebrow">${M ? "Математика за НВО" : "НВО по БЕЛ · 7. клас"}</span>
-        <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button></span></div>
+        <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}" title="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button><button class="iconbtn ${FX.on ? "" : "dim"}" data-act="voice" aria-pressed="${Voice.on}" aria-label="${Voice.on ? "Ерчо да мълчи" : "Ерчо да говори"}" title="${Voice.on ? "Ерчо говори – докосни, за да мълчи" : "Ерчо мълчи – докосни, за да говори"}">${Voice.on ? "🗣️" : "🤐"}</button></span></div>
       ${hasMath() ? `<div class="subj" role="group" aria-label="Предмет"><button data-act="subj" data-s="bel" aria-pressed="${!M}">${pic("i-lit1", "sj-i", "", true)}<span>БЕЛ</span></button><button data-act="subj" data-s="math" aria-pressed="${M}">${pic("mt-geo", "sj-i", "", true)}<span>Математика</span></button></div>` : ""}
       <section class="hero ${M ? "long" : ""}" aria-labelledby="heroT">
         <div class="hero-txt">
@@ -904,7 +988,7 @@ function renderQ() {
       <div class="prog"><i style="width:${((mock ? s.ans.filter((x, i) => answered(s.qs[i], x) && (s.qs[i].t !== "order" || s.touchedIdx?.[i])).length : s.i + (done ? 1 : 0)) / s.qs.length) * 100}%"></i></div></div>
     <div id="quitZone"></div>`;
   const nav = `<nav class="nav" aria-label="Задачи">${s.qs.map((qq, i) => `<button data-act="go" data-i="${i}" class="${i === s.i ? "cur" : ""} ${answered(qq, s.ans[i]) && (qq.t !== "order" || s.touchedIdx?.[i]) ? "done" : ""}" aria-label="Задача ${i + 1}">${i + 1}</button>`).join("")}</nav>`;
-  h += `<article class="qcard"><p class="qnum">${pic(modImg(MOD[q.m]), "qn-i", "", true)}<span>Задача ${s.i + 1} от ${s.qs.length} · ${esc(MOD[q.m].title)}${q.nvo ? ` · като задача ${esc(q.nvo)} на НВО` : ""}</span></p>`;
+  h += `<article class="qcard"><p class="qnum">${pic(modImg(MOD[q.m]), "qn-i", "", true)}<span>Задача ${s.i + 1} от ${s.qs.length} · ${esc(MOD[q.m].title)}${q.nvo ? ` · като задача ${esc(q.nvo)} на НВО` : ""}</span>${Speak.ok() ? `<button class="readbtn" data-act="read" data-part="q" aria-label="Чуй задачата" title="Чуй задачата">🔈</button>` : ""}</p>`;
   if (q.p && BANK.passages[q.p]) h += passageBlock(q.p);
   if (q.text) h += `<blockquote class="qtext ${q.h ? "mtext" : ""}">${R(q, q.text)}</blockquote>`;
   h += `<h2 class="qq ${q.h ? "mq" : ""}">${R(q, q.q)}</h2>`;
@@ -912,7 +996,7 @@ function renderQ() {
   if (done && !mock) {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
-    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}</span>` : ""}</div></div>`;
+    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
   }
   h += `<div class="qact">`;
   if (mock) {
@@ -929,6 +1013,7 @@ function renderQ() {
   if (mock) h += `<section style="display:grid;gap:8px"><p class="small muted">Отиди на задача (тъмните са с отговор):</p>${nav}</section>`;
   app.innerHTML = h;
   window.scrollTo(0, 0);
+  if (s.said !== s.i) { s.said = s.i; Speak.stop(); if (mock) { if (s.i === 0) Voice.say("mock", 0, true); } else Voice.say(introLines(s), 0, true); }
   if (done && !mock) document.getElementById("nextBtn")?.focus({ preventScroll: true });
   const inp = document.getElementById("ansIn");
   if (inp && !done) {
@@ -948,6 +1033,18 @@ function renderQ() {
     if (mock) updateNav();
   }));
 }
+// What Erčo says when a task appears: how to answer it, but only when the kind of task changes (not 20 times
+// "Избери верния отговор"); first a word for the start of a card or of the mistakes, and "Последна задача!".
+const kindOf = (q) => (q.t === "input" ? (q.num ? "i-num" : "i-input") : q.t === "mc" ? "i-mc" : `i-${q.t}`);
+function introLines(s) {
+  const q = s.qs[s.i], prev = s.i ? s.qs[s.i - 1] : null, out = [];
+  if (s.i === 0 && s.kind === "mist") out.push("mist");
+  else if (s.i === 0 && /^mk-/.test(s.m)) out.push("card");
+  if (s.i === s.qs.length - 1 && s.qs.length >= 4) out.push("last");
+  if (q.p && (!prev || prev.p !== q.p)) out.push("i-text");
+  else if (!prev || kindOf(prev) !== kindOf(q) || (prev.p && !q.p)) out.push(kindOf(q));
+  return out;
+}
 function updateNav() {
   const s = sess;
   app.querySelectorAll(".nav button").forEach((b) => {
@@ -966,6 +1063,7 @@ function check() {
   renderQ();
   s.fresh = false;
   if (s.ok[s.i]) FX.right(); else FX.wrong();
+  Voice.say(s.ok[s.i] ? `ok-${(s.i + s.qs.length) % CHEER.length}` : `no-${s.i % CALM.length}`, 380);
   document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
 }
 // Short, varied and calm: praise that is not "Браво, юнак!" every time, and no jokes about a mistake.
@@ -1058,6 +1156,7 @@ function result(r) {
   lastWrong = wrongIdx.map((i) => s.qs[i].id);
   // The big celebration only at the end of a module, and only for a good result (calm otherwise).
   if (up || g >= 5) setTimeout(() => FX.win(up || g === 6), 250);
+  Voice.say([`r${g}`, up ? "lvl" : newB.length ? "bdg" : null], up || g >= 5 ? 1300 : 500);
   if (newB.length) setTimeout(() => FX.badge(), up || g >= 5 ? 1500 : 300);
 }
 let lastWrong = [];
@@ -1079,6 +1178,9 @@ const ACT = {
   mflip: () => { if (mview) { FX.pop(); mathCard(mview.n, !mview.back, true); } },
   mmix: (b) => startModule(b.dataset.m),
   sound: () => { const y = scrollY; FX.toggle(); home(); scrollTo(0, y); },
+  // With the sound off, the voice button turns the sound on (and Erčo with it); otherwise it switches only Erčo.
+  voice: () => { const y = scrollY; if (!FX.on) { FX.toggle(); if (!Voice.on) Voice.toggle(); } else Voice.toggle(); home(); scrollTo(0, y); },
+  read: (b) => { if (sess) Speak.read(sess.qs[sess.i], b.dataset.part, sess.view[sess.i], sess.ans[sess.i]); },
   "go-badges": () => document.getElementById("badges")?.scrollIntoView({ behavior: "smooth", block: "start" }),
   avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); if (ONLINE) Online.soon(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
   start: (b) => startModule(b.dataset.m),
@@ -1860,7 +1962,7 @@ const Game = (() => {
       save();
       if (ok && ONLINE) Online.syncNow();
       if (ok && id === "final") FX.win(true);
-      else if (ok) { FX.stamp(); setTimeout(() => FX.reveal(), 380); }
+      else if (ok) { FX.stamp(); setTimeout(() => FX.reveal(), 380); Voice.say("dos", 1500); }
       else FX.wrong();
       if (id === "final") return rerender();
       rerender("t3");
