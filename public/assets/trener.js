@@ -8,7 +8,11 @@ const LOGO = window.TRENER_LOGO || "/assets/logo.png";
 // Illustrations: on the site from /assets/trener/, in the standalone file built in (window.TRENER_IMG).
 const IMGS = window.TRENER_IMG || null;
 const img = (n) => (IMGS ? IMGS[n] || "" : `/assets/trener/${n}.webp`);
+const asset = (path) => (IMGS ? IMGS[path] || "" : `/assets/trener/${path}`); // e.g. "sfx/right.mp3", "g-banner.mp4"
 const pic = (n, cls = "", alt = "", eager) => `<img class="${cls}" src="${img(n)}" alt="${alt.replace(/"/g, "&quot;")}" ${eager ? "" : `loading="lazy"`} decoding="async">`;
+// Erčo moves (animated WebP made from short clips, tools/nvo-trener/anim.py) unless the device asks for less motion.
+const ANIM = ["hi", "yay", "oops", "trophy", "detective"];
+const mascot = (pose) => (ANIM.includes(pose) && !matchMedia("(prefers-reduced-motion: reduce)").matches && img(`a-${pose}`) ? `a-${pose}` : `m-${pose}`);
 const MOD_IMG = { chetene: "i-chetene", pravopis: "i-pravopis", glagol: "i-glagol", morfologia: "i-morfologia", sintaksis: "i-sintaksis", punktuacia: "i-punktuacia", leksika: "i-leksika", lit1: "i-lit1", lit2: "i-lit2", teoria: "i-teoria" };
 const modImg = (m) => MOD_IMG[m.id] || (/^ezik/.test(m.id) ? "i-ezik" : /^karti/.test(m.id) ? "i-karti" : m.area === "read" ? "i-chetene" : m.area === "lit" ? "i-lit1" : "i-pravopis");
 
@@ -88,6 +92,33 @@ const FX = (() => {
     } catch (e) {}
   }
   const buzz = (p) => { try { if (on && navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+  // Real sound effects (public/assets/trener/sfx/, made by tools/nvo-trener/sfx.py), loaded after the first tap.
+  // Until a file is ready, or if it cannot load, the short synthesized tones play instead.
+  const SFX = ["right", "wrong", "tap", "found", "win", "levelup", "badge", "reveal", "stamp"], buf = {};
+  let loading = false;
+  function load() {
+    if (loading) return;
+    loading = true;
+    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    for (const n of SFX) {
+      const url = asset(`sfx/${n}.mp3`);
+      if (!url) continue;
+      fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((a) => new Promise((ok, no) => ctx.decodeAudioData(a, ok, no))).then((b) => { buf[n] = b; }).catch(() => {});
+    }
+  }
+  function play(n, vol = 0.55) {
+    if (!on || !buf[n] || !ctx) return false;
+    try {
+      if (ctx.state === "suspended") ctx.resume();
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = buf[n];
+      g.gain.value = vol;
+      src.connect(g).connect(ctx.destination);
+      src.start();
+      return true;
+    } catch (e) { return false; }
+  }
+  addEventListener("pointerdown", () => { if (on) load(); }, { once: false, passive: true });
   const COLORS = ["#7C5CFF", "#FF5FA2", "#FFC83D", "#2BD4A4", "#38B6FF", "#FF8A3D"];
   function confetti(n) {
     if (still()) return;
@@ -121,11 +152,15 @@ const FX = (() => {
   }
   return {
     get on() { return on; },
-    toggle() { on = !on; ls.set(K, on ? "1" : "0"); if (on) tone([660, 880], 0.09, "triangle"); return on; },
-    right() { tone([587, 784, 988], 0.09, "triangle"); buzz(12); },
-    wrong() { tone([247, 208], 0.13, "sine", 0.05); buzz([25, 40, 25]); },
-    win(big) { tone(big ? [523, 659, 784, 1047, 1319] : [523, 659, 784, 1047], 0.12, "triangle"); buzz(35); confetti(big ? 170 : 90); },
-    pop() { tone([880, 1175], 0.06, "triangle", 0.05); },
+    toggle() { on = !on; ls.set(K, on ? "1" : "0"); if (on) { load(); play("tap") || tone([660, 880], 0.09, "triangle"); } return on; },
+    right() { play("right") || tone([587, 784, 988], 0.09, "triangle"); buzz(12); },
+    wrong() { play("wrong", 0.45) || tone([247, 208], 0.13, "sine", 0.05); buzz([25, 40, 25]); },
+    win(big) { play(big ? "levelup" : "win", 0.6) || tone(big ? [523, 659, 784, 1047, 1319] : [523, 659, 784, 1047], 0.12, "triangle"); buzz(35); confetti(big ? 170 : 90); },
+    pop() { play("tap", 0.5) || tone([880, 1175], 0.06, "triangle", 0.05); },
+    found() { play("found") || tone([880, 1175], 0.06, "triangle", 0.05); buzz(8); },
+    badge() { play("badge", 0.6) || tone([988, 1319], 0.08, "triangle"); },
+    reveal() { play("reveal", 0.6) || tone([523, 784, 1047], 0.1, "triangle"); buzz([20, 30, 40]); confetti(110); },
+    stamp() { play("stamp", 0.7) || tone([140, 90], 0.08, "sine", 0.1); buzz(30); },
   };
 })();
 
@@ -260,7 +295,7 @@ function home(scrollTo) {
           <div class="xp" role="img" aria-label="${lv.x - lv.from} от ${lv.to - lv.from} точки опит до ниво ${lv.L + 1}"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div>
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
-        <div class="hero-art">${avatarPic("hero-m")}<p class="bubble">${esc(tip)}</p></div>
+        <div class="hero-art">${avatarPic("hero-m", true)}<p class="bubble">${esc(tip)}</p></div>
         <div class="hero-go">${nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
       </section>
       <div class="facts"><span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span><span>Пробна матура</span></div>
@@ -364,7 +399,7 @@ function modulesSection() {
 
 // Avatar: Erčo by default, or any hero the child has unlocked in the game.
 const avatarOk = (a) => a === "m-hi" || a === "m-detective" || a === "m-read" || (/^h-d\d\d$/.test(a || "") && Game.unlocked(a.slice(2)));
-const avatarPic = (cls) => pic(avatarOk(S.avatar) ? S.avatar : "m-hi", cls, "Твоят аватар", true);
+const avatarPic = (cls, move) => { const a = avatarOk(S.avatar) ? S.avatar : "m-hi"; return pic(move && a.startsWith("m-") ? mascot(a.slice(2)) : a, cls, "Твоят аватар", true); };
 function badgesSection() {
   const have = earned(), list = badgeList();
   let h = `<section class="badges" id="badges" aria-labelledby="bdT"><div class="sec-hd"><h2 id="bdT" class="sec-t">Значки</h2><span class="muted small">${have.size} от ${list.length}</span></div>
@@ -649,7 +684,7 @@ function renderQ() {
   if (done && !mock) {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
-    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(ok ? "m-yay" : "m-oops", "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${rich(rightText(q))}</b></span>`}${q.why ? `<span class="why">${rich(q.why)}</span>` : ""}</div></div>`;
+    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${rich(rightText(q))}</b></span>`}${q.why ? `<span class="why">${rich(q.why)}</span>` : ""}</div></div>`;
   }
   h += `<div class="qact">`;
   if (mock) {
@@ -750,10 +785,10 @@ function result(r) {
   const b = r.before || {}, lv = level(), xpGot = b.lv ? lv.x - b.lv.x : 0, up = b.lv && lv.L > b.lv.L;
   const newB = b.badges ? badgeList().filter((x) => earned().has(x.id) && !b.badges.has(x.id)) : [];
   const stars = s.kind === "module" ? starsOf(s.m) : 0, thisStars = g >= 6 ? 3 : g === 5 ? 2 : g === 4 ? 1 : 0;
-  const mascot = g === 6 ? "m-trophy" : g === 5 ? "m-yay" : g === 4 ? "m-hi" : "m-think";
+  const pose = mascot(g === 6 ? "trophy" : g === 5 ? "yay" : g === 4 ? "hi" : "think");
   let h = `<div class="qbar"><button class="back" data-act="home">← Табло</button><span class="qtitle">${esc(s.title)}</span><span></span></div>
     <section class="res g${g}">
-      <div class="res-art">${pic(mascot, "res-m", "", true)}<div class="medal" role="img" aria-label="Оценка ${GW[g]} ${g}"><b>${g}</b><small>${GW[g]}</small></div></div>
+      <div class="res-art">${pic(pose, "res-m", "", true)}<div class="medal" role="img" aria-label="Оценка ${GW[g]} ${g}"><b>${g}</b><small>${GW[g]}</small></div></div>
       <div class="info"><span class="eyebrow">${s.kind === "mist" ? "Упражнение · не влиза в бележника" : `Записано в бележника · ${fmtDate(r.rec.d, true)}`}</span>
         <h1>${esc(s.title)}</h1>
         ${s.kind === "module" || s.kind === "mock" ? starRow(thisStars, "big pop") : ""}
@@ -792,7 +827,8 @@ function result(r) {
   window.scrollTo(0, 0);
   lastWrong = wrongIdx.map((i) => s.qs[i].id);
   // The big celebration only at the end of a module, and only for a good result (calm otherwise).
-  if (g >= 5 || newB.length || up) setTimeout(() => FX.win(g === 6 || up), 250);
+  if (up || g >= 5) setTimeout(() => FX.win(up || g === 6), 250);
+  if (newB.length) setTimeout(() => FX.badge(), up || g >= 5 ? 1500 : 300);
 }
 let lastWrong = [];
 
@@ -818,6 +854,7 @@ const ACT = {
   pick: (b) => {
     if (!sess) return;
     sess.ans[sess.i] = +b.dataset.v;
+    FX.pop();
     app.querySelectorAll(".opt").forEach((o) => { const on = o === b; o.classList.toggle("sel", on); o.setAttribute("aria-checked", on); });
     const c = document.getElementById("checkBtn");
     if (c) c.disabled = false;
@@ -1255,14 +1292,17 @@ const Game = (() => {
     if (!BANK.dossiers) return "";
     const n = solvedCount(), all = D().dossiers.length, r = rank();
     const got = D().dossiers.filter((d) => solved(d.id)).slice(-5);
-    return `<section class="game" aria-labelledby="gameT" style="--bg:url('${img("g-banner")}')"><div class="game-in">
+    // A short silent loop behind the card (the still picture stays if the device asks for less motion or to save data).
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.connection && navigator.connection.saveData);
+    const vid = asset("g-banner.mp4") && !calm ? `<video class="game-v" src="${asset("g-banner.mp4")}" poster="${img("g-banner")}" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>` : "";
+    return `<section class="game" aria-labelledby="gameT" style="--bg:url('${img("g-banner")}')">${vid}<div class="game-in">
       <span class="eyebrow">Игра · ${all} досиета · ${all} героя</span>
       <h2 id="gameT">Литературни досиета</h2>
       <p>Разследвай творбите като детектив: намери думите, събери уликите и разбий кода. Всяко разкрито досие отключва герой и буква от тайното послание.</p>
       <div class="game-row"><span class="rank">${esc(r.t)}</span><span class="small">Разкрити: <b>${n} от ${all}</b></span></div>
       ${got.length ? `<div class="game-heroes" aria-label="Последно отключени герои">${got.map((d) => pic("h-" + d.id, "", heroName(d))).join("")}</div>` : ""}
       <button class="btn gold" data-act="gameHome">${n ? "Продължи разследването" : "Започни разследването"}</button></div>
-      ${pic("m-detective", "game-m")}</section>`;
+      ${pic(mascot("detective"), "game-m")}</section>`;
   }
 
   function top(back, title) {
@@ -1525,7 +1565,7 @@ const Game = (() => {
     if (hit) {
       s.t1 = [...f, hit.w];
       save();
-      FX.pop();
+      FX.found();
       rerender("t1");
       const m = document.getElementById("gridMsg");
       if (m) m.textContent = `Намери „${hit.w}“!${hit.star ? "" : " (бонус дума)"}`;
@@ -1570,7 +1610,9 @@ const Game = (() => {
       if (ok) s.done = Date.now();
       else s.t3c = true;
       save();
-      if (ok) FX.win(id === "final"); else FX.wrong();
+      if (ok && id === "final") FX.win(true);
+      else if (ok) { FX.stamp(); setTimeout(() => FX.reveal(), 380); }
+      else FX.wrong();
       if (id === "final") return rerender();
       rerender("t3");
       if (ok) {
@@ -1624,6 +1666,7 @@ const Game = (() => {
       if (ok) s.done = Date.now();
       else s.c = true;
       save();
+      if (ok) FX.win(false); else FX.wrong();
       rerender();
     },
     gameResetAsk: () => confirmBox("gameZone", "Да изтрия ли напредъка в играта? Оценките в бележника остават.", "gameReset", "Започни отначало"),

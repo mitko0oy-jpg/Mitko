@@ -35,6 +35,11 @@ logo = base64.b64encode(open(os.path.join(assets, "logo.png"), "rb").read()).dec
 # The illustrations (public/assets/trener/*.webp) go inside the file, so it works without the site.
 imgs = {os.path.basename(f)[:-5]: "data:image/webp;base64," + base64.b64encode(open(f, "rb").read()).decode()
         for f in sorted(glob.glob(os.path.join(assets, "trener", "*.webp")))}
+# Sounds and the short video, under their path ("sfx/right.mp3", "g-banner.mp4").
+for f in sorted(glob.glob(os.path.join(assets, "trener", "sfx", "*.mp3"))):
+    imgs["sfx/" + os.path.basename(f)] = "data:audio/mpeg;base64," + base64.b64encode(open(f, "rb").read()).decode()
+for f in sorted(glob.glob(os.path.join(assets, "trener", "*.mp4"))):
+    imgs[os.path.basename(f)] = "data:video/mp4;base64," + base64.b64encode(open(f, "rb").read()).decode()
 html = (html.replace("/*__CSS__*/", css)
             .replace("/*__BANK__*/null", js(bank))
             .replace("__LOGO__", "data:image/png;base64," + logo)
