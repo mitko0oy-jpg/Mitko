@@ -27,7 +27,7 @@ BY_COLOR = {c.lower(): i for i, _, c in reversed(SECTIONS)}
 # ---------- a tiny DOM, so the HTML can be cleaned and read safely ----------
 VOID = {"br", "img", "hr", "path", "circle", "line", "rect", "ellipse", "polyline", "polygon", "stop", "use"}
 TAGS = {"span", "b", "i", "em", "strong", "small", "sup", "sub", "p", "ol", "ul", "li", "div", "section", "br", "h5",
-        "figure", "figcaption", "details", "summary",
+        "figure", "figcaption", "details", "summary", "table", "thead", "tbody", "tr", "th", "td",
         "svg", "g", "path", "circle", "line", "rect", "ellipse", "polyline", "polygon", "text", "tspan"}
 SVG_ATTRS = {"width", "height", "viewbox", "d", "stroke", "stroke-width", "fill", "cx", "cy", "r", "rx", "ry", "x", "y",
              "x1", "y1", "x2", "y2", "points", "transform", "text-anchor", "font-size", "font-style", "font-family",
@@ -159,7 +159,7 @@ def numeric(ans):
     """(value, unit) when the answer is one number (with an optional unit), else None."""
     s = re.sub(r"^\s*Отговор:\s*", "", ans).strip()
     s = re.sub(r"(?<=\d) (?=\d{3}\b)", "", s)  # 10 000 -> 10000
-    if re.search(r"\bили\b|;|\sи\s|,\s", s):
+    if re.search(r"\bили\b|;|\sи\s|,\s|[<>≤≥≠]", s):  # several answers, or an inequality: solved on paper
         return None
     if "=" in s:
         s = s.split("=")[-1]
@@ -185,7 +185,7 @@ def blocks(safe):
             u.tag, u.attrs = "details", {"class": "upside"}
             u.kids = [Node("summary", {}), Node("p", {})] if False else [u_sum(), u_p(u.kids)]
         h5 = first(k, tag("h5"))
-        out.append({"tag": k.tag if k.tag in ("section", "p", "div", "ol", "ul") else "div", "cls": " ".join(k.cls), "h": T(h5) if h5 else "", "html": clean(k)})
+        out.append({"tag": k.tag if k.tag in ("section", "p", "div", "ol", "ul", "table") else "div", "cls": " ".join(k.cls), "h": T(h5) if h5 else "", "html": clean(k)})
     return [b for b in out if b["html"]]
 
 

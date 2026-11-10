@@ -692,3 +692,17 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .iconbtn.dim{opacity:.5}
 .readbtn{margin-left:auto;flex:none;width:38px;height:38px;border:0;border-radius:12px;background:var(--band);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
 .readbtn.sm{display:inline-grid;width:30px;height:30px;font-size:15px;border-radius:10px;vertical-align:middle;margin-left:4px}
+/* special math cards: worked example with a drawing, card 1 (three piles), card 2 (entry test and its key) */
+.mcard .taskfig{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,32%);gap:12px;align-items:center}
+.mcard .figbox svg{display:block;width:100%;height:auto;max-height:180px}
+.mcard .piles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mcard .pile{background:var(--soft);border-radius:14px;padding:10px 8px;text-align:center;font-size:13.5px;color:var(--muted)}
+.mcard .pile b{display:block;font:700 16px/1.2 var(--serif);color:var(--ink);margin-bottom:4px}
+.mcard ol.quiz{list-style:none;counter-reset:q;display:grid;gap:6px}
+.mcard ol.quiz li{counter-increment:q;display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:baseline}
+.mcard ol.quiz li::before{content:counter(q);font:800 12px/1 var(--sans);color:var(--ct);text-align:right}
+.mcard table{width:100%;border-collapse:collapse;font-size:14.5px}
+.mcard th{font:800 11px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ct);text-align:left;padding:0 0 6px}
+.mcard td{padding:6px 0;border-top:1px dotted var(--line);vertical-align:baseline;color:var(--ink)}
+.mcard td:first-child{width:28px;font-weight:800;color:var(--ct)}
+.mcard td:last-child{text-align:right;white-space:nowrap;font-weight:800;color:var(--ct)}

@@ -195,7 +195,7 @@ const Theme = (() => {
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const rich = (s) => esc(s).replace(/&lt;(\/?)(i|b|u|em|strong)&gt;/g, "<$1$2>").replace(/&lt;br\s*\/?&gt;/g, "<br>");
 // Math content comes as HTML (fractions, italic letters, small drawings): only these tags and attributes get through.
-const MH_TAGS = new Set("span b i em strong small sup sub p ol ul li div section br h5 figure figcaption details summary svg g path circle line rect ellipse polyline polygon text tspan".split(" "));
+const MH_TAGS = new Set("span b i em strong small sup sub p ol ul li div section br h5 figure figcaption details summary table thead tbody tr th td svg g path circle line rect ellipse polyline polygon text tspan".split(" "));
 const MH_ATTR = /^(class|width|height|viewbox|d|stroke|stroke-width|fill|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|points|transform|text-anchor|font-size|font-style|font-family|font-weight|stroke-dasharray|stroke-linecap|stroke-linejoin|opacity|dominant-baseline|fill-opacity|stroke-opacity|style)$/i;
 const mhCache = new Map();
 function mh(s) {
@@ -746,7 +746,7 @@ const mCard = (n) => (hasMath() ? BANK.math.cards.find((c) => c.n === n) : null)
 const mSec = (id) => (BANK.math.sections || []).find((s) => s.id === id) || { id, t: "", c: "#6C4BFF" };
 const mMod = (n) => MOD[`mk-${n}`];
 const shortT = (t) => (t.length > 34 ? t.slice(0, 32).replace(/[\s,:;–-]+\S*$/, "") + "…" : t);
-const mBlock = (b) => { const tg = ["section", "p", "div", "ol", "ul"].includes(b.tag) ? b.tag : "div"; return `<${tg} class="mb ${esc(b.cls || "")}">${mh(b.html)}</${tg}>`; };
+const mBlock = (b) => { const tg = ["section", "p", "div", "ol", "ul", "table"].includes(b.tag) ? b.tag : "div"; return `<${tg} class="mb ${esc(b.cls || "")}">${mh(b.html)}</${tg}>`; };
 // What to do next: the first card not practised yet, else the one with the fewest stars.
 function mathNext() {
   const cs = BANK.math.cards.filter((c) => mMod(c.n));
