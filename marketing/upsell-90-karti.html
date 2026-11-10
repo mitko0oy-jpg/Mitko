@@ -1,0 +1,716 @@
+<!-- ЕДУ БЕЛ · Ъпсел: 90 интерактивни карти за НВО (PDF) · цялият код отива в един HTML/Code елемент в ConvertBuilder.
+     Точно под него сложи елемента „Upsell бутон“ на ConvertBuilder: продукт – интерактивните карти, цена – същата като price в CONFIG.
+     Нашите бутони „Да“ и „Не“ натискат него. Настройките са в CONFIG най-долу. Подробно: marketing/README.md -->
+<style>
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/golos-text-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/golos-text-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Literata';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/literata-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Literata';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/literata-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+:is(#e9,#e9f){--ink:#1B2A4A; --ink-soft:#C9D1E0; --gold:#C49A3C; --gold-hi:#D6B05A; --gold-deep:#8F6C1F; --gold-soft:#F4EAD3;
+  --paper:#FFFDF8; --cream:#F7F2E7; --edge:#E6DFCF; --line:#DCE1E8; --card:#FFFFFF;
+  --text:#1F2633; --muted:#545C70; --ok:#2E7D4F; --ok-ink:#1E5A38; --ok-soft:#E5F2EA; --bad:#B23A3A; --bad-soft:#FBECEC;
+  --l1:#3F7A8C; --viber:#7360F2; --viber-soft:#EEEBFB;
+  --serif:Literata,Georgia,"Times New Roman",serif;
+  --sans:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:16px;
+  --shadow:0 1px 2px rgba(27,42,74,.06),0 10px 28px rgba(27,42,74,.09);
+  --logo:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/assets/logo.png);
+  --i-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23E5F2EA'/%3E%3Cpath d='M7 12.4l3.3 3.3L17 9' fill='none' stroke='%232E7D4F' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --i-miss:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='none' stroke='%23C3C9D4' stroke-width='2'/%3E%3Cpath d='M8 12h8' stroke='%23A3ABBA' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  color-scheme:light;}
+:is(#e9,#e9f),:is(#e9,#e9f) *,:is(#e9,#e9f) *::before,:is(#e9,#e9f)::before,:is(#e9,#e9f) *::after,:is(#e9,#e9f)::after{box-sizing:border-box}
+:is(#e9,#e9f){-webkit-text-size-adjust:100%;text-size-adjust:100%}
+#e9{position:relative;display:block;margin:0 calc(50% - 50vw);padding:0;width:auto;max-width:none;background:var(--paper);overflow:hidden;overflow:clip}
+:is(#e9,#e9f){color:var(--text);font:400 17px/1.55 var(--sans);-webkit-font-smoothing:antialiased;text-align:left;letter-spacing:normal;text-transform:none;word-spacing:normal}
+:is(#e9,#e9f) :is(section,header,footer,main,article,figure,div){margin:0;padding:0;border:0;max-width:none;box-shadow:none}
+:is(#e9,#e9f) :is(h1,h2,h3,h4,p,span,a,b,strong,em,small,s,li,dt,dd,summary,button,figcaption,time){letter-spacing:inherit;text-transform:none;text-shadow:none;word-spacing:normal}
+:is(#e9,#e9f) :is(ul,ol,dl,dd,li,figure,blockquote){margin:0;padding:0}
+:is(#e9,#e9f) :is(p,li,span,a,b,strong,em,s,small,time,figcaption,summary,dt,dd,label){font-size:inherit;line-height:inherit;font-family:inherit;color:inherit}
+:is(#e9,#e9f) li{list-style:none}
+:is(#e9,#e9f) li::before,:is(#e9,#e9f) li::after{box-sizing:border-box}
+:is(#e9,#e9f) a{text-decoration:none}
+:is(#e9,#e9f) button{margin:0;box-shadow:none;line-height:inherit;font-family:inherit;text-align:inherit;background-image:none}
+:is(#e9,#e9f) h3{line-height:1.25}
+:is(#e9,#e9f) img,:is(#e9,#e9f) svg{display:block;max-width:100%}
+:is(#e9,#e9f) a{color:inherit}
+:is(#e9,#e9f) h1,:is(#e9,#e9f) h2,:is(#e9,#e9f) h3{font-family:var(--serif);color:var(--ink);margin:0;text-wrap:balance;font-weight:700}
+:is(#e9,#e9f) p{margin:0}
+:is(#e9,#e9f) b,:is(#e9,#e9f) strong{font-weight:650}
+:is(#e9,#e9f) .e9-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:is(#e9,#e9f) :focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:6px}
+:is(#e9,#e9f) .e9-wrap{width:100%;max-width:1120px;margin-inline:auto;padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}
+@media (min-width:640px){:is(#e9,#e9f) .e9-wrap{padding-inline:28px}}
+@media (min-width:1024px){:is(#e9,#e9f) .e9-wrap{padding-inline:40px}}
+:is(#e9,#e9f) .e9-logo{display:block;width:72px;aspect-ratio:300/217;background:var(--logo) center/contain no-repeat}
+:is(#e9,#e9f) .e9-top{background:var(--paper);border-bottom:1px solid var(--edge)}
+:is(#e9,#e9f) .e9-top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:66px;padding-block:8px}
+:is(#e9,#e9f) .e9-steps{display:flex;align-items:center;gap:6px;list-style:none;margin:0;padding:0;font-size:13.5px;color:var(--muted)}
+:is(#e9,#e9f) .e9-steps li{display:flex;align-items:center;gap:6px;white-space:nowrap}
+:is(#e9,#e9f) .e9-steps li+li::before{content:"";width:12px;height:2px;border-radius:2px;background:var(--line)}
+:is(#e9,#e9f) .e9-dot{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;border:2px solid var(--line);color:var(--muted);background:var(--card)}
+:is(#e9,#e9f) .e9-dot svg{width:13px;height:13px}
+:is(#e9,#e9f) .e9-done .e9-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+:is(#e9,#e9f) .e9-now .e9-dot{background:var(--ink);border-color:var(--ink);color:#fff}
+:is(#e9,#e9f) .e9-now .e9-lbl{color:var(--ink);font-weight:650}
+@media (max-width:440px){:is(#e9,#e9f) .e9-steps li:not(.e9-now) .e9-lbl{display:none}}
+@media (min-width:640px){:is(#e9,#e9f) .e9-steps{gap:10px}
+:is(#e9,#e9f) .e9-steps li+li::before{width:28px}
+:is(#e9,#e9f) .e9-top .e9-logo{width:84px}}
+:is(#e9,#e9f) .e9-notice{background:var(--ok-soft);color:var(--ok-ink);border-bottom:1px solid #CFE6D7}
+:is(#e9,#e9f) .e9-notice-in{display:flex;gap:10px;align-items:flex-start;padding-block:11px;font-size:15px;line-height:1.45}
+:is(#e9,#e9f) .e9-notice svg{flex:none;width:20px;height:20px;margin-top:1px}
+@media (min-width:640px){:is(#e9,#e9f) .e9-notice-in{justify-content:center;align-items:center}}
+:is(#e9,#e9f) .e9-hero{background:radial-gradient(900px 420px at 88% 0%,rgba(244,234,211,.9) 0,rgba(244,234,211,0) 70%),linear-gradient(var(--paper),var(--cream));padding-block:28px 44px}
+:is(#e9,#e9f) .e9-hero-grid{display:grid;gap:26px;grid-template-areas:"head" "visual" "buy"}
+:is(#e9,#e9f) .e9-hero-head{grid-area:head}
+:is(#e9,#e9f) .e9-hero-visual{grid-area:visual}
+:is(#e9,#e9f) .e9-hero-buy{grid-area:buy}
+:is(#e9,#e9f) .e9-eyebrow,:is(#e9,#e9f) .e9-kicker{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep)}
+:is(#e9,#e9f) .e9-eyebrow::before,:is(#e9,#e9f) .e9-kicker::before{content:"";width:24px;height:2px;flex:none;background:var(--gold)}
+@media (max-width:380px){:is(#e9,#e9f) .e9-eyebrow{font-size:11.5px;letter-spacing:.05em;gap:8px}
+:is(#e9,#e9f) .e9-eyebrow::before{width:16px}}
+:is(#e9,#e9f) h1{font-size:clamp(29px,7.6vw,52px);line-height:1.1;letter-spacing:-.015em}
+:is(#e9,#e9f) h1 em{font-style:normal;color:var(--gold-deep);background:linear-gradient(transparent 64%,var(--gold-soft) 64%);padding-inline:.05em}
+:is(#e9,#e9f) .e9-lead{margin-top:14px;font-size:clamp(17px,2.3vw,19.5px);color:var(--muted);max-width:42ch}
+:is(#e9,#e9f) .e9-checks{list-style:none;margin:0 0 20px;padding:0;display:grid;gap:11px}
+:is(#e9,#e9f) .e9-checks li{display:grid;grid-template-columns:24px 1fr;gap:12px;align-items:start;font-size:16.5px;line-height:1.45}
+:is(#e9,#e9f) .e9-checks li::before{content:"";width:24px;height:24px;background:var(--i-check) center/contain no-repeat}
+:is(#e9,#e9f) .e9-checks b{color:var(--ink)}
+@media (min-width:900px){:is(#e9,#e9f) .e9-hero{padding-block:52px 72px}
+:is(#e9,#e9f) .e9-hero-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);grid-template-areas:"head visual" "buy visual";column-gap:64px;row-gap:30px;align-items:start}
+:is(#e9,#e9f) .e9-hero-visual{align-self:center}}
+:is(#e9,#e9f) .e9-offer{background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+@media (min-width:640px){:is(#e9,#e9f) .e9-offer{padding:22px 24px}}
+:is(#e9,#e9f) .e9-price-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin-bottom:16px}
+:is(#e9,#e9f) .e9-price-label{display:block;white-space:nowrap;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+:is(#e9,#e9f) .e9-price{display:block;margin-top:4px;font-family:var(--serif);font-weight:800;font-size:clamp(38px,9vw,46px);line-height:1;color:var(--ink);font-variant-numeric:lining-nums;white-space:nowrap}
+:is(#e9,#e9f) .e9-format{flex:none;font-size:13px;line-height:1.35;color:var(--muted);text-align:right;padding:8px 11px;border:1px dashed #D5CBB4;border-radius:11px;background:var(--paper)}
+:is(#e9,#e9f) .e9-format b{display:block;color:var(--ink)}
+:is(#e9,#e9f) .e9-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:62px;padding:12px 18px;border-radius:14px;text-align:center;text-decoration:none;color:var(--ink);background:linear-gradient(180deg,var(--gold-hi),var(--gold));box-shadow:0 2px 0 #9C7726,0 10px 22px rgba(196,154,60,.33);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;-webkit-tap-highlight-color:transparent}
+:is(#e9,#e9f) .e9-btn:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 3px 0 #9C7726,0 14px 28px rgba(196,154,60,.38)}
+:is(#e9,#e9f) .e9-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #9C7726,0 6px 14px rgba(196,154,60,.3)}
+:is(#e9,#e9f) .e9-btn-main{display:inline-flex;align-items:center;gap:8px;font-weight:750;font-size:18px;line-height:1.2}
+:is(#e9,#e9f) .e9-btn-main svg{width:20px;height:20px;flex:none}
+:is(#e9,#e9f) .e9-btn-sub{font-size:13.5px;font-weight:500;color:#3A3216}
+@media (max-width:440px){:is(#e9,#e9f) .e9-btn-main svg{display:none}
+:is(#e9,#e9f) .e9-btn-main{font-size:17px}
+:is(#e9,#e9f) .e9-offer{padding:16px}}
+:is(#e9,#e9f) .e9-no{display:block;width:fit-content;margin:12px auto 0;padding:10px 8px;font-size:15px;color:var(--muted);text-decoration:underline;text-decoration-color:#B9BFCB;text-underline-offset:3px;text-align:center}
+:is(#e9,#e9f) .e9-no:hover{color:var(--ink)}
+:is(#e9,#e9f) .e9-assure{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin-top:6px;padding-top:12px;border-top:1px solid #EFEAE0;font-size:13.5px;color:var(--muted)}
+:is(#e9,#e9f) .e9-assure span{display:inline-flex;align-items:center;gap:6px}
+:is(#e9,#e9f) .e9-assure svg{width:15px;height:15px;color:var(--ok)}
+:is(#e9,#e9f) .e9-sec{padding-block:52px}
+:is(#e9,#e9f) .e9-sec.e9-alt{background:var(--cream)}
+@media (min-width:900px){:is(#e9,#e9f) .e9-sec{padding-block:80px}}
+:is(#e9,#e9f) h2{font-size:clamp(26px,5.4vw,40px);line-height:1.14;letter-spacing:-.012em}
+:is(#e9,#e9f) .e9-sec-lead{margin-top:12px;color:var(--muted);max-width:62ch;font-size:clamp(16.5px,2vw,18px)}
+:is(#e9,#e9f) .e9-center{text-align:center}
+:is(#e9,#e9f) .e9-center .e9-kicker{justify-content:center}
+:is(#e9,#e9f) .e9-center .e9-sec-lead{margin-inline:auto}
+:is(#e9,#e9f) .e9-parts{display:grid;gap:14px;margin-top:30px;grid-template-columns:1fr}
+@media (min-width:600px){:is(#e9,#e9f) .e9-parts{grid-template-columns:1fr 1fr}}
+@media (min-width:1024px){:is(#e9,#e9f) .e9-parts{grid-template-columns:repeat(4,1fr)}}
+:is(#e9,#e9f) .e9-part{background:var(--card);border:1px solid var(--edge);border-radius:var(--r);padding:20px 20px 22px}
+:is(#e9,#e9f) .e9-num{display:grid;place-items:center;width:42px;height:42px;margin-bottom:14px;border-radius:12px;background:var(--ink);color:#fff;font-family:var(--serif);font-weight:700;font-size:20px}
+:is(#e9,#e9f) .e9-part h3{font-size:21px;margin-bottom:6px}
+:is(#e9,#e9f) .e9-part p{color:var(--muted);font-size:16px}
+@media (max-width:599px){:is(#e9,#e9f) .e9-part{display:grid;grid-template-columns:42px 1fr;column-gap:14px;padding:18px}
+:is(#e9,#e9f) .e9-part .e9-num{grid-row:span 2;margin:0}
+:is(#e9,#e9f) .e9-part h3{margin-top:7px}}
+:is(#e9,#e9f) .e9-weak{display:grid;gap:16px;margin-top:14px;padding:24px 22px;border-radius:var(--r);background:var(--ink);color:var(--ink-soft)}
+:is(#e9,#e9f) .e9-weak h3{color:#fff;font-size:22px;margin-bottom:6px}
+:is(#e9,#e9f) .e9-weak .e9-tag{display:inline-block;margin-bottom:10px;padding:3px 10px;border-radius:999px;background:var(--gold);color:var(--ink);font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+:is(#e9,#e9f) .e9-chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+:is(#e9,#e9f) .e9-chips li{padding:7px 12px;border-radius:999px;font-size:14.5px;color:#fff;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18)}
+@media (min-width:900px){:is(#e9,#e9f) .e9-weak{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center;gap:36px;padding:30px 34px}}
+:is(#e9,#e9f) .e9-split{display:grid;gap:30px}
+@media (min-width:900px){:is(#e9,#e9f) .e9-split{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:64px;align-items:center}}
+:is(#e9,#e9f) .e9-labels{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:8px}
+:is(#e9,#e9f) .e9-labels li{display:grid;grid-template-columns:24px 1fr;gap:12px;align-items:start;font-size:16.5px}
+:is(#e9,#e9f) .e9-labels li::before{content:"";width:24px;height:24px;background:var(--i-check) center/contain no-repeat}
+:is(#e9,#e9f) .e9-tip{position:relative;margin-top:26px;padding:18px 20px 18px 54px;border-radius:14px;background:var(--gold-soft);color:#4A3E1E;font-size:16px}
+:is(#e9,#e9f) .e9-tip::before{content:"„";position:absolute;left:16px;top:-2px;font-family:var(--serif);font-weight:800;font-size:56px;line-height:1;color:var(--gold)}
+:is(#e9,#e9f) .e9-tip b{display:block;margin-bottom:4px;color:var(--ink)}
+:is(#e9,#e9f) .e9-compare{display:grid;gap:22px;margin-top:34px}
+@media (min-width:760px){:is(#e9,#e9f) .e9-compare{grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}}
+:is(#e9,#e9f) .e9-col{position:relative;padding:24px 22px;border-radius:var(--r);background:var(--card);border:1px solid var(--edge)}
+:is(#e9,#e9f) .e9-col.e9-plus{border:2px solid var(--gold);box-shadow:0 14px 34px rgba(196,154,60,.18)}
+:is(#e9,#e9f) .e9-col .e9-tag{position:absolute;top:-13px;left:20px;padding:4px 11px;border-radius:999px;background:var(--gold);color:var(--ink);font-size:12px;font-weight:750;letter-spacing:.05em;text-transform:uppercase}
+:is(#e9,#e9f) .e9-col h3{font-size:20px;margin-bottom:14px}
+:is(#e9,#e9f) .e9-col ul{list-style:none;margin:0;padding:0;display:grid;gap:11px}
+:is(#e9,#e9f) .e9-col li{display:grid;grid-template-columns:22px 1fr;gap:11px;align-items:start;font-size:16px;line-height:1.45}
+:is(#e9,#e9f) .e9-col li::before{content:"";width:22px;height:22px;background:var(--i-check) center/contain no-repeat}
+:is(#e9,#e9f) .e9-col li.e9-miss{color:var(--muted)}
+:is(#e9,#e9f) .e9-col li.e9-miss::before{background-image:var(--i-miss)}
+:is(#e9,#e9f) .e9-how{list-style:none;margin:32px 0 0;padding:0;display:grid;gap:12px}
+@media (min-width:600px){:is(#e9,#e9f) .e9-how{grid-template-columns:1fr 1fr}}
+@media (min-width:1024px){:is(#e9,#e9f) .e9-how{grid-template-columns:repeat(4,1fr);gap:16px}}
+:is(#e9,#e9f) .e9-how li{display:grid;grid-template-columns:46px 1fr;gap:14px;align-items:start;padding:18px;background:var(--card);border:1px solid var(--edge);border-radius:var(--r)}
+@media (min-width:1024px){:is(#e9,#e9f) .e9-how li{grid-template-columns:1fr;padding:22px}}
+:is(#e9,#e9f) .e9-how .e9-n{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--gold-soft);color:var(--gold-deep);font-family:var(--serif);font-weight:800;font-size:20px}
+:is(#e9,#e9f) .e9-how h3{font-size:18.5px;margin:2px 0 4px}
+:is(#e9,#e9f) .e9-how p{color:var(--muted);font-size:15.5px}
+:is(#e9,#e9f) .e9-how .e9-time{display:inline-block;margin-top:8px;padding:3px 9px;border-radius:999px;background:#EEF1F6;color:var(--ink);font-size:13px;font-weight:650}
+:is(#e9,#e9f) .e9-final{position:relative;overflow:hidden;background:var(--ink);color:var(--ink-soft);padding-block:56px}
+:is(#e9,#e9f) .e9-final::before{content:"";position:absolute;right:-180px;top:-200px;width:520px;height:520px;border-radius:50%;border:2px solid rgba(196,154,60,.35);pointer-events:none}
+:is(#e9,#e9f) .e9-final::after{content:"";position:absolute;left:-140px;bottom:-260px;width:420px;height:420px;border-radius:50%;border:2px solid rgba(255,255,255,.08);pointer-events:none}
+:is(#e9,#e9f) .e9-final .e9-wrap{position:relative;z-index:1}
+@media (max-width:899px){:is(#e9,#e9f) .e9-final::before,:is(#e9,#e9f) .e9-final::after{display:none}}
+:is(#e9,#e9f) .e9-final-grid{display:grid;gap:28px;align-items:center}
+@media (min-width:900px){:is(#e9,#e9f) .e9-final{padding-block:84px}
+:is(#e9,#e9f) .e9-final-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:64px}}
+:is(#e9,#e9f) .e9-final h2{color:#fff}
+:is(#e9,#e9f) .e9-final .e9-kicker{color:var(--gold-hi)}
+:is(#e9,#e9f) .e9-final .e9-sec-lead{color:var(--ink-soft)}
+:is(#e9,#e9f) .e9-final .e9-offer{color:var(--text);border-color:transparent;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+:is(#e9,#e9f) .e9-final :focus-visible{outline-color:var(--gold-hi)}
+:is(#e9,#e9f) .e9-final .e9-offer :focus-visible{outline-color:var(--ink)}
+:is(#e9,#e9f) .e9-phone{margin-top:20px;font-size:15.5px}
+:is(#e9,#e9f) .e9-phone a{color:#fff;font-weight:650;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.35)}
+:is(#e9,#e9f) .e9-faq{max-width:780px;margin:30px auto 0;border-top:1px solid var(--edge)}
+:is(#e9,#e9f) .e9-faq details{border-bottom:1px solid var(--edge)}
+:is(#e9,#e9f) .e9-faq summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 2px;cursor:pointer;list-style:none;font-weight:650;font-size:17px;color:var(--ink)}
+:is(#e9,#e9f) .e9-faq summary::-webkit-details-marker{display:none}
+:is(#e9,#e9f) .e9-faq summary::after{content:"";flex:none;width:28px;height:28px;border-radius:50%;background:var(--gold-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 6v12M6 12h12' stroke='%238F6C1F' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/16px no-repeat;transition:transform .2s ease}
+:is(#e9,#e9f) .e9-faq details[open] summary::after{transform:rotate(45deg)}
+:is(#e9,#e9f) .e9-faq details p{padding:0 2px 18px;color:var(--muted);max-width:66ch}
+:is(#e9,#e9f) .e9-foot{padding-block:30px;border-top:1px solid var(--edge);background:var(--paper);text-align:center;font-size:14px;color:var(--muted)}
+:is(#e9,#e9f) .e9-foot .e9-logo{width:96px;margin:0 auto 12px}
+:is(#e9,#e9f) .e9-foot a{color:var(--ink);font-weight:650;text-decoration:none}
+:is(#e9,#e9f) .e9-foot p+p{margin-top:4px}
+:is(#e9,#e9f) .e9-bar{position:fixed;left:0;right:0;bottom:0;z-index:9000;padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(255,253,248,.97);border-top:1px solid var(--edge);box-shadow:0 -10px 28px rgba(27,42,74,.12);transform:translateY(110%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s}
+:is(#e9,#e9f) .e9-bar.e9-show{transform:none;visibility:visible;transition:transform .25s ease}
+:is(#e9,#e9f) .e9-bar-in{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:640px;margin-inline:auto}
+:is(#e9,#e9f) .e9-bar-t{min-width:0;line-height:1.2}
+:is(#e9,#e9f) .e9-bar-t b{display:block;font-size:14.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:is(#e9,#e9f) .e9-bar-t span{font-family:var(--serif);font-weight:800;font-size:21px;color:var(--ink)}
+:is(#e9,#e9f) .e9-btn.e9-sm{width:auto;flex:none;min-height:50px;padding:10px 18px}
+:is(#e9,#e9f) .e9-btn.e9-sm .e9-btn-main{font-size:16.5px}
+@media (min-width:900px){:is(#e9,#e9f) .e9-bar{display:none}}
+@media (max-width:899px){:is(#e9,#e9f) .e9-foot{padding-bottom:calc(30px + 80px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-motion:reduce){:is(#e9,#e9f),:is(#e9,#e9f) *,:is(#e9,#e9f) *::before,:is(#e9,#e9f)::before,:is(#e9,#e9f) *::after,:is(#e9,#e9f)::after{transition:none!important;animation:none!important}}
+@media print{:is(#e9,#e9f) .e9-bar,:is(#e9,#e9f) .e9-top .e9-steps{display:none}}
+:is(#e9,#e9f) .e9-demo{width:min(100% - 14px,420px);margin-inline:auto}
+:is(#e9,#e9f) .e9-demo-hint{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 14px;font-size:14.5px;font-weight:650;color:var(--gold-deep)}
+:is(#e9,#e9f) .e9-demo-hint svg{width:20px;height:20px;flex:none}
+:is(#e9,#e9f) .e9-deckw{position:relative;perspective:1600px}
+:is(#e9,#e9f) .e9-deckw::before,:is(#e9,#e9f) .e9-deckw::after{content:"";position:absolute;inset:0;border-radius:18px;background:var(--card);border:1px solid var(--edge)}
+:is(#e9,#e9f) .e9-deckw::before{transform:translate(9px,9px) rotate(1.6deg)}
+:is(#e9,#e9f) .e9-deckw::after{transform:translate(4px,4px) rotate(.7deg)}
+@media (max-width:400px){:is(#e9,#e9f) .e9-deckw::before{transform:translate(6px,7px) rotate(1deg)}
+:is(#e9,#e9f) .e9-deckw::after{transform:translate(3px,3px) rotate(.4deg)}}
+:is(#e9,#e9f) .e9-fc{position:relative;z-index:1;display:grid;transition:transform .55s cubic-bezier(.3,.7,.2,1);transform-style:preserve-3d}
+:is(#e9,#e9f) .e9-fc.e9-flipped{transform:rotateY(180deg)}
+:is(#e9,#e9f) .e9-fs{grid-area:1/1;display:flex;flex-direction:column;padding-bottom:18px;background:var(--card);border:1px solid var(--edge);border-radius:18px;box-shadow:0 14px 36px rgba(27,42,74,.16);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+:is(#e9,#e9f) .e9-fs.e9-back{transform:rotateY(180deg)}
+:is(#e9,#e9f) .e9-fc.e9-flipped .e9-front,:is(#e9,#e9f) .e9-fc:not(.e9-flipped) .e9-back{pointer-events:none}
+:is(#e9,#e9f) .e9-band{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;background:var(--l1);color:#fff}
+:is(#e9,#e9f) .e9-band small{font-size:12.5px;font-weight:650}
+:is(#e9,#e9f) .e9-band strong{font-family:var(--serif);font-size:16.5px;white-space:nowrap}
+:is(#e9,#e9f) .e9-fq{margin:16px 16px 14px;font-family:var(--serif);font-weight:700;font-size:19px;line-height:1.3;color:var(--ink)}
+:is(#e9,#e9f) .e9-fopts{list-style:none;margin:0;padding:0 16px;display:grid;gap:9px}
+:is(#e9,#e9f) .e9-fopt{display:flex;align-items:center;gap:12px;width:100%;min-height:50px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:transparent;font:inherit;font-size:16px;line-height:1.3;color:var(--text);text-align:left;cursor:pointer;transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent}
+:is(#e9,#e9f) .e9-fopt:hover{border-color:var(--l1)}
+:is(#e9,#e9f) .e9-fopt:disabled{cursor:default}
+:is(#e9,#e9f) .e9-fopt .e9-k{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--l1);color:#fff;font-weight:700;font-size:13.5px}
+:is(#e9,#e9f) .e9-fopt.e9-right{border-color:var(--ok);background:var(--ok-soft)}
+:is(#e9,#e9f) .e9-fopt.e9-right .e9-k{background:var(--ok)}
+:is(#e9,#e9f) .e9-fopt.e9-wrong{border-color:var(--bad);background:var(--bad-soft)}
+:is(#e9,#e9f) .e9-fopt.e9-wrong .e9-k{background:var(--bad)}
+:is(#e9,#e9f) .e9-res{padding:18px 16px 0;text-align:center}
+:is(#e9,#e9f) .e9-mark{display:grid;place-items:center;width:54px;height:54px;margin:0 auto 8px;border-radius:50%;color:#fff;font-size:28px;font-weight:700;line-height:1}
+:is(#e9,#e9f) .e9-res.e9-ok .e9-mark{background:var(--ok)}
+:is(#e9,#e9f) .e9-res.e9-bad .e9-mark{background:var(--bad)}
+:is(#e9,#e9f) .e9-res h3{font-size:23px}
+:is(#e9,#e9f) .e9-flbl{margin:14px 16px 5px;font-size:12px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+:is(#e9,#e9f) .e9-fans{margin:0 16px;padding:10px 12px;border-radius:10px;background:var(--ok-soft);color:var(--ok-ink);font-weight:650}
+:is(#e9,#e9f) .e9-fexp{margin:0 16px;font-size:15.5px;line-height:1.5}
+:is(#e9,#e9f) .e9-fwork{margin:12px 16px 0;font-size:14.5px;color:var(--muted)}
+:is(#e9,#e9f) .e9-fwork b{color:var(--ink);font-weight:650}
+:is(#e9,#e9f) .e9-fagain{align-self:center;margin:16px 16px 0;padding:10px 18px;min-height:44px;border:1.5px solid var(--line);border-radius:999px;background:transparent;font:inherit;font-size:15px;font-weight:650;color:var(--ink);cursor:pointer}
+:is(#e9,#e9f) .e9-fagain:hover{border-color:var(--ink)}
+:is(#e9,#e9f) .e9-demo-cap{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
+:is(#e9,#e9f) .e9-fnote{margin:auto 16px 0;padding-top:16px;text-align:center;font-size:14px;color:var(--muted)}
+:is(#e9,#e9f) .e9-nw{white-space:nowrap}
+:is(#e9,#e9f) .e9-parts.e9-three{grid-template-columns:1fr}
+@media (min-width:760px){:is(#e9,#e9f) .e9-parts.e9-three{grid-template-columns:repeat(3,1fr)}}
+:is(#e9,#e9f) .e9-lvl{display:inline-block;margin-bottom:10px;padding:3px 10px;border-radius:999px;background:var(--gold-soft);color:var(--gold-deep);font-size:12.5px;font-weight:750;letter-spacing:.04em}
+@media (max-width:599px){:is(#e9,#e9f) .e9-parts.e9-three .e9-part{display:block}}
+:is(#e9,#e9f) .e9-dots{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:9px}
+:is(#e9,#e9f) .e9-dots li{display:grid;grid-template-columns:18px 1fr;gap:12px;align-items:center;font-size:16.5px}
+:is(#e9,#e9f) .e9-dots li::before{content:"";width:16px;height:16px;border-radius:5px;background:var(--dot)}
+:is(#e9,#e9f) .e9-kmap{margin:0;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+:is(#e9,#e9f) .e9-kmap-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+:is(#e9,#e9f) .e9-kmap-h b{font-family:var(--serif);font-size:19px;color:var(--ink)}
+:is(#e9,#e9f) .e9-kmap-h span{font-size:13px;color:var(--muted)}
+:is(#e9,#e9f) .e9-tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+@media (min-width:480px){:is(#e9,#e9f) .e9-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+:is(#e9,#e9f) .e9-tiles li{display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-height:60px;padding:8px 10px;border:1.5px dashed var(--line);border-radius:10px}
+:is(#e9,#e9f) .e9-tiles b{font-size:13.5px;font-weight:650;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
+:is(#e9,#e9f) .e9-tiles span{font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+:is(#e9,#e9f) .e9-tiles .e9-s{border:1.5px solid transparent;background:var(--ok-soft)}
+:is(#e9,#e9f) .e9-tiles .e9-s span{color:var(--ok)}
+:is(#e9,#e9f) .e9-tiles .e9-m{border:1.5px solid transparent;background:var(--gold-soft)}
+:is(#e9,#e9f) .e9-tiles .e9-m span{color:var(--gold-deep)}
+:is(#e9,#e9f) .e9-tiles .e9-w{border:1.5px solid transparent;background:var(--bad-soft)}
+:is(#e9,#e9f) .e9-tiles .e9-w span{color:var(--bad)}
+:is(#e9,#e9f) .e9-kmap figcaption{margin-top:12px;font-size:13px;color:var(--muted)}
+@media (min-width:900px){:is(#e9,#e9f) .e9-split.e9-rev>:first-child{order:2}}
+:is(#e9,#e9f) .e9-chat{margin:0;max-width:440px;width:100%;margin-inline:auto;padding:16px 14px 18px;border-radius:20px;background:var(--viber-soft);box-shadow:var(--shadow)}
+:is(#e9,#e9f) .e9-chat-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+:is(#e9,#e9f) .e9-chat-top i{display:grid;place-items:center;width:36px;height:36px;flex:none;border-radius:50%;background:var(--viber);color:#fff;font-style:normal;font-weight:700}
+:is(#e9,#e9f) .e9-chat-top b{display:block;font-size:15px;color:#2A2160}
+:is(#e9,#e9f) .e9-chat-top span{display:block;font-size:12.5px;color:#6B6596}
+:is(#e9,#e9f) .e9-bubble{padding:12px 14px 8px;border-radius:16px 16px 16px 4px;background:#fff;box-shadow:0 1px 2px rgba(27,42,74,.1);font-size:15px;line-height:1.5;color:var(--text)}
+:is(#e9,#e9f) .e9-bubble p+p{margin-top:2px}
+:is(#e9,#e9f) .e9-bubble .e9-gap{margin-top:10px}
+:is(#e9,#e9f) .e9-bubble time{display:block;margin-top:4px;text-align:right;font-size:12px;color:#8A8FA0}
+:is(#e9,#e9f) .e9-chat figcaption{margin-top:12px;font-size:13px;color:#6B6596;text-align:center}
+:is(#e9,#e9f) .e9-fallback{display:none;margin:10px 0 0;font-size:14.5px;line-height:1.45;color:var(--bad);text-align:center}
+:is(#e9,#e9f) .e9-fallback.e9-on{display:block}
+:is(#e9,#e9f) .e9-fallback a{color:var(--ink);font-weight:650;text-decoration:underline}
+:is(#e9,#e9f) .e9-btn.e9-busy{opacity:.75;pointer-events:none}
+
+/* Фонът минава през цялата ширина на екрана, без хоризонтален скрол */
+body{overflow-x:hidden;overflow-x:clip}
+/* Скрива вградения ъпсел бутон (нашите бутони го натискат вместо клиента) */
+html.e9-hide-native .upsellWidget{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;margin:0!important;padding:0!important}
+</style>
+<div id="e9">
+
+<header class="e9-top">
+  <div class="e9-wrap e9-top-in">
+    <span class="e9-logo" role="img" aria-label="Еду БЕЛ – учебен център по български език и литература"></span>
+    <ol class="e9-steps" aria-label="Стъпки на поръчката">
+      <li class="e9-done"><span class="e9-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="e9-lbl">Поръчка</span></li>
+      <li class="e9-now" aria-current="step"><span class="e9-dot">2</span><span class="e9-lbl">Предложение</span></li>
+      <li><span class="e9-dot">3</span><span class="e9-lbl">Готово</span></li>
+    </ol>
+  </div>
+</header>
+
+<div class="e9-notice" role="status">
+  <div class="e9-wrap e9-notice-in">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2E7D4F"/><path d="M7 12.4l3.3 3.3L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p><b>Поръчката ви е приета.</b> Преди да я изпратим – вижте едно допълнение към картите.</p>
+  </div>
+</div>
+
+<main>
+  <!-- ===== HERO ===== -->
+  <section class="e9-hero" aria-labelledby="e9-h1">
+    <div class="e9-wrap e9-hero-grid">
+      <div class="e9-hero-head">
+        <p class="e9-eyebrow">Интерактивен PDF · 7. клас · НВО по БЕЛ</p>
+        <h1 id="e9-h1">Детето докосва отговора – и <em>веднага</em> разбира дали е верен и защо</h1>
+        <p class="e9-lead">90 интерактивни карти по всички 22 творби за НВО – в един PDF на телефона. Всяка карта казва веднага „Вярно!“ или „Не е вярно“, кой е верният отговор и защо.</p>
+      </div>
+
+      <div class="e9-hero-visual">
+        <div class="e9-demo" data-e9-demo>
+          <p class="e9-demo-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.8-2.4L4.4 15.6a1.6 1.6 0 0 1 2.4-2.1L9 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Опитайте сами – докоснете отговор</p>
+          <div class="e9-deckw">
+            <div class="e9-fc" data-e9-card>
+              <div class="e9-fs e9-front">
+                <div class="e9-band"><small>Ниво 2 · Герои и образи</small><strong>Пример</strong></div>
+                <p class="e9-fq" id="e9-demo-q">Кой герой от „Под игото“ идва в Бяла черква под чуждо име, след като е избягал от заточение?</p>
+                <ul class="e9-fopts" role="group" aria-labelledby="e9-demo-q">
+                  <li><button type="button" class="e9-fopt" data-e9-k="0"><span class="e9-k">А</span><span>Кириак Стефчов</span></button></li>
+                  <li><button type="button" class="e9-fopt" data-e9-k="1" data-e9-right><span class="e9-k">Б</span><span>Бойчо Огнянов</span></button></li>
+                  <li><button type="button" class="e9-fopt" data-e9-k="2"><span class="e9-k">В</span><span>Мичо Бейзадето</span></button></li>
+                  <li><button type="button" class="e9-fopt" data-e9-k="3"><span class="e9-k">Г</span><span>доктор Соколов</span></button></li>
+                </ul>
+                <p class="e9-fnote">Картата ще се обърне веднага – с верния отговор и обяснение.</p>
+              </div>
+              <div class="e9-fs e9-back" aria-hidden="true">
+                <div class="e9-band"><small>Ниво 2 · Герои и образи</small><strong>Пример</strong></div>
+                <div class="e9-res" data-e9-res aria-live="polite"><div class="e9-mark" data-e9-mark aria-hidden="true">✓</div><h3 data-e9-verdict>Вярно!</h3></div>
+                <p class="e9-flbl">Верният отговор</p>
+                <p class="e9-fans">Б) Бойчо Огнянов</p>
+                <p class="e9-flbl">Защо</p>
+                <p class="e9-fexp">Иван Кралич бяга от затвора в Диарбекир и идва в Бяла черква като учителя Бойчо Огнянов. Стефчов е негов враг, а доктор Соколов – негов приятел.</p>
+                <p class="e9-fwork">Преговори: <b>Под игото</b></p>
+                <button type="button" class="e9-fagain" data-e9-again>Опитайте пак</button>
+              </div>
+            </div>
+          </div>
+          <p class="e9-demo-cap">Примерна карта, написана за тази страница. Картите в комплекта са други.</p>
+        </div>
+      </div>
+
+      <div class="e9-hero-buy">
+        <ul class="e9-checks">
+          <li><span><b>90 карти по всички 22 творби</b> от програмата за 7. клас</span></li>
+          <li><span><b>Проверка веднага</b> – верният отговор и защо, след всяка карта</span></li>
+          <li><span><b>3 нива</b> – от фактите до тълкуването, по 30 карти</span></li>
+        </ul>
+
+        <div class="e9-offer">
+          <div class="e9-price-row">
+            <div>
+              <span class="e9-price-label">Към поръчката ви</span>
+              <span class="e9-price" data-e9-price>7,90 €</span>
+            </div>
+            <span class="e9-format"><b>PDF</b>на телефона</span>
+          </div>
+          <a class="e9-btn" href="#" role="button" data-e9-accept>
+            <span class="e9-btn-main">Да, добавете картите<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="e9-btn-sub">Плащате всичко заедно с поръчката</span>
+          </a>
+          <p class="e9-fallback" data-e9-fallback role="alert">Не успяхме да добавим картите автоматично. Обадете ни се на <a data-e9-tel href="tel:+359893425292"><span data-e9-phone>0893 42 52 92</span></a> и ще ги добавим към поръчката.</p>
+          <a class="e9-no" href="#" role="button" data-e9-decline>Не, благодаря – продължавам без тях</a>
+          <div class="e9-assure">
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Без ново попълване на данни</span>
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Отваря се на всеки телефон</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="e9-sec" aria-labelledby="e9-h-how">
+    <div class="e9-wrap">
+      <p class="e9-kicker">Как работи</p>
+      <h2 id="e9-h-how">Карти, които сами проверяват</h2>
+      <p class="e9-sec-lead">Всяка карта първо пита, а после обяснява. Когато детето само търси отговора, го запомня по-добре, отколкото ако просто го прочете.</p>
+      <ol class="e9-how">
+        <li><span class="e9-n">1</span><div><h3>Докосва отговора</h3><p>Въпрос и четири отговора. Детето избира с едно докосване.</p><span class="e9-time">По 10 карти на ден</span></div></li>
+        <li><span class="e9-n">2</span><div><h3>Веднага вижда отговора</h3><p>„Вярно!“ или „Не е вярно“, верният отговор и кратко обяснение защо.</p></div></li>
+        <li><span class="e9-n">3</span><div><h3>Знае какво да преговори</h3><p>Под всяко обяснение пише коя творба да преговори.</p></div></li>
+        <li><span class="e9-n">4</span><div><h3>Продължава напред</h3><p>„Следваща карта“ – и така до 90. По 10 карти на ден, за 9 дни минава всички 22 творби.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== WHAT'S INSIDE ===== -->
+  <section class="e9-sec e9-alt" aria-labelledby="e9-h-inside">
+    <div class="e9-wrap">
+      <p class="e9-kicker">Какво има вътре</p>
+      <h2 id="e9-h-inside">90 карти в три нива – от фактите до тълкуването</h2>
+      <p class="e9-sec-lead">Нивата вървят от лесното към трудното. Детето първо подрежда фактите, а после се учи да мисли като на изпита.</p>
+
+      <div class="e9-parts e9-three">
+        <article class="e9-part">
+          <span class="e9-lvl">Ниво 1 · карти 1–30</span>
+          <h3>Автори, жанрове, факти</h3>
+          <p>Кой е авторът, от коя творба е откъсът, къде се развива действието.</p>
+        </article>
+        <article class="e9-part">
+          <span class="e9-lvl">Ниво 2 · карти 31–60</span>
+          <h3>Герои, образи, мотиви</h3>
+          <p>Какви са героите, какво означават символите и образите.</p>
+        </article>
+        <article class="e9-part">
+          <span class="e9-lvl">Ниво 3 · карти 61–90</span>
+          <h3>Сравнения и тълкуване</h3>
+          <p>Връзки между творбите, мотиви и разпознаване на стихове – като в задачите от НВО.</p>
+        </article>
+      </div>
+
+      <div class="e9-weak">
+        <div>
+          <span class="e9-tag">Всички творби</span>
+          <h3>22 творби от програмата за 7. клас</h3>
+          <p>Цялата литература за НВО – на едно място, в джоба на детето.</p>
+        </div>
+        <ul class="e9-chips" aria-label="Творбите в картите">
+          <li>Хайдути</li>
+          <li>Хубава си, моя горо</li>
+          <li>Отечество любезно, как хубаво си ти!</li>
+          <li>Косачи</li>
+          <li>Художник</li>
+          <li>Под игото – „Представлението“</li>
+          <li>Под игото – „Радини вълнения“</li>
+          <li>Братчетата на Гаврош</li>
+          <li>Серафим</li>
+          <li>Стани, стани, юнак балкански</li>
+          <li>Вятър ечи, Балкан стене</li>
+          <li>На прощаване в 1868 г.</li>
+          <li>Немили-недраги</li>
+          <li>Една българка</li>
+          <li>Опълченците на Шипка</li>
+          <li>Българският език</li>
+          <li>До Чикаго и назад</li>
+          <li>Бай Ганьо пътува</li>
+          <li>Неразделни</li>
+          <li>Заточеници</li>
+          <li>По жътва</li>
+          <li>По жицата</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COMPARE ===== -->
+  <section class="e9-sec" aria-labelledby="e9-h-compare">
+    <div class="e9-wrap">
+      <div class="e9-center">
+        <p class="e9-kicker">Защо заедно</p>
+        <h2 id="e9-h-compare">Хартиените карти учат. Интерактивните проверяват.</h2>
+        <p class="e9-sec-lead">С хартиените карти детето преговаря. С интерактивните проверява дали е запомнило – веднага и навсякъде, на телефона.</p>
+      </div>
+      <div class="e9-compare">
+        <div class="e9-col">
+          <h3>Само с хартиените карти</h3>
+          <ul>
+            <li>Подреден преговор на творбите</li>
+            <li class="e9-miss">Не се вижда веднага дали детето е запомнило</li>
+            <li class="e9-miss">Без въпроси с проверка след всеки отговор</li>
+            <li class="e9-miss">Картите остават у дома</li>
+          </ul>
+        </div>
+        <div class="e9-col e9-plus">
+          <span class="e9-tag">Препоръчваме</span>
+          <h3>Хартиените + интерактивните карти</h3>
+          <ul>
+            <li>Подреден преговор на творбите</li>
+            <li>90 въпроса с проверка веднага – и обяснение защо</li>
+            <li>Под всеки отговор – коя творба да преговори</li>
+            <li>На телефона – навсякъде, по 10 карти на ден</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FINAL CALL ===== -->
+  <section class="e9-final" aria-labelledby="e9-h-final">
+    <div class="e9-wrap e9-final-grid">
+      <div>
+        <p class="e9-kicker">Последна стъпка</p>
+        <h2 id="e9-h-final">Добавете интерактивните карти към поръчката си</h2>
+        <p class="e9-sec-lead">По 10 карти на ден са достатъчни – за 9 дни детето минава през всичките 22 творби и вижда сам къде греши, докато има време да навакса.</p>
+        <p class="e9-phone">Въпроси? Обадете ни се: <a data-e9-tel href="tel:+359893425292"><span data-e9-phone>0893 42 52 92</span></a></p>
+      </div>
+      <div class="e9-offer">
+        <div class="e9-price-row">
+          <div>
+            <span class="e9-price-label">90 интерактивни карти · PDF</span>
+            <span class="e9-price" data-e9-price>7,90 €</span>
+          </div>
+          <span class="e9-format"><b>7. клас</b>22 творби</span>
+        </div>
+        <a class="e9-btn" href="#" role="button" data-e9-accept>
+          <span class="e9-btn-main">Да, добавете картите<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="e9-btn-sub">Плащате всичко заедно с поръчката</span>
+        </a>
+        <p class="e9-fallback" data-e9-fallback role="alert">Не успяхме да добавим картите автоматично. Обадете ни се на <a data-e9-tel href="tel:+359893425292"><span data-e9-phone>0893 42 52 92</span></a> и ще ги добавим към поръчката.</p>
+        <a class="e9-no" href="#" role="button" data-e9-decline>Не, благодаря – продължавам без тях</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="e9-sec" aria-labelledby="e9-h-faq">
+    <div class="e9-wrap">
+      <div class="e9-center">
+        <p class="e9-kicker">Въпроси</p>
+        <h2 id="e9-h-faq">Често питат</h2>
+      </div>
+      <div class="e9-faq">
+        <details>
+          <summary>Как получавам картите?</summary>
+          <p>Като PDF файл на имейла си, след като получите пратката – заедно с другите дигитални продукти от поръчката.</p>
+        </details>
+        <details>
+          <summary>На какво се отварят?</summary>
+          <p>На телефон, таблет или компютър – в Chrome, Safari, Adobe Reader или в приложението за PDF на телефона. Без регистрация.</p>
+        </details>
+        <details>
+          <summary>За кой клас са?</summary>
+          <p>За 7. клас и за подготовката за НВО по литература. Обхващат всички 22 творби от учебната програма.</p>
+        </details>
+        <details>
+          <summary>Колко време отнемат?</summary>
+          <p>По 10 карти на ден са достатъчни – за 9 дни детето минава през всички 22 творби. Може да реши цяло ниво или да прескочи до друго.</p>
+        </details>
+        <details>
+          <summary>Ще плащам ли отделно?</summary>
+          <p>Не. Интерактивните карти се добавят към същата поръчка и плащате всичко заедно.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="e9-foot">
+  <span class="e9-logo" role="img" aria-label="Еду БЕЛ"></span>
+  <p>Еду БЕЛ – учебен център по български език и литература</p>
+  <p><a href="https://edubel.site">edubel.site</a> · <a data-e9-tel href="tel:+359893425292"><span data-e9-phone>0893 42 52 92</span></a></p>
+</footer>
+</div>
+<div id="e9f">
+<div class="e9-bar" data-e9-bar>
+  <div class="e9-bar-in">
+    <div class="e9-bar-t"><b>90 интерактивни карти</b><span data-e9-price>7,90 €</span></div>
+    <a class="e9-btn e9-sm" href="#" role="button" data-e9-accept tabindex="-1"><span class="e9-btn-main">Добавете</span></a>
+  </div>
+</div>
+</div>
+<script>
+(function () {
+  /* ============ НАСТРОЙКИ – промени само тук ============ */
+  var CONFIG = {
+    price: 7.90,             // цената в ъпсела – трябва да е същата като в „Upsell бутона“ на ConvertBuilder
+    phone: '0893 42 52 92',  // показва се, ако бутонът не може да добави картите
+    hideNativeWidget: true,  // скрива вградения ъпсел бутон – нашите бутони го натискат вместо клиента
+    busyText: 'Добавяме…',   // текст на бутона, докато се добавя
+    acceptUrl: '',           // резервно: линк при „Да“, ако на страницата няма ъпсел бутон
+    declineUrl: ''           // резервно: линк при „Не“ (напр. страницата „Благодарим“)
+  };
+  /* ====================================================== */
+
+  var root = document.getElementById('e9');
+  if (!root || root.getAttribute('data-e9-ready')) return;
+  root.setAttribute('data-e9-ready', '1');
+  var fixed = document.getElementById('e9f');
+  function each(sel, fn) {
+    Array.prototype.forEach.call(root.querySelectorAll(sel), fn);
+    if (fixed) Array.prototype.forEach.call(fixed.querySelectorAll(sel), fn);
+  }
+
+  // Цена и телефон
+  var priceText = CONFIG.price.toFixed(2).replace('.', ',') + ' €';
+  each('[data-e9-price]', function (el) { el.textContent = priceText; });
+  each('[data-e9-phone]', function (el) { el.textContent = CONFIG.phone; });
+  each('[data-e9-tel]', function (el) { el.href = 'tel:' + CONFIG.phone.replace(/[^\d+]/g, '').replace(/^0/, '+359'); });
+
+  if (CONFIG.hideNativeWidget) document.documentElement.classList.add('e9-hide-native');
+
+  // Фонът на цялата ширина: родителските колони на платформата да не го изрязват
+  for (var el = root.parentElement; el && el !== document.body; el = el.parentElement) {
+    var ox = getComputedStyle(el).overflowX;
+    if (ox === 'hidden' || ox === 'clip') el.style.overflow = 'visible';
+  }
+  // Лентата долу отива направо под <body>: обвивка на платформата с transform би я заковала към себе си
+  if (fixed && fixed.parentNode !== document.body) document.body.appendChild(fixed);
+
+  // Примерната карта: докосваш отговор и картата се обръща с верния отговор и обяснението
+  var card = root.querySelector('[data-e9-card]');
+  if (card) {
+    var front = card.querySelector('.e9-front'), back = card.querySelector('.e9-back');
+    var opts = card.querySelectorAll('.e9-fopt'), again = card.querySelector('[data-e9-again]');
+    var res = card.querySelector('[data-e9-res]'), mark = card.querySelector('[data-e9-mark]'), verdict = card.querySelector('[data-e9-verdict]');
+    var timer = null, done = false;
+    Array.prototype.forEach.call(opts, function (b) {
+      b.addEventListener('click', function () {
+        if (done) return;
+        done = true;
+        var ok = b.hasAttribute('data-e9-right');
+        Array.prototype.forEach.call(opts, function (o) {
+          o.disabled = true;
+          if (o.hasAttribute('data-e9-right')) o.classList.add('e9-right');
+        });
+        if (!ok) b.classList.add('e9-wrong');
+        res.className = 'e9-res ' + (ok ? 'e9-ok' : 'e9-bad');
+        mark.textContent = ok ? '✓' : '✗';
+        verdict.textContent = ok ? 'Вярно!' : 'Не е вярно';
+        timer = setTimeout(function () {
+          card.classList.add('e9-flipped');
+          front.setAttribute('aria-hidden', 'true');
+          back.removeAttribute('aria-hidden');
+          setTimeout(function () { again.focus({ preventScroll: true }); }, 350);
+        }, ok ? 500 : 900);
+      });
+    });
+    again.addEventListener('click', function () {
+      clearTimeout(timer);
+      done = false;
+      card.classList.remove('e9-flipped');
+      back.setAttribute('aria-hidden', 'true');
+      front.removeAttribute('aria-hidden');
+      Array.prototype.forEach.call(opts, function (o) { o.disabled = false; o.classList.remove('e9-right', 'e9-wrong'); });
+      setTimeout(function () { opts[0].focus({ preventScroll: true }); }, 350);
+    });
+  }
+
+  function track(name) {
+    try {
+      if (window.fbq) window.fbq('trackCustom', name);
+      if (window.gtag) window.gtag('event', name);
+    } catch (e) {}
+  }
+
+  // „Да“ → натиска вградения ъпсел бутон на платформата (добавя картите към същата поръчка)
+  var busy = false;
+  var accepts = [];
+  each('[data-e9-accept]', function (b) {
+    accepts.push(b);
+    var m = b.querySelector('.e9-btn-main');
+    b.setAttribute('data-e9-label', m.firstChild.nodeValue);
+  });
+  function setBusy(on) {
+    busy = on;
+    accepts.forEach(function (b) {
+      b.classList.toggle('e9-busy', on);
+      b.querySelector('.e9-btn-main').firstChild.nodeValue = on ? CONFIG.busyText : b.getAttribute('data-e9-label');
+    });
+  }
+  function fallback(on) {
+    each('[data-e9-fallback]', function (el) { el.classList.toggle('e9-on', on); });
+  }
+  function accept(e) {
+    e.preventDefault();
+    if (busy) return;
+    track('UpsellOnlineCardsAccept');
+    fallback(false);
+    var native = document.querySelector('.upsell-positive-action');
+    if (!native && !CONFIG.acceptUrl) {
+      fallback(true);
+      if (window.console) console.warn('Еду БЕЛ ъпсел: на страницата няма „Upsell бутон“ на ConvertBuilder (.upsell-positive-action). Добави го под този блок и избери интерактивните карти в него.');
+      return;
+    }
+    if (native && document.cookie.indexOf('last-order-token') === -1 && window.console) {
+      console.warn('Еду БЕЛ ъпсел: няма поръчка в браузъра (last-order-token). Бутонът работи само във фунията след реална (тестова) поръчка, не в редактора.');
+    }
+    setBusy(true);
+    // ако след 10 сек. сме още тук и платформата не е отворила прозорец – връщаме бутона и показваме телефона
+    setTimeout(function () {
+      if (!busy) return;
+      setBusy(false);
+      if (!document.querySelector('[id^="platform-popup-"]')) fallback(true);
+    }, 10000);
+    if (native) native.click();
+    else window.location.href = CONFIG.acceptUrl;
+  }
+
+  // „Не“ → следващата стъпка от фунията
+  function decline(e) {
+    e.preventDefault();
+    track('UpsellOnlineCardsDecline');
+    var native = document.querySelector('.upsell-negative-action');
+    if (native) { native.click(); return; }
+    var F = window.WebPlatform && window.WebPlatform.Funnels;
+    if (F && F.show && F.isInFunnel && F.isInFunnel()) { F.show('next', false, true); return; }
+    if (CONFIG.declineUrl) window.location.href = CONFIG.declineUrl;
+  }
+
+  accepts.forEach(function (b) { b.addEventListener('click', accept); });
+  each('[data-e9-decline]', function (b) { b.addEventListener('click', decline); });
+
+  // Лентата на телефона: показва се, когато нито едно от предложенията не е на екрана
+  var bar = fixed && fixed.querySelector('[data-e9-bar]');
+  var offers = root.querySelectorAll('.e9-offer');
+  if (!bar || !offers.length) return;
+  var barBtn = bar.querySelector('a');
+  var queued = false;
+  function update() {
+    queued = false;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var anyVisible = false;
+    Array.prototype.forEach.call(offers, function (o) {
+      var r = o.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < vh) anyVisible = true;
+    });
+    var show = !anyVisible && offers[0].getBoundingClientRect().bottom <= 0;
+    bar.classList.toggle('e9-show', show);
+    if (barBtn) barBtn.tabIndex = show ? 0 : -1;
+  }
+  function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue);
+  update();
+})();
+</script>
