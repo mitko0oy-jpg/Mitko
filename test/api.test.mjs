@@ -288,7 +288,7 @@ test("lessons and texts: empty template, written lesson, locked text", async () 
 test("НВО тренажор: personal code, three devices, merged grades, support page", async () => {
   const bank = await admin("trener-bank", {
     passages: { p1: { title: "Текст", text: ["Абзац."] } },
-    questions: Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото." })),
+    questions: Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото така казва правилото за правопис." })),
     modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }],
     dossiers: { title: "Литературни досиета", dossiers: [{ id: "d01", no: 1, work: "„Творба“" }], message: { fields: 1, groups: [[1]], text: "А" } },
   });
@@ -393,4 +393,27 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   await t("trener/open", { code, device: dev(1) });
   r = await t("trener/renew", { code, device: dev(1), renew: ren2 });
   assert.equal(r.error, "unlimited", "a code without an end date needs no renewal");
+
+  // Passing a code around: a code takes its 3 places plus 3 changes in 30 days, then no more new devices.
+  r = await owner("trener/admin/codes", { count: 1, batch: `swap-${run}` });
+  const swap = r.codes[0];
+  const sw = (n) => `${n}`.padStart(2, "0").repeat(24).replace(/^../, "ab");
+  for (let i = 0; i < 6; i++) {
+    r = await t("trener/open", { code: swap, device: sw(i) });
+    assert.ok(r.devices, `device ${i + 1} gets in`);
+    if (r.devices.length === 3) await t("trener/forget", { code: swap, device: sw(i), target: r.devices[0].id });
+  }
+  r = await t("trener/open", { code: swap, device: sw(6) });
+  assert.equal(r.error, "too_many_devices", "the 7th new device in a month is refused");
+  r = await owner(`trener/admin/key?code=${swap}`);
+  assert.equal(r.key.adds30, 6);
+  r = await owner("trener/admin/key", { code: swap, action: "free" });
+  r = await t("trener/open", { code: swap, device: sw(6) });
+  assert.ok(r.devices, "freeing the devices on the support page starts the count again");
+
+  // Every copy of the questions carries its code's invisible fingerprint; a leaked text leads back to the code.
+  const whyText = r.bank.questions.map((x) => x.why || "").join("\n");
+  assert.ok(/\u2060[\u200b\u200c]{32}\u2060/.test(whyText), "the explanations carry the fingerprint");
+  const trace = await admin("trener-trace", { text: whyText });
+  assert.deepEqual(trace.codes.map((c) => c.code), [swap]);
 });

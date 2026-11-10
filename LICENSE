@@ -1,0 +1,16 @@
+Copyright (c) 2026 Еду БЕЛ. Всички права запазени. / All rights reserved.
+
+Този код, дизайнът, илюстрациите, звуците и текстовете на платформата Еду БЕЛ
+(включително НВО тренажора, играта „Литературни досиета“ и героя „Ерчо“) са
+защитени с авторско право. Не се разрешава копиране, промяна, разпространение,
+продажба или използване в други продукти без писмено разрешение от Еду БЕЛ.
+
+Видимостта на хранилището не дава права за ползване.
+
+This source code, design, illustrations, sounds and texts are proprietary.
+No permission is granted to copy, modify, distribute, sell or use them
+in other products without written permission from Еду БЕЛ.
+
+Шрифтовете в public/fonts/ (Golos Text, Literata, Caveat, Unbounded) са под
+SIL Open Font License и остават под нея. Библиотеката public/assets/vendor/qrcode.js
+е под MIT лиценз.

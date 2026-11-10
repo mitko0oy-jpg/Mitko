@@ -19,6 +19,32 @@ export async function latestBank(): Promise<{ id: number; data: any } | null> {
   return cache;
 }
 
+/* ---------- invisible watermark ---------- */
+// Every copy of the questions a code receives carries that code's fingerprint, hidden in the explanations as
+// zero-width characters (invisible on screen, kept when the text is copied). A leaked copy can be traced back
+// to its code (scripts/admin.mjs trener-trace <file>) and the code stopped.
+const ZW0 = "​", ZW1 = "‌", ZWMARK = "⁠";
+export const fingerprint = (code: string) => createHash("sha256").update("edubel-wm:" + code).digest("hex").slice(0, 8);
+export function watermark(data: any, code: string) {
+  const bits = [...parseInt(fingerprint(code), 16).toString(2).padStart(32, "0")].map((b) => (b === "1" ? ZW1 : ZW0)).join("");
+  const mark = ZWMARK + bits + ZWMARK;
+  const out = JSON.parse(JSON.stringify(data));
+  for (const q of out.questions || []) {
+    if (typeof q.why === "string" && q.why.length > 20) {
+      const i = q.why.indexOf(" ", Math.floor(q.why.length / 2));
+      q.why = i > 0 ? q.why.slice(0, i) + mark + q.why.slice(i) : q.why + mark;
+    }
+  }
+  return out;
+}
+// Reads the fingerprints (8 hex characters) hidden in a piece of text.
+export function readMarks(text: string) {
+  const re = new RegExp(`${ZWMARK}([${ZW0}${ZW1}]{32})${ZWMARK}`, "g");
+  const found = new Set<string>();
+  for (const m of text.matchAll(re)) found.add(parseInt([...m[1]].map((c) => (c === ZW1 ? "1" : "0")).join(""), 2).toString(16).padStart(8, "0"));
+  return [...found];
+}
+
 /* ---------- the pupil's saved state ---------- */
 // Shape (written by public/assets/trener.js):
 // { name, avatar, hist: [{m, d, p, n, s, w: [ids], a?: {read:[p,n], lang:[p,n], lit:[p,n]}}], mist: {id: {n, ok, d}},

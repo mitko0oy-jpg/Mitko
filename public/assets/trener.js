@@ -311,7 +311,8 @@ function home(scrollTo) {
   if (ONLINE) h += Online.accessSection();
   h += `<section class="reset" id="reset"><h3>Започни отначало</h3>
       <p class="small muted">Изтрива всички оценки, датите, тетрадката с грешки и напредъка в играта. Задачите остават. Ако искаш да изчистиш само един модул, използвай „Нулирай“ до него.</p>
-      <div id="resetZone"><button class="btn line danger sm" data-act="resetAllAsk">Нулирай целия прогрес</button></div></section>`;
+      <div id="resetZone"><button class="btn line danger sm" data-act="resetAllAsk">Нулирай целия прогрес</button></div></section>
+    <p class="legal">© ${new Date().getFullYear()} Еду БЕЛ. Задачите, играта, героите и илюстрациите са защитени с авторско право. Достъпът е личен – копирането и разпространението не са разрешени.</p>`;
   app.innerHTML = h;
   drawChart();
   if (scrollTo) document.getElementById(scrollTo)?.scrollIntoView({ block: "start" });
@@ -1117,6 +1118,7 @@ const Online = (() => {
       if (e.code === "devices_full") return fullScreen(e.data);
       if (e.status === 404 || e.code === "code") { ls.del(K_CODE); code = ""; return codeScreen(e.message); }
       if (e.code === "disabled") return message("Този код е спрян", "Свържи се с Еду БЕЛ, за да го пуснем отново.", [["otherCode", "Въведи друг код"]]);
+      if (e.code === "too_many_devices") return message("Твърде много нови устройства", `${e.message} Покажи това съобщение на родител.`, [["otherCode", "Въведи друг код"]]);
       if (e.code === "expired") {
         lastExpired = e.message;
         const pending = ls.get(K_RENEW);

@@ -202,7 +202,8 @@ async function find(raw, action) {
       <dl><dt>Партида</dt><dd>${esc(k.batch || "–")}</dd><dt>Създаден</dt><dd>${fmtDate(k.createdAt)}</dd><dt>Първо отваряне</dt><dd>${fmtTime(k.firstUsed)}</dd><dt>Последно</dt><dd>${fmtTime(k.lastUsed)}</dd>
         <dt>Срок</dt><dd>${k.expiresAt ? `до ${fmtDate(k.expiresAt)}` : esc(termLong(termOf(k)) || "без срок")}</dd>
         <dt>Решени тестове</dt><dd>${k.tests}${k.last ? ` (последно ${k.last.p}/${k.last.n} на ${fmtDate(k.last.d)})` : ""}</dd></dl>
-      <p><b>Устройства (${r.devices.length} от ${k.maxDevices})</b></p>
+      <p><b>Устройства (${r.devices.length} от ${k.maxDevices})</b>${k.adds30 ? ` <span class="small muted">· нови за 30 дни: ${k.adds30} от ${k.maxDevices + 3} позволени</span>` : ""}</p>
+      ${k.adds30 > k.maxDevices + 1 ? `<p class="small" style="color:#B23A3A">Кодът често сменя устройства – възможно е да се споделя. „Освободи устройствата“ нулира и броя.</p>` : ""}
       ${r.devices.length ? `<ul class="kdev">${r.devices.map((d) => `<li>${esc(d.label)} <small>от ${fmtDate(d.since)}, последно ${fmtTime(d.lastSeen)}</small></li>`).join("")}</ul>` : `<p class="muted small">Няма записани устройства.</p>`}
       <label class="field"><span>Бележка (например номер на поръчка)</span><input type="text" id="noteIn" value="${esc(k.note)}" maxlength="300"></label>
       <div class="row"><button class="btn ghost" id="saveNote">Запази бележката</button>

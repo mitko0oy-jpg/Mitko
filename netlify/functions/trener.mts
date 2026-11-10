@@ -3,7 +3,7 @@ import { requireUser } from "../lib/auth.mts";
 import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
-import { cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, validDevice } from "../lib/trener.mts";
+import { cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
 // the code is the key, each code works on up to max_devices browsers, and the grades are kept with the code.
@@ -16,6 +16,9 @@ const devicesOf = async (code: string, me?: string) =>
     lastSeen: d.last_seen,
     me: d.device === me,
   }));
+
+// New devices allowed per code in 30 days: its own places plus this many changes.
+const SWAP_DAYS = 30, SWAP_EXTRA = 3;
 
 const bgDate = (d: string | Date) => new Intl.DateTimeFormat("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "numeric", year: "numeric" }).format(new Date(d));
 
@@ -82,8 +85,14 @@ export default handle(async (req, ctx) => {
         await t("UPDATE trener_devices SET last_seen = now() WHERE code = $1 AND device = $2", [code, dev]);
       } else {
         const [{ n }] = await t<{ n: number }>("SELECT count(*)::int AS n FROM trener_devices WHERE code = $1", [code]);
-        if (n >= key.max_devices) return { full: true, key };
+        if (n >= key.max_devices) return { full: true, swaps: false, key };
+        // A code may take its own places plus a few changes in 30 days (a new phone, a reinstalled browser),
+        // so freeing a place again and again cannot pass one code around many families.
+        const windowFresh = !key.adds_since || new Date(key.adds_since).getTime() < Date.now() - SWAP_DAYS * 86_400_000;
+        const adds = windowFresh ? 0 : Number(key.adds || 0);
+        if (adds >= key.max_devices + SWAP_EXTRA) return { full: false, swaps: true, key };
         await t("INSERT INTO trener_devices (code, device, label) VALUES ($1, $2, $3)", [code, dev, cleanLabel(b.label)]);
+        await t(`UPDATE trener_keys SET adds = $2, adds_since = ${windowFresh ? "now()" : "adds_since"} WHERE code = $1`, [code, adds + 1]);
         isNew = true;
       }
       let state = key.state;
@@ -94,8 +103,12 @@ export default handle(async (req, ctx) => {
       const [dates] = await t(`UPDATE trener_keys SET first_used = COALESCE(first_used, now()), last_used = now(), ${START_EXPIRY} WHERE code = $1 RETURNING expires_at`, [code]);
       // A batch with a fixed end date can be opened for the first time after that date.
       if (dates.expires_at && new Date(dates.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(dates.expires_at)}`);
-      return { full: false, key, state: cleanState(state), isNew, expiresAt: dates.expires_at };
+      return { full: false, swaps: false, key, state: cleanState(state), isNew, expiresAt: dates.expires_at };
     });
+    if (res.swaps) {
+      await event("trener_device_swaps", { batch: res.key.batch });
+      throw new HttpError(429, "too_many_devices", "Този код е отварян на твърде много нови устройства през последния месец. Свържи се с Еду БЕЛ и ще помогнем.");
+    }
     if (res.full) {
       await event("trener_devices_full", { batch: res.key.batch });
       return json(
@@ -120,7 +133,7 @@ export default handle(async (req, ctx) => {
       devices: await devicesOf(code, dev),
       state: res.state,
       bankId: bank.id,
-      bank: Number(b.have) === bank.id ? undefined : bank.data,
+      bank: Number(b.have) === bank.id ? undefined : watermark(bank.data, code),
     });
   }
 
@@ -247,7 +260,10 @@ async function admin(req: Request, parts: string[]) {
     const code = codeOf(b.code);
     const key = await one<any>("SELECT * FROM trener_keys WHERE code = $1", [code]);
     if (!key) throw notFound("Няма такъв код.");
-    if (b.action === "free") await q("DELETE FROM trener_devices WHERE code = $1", [code]);
+    if (b.action === "free") {
+      await q("DELETE FROM trener_devices WHERE code = $1", [code]);
+      await q("UPDATE trener_keys SET adds = 0, adds_since = NULL WHERE code = $1", [code]);
+    }
     else if (b.action === "disable") await q("UPDATE trener_keys SET disabled_at = now() WHERE code = $1", [code]);
     else if (b.action === "enable") await q("UPDATE trener_keys SET disabled_at = NULL WHERE code = $1", [code]);
     else if (b.action === "note") await q("UPDATE trener_keys SET note = $2 WHERE code = $1", [code, str(b.note, 300)]);
@@ -284,6 +300,8 @@ function keyView(k: any) {
     kind: k.kind,
     usedFor: k.used_for ? formatCode(k.used_for) : null,
     tests: hist.length,
+    // new devices in the current 30-day window (more than the places means the code is being passed around)
+    adds30: k.adds_since && new Date(k.adds_since).getTime() > Date.now() - SWAP_DAYS * 86_400_000 ? Number(k.adds || 0) : 0,
     last: last ? { m: last.m, p: last.p, n: last.n, d: last.d } : null,
   };
 }

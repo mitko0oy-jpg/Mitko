@@ -1,8 +1,9 @@
 import type { Config } from "@netlify/functions";
 import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
-import { one, q, tx } from "../lib/db.mts";
-import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
+import { hit, one, q, tx } from "../lib/db.mts";
+import { bad, body, clientIp, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { fingerprint, readMarks } from "../lib/trener.mts";
 
 const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading"];
 
@@ -14,8 +15,14 @@ function stable(v: any): string {
 }
 
 // Operator API used by Claude from the command line. Protected by the ADMIN_TOKEN header.
-export default handle(async (req) => {
-  requireAdmin(req);
+export default handle(async (req, ctx) => {
+  try {
+    requireAdmin(req);
+  } catch (e) {
+    // Wrong token: after a few tries from one address, stop answering for an hour (the token itself is 48 random characters).
+    if (!(await hit(`admin-miss:${clientIp(req, ctx)}`, 10, 3600))) throw tooMany();
+    throw e;
+  }
   const parts = sub(req, "/api/admin/");
 
   if (req.method === "GET" && parts[0] === "stats") {
@@ -71,6 +78,14 @@ export default handle(async (req) => {
     const modules = await q("SELECT * FROM modules ORDER BY grade, position");
     const items = await q("SELECT module_slug, ext_id, position, data, status, reviewed_at, updated_at FROM items ORDER BY module_slug, position");
     return json({ modules, items });
+  }
+
+  // НВО тренажор: a full copy of the codes and the pupils' grades (to keep somewhere safe).
+  if (req.method === "GET" && parts[0] === "trener-backup") {
+    const keys = await q("SELECT * FROM trener_keys ORDER BY created_at, code");
+    const devices = await q("SELECT code, device, label, created_at, last_seen FROM trener_devices ORDER BY code, created_at");
+    const bank = await one<{ id: string }>("SELECT max(id) AS id FROM trener_bank");
+    return json({ at: new Date().toISOString(), bankId: bank?.id ? Number(bank.id) : null, keys, devices });
   }
 
   if (req.method !== "POST") throw notFound();
@@ -184,6 +199,15 @@ export default handle(async (req) => {
       if (r.length) codes.push(formatCode(c));
     }
     return json({ ok: true, batch, codes, months, validUntil });
+  }
+
+  // НВО тренажор: which code a leaked copy of the questions came from (its hidden fingerprint, see lib/trener.mts).
+  if (parts[0] === "trener-trace") {
+    const marks = new Set<string>([...(Array.isArray(b.marks) ? b.marks : []), ...readMarks(str(b.text, 2_000_000))].map((x) => String(x).toLowerCase()));
+    if (!marks.size) return json({ marks: [], codes: [] });
+    const rows = await q<any>("SELECT code, batch, note, first_used, last_used, disabled_at FROM trener_keys");
+    const codes = rows.filter((r) => marks.has(fingerprint(r.code))).map((r) => ({ ...r, code: formatCode(r.code), fingerprint: fingerprint(r.code) }));
+    return json({ marks: [...marks], codes });
   }
 
   // Gives an existing account the admin role (for the /kodove/ support page).
