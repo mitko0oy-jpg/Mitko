@@ -1,0 +1,619 @@
+<title>Нов тренажор · модел</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..800&family=Unbounded:wght@600..800&display=swap">
+<style>
+/* A phone app: one screen at a time, a bottom tab bar (Днес · Път · Бележник · Аз); the look of the НВО тренажор. */
+:root{
+  --page:#F4F1FF; --paper:#FFFFFF; --edge:#E7E1FA; --line:#E1DBF5; --band:rgba(108,75,255,.08);
+  --ink:#1C1440; --text:#2A2350; --muted:#6B6592;
+  --violet:#6C4BFF; --violet-d:#4B2FD6; --pink:#FF4F9A; --gold:#FFC23D; --gold-d:#DE9A00; --gold-t:#A86A00;
+  --ok:#0E9F68; --ok-soft:#E2F7EE; --bad:#E5484D; --bad-soft:#FFEDEE; --warn:#B86A00; --warn-soft:#FFF4DE;
+  --hero:linear-gradient(145deg,#22165C 0%,#4C2FD0 55%,#C63FA0 100%);
+  --display:"Unbounded","Golos Text",system-ui,sans-serif; --sans:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --page:#0E0A22; --paper:#191337; --edge:#271F52; --line:#2E265F; --band:rgba(160,140,255,.10);
+  --ink:#F3F0FF; --text:#E6E1FF; --muted:#A8A1D4; --violet:#7E61FF; --violet-d:#5537E6; --gold-t:#FFD36B;
+  --ok:#3DDC97; --ok-soft:#0E3226; --bad:#FF6B73; --bad-soft:#3A1624; --warn:#FFB45A; --warn-soft:#3A2A10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#0E0A22; --paper:#191337; --edge:#271F52; --line:#2E265F; --band:rgba(160,140,255,.10);
+  --ink:#F3F0FF; --text:#E6E1FF; --muted:#A8A1D4; --violet:#7E61FF; --violet-d:#5537E6; --gold-t:#FFD36B;
+  --ok:#3DDC97; --ok-soft:#0E3226; --bad:#FF6B73; --bad-soft:#3A1624; --warn:#FFB45A; --warn-soft:#3A2A10; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--page);color:var(--text);font:400 16px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);color:var(--ink);margin:0;letter-spacing:-.01em;text-wrap:balance}
+p{margin:0}
+.app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.view{flex:1;padding:14px max(16px,env(safe-area-inset-left,0px)) 96px max(16px,env(safe-area-inset-right,0px));display:grid;gap:14px;align-content:start;animation:in .22s ease-out both}
+@keyframes in{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.view{animation:none}}
+.muted{color:var(--muted)} .small{font-size:14px}
+.eyebrow{font:700 11.5px/1.2 var(--sans);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--paper);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-right,0px))}
+.tabs nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{border:0;background:none;display:grid;justify-items:center;gap:2px;padding:4px 0;font-size:22px;line-height:1;opacity:.55}
+.tab span{font:700 11.5px/1.2 var(--sans);color:var(--ink)}
+.tab[aria-current="page"]{opacity:1}
+.tab[aria-current="page"] span{color:var(--violet)}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:11px 20px;border-radius:16px;border:0;background:var(--violet);color:#fff;font:700 16px/1.2 var(--sans);box-shadow:0 4px 0 var(--violet-d);transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--violet-d)}
+.btn.gold{background:linear-gradient(180deg,#FFD866,#FFB81C);color:#2B1C00;box-shadow:0 4px 0 var(--gold-d)}
+.btn.line{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--line)}
+.btn.ok{background:var(--ok);box-shadow:0 4px 0 color-mix(in srgb,var(--ok) 55%,#000)}
+.btn.wide{width:100%}
+.btn.sm{min-height:40px;padding:8px 14px;font-size:14.5px;border-radius:13px}
+.link{border:0;background:none;color:var(--violet);font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:6px 0}
+.card{background:var(--paper);border-radius:20px;box-shadow:0 1px 0 var(--edge),0 10px 24px -18px rgba(76,47,214,.35);padding:14px}
+/* top of Днес */
+.top{display:flex;align-items:center;gap:10px}
+.seg{flex:1;display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-radius:14px;padding:4px;box-shadow:0 1px 0 var(--edge)}
+.seg button{border:0;background:none;border-radius:11px;padding:9px 6px;font:800 14px/1 var(--sans);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.me{border:0;background:none;position:relative;width:46px;height:46px;padding:0}
+.me img{width:46px;height:46px;object-fit:contain}
+.me b{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#2B1C00;font:800 11px/20px var(--display);text-align:center}
+.cont{display:grid;gap:4px;box-shadow:inset 0 0 0 2px var(--violet),0 10px 24px -18px rgba(76,47,214,.4)}
+.cont b{font:800 17px/1.25 var(--display);color:var(--ink)}
+.cont .btn{margin-top:8px}
+.plan{background:var(--hero);color:#fff;border-radius:22px;padding:14px;display:grid;gap:10px}
+.plan .hd{display:flex;align-items:baseline;gap:8px}
+.plan .hd b{font:800 16px/1.2 var(--display);color:#fff}
+.plan small{color:rgba(255,255,255,.78)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.step{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;background:rgba(255,255,255,.12);border-radius:14px;padding:10px;border:0;color:#fff;text-align:left;width:100%}
+.step i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 13px/1 var(--sans);font-style:normal;background:rgba(255,255,255,.2)}
+.step b{display:block;color:#fff;font-size:15px}
+.step small{display:block}
+.step.done{opacity:.72}
+.step.done i{background:#3DDC97;color:#06301F}
+.step.now{background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 2px #FFD866}
+.step.now i{background:#FFD866;color:#2B1C00}
+.step em{font-style:normal;font-size:18px}
+.allset{background:rgba(255,255,255,.14);border-radius:14px;padding:10px 12px;font-weight:600}
+.week{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center}
+.dots{display:flex;gap:7px}
+.dots i{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--ok)}
+.dots i.today{box-shadow:0 0 0 2px var(--violet)}
+.week b{grid-row:1/3;grid-column:2;font:800 18px/1 var(--display);color:var(--ink)}
+.invite{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;border:0;text-align:left;width:100%}
+.invite img{width:56px;height:56px;object-fit:contain}
+.invite b{display:block;color:var(--ink)}
+/* Път */
+.sum{font-size:14.5px;color:var(--muted)}
+.grp{font:800 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.rows{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--paper);border:0;border-radius:18px;padding:8px 12px 8px 8px;box-shadow:0 1px 0 var(--edge);text-align:left;width:100%}
+.row img{width:52px;height:52px;object-fit:contain;border-radius:14px;background:var(--band)}
+.row b{display:block;color:var(--ink);font-size:15.5px}
+.row small{display:block;color:var(--muted);font-size:13px}
+.row .st{font:800 12.5px/1.2 var(--sans);white-space:nowrap;text-align:right}
+.st.done{color:var(--ok)} .st.part{color:var(--violet)} .st.rev{color:var(--warn)} .st.new{color:var(--muted)}
+.row.rec{box-shadow:inset 0 0 0 2px var(--violet)}
+.tag{display:inline-block;font:800 10.5px/1 var(--sans);color:#fff;background:var(--violet);border-radius:99px;padding:4px 7px;margin-left:6px;vertical-align:2px}
+/* topic */
+.back{border:0;background:none;color:var(--violet);font-weight:800;padding:4px 0;justify-self:start}
+.herobox{display:grid;gap:10px;justify-items:center;background:var(--paper);border-radius:22px;padding:12px;box-shadow:0 1px 0 var(--edge)}
+.herobox video,.herobox img{width:100%;max-width:340px;aspect-ratio:1;object-fit:cover;border-radius:18px;background:var(--band)}
+.say{background:var(--band);border-radius:14px;padding:10px 12px;font-weight:600;color:var(--ink);width:100%}
+.say small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+.mastery{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.mastery i{display:block;height:100%;background:linear-gradient(90deg,#7C5CFF,#FF5FA2)}
+.tlist{display:grid;gap:8px}
+.ti{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--paper);border:0;border-radius:16px;padding:12px;text-align:left;width:100%;box-shadow:0 1px 0 var(--edge)}
+.ti span{font-size:20px}
+.ti b{color:var(--ink)}
+.ti em{font-style:normal;font-size:13px;color:var(--muted)}
+.ti.done{opacity:.7} .ti.done em{color:var(--ok);font-size:16px}
+.ti.now{box-shadow:inset 0 0 0 2px var(--violet)} .ti.now em{color:var(--violet);font-size:16px}
+/* task */
+.qbar{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;font-weight:800}
+.prog{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#7C5CFF,#FF5FA2);transition:width .3s}
+.erco{display:grid;grid-template-columns:52px minmax(0,1fr) 40px;gap:10px;align-items:center}
+.erco img{width:52px;height:52px;object-fit:contain}
+.erco p{background:var(--paper);border-radius:14px;padding:8px 11px;font-weight:700;color:var(--ink);box-shadow:0 1px 0 var(--edge)}
+.icon{width:40px;height:40px;border:0;border-radius:12px;background:var(--paper);box-shadow:0 1px 0 var(--edge);font-size:18px}
+.qq{font:700 18.5px/1.4 var(--sans);color:var(--ink)}
+.qtext{background:var(--band);border-radius:14px;padding:10px 12px;font-weight:600;color:var(--ink)}
+.variant{font:800 11px/1 var(--sans);color:var(--violet);background:var(--band);border-radius:99px;padding:5px 8px;justify-self:start}
+.opts{display:grid;gap:10px}
+.opt{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;text-align:left;background:var(--paper);border:0;border-radius:16px;padding:11px 12px;box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--line);font-weight:600;color:var(--ink)}
+.opt .k{width:34px;height:34px;border-radius:10px;background:var(--band);display:grid;place-items:center;font-weight:800}
+.opt.sel{box-shadow:inset 0 0 0 2px var(--violet),0 3px 0 var(--violet-d)}
+.opt.right{box-shadow:inset 0 0 0 2px var(--ok);background:var(--ok-soft)}
+.opt.wrong{box-shadow:inset 0 0 0 2px var(--bad);background:var(--bad-soft)}
+.field{width:100%;min-height:54px;border-radius:16px;border:2px solid var(--line);background:var(--paper);color:var(--ink);font:700 20px/1.2 var(--sans);padding:10px 14px}
+.field:focus{outline:none;border-color:var(--violet)}
+.numrow{display:flex;gap:10px;align-items:center}
+.numrow .field{flex:1;min-width:0}
+.unit{font:700 18px/1 var(--sans);color:var(--ink)}
+.hint{font-size:13.5px;color:var(--muted)}
+.fb{border-radius:18px;padding:12px;display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}
+.fb.ok{background:var(--ok-soft)} .fb.no{background:var(--bad-soft)}
+.fb img{width:56px;height:56px;object-fit:contain}
+.fb b.t{display:block;font:800 17px/1.2 var(--display);color:var(--ok)}
+.fb.no b.t{color:var(--bad)}
+.fb .why{display:block;margin-top:4px;color:var(--text)}
+.xp{display:inline-block;margin-left:6px;font:800 11px/1 var(--sans);color:#2B1C00;background:var(--gold);border-radius:99px;padding:4px 7px;vertical-align:3px}
+.howto{background:var(--warn-soft);border-radius:16px;padding:12px;display:grid;gap:6px}
+.howto b{color:var(--warn)}
+.qact{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.report{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px 0}
+/* result */
+.res{text-align:center;display:grid;gap:10px;justify-items:center}
+.res img{width:150px;height:150px;object-fit:contain}
+.res h2{font-size:24px}
+.pill{display:inline-block;font:800 13px/1 var(--sans);padding:7px 11px;border-radius:99px;background:var(--band);color:var(--violet)}
+/* Бележник */
+.fc{background:var(--hero);color:#fff;border-radius:22px;padding:16px;display:grid;gap:6px}
+.fc small{color:rgba(255,255,255,.78)}
+.fc b{font:800 26px/1.15 var(--display);color:#fff}
+.skill{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;background:var(--paper);border-radius:16px;padding:10px 12px;box-shadow:0 1px 0 var(--edge)}
+.skill b{color:var(--ink);font-size:15px}
+.skill .lv{font:800 12px/1 var(--sans)}
+.lv.l4{color:var(--ok)} .lv.l3{color:#2F9BFF} .lv.l2{color:var(--warn)} .lv.l1{color:var(--bad)} .lv.l0{color:var(--muted)}
+.skill .bar{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.skill .bar i{height:7px;border-radius:99px;background:var(--line)}
+.skill .bar i.on{background:currentColor}
+.gain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+/* Аз */
+.meh{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;align-items:center}
+.meh img{width:96px;height:96px;object-fit:contain}
+.lvl b{display:block;font:800 18px/1.2 var(--display);color:var(--ink)}
+.xpbar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#FFD866,#FF9E1C)}
+.bdg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.bdg span{display:grid;justify-items:center;gap:4px;background:var(--paper);border-radius:14px;padding:10px 4px;font-size:24px;box-shadow:0 1px 0 var(--edge)}
+.bdg span small{font:700 10.5px/1.2 var(--sans);color:var(--muted);text-align:center}
+.bdg span.off{filter:grayscale(1);opacity:.45}
+.coll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.coll span{aspect-ratio:3/4;border-radius:14px;background:var(--paper);display:grid;place-items:center;box-shadow:0 1px 0 var(--edge);overflow:hidden}
+.coll img{width:90%;height:90%;object-fit:contain}
+.coll span.off img{filter:brightness(0) opacity(.25)}
+.set{display:grid;gap:2px}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--paper);border:0;border-radius:14px;padding:12px 14px;width:100%;text-align:left;box-shadow:0 1px 0 var(--edge)}
+.toggle b{color:var(--ink)}
+.sw{width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.toggle[aria-pressed="true"] .sw{background:var(--ok)}
+.toggle[aria-pressed="true"] .sw::after{transform:translateX(18px)}
+.parentnote{background:var(--band);border-radius:16px;padding:12px;display:grid;gap:6px}
+/* parent view */
+.pv{display:grid;gap:12px}
+.pv .blk{background:var(--paper);border-radius:16px;padding:12px 14px;box-shadow:0 1px 0 var(--edge);display:grid;gap:3px}
+.pv .blk.ok{background:var(--ok-soft)} .pv .blk.warn{background:var(--warn-soft)}
+.pv .blk small{color:var(--muted);font-weight:600}
+.pv .blk b{color:var(--ink);font-size:16px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.three div{background:var(--paper);border-radius:14px;padding:10px;text-align:center;box-shadow:0 1px 0 var(--edge)}
+.three b{display:block;font:800 20px/1.1 var(--display);color:var(--ink)}
+.three small{color:var(--muted)}
+.days{display:flex;gap:6px;justify-content:space-between}
+.days span{flex:1;text-align:center;font:700 11px/1 var(--sans);color:var(--muted);display:grid;gap:4px;justify-items:center}
+.days i{width:22px;height:22px;border-radius:50%;background:var(--line)}
+.days i.on{background:var(--ok)}
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(14,10,34,.5);display:grid;align-items:end}
+.sheet>div{background:var(--page);border-radius:24px 24px 0 0;padding:18px max(16px,env(safe-area-inset-left,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px;max-width:480px;width:100%;margin:0 auto;animation:up .2s ease-out both}
+@keyframes up{from{transform:translateY(30px)}to{transform:none}}
+@media (prefers-reduced-motion: reduce){.sheet>div{animation:none}}
+.choices{display:grid;gap:8px}
+/* first opening */
+.onb{min-height:100%;display:grid;align-content:center;gap:16px;text-align:center;justify-items:center;padding:24px max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px))}
+.onb img{width:170px;height:170px;object-fit:contain}
+.grades{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:360px}
+.grades button{min-height:64px;border:0;border-radius:18px;background:var(--paper);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--line);font:800 22px/1 var(--display);color:var(--ink)}
+.grades button[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--violet),0 3px 0 var(--violet-d)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--page);border-radius:14px;padding:10px 14px;font-weight:700;max-width:90%;text-align:center}
+</style>
+
+<div class="app" id="app"></div>
+<div class="tabs" id="tabs" hidden><nav aria-label="Раздели">
+  <button class="tab" data-go="today">☀️<span>Днес</span></button>
+  <button class="tab" data-go="path">🗺️<span>Път</span></button>
+  <button class="tab" data-go="book">📒<span>Бележник</span></button>
+  <button class="tab" data-go="me">🙂<span>Аз</span></button>
+</nav></div>
+
+<script>
+// A clickable model of the new trainer, for a 15-minute test with children and parents. Everything is example data
+// (no real child, no paid tasks). A reload starts again from the beginning.
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const M = (n) => `media/${n}`;
+const LET = "АБВГД";
+
+/* ---------- the child (example) ---------- */
+const S = {
+  name: "", grade: 7, subj: "bel", sound: true, voice: true, theme: "",
+  xp: 1180, level: 4, goal: 4, week: [1, 1, 0, 1, 0, 0, 0], today: 3,
+  plan: [false, false, false], focus: null, wrong: 0, seen: {}, hero: false, parentSeen: true,
+};
+const LEVELS = ["Новобранец", "Читател", "Откривател", "Тълкувател", "Майстор на запетаята"];
+
+/* ---------- sample tasks, in families of variants (written for this model only) ---------- */
+// t: mc | input | num.  v: the variants of one family; a second try brings the other variant.
+const FAM = {
+  vok1: { skill: "vok", v: [
+    { t: "mc", q: "В кое изречение запетаите са поставени правилно?", o: ["Мила, ела тук.", "Ела, мила тук.", "Ела тук мила."], a: 0, why: "Обръщението се отделя със запетая: в началото – след него, в средата – от двете страни („Ела, мила, тук.“)." },
+    { t: "mc", q: "В кое изречение запетаите са поставени правилно?", o: ["Донеси, Иване книгата.", "Иване, донеси книгата.", "Донеси книгата Иване."], a: 1, why: "„Иване“ е обръщение. В началото на изречението запетаята е след него." },
+  ] },
+  vok2: { skill: "vok", v: [
+    { t: "num", q: "Колко запетаи липсват в изречението?", text: "Слушай Петре какво ти казвам.", a: 2, unit: "", why: "„Петре“ е обръщение в средата: „Слушай, Петре, какво ти казвам.“ – запетая от двете страни." },
+    { t: "num", q: "Колко запетаи липсват в изречението?", text: "Знаеш ли Мария къде е училището?", a: 2, unit: "", why: "„Мария“ е обръщение в средата: „Знаеш ли, Мария, къде е училището?“" },
+  ] },
+  vok3: { skill: "vok", v: [
+    { t: "mc", q: "Коя дума е обръщение?", text: "Момчета, утре тръгваме рано.", o: ["Момчета", "утре", "рано"], a: 0, why: "Обръщението назовава този, към когото говорим: „Момчета“." },
+    { t: "mc", q: "Коя дума е обръщение?", text: "Хайде, приятелю, да вървим.", o: ["Хайде", "приятелю", "вървим"], a: 1, why: "Говорим на „приятелю“ – това е обръщението, затова е между запетаи." },
+  ] },
+  prich1: { skill: "prich", v: [
+    { t: "mc", q: "Коя дума е минало свършено деятелно причастие?", o: ["прочел", "прочетен", "четящ", "четейки"], a: 0, why: "„Прочел“ показва действие, което е извършил самият предмет, и е свършило. „Прочетен“ е страдателно, „четящ“ – сегашно, „четейки“ – деепричастие." },
+    { t: "mc", q: "Коя дума е минало свършено деятелно причастие?", o: ["написан", "написал", "пишещ", "пишейки"], a: 1, why: "„Написал“ – той е написал, деятелно и свършено. „Написан“ е страдателно." },
+  ] },
+  prich2: { skill: "prich", v: [
+    { t: "mc", q: "Кое причастие е страдателно?", o: ["построен", "построил", "строящ"], a: 0, why: "Страдателното причастие показва, че действието е извършено върху предмета: къщата е „построена“." },
+    { t: "mc", q: "Кое причастие е страдателно?", o: ["рисуващ", "нарисуван", "нарисувал"], a: 1, why: "Картината е „нарисувана“ от някого – действието е върху нея." },
+  ] },
+  rech1: { skill: "rech", v: [
+    { t: "mc", q: "Коя пряка реч е оформена правилно?", o: ["Учителят каза: „Затворете учебниците.“", "Учителят каза „Затворете учебниците“.", "Учителят каза: Затворете учебниците."], a: 0, why: "След авторските думи – двоеточие, пряката реч – в кавички, а точката ѝ остава вътре." },
+    { t: "mc", q: "Коя пряка реч е оформена правилно?", o: ["Мама попита „Готов ли си?“", "Мама попита: „Готов ли си?“", "Мама попита: Готов ли си?"], a: 1, why: "Двоеточие след авторските думи и кавички около пряката реч; въпросителният знак е вътре." },
+  ] },
+  igo1: { skill: "igo", v: [
+    { t: "mc", q: "Как се казва градчето, в което се развива действието на „Под игото“?", o: ["Бяла черква", "Клисура", "Копривщица"], a: 0, why: "Действието е в Бяла черква – измислено име, зад което стои родният град на Вазов, Сопот." },
+    { t: "mc", q: "Кой е главният герой на „Под игото“?", o: ["Бойчо Огнянов", "Бай Ганьо", "Хаджи Генчо"], a: 0, why: "Бойчо Огнянов (Иван Кралича) е главният герой. Хаджи Генчо е от „Немили-недраги“, а Бай Ганьо – от Алеко Константинов." },
+  ] },
+  igo2: { skill: "igo", v: [
+    { t: "mc", q: "Коя пиеса играят в глава „Представлението“?", o: ["„Геновева“", "„Хъшове“", "„Ромео и Жулиета“"], a: 0, why: "В читалището играят „Многострадалната Геновева“. „Хъшове“ е по-късна пиеса на самия Вазов." },
+    { t: "mc", q: "Къде се играе представлението в „Под игото“?", o: ["в читалището", "в църквата", "на мегдана"], a: 0, why: "Представлението е в читалището, пред цялото градче – затова се помни дълго." },
+  ] },
+  pct1: { skill: "pct", v: [
+    { t: "num", q: "Книга струва 50 €. Поевтинява с 10%, после поскъпва с 10%. Колко струва сега?", a: 49.5, unit: "€", why: "50 · 0,9 = 45 €; 45 · 1,1 = 49,50 €. Втората промяна е от новата цена, затова не се връща на 50." },
+    { t: "num", q: "Раница струва 40 €. Поскъпва с 25%, после поевтинява с 20%. Колко струва сега?", a: 40, unit: "€", why: "40 · 1,25 = 50 €; 50 · 0,8 = 40 €. Тук случайно се връща на 40 – но не защото 25% и 20% са „равни“." },
+  ] },
+  tri1: { skill: "tri", v: [
+    { t: "num", q: "Равнобедрен триъгълник има страни 5 cm и 11 cm. Колко е периметърът?", a: 27, unit: "cm", why: "5, 5 и 11 не стават (5 + 5 < 11). Остава 11, 11 и 5: P = 27 cm." },
+    { t: "num", q: "Равнобедрен триъгълник има страни 4 cm и 10 cm. Колко е периметърът?", a: 24, unit: "cm", why: "4, 4 и 10 не стават (4 + 4 < 10). Остава 10, 10 и 4: P = 24 cm." },
+  ] },
+};
+const SKILLS = {
+  bel: [
+    { id: "chet", t: "Четене с разбиране", lv: 4 }, { id: "chlen", t: "Пълен и кратък член", lv: 4 }, { id: "glag", t: "Глаголни времена", lv: 3 },
+    { id: "prich", t: "Причастия", lv: 2 }, { id: "rech", t: "Пряка реч", lv: 2 }, { id: "vok", t: "Запетая при обръщение", lv: 1 }, { id: "z25", t: "Задача 25", lv: 1 },
+  ],
+  math: [{ id: "pct", t: "Две поредни промени на цената", lv: 2 }, { id: "tri", t: "Неравенство на триъгълника", lv: 1 }, { id: "drob", t: "Дроби", lv: 3 }],
+};
+const STATE_W = ["Ново", "Запознат", "Умея", "Владея", "Овладяно"];
+const lvOf = (id) => [...SKILLS.bel, ...SKILLS.math].find((s) => s.id === id);
+
+/* ---------- Erčo's voice and the sounds (the switches are remembered by the app; here only for this visit) ---------- */
+const Voice = (() => {
+  let el = null, queue = [];
+  const elem = () => { if (!el) { el = new Audio(); el.addEventListener("ended", next); } return el; };
+  function next() { const n = queue.shift(); if (!n || !S.sound || !S.voice) return; const a = elem(); a.src = M(`voice/${n}-1.mp3`); a.play().catch(() => {}); }
+  return {
+    say(names, wait) {
+      names = [].concat(names).filter(Boolean);
+      if (!S.sound || !S.voice || !names.length) return;
+      if (wait && el && !el.paused && !el.ended) { queue = queue.concat(names); return; }
+      if (el) el.pause();
+      queue = names;
+      next();
+    },
+    stop() { queue = []; if (el) el.pause(); },
+  };
+})();
+let heroVideo = null;
+
+/* ---------- screens ---------- */
+let view = "today", stack = [], sess = null;
+const app = $("#app"), tabs = $("#tabs");
+function go(v, push) {
+  if (push) stack.push(view);
+  else stack = [];
+  view = v;
+  render();
+  scrollTo(0, 0);
+}
+function back() { view = stack.pop() || "today"; render(); scrollTo(0, 0); }
+function render() {
+  if (heroVideo) { heroVideo.pause(); heroVideo = null; }
+  const main = ["today", "path", "book", "me"].includes(view);
+  tabs.hidden = !main || view === "onb";
+  document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-current", b.dataset.go === view ? "page" : "false"));
+  app.innerHTML = `<section class="view">${(SCREENS[view] || SCREENS.today)()}</section>`;
+  if (view === "topic") playHero(false);
+}
+const seg = () => `<div class="seg" role="group" aria-label="Предмет"><button data-act="subj" data-s="bel" aria-pressed="${S.subj === "bel"}">БЕЛ</button><button data-act="subj" data-s="math" aria-pressed="${S.subj === "math"}">Математика</button></div>`;
+const planSteps = () => S.subj === "math"
+  ? [{ t: "Загрявка и преговор", s: "4 въпроса, които иначе ще забравиш", fam: ["pct1", "tri1"] }, { t: "Фокус: " + (S.focus ? lvOf(S.focus).t : "избери слабо място"), s: S.focus ? "избра го ти · ниво 2 от 3" : "3 предложения от Ерчо", fam: null }, { t: "Като на НВО", s: "2 смесени задачи", fam: ["pct1", "tri1"] }]
+  : [{ t: "Загрявка и преговор", s: "4 въпроса, които иначе ще забравиш", fam: ["prich1", "rech1", "igo1"] }, { t: "Фокус: " + (S.focus ? lvOf(S.focus).t : "избери слабо място"), s: S.focus ? "избра го ти · ниво 2 от 3" : "3 предложения от Ерчо", fam: null }, { t: "Като на НВО", s: "2 смесени задачи", fam: ["prich2", "igo2"] }];
+const SCREENS = {
+  onb() {
+    return `<div class="onb"><img src="${M("a-hi.webp")}" alt="Ерчо маха"><h1>Здрасти! Аз съм Ерчо.</h1><p class="muted">Ще ти помагам за НВО. Първо: в кой клас си?</p>
+      <div class="grades">${[5, 6, 7].map((g) => `<button data-act="grade" data-g="${g}" aria-pressed="${S.grade === g}">${g}.</button>`).join("")}</div>
+      <button class="btn gold wide" data-act="start" style="max-width:360px">Да започваме</button></div>`;
+  },
+  today() {
+    const steps = planSteps(), now = S.plan.findIndex((x) => !x), done = now === -1;
+    const cont = S.subj === "math" ? { t: "Две поредни промени на цената", s: "карта 12 · 1 от 4", fam: ["pct1", "pct1"] } : { t: "Причастия · 7 от 20", s: "≈ 6 мин до края на модула", fam: ["prich1", "prich2"] };
+    return `<div class="top">${seg()}<button class="me" data-act="tab" data-go="me" aria-label="Ниво ${S.level} – към „Аз“"><img src="${M("m-hi.webp")}" alt=""><b>${S.level}</b></button></div>
+      <div class="card cont"><span class="eyebrow">Продължи оттам, където спря</span><b>${esc(cont.t)}</b><span class="muted small">${esc(cont.s)}</span><button class="btn gold wide" data-act="play" data-fam="${cont.fam.join(",")}" data-title="${esc(cont.t)}">▶ Продължи</button></div>
+      <div class="plan"><div class="hd"><b>Планът за днес</b><small>≈ 12 мин</small></div>
+        ${done ? `<p class="allset">🎉 Планът за днес е готов. Можеш да спреш тук или да продължиш с каквото искаш.</p>` : ""}
+        <ol class="steps">${steps.map((st, i) => `<li><button class="step ${S.plan[i] ? "done" : i === now ? "now" : ""}" data-act="step" data-i="${i}"><i>${S.plan[i] ? "✓" : i + 1}</i><span><b>${esc(st.t)}</b><small>${esc(st.s)}</small></span><em>${S.plan[i] ? "" : i === now ? "▶" : ""}</em></button></li>`).join("")}</ol></div>
+      <div class="card week"><span><span class="eyebrow">Седмичната ми цел: ${S.goal} дни</span><span class="dots" aria-label="Учил си ${S.week.filter(Boolean).length} дни тази седмица">${S.week.map((d, i) => `<i class="${d ? "on" : ""} ${i === S.today ? "today" : ""}"></i>`).join("")}</span></span><b>${S.week.filter(Boolean).length} от ${S.goal}</b><button class="link small" data-act="goal" style="grid-column:1/-1;justify-self:start">Смени целта</button></div>
+      <button class="card invite" data-act="topic"><img src="${M("h-d06.webp")}" alt=""><span><span class="eyebrow">Ново в „Литературни досиета“</span><b>Бойчо Огнянов те чака</b><span class="muted small">„Под игото“ – „Представлението“</span></span><span aria-hidden="true">›</span></button>
+      <button class="link small" data-act="parent">Покажи на родител</button>`;
+  },
+  path() {
+    const bel = S.subj === "bel";
+    const row = (img, t, sub, st, cls, act, rec) => `<button class="row ${rec ? "rec" : ""}" data-act="${act}"><img src="${M(img)}" alt=""><span><b>${esc(t)}${rec ? `<span class="tag">Препоръчано</span>` : ""}</b><small>${esc(sub)}</small></span><span class="st ${cls}">${st}</span></button>`;
+    return `${seg()}<h1 style="font-size:24px">Път</h1><p class="sum">${bel ? "4 от 10 модула готови · 3 започнати" : "1 от 5 карти готова · 2 започнати"}</p>
+      ${bel ? `<span class="grp">Език</span><div class="rows">
+        ${row("i-chetene.webp", "Четене с разбиране", "задачи 1–7 на НВО", "● 5,50<br>★★☆", "done", "noop")}
+        ${row("i-pravopis.webp", "Пълен и кратък член", "правопис", "● 6,00<br>★★★", "done", "noop")}
+        ${row("i-glagol.webp", "Причастия", "7 от 20 задачи", "7/20", "part", "cont", true)}
+        ${row("i-punktuacia.webp", "Запетая при обръщение", "3 грешки тази седмица", "↻ за преговор", "rev", "focusvok")}
+        ${row("i-sintaksis.webp", "Пряка реч", "още не е започнато", "○ ново", "new", "noop")}</div>
+        <span class="grp">Литература</span><div class="rows">
+        ${row("h-d06.webp", "„Под игото“ – „Представлението“", "Бойчо Огнянов · 5 стъпки", "2/5", "part", "topic")}
+        ${row("h-d20.webp", "„Бай Ганьо пътува“", "Бай Ганьо · досие разкрито", "● 6,00<br>★★★", "done", "noop")}
+        ${row("h-d16.webp", "„Една българка“", "Баба Илийца", "○ ново", "new", "noop")}</div>
+        <span class="grp">Писане и изпит</span><div class="rows">
+        ${row("i-lit1.webp", "Задача 25", "задача с разширен свободен отговор", "○ ново", "new", "noop")}
+        ${row("i-mock.webp", "Пробна матура", "25 задачи · 45 мин", "1 решена", "part", "noop")}
+        ${row("i-mist.webp", "Моите грешки", "5 задачи за повторение", "↻ 5", "rev", "mist")}</div>`
+      : `<span class="grp">Проценти и пари</span><div class="rows">
+        ${row("mt-pct.webp", "Карта 12 · Две поредни промени на цената", "1 от 4 задачи", "1/4", "part", "cont", true)}</div>
+        <span class="grp">Геометрия</span><div class="rows">
+        ${row("mt-geo.webp", "Карта 27 · Неравенство на триъгълника", "още не е започната", "○ ново", "new", "tri")}</div>
+        <span class="grp">Алгебра</span><div class="rows">
+        ${row("mt-alg.webp", "Карта 17 · Линейно уравнение", "скоро", "скоро", "new", "noop")}</div>`}`;
+  },
+  topic() {
+    return `<button class="back" data-act="back">← Път</button>
+      <div class="herobox"><video id="hv" playsinline preload="auto" poster="${M("ognyanov-poster.jpg")}" src="${M("ognyanov.mp4")}"></video>
+        <p class="say">„Здравей! Аз съм Бойчо Огнянов. Тази вечер на сцената в Бяла черква ще стане нещо, за което цял град ще говори. Искаш ли да видиш какво?“<small>Бойчо Огнянов · докосни видеото, за да го чуеш пак</small></p></div>
+      <h1 style="font-size:22px">„Под игото“ – „Представлението“</h1>
+      <div class="mastery" role="img" aria-label="Владееш 40%"><i style="width:40%"></i></div><p class="muted small">Ниво 1 от 3 · 2 от 5 стъпки</p>
+      <div class="tlist">
+        <button class="ti done" data-act="noop"><span>🎧</span><b>Слушай · 4 мин</b><em>✓</em></button>
+        <button class="ti done" data-act="noop"><span>📖</span><b>Кратък урок</b><em>✓</em></button>
+        <button class="ti now" data-act="play" data-fam="igo1,igo2" data-title="„Под игото“: упражнение"><span>✍️</span><b>Упражнение · 2 задачи</b><em>▶</em></button>
+        <button class="ti" data-act="toast" data-msg="Тук е досието от „Литературни досиета“."><span>🔎</span><b>Досие №6</b><em></em></button>
+        <button class="ti" data-act="toast" data-msg="„Провери се“ се отключва след упражнението: 10 нови варианта."><span>🏁</span><b>Провери се</b><em>🔒 след упражнението</em></button>
+      </div>`;
+  },
+  task() { return taskScreen(); },
+  result() { return resultScreen(); },
+  book() {
+    const list = SKILLS[S.subj];
+    return `${seg()}<h1 style="font-size:24px">Бележник</h1>
+      <div class="fc"><small>Ако изпитът е днес</small><b>${S.subj === "bel" ? "около 4,50–5,00" : "около 4,00–4,50"}</b><small>по последните 60 задачи · ориентир, не обещание</small></div>
+      <span class="grp">Какво знам</span>
+      ${list.map((s) => `<div class="skill lv l${s.lv}"><b>${esc(s.t)}</b><span class="lv l${s.lv}">${STATE_W[s.lv]}</span><span class="bar" aria-hidden="true">${[0, 1, 2, 3, 4].map((i) => `<i class="${i <= s.lv ? "on" : ""}"></i>`).join("")}</span></div>`).join("")}
+      <span class="grp">Тук ще спечелиш най-много точки</span>
+      <div class="card gain"><span><b>${S.subj === "bel" ? "Запетая при обръщение" : "Неравенство на триъгълника"}</b><br><span class="muted small">+ около 0,25 към оценката</span></span><button class="btn sm" data-act="${S.subj === "bel" ? "focusvok" : "tri"}">Упражни</button></div>
+      <span class="grp">Пробни матури</span>
+      <div class="card gain"><span><b>4 ноември · 17 от 25</b><br><span class="muted small">Добър 4,40</span></span><button class="btn sm line" data-act="toast" data-msg="Тук е разборът на матурата.">Разбор</button></div>`;
+  },
+  me() {
+    const lv = S.level, pct = 62;
+    return `<div class="card meh"><img src="${M("a-hi.webp")}" alt="Ерчо"><div class="lvl"><span class="eyebrow">Ниво ${lv}</span><b>${LEVELS[lv - 1]}</b><div class="xpbar"><i style="width:${pct}%"></i></div><span class="muted small">${S.xp} XP · още 320 до ниво ${lv + 1}</span></div></div>
+      <span class="grp">Значки · 5 от 12</span>
+      <div class="bdg">${[["🚀", "Първа стъпка", 1], ["⭐", "Шестица", 1], ["📈", "Нагоре", 1], ["🔎", "Детектив", 1], ["🧭", "Трите части", 1], ["🏁", "Матура", 0], ["💯", "Без грешка", 0], ["👑", "Инспектор", 0]].map(([e, t, on]) => `<span class="${on ? "" : "off"}">${on ? e : "🔒"}<small>${t}</small></span>`).join("")}</div>
+      <span class="grp">Колекция герои · 3 от 24</span>
+      <div class="coll">${["h-d20", "h-d01", "h-d16", "h-d06"].map((h, i) => `<span class="${i < 3 ? "" : "off"}"><img src="${M(h + ".webp")}" alt=""></span>`).join("")}</div>
+      <span class="grp">Родителят ти</span>
+      <div class="parentnote"><b>👁 Родителят ти вижда седмичното обобщение</b><span class="muted small">Вижда колко дни и колко време си учил, кое ти върви и кое да упражниш. Не вижда отделните ти отговори.</span><button class="btn sm line" data-act="parent">Покажи на родител</button></div>
+      <span class="grp">Настройки</span>
+      <div class="set">
+        <button class="toggle" data-act="sound" aria-pressed="${S.sound}"><span><b>Звук</b><br><span class="muted small">звуци при верен и грешен отговор</span></span><span class="sw"></span></button>
+        <button class="toggle" data-act="voice" aria-pressed="${S.voice}"><span><b>Ерчо говори</b><br><span class="muted small">поздрав, какво се прави, реакция</span></span><span class="sw"></span></button>
+        <button class="toggle" data-act="theme" aria-pressed="${document.documentElement.dataset.theme === "dark"}"><span><b>Нощна смяна</b><br><span class="muted small">тъмна тема</span></span><span class="sw"></span></button>
+      </div>
+      <span class="grp">Твоят достъп</span><div class="card small">Валиден до 31 юли 2027 · 2 от 3 устройства</div>`;
+  },
+  parent() {
+    return `<button class="back" data-act="back">← Назад</button>
+      <div class="pv"><span class="eyebrow">За родителя · само за четене</span><h1 style="font-size:23px">Как върви подготовката</h1><p class="muted small">${esc(S.name || "Мария")} · ${S.grade}. клас · седмица 3–9 ноември</p>
+        <div class="blk"><small>Готовност за НВО по БЕЛ (ориентир, не обещание)</small><b>около 4,50–5,00 ↑ спрямо миналата седмица</b></div>
+        <div class="days" aria-label="Дни с упражнения">${["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d, i) => `<span><i class="${S.week[i] ? "on" : ""}"></i>${d}</span>`).join("")}</div>
+        <div class="three"><div><b>${S.week.filter(Boolean).length}</b><small>дни</small></div><div><b>80</b><small>минути</small></div><div><b>96</b><small>задачи</small></div></div>
+        <div class="blk ok"><small>Силни страни</small><b>Правопис: пълен и кратък член – 9 от 10</b><b>Четене с разбиране – 18 от 20</b></div>
+        <div class="blk warn"><small>Да се упражни</small><b>Запетая при обръщение – 3 грешки тази седмица</b><b>Задача 25: аргументите – 2 от 6 т.</b></div>
+        <div class="blk"><small>Пробни матури</small><b>4 ноември: 17 от 25 – Добър 4,40</b></div>
+        <div class="blk"><small>Една идея за тази седмица</small><b>Попитайте кой герой от „Под игото“ е разпознала в досиетата и защо.</b></div>
+        <div class="blk"><small>Достъп</small><b>Валиден до 31 юли 2027 · 2 от 3 устройства</b><button class="link small" data-act="toast" data-msg="Тук родителят удължава достъпа (детето никога не вижда оферта).">Удължи достъпа</button></div>
+        <p class="muted small" style="text-align:center">Детето вижда, че сте отворили това обобщение.</p></div>`;
+  },
+};
+
+/* ---------- a short session of tasks ---------- */
+function startSession(fams, title, kind) {
+  const qs = fams.map((f) => {
+    const fam = FAM[f], seen = S.seen[f] || 0;
+    S.seen[f] = seen + 1;
+    return { ...fam.v[seen % fam.v.length], fam: f, skill: fam.skill, variant: seen > 0 };
+  });
+  sess = { qs, i: 0, ans: null, done: false, ok: [], title, kind, step: null, said: -1, easy: false };
+  go("task", true);
+}
+const kindOf = (q) => (q.t === "mc" ? "i-mc" : q.t === "num" ? "i-num" : "i-input");
+function taskScreen() {
+  const s = sess, q = s.qs[s.i], last = s.i === s.qs.length - 1;
+  const intro = { "i-mc": "Избери верния отговор.", "i-num": "Реши и напиши числото.", "i-input": "Напиши отговора." }[kindOf(q)];
+  if (s.said !== s.i) {
+    s.said = s.i;
+    const prev = s.i ? s.qs[s.i - 1] : null, lines = [];
+    if (last && s.qs.length >= 3) lines.push("last");
+    if (!prev || kindOf(prev) !== kindOf(q)) lines.push(kindOf(q));
+    setTimeout(() => Voice.say(lines, true), 0);
+  }
+  let h = `<div class="qbar"><button class="back" data-act="quit">✕</button><span class="prog"><i style="width:${((s.i + (s.done ? 1 : 0)) / s.qs.length) * 100}%"></i></span><span>${s.i + 1}/${s.qs.length}</span></div>
+    <div class="erco"><img src="${M("m-hi.webp")}" alt=""><p>${intro}</p><button class="icon" data-act="read" aria-label="Чуй задачата">🔈</button></div>`;
+  if (q.variant) h += `<span class="variant">нов вариант на въпрос, който си решавал</span>`;
+  if (s.easy) h += `<div class="howto"><b>Виж как се прави</b><span>Обръщението назовава този, към когото говорим. Отделяме го със запетая: „Мила, ела.“ · „Ела, мила, тук.“ Сега – по-лесен вариант.</span></div>`;
+  if (q.text) h += `<p class="qtext">${esc(q.text)}</p>`;
+  h += `<p class="qq">${esc(q.q)}</p>`;
+  if (q.t === "mc") {
+    h += `<div class="opts">${q.o.map((o, i) => {
+      let c = s.ans === i ? "sel" : "";
+      if (s.done) c = i === q.a ? "right" : s.ans === i ? "wrong" : "";
+      return `<button class="opt ${c}" data-act="pick" data-i="${i}" ${s.done ? "disabled" : ""}><span class="k">${LET[i]}</span><span>${esc(o)}</span></button>`;
+    }).join("")}</div>`;
+  } else {
+    h += `<div class="numrow"><input class="field" id="ans" inputmode="decimal" autocomplete="off" placeholder="Напиши числото" value="${esc(s.ans ?? "")}" ${s.done ? "readonly" : ""}>${q.unit ? `<span class="unit">${esc(q.unit)}</span>` : ""}</div><p class="hint">Пиши с десетична запетая (2,5) или като дроб (5/2).</p>`;
+  }
+  if (s.done) {
+    const ok = s.ok[s.i];
+    const CHEER = ["Точно така!", "Вярно!", "Уцели!", "Да, точно това е!", "Чисто попадение!", "Вярно – и бързо!", "Именно!"], CALM = ["Не точно. Ето защо:", "Почти! Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
+    const say = ok ? CHEER[s.i % CHEER.length] : CALM[s.i % CALM.length];
+    h += `<div class="fb ${ok ? "ok" : "no"}"><img src="${M(ok ? "m-yay.webp" : "m-oops.webp")}" alt=""><span><b class="t">${say}${ok ? `<span class="xp">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${esc(q.t === "mc" ? q.o[q.a] : String(q.a).replace(".", ",") + (q.unit ? " " + q.unit : ""))}</b></span>`}<span class="why">${esc(q.why)}</span></span></div>
+      <div class="qact"><button class="report" data-act="toast" data-msg="Благодарим! Ерчо ще провери задачата.">Мисля, че тук има грешка</button><button class="btn gold" data-act="next">${last ? "Готово" : "Следваща →"}</button></div>`;
+  } else {
+    h += `<div class="qact"><span></span><button class="btn" data-act="check" id="checkBtn" ${s.ans === null || s.ans === "" ? "disabled" : ""}>Провери</button></div>`;
+  }
+  return h;
+}
+function numOf(v) {
+  v = String(v ?? "").replace(/[−–]/g, "-");
+  if (v.includes("=")) v = v.split("=").pop();
+  const m = v.match(/-?\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?/);
+  if (!m) return null;
+  const [a, b] = m[0].replace(/,/g, ".").replace(/\s/g, "").split("/");
+  return b ? +a / +b : +a;
+}
+function check() {
+  const s = sess, q = s.qs[s.i];
+  const ok = q.t === "mc" ? s.ans === q.a : Math.abs((numOf(s.ans) ?? 1e9) - q.a) < 1e-6;
+  s.ok[s.i] = ok;
+  s.done = true;
+  S.wrong = ok ? 0 : S.wrong + 1;
+  if (ok) S.xp += 10;
+  render();
+  Voice.say(ok ? `ok-${s.i % 7}` : `no-${s.i % 4}`);
+}
+function next() {
+  const s = sess;
+  // two wrong in a row in the focus step: an easier variant with "Виж как се прави"
+  if (!s.ok[s.i] && S.wrong >= 2 && s.kind === "focus" && !s.easy) { s.easy = true; s.qs.splice(s.i + 1, 0, { ...FAM.vok3.v[0], fam: "vok3", skill: "vok" }); S.wrong = 0; }
+  if (s.i < s.qs.length - 1) { s.i++; s.ans = null; s.done = false; render(); scrollTo(0, 0); return; }
+  if (s.step !== null) S.plan[s.step] = true;
+  if (!S.week[S.today]) S.week[S.today] = 1;
+  go("result", true);
+}
+function resultScreen() {
+  const s = sess, p = s.ok.filter(Boolean).length, n = s.qs.length;
+  const allPlan = S.plan.every(Boolean);
+  const g = p / n >= 0.9 ? 6 : p / n >= 0.76 ? 5 : p / n >= 0.63 ? 4 : p / n >= 0.5 ? 3 : 2;
+  setTimeout(() => Voice.say(`r${g}`), 300);
+  return `<div class="res"><img src="${M(p === n ? "m-trophy.webp" : p / n >= 0.5 ? "m-yay.webp" : "m-think.webp")}" alt=""><h2>${p} от ${n} верни</h2>
+    <span class="pill">+${p * 10} XP</span>
+    <p>${s.step !== null ? (allPlan ? "🎉 Планът за днес е готов! Можеш да спреш или да продължиш." : `Стъпка ${s.step + 1} от 3 от плана е готова.`) : "Записано в бележника."}</p>
+    <p class="muted small">${p === n ? "Нито една грешка." : "Грешките влизат в „Моите грешки“ и се връщат утре като нов вариант."}</p>
+    <button class="btn gold wide" data-act="tab" data-go="today">Към „Днес“</button></div>`;
+}
+
+/* ---------- Erčo's hero video ---------- */
+function playHero(again) {
+  const v = $("#hv");
+  if (!v) return;
+  heroVideo = v;
+  v.muted = !(S.sound);
+  if (!S.hero || again) { S.hero = true; Voice.stop(); v.currentTime = 0; v.play().catch(() => {}); }
+  v.onclick = () => { v.muted = !S.sound; v.currentTime = 0; v.play().catch(() => {}); };
+}
+
+/* ---------- small things ---------- */
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+function sheet(html) {
+  const d = document.createElement("div");
+  d.className = "sheet";
+  d.innerHTML = `<div role="dialog" aria-modal="true">${html}</div>`;
+  d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-close]")) d.remove(); });
+  document.body.appendChild(d);
+  return d;
+}
+function readAloud() {
+  const q = sess.qs[sess.i];
+  if (!("speechSynthesis" in window)) return toast("Тук ще чуеш задачата с гласа на Ерчо.");
+  const u = new SpeechSynthesisUtterance((q.text ? q.text + ". " : "") + q.q + (q.o ? " " + q.o.map((o, i) => `${LET[i]}: ${o}.`).join(" ") : ""));
+  u.lang = "bg-BG";
+  const bg = speechSynthesis.getVoices().find((v) => /^bg/i.test(v.lang));
+  if (bg) u.voice = bg;
+  speechSynthesis.cancel(); Voice.stop(); speechSynthesis.speak(u);
+}
+
+/* ---------- actions ---------- */
+const ACT = {
+  grade: (b) => { S.grade = +b.dataset.g; render(); },
+  start: () => { go("today"); Voice.say("hello"); },
+  tab: (b) => go(b.dataset.go),
+  subj: (b) => { S.subj = b.dataset.s; S.focus = null; S.plan = [false, false, false]; render(); if (S.subj === "math") Voice.say("math"); },
+  back: () => back(),
+  quit: () => { Voice.stop(); back(); },
+  play: (b) => startSession(b.dataset.fam.split(","), b.dataset.title, "play"),
+  cont: () => S.subj === "math" ? startSession(["pct1", "pct1"], "Карта 12", "play") : startSession(["prich1", "prich2"], "Причастия", "play"),
+  tri: () => startSession(["tri1", "tri1"], "Неравенство на триъгълника", "play"),
+  focusvok: () => { S.focus = "vok"; startSession(["vok1", "vok2", "vok1"], "Фокус: запетая при обръщение", "focus"); },
+  mist: () => startSession(["vok2", "prich2"], "Моите грешки", "play"),
+  step: (b) => {
+    const i = +b.dataset.i, st = planSteps()[i];
+    if (S.plan[i]) return toast("Тази стъпка е готова. ✓");
+    if (i === 1) {
+      const opts = SKILLS[S.subj].filter((s) => s.lv <= 2).slice(0, 3);
+      const d = sheet(`<h2 style="font-size:20px">Какво да упражним днес?</h2><p class="muted small">Ерчо предлага 3 слаби места. Избери едно.</p><div class="choices">${opts.map((o) => `<button class="row" data-pick="${o.id}"><img src="${M(S.subj === "math" ? "mt-geo.webp" : "i-punktuacia.webp")}" alt=""><span><b>${esc(o.t)}</b><small>${STATE_W[o.lv]}</small></span><span class="st part">›</span></button>`).join("")}</div><button class="link" data-close>Затвори</button>`);
+      d.querySelectorAll("[data-pick]").forEach((x) => x.addEventListener("click", () => {
+        d.remove();
+        S.focus = x.dataset.pick;
+        const fams = S.subj === "math" ? (S.focus === "tri" ? ["tri1", "tri1"] : ["pct1", "pct1"]) : S.focus === "vok" ? ["vok1", "vok2", "vok3"] : S.focus === "prich" ? ["prich1", "prich2", "prich1"] : ["rech1", "rech1"];
+        startSession(fams, "Фокус: " + lvOf(S.focus).t, "focus");
+        sess.step = 1;
+      }));
+      return;
+    }
+    startSession(st.fam, st.t, "plan");
+    sess.step = i;
+  },
+  pick: (b) => { sess.ans = +b.dataset.i; document.querySelectorAll(".opt").forEach((o) => o.classList.toggle("sel", o === b)); $("#checkBtn").disabled = false; },
+  check: () => check(),
+  next: () => next(),
+  read: () => readAloud(),
+  topic: () => go("topic", true),
+  parent: () => go("parent", true),
+  goal: () => {
+    const d = sheet(`<h2 style="font-size:20px">Колко дни в седмицата?</h2><p class="muted small">Ти решаваш. Пропуснат ден не се наказва.</p><div class="grades" style="max-width:none">${[3, 4, 5].map((g) => `<button data-g="${g}" aria-pressed="${S.goal === g}">${g}</button>`).join("")}</div><button class="link" data-close>Затвори</button>`);
+    d.querySelectorAll("[data-g]").forEach((x) => x.addEventListener("click", () => { S.goal = +x.dataset.g; d.remove(); render(); }));
+  },
+  sound: () => { S.sound = !S.sound; if (!S.sound) Voice.stop(); render(); },
+  voice: () => { S.voice = !S.voice; if (!S.voice) Voice.stop(); else { if (!S.sound) S.sound = true; Voice.say("ok-0"); } render(); },
+  theme: () => { const r = document.documentElement; r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; render(); },
+  toast: (b) => toast(b.dataset.msg),
+  noop: () => toast("В модела това е само за изглед."),
+};
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act],[data-go]");
+  if (!b || b.disabled) return;
+  if (b.matches(".tab")) return go(b.dataset.go);
+  const f = ACT[b.dataset.act];
+  if (f) f(b, e);
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id !== "ans" || !sess || sess.done) return;
+  sess.ans = e.target.value;
+  const c = $("#checkBtn");
+  if (c) c.disabled = !e.target.value.trim();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && view === "task") { const c = $("#checkBtn") || document.querySelector('[data-act="next"]'); if (c && !c.disabled) { e.preventDefault(); c.click(); } }
+});
+view = "onb";
+render();
+</script>

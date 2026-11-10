@@ -1,0 +1,172 @@
+<title>Тест на новия тренажор</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..800&family=Unbounded:wght@600..800&display=swap">
+<style>
+/* A one-column guide for the adult who runs the test, then a short form per child or parent; entries are saved for Claude to read. */
+:root{
+  --bg:#F6F4FC; --paper:#FFFFFF; --ink:#1C1440; --text:#3A3360; --muted:#6E6896; --line:#E3DEF5; --soft:#EEEAFB;
+  --violet:#5B3BEA; --violet-d:#4327C4; --ok:#0E9F68; --ok-soft:#E1F6EE; --warn:#B57900; --warn-soft:#FFF2DA; --bad:#E5484D;
+  --display:"Unbounded","Golos Text",system-ui,sans-serif; --sans:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#100C24;--paper:#1A1538;--ink:#F2EFFF;--text:#D9D3F5;--muted:#A49DCC;--line:#2D2659;--soft:#221C47;--violet:#8B72FF;--violet-d:#6A50F0;--ok:#3DDC97;--ok-soft:#0F3328;--warn:#FFC74D;--warn-soft:#3A2C10;--bad:#FF6B73;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#100C24;--paper:#1A1538;--ink:#F2EFFF;--text:#D9D3F5;--muted:#A49DCC;--line:#2D2659;--soft:#221C47;--violet:#8B72FF;--violet-d:#6A50F0;--ok:#3DDC97;--ok-soft:#0F3328;--warn:#FFC74D;--warn-soft:#3A2C10;--bad:#FF6B73;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:400 16.5px/1.55 var(--sans)}
+.wrap{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 70px;display:grid;gap:16px}
+h1,h2{font-family:var(--display);color:var(--ink);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(26px,6vw,36px);line-height:1.1}
+h2{font-size:20px;margin-top:18px}
+p,ol,ul{margin:0}
+ol,ul{padding-left:1.2em;display:grid;gap:6px}
+b{color:var(--ink)}
+.muted{color:var(--muted)} .small{font-size:14.5px}
+.eyebrow{font:700 12px/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.open{display:block;text-align:center;text-decoration:none;font:800 16px/1.2 var(--sans);padding:15px;border-radius:16px;background:var(--violet);color:#fff;box-shadow:0 4px 0 var(--violet-d)}
+.box{background:var(--paper);border-radius:16px;padding:14px 16px;box-shadow:0 1px 0 var(--line);display:grid;gap:8px}
+.tasks{list-style:none;padding:0;counter-reset:t;display:grid;gap:10px}
+.tasks li{counter-increment:t;background:var(--paper);border-radius:16px;padding:12px 14px 12px 56px;position:relative;box-shadow:0 1px 0 var(--line)}
+.tasks li::before{content:counter(t);position:absolute;left:14px;top:12px;width:30px;height:30px;border-radius:10px;background:var(--violet);color:#fff;display:grid;place-items:center;font:800 15px/1 var(--display)}
+.tasks q{font-weight:700;color:var(--ink);quotes:"„" "“"}
+.tasks small{display:block;color:var(--muted);margin-top:3px}
+form{display:grid;gap:12px}
+fieldset{border:0;margin:0;padding:14px 16px;background:var(--paper);border-radius:16px;box-shadow:0 1px 0 var(--line);display:grid;gap:10px}
+legend{font:800 15px/1.3 var(--sans);color:var(--ink);padding:0;float:left;width:100%;margin-bottom:4px}
+label{display:grid;gap:4px;font-weight:600;color:var(--ink);font-size:15px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:9px 11px;width:100%}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--violet)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px;align-items:end}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{display:inline-flex;align-items:center;gap:6px;font-weight:600;background:var(--bg);border:2px solid var(--line);border-radius:99px;padding:6px 11px;cursor:pointer}
+.seg input{width:auto;margin:0}
+.seg label:has(input:checked){border-color:var(--violet);background:var(--soft)}
+button{font:800 16px/1.2 var(--sans);border:0;border-radius:16px;padding:14px;background:var(--violet);color:#fff;box-shadow:0 4px 0 var(--violet-d);cursor:pointer}
+button:disabled{opacity:.5}
+.status{font-weight:700}
+.status.ok{color:var(--ok)} .status.err{color:var(--bad)}
+.entry{background:var(--paper);border-radius:14px;padding:10px 14px;box-shadow:0 1px 0 var(--line);font-size:14.5px;display:grid;gap:2px}
+.entry b{font-size:15.5px}
+.qline{display:grid;gap:6px;font-weight:600;color:var(--ink);font-size:15px}
+.who-parent [data-for="child"]{display:none}
+.who-child [data-for="parent"]{display:none}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <span class="eyebrow">Етап 0 · за възрастния, който води теста</span>
+  <h1>Тест на новия тренажор</h1>
+  <p>15 минути с едно дете или 5 минути с един родител. Целта е да видим дали новата подредба е ясна <b>без обяснения</b>. Тестваме модела, не детето. Ако нещо не стане, грешката е в модела.</p>
+  <a class="open" href="https://claude.ai/artifact/AKGLTRQS9NbMq6SAnGNLug" target="_blank" rel="noopener">Отвори модела на телефона</a>
+  <p class="muted small">Моделът е само на твоя профил. Дай телефона на детето или първо го сподели от бутона „Share“ на модела. Презареждането го връща в началото, затова презареди преди всяко следващо дете.</p>
+
+  <h2>Преди да започнеш</h2>
+  <ul>
+    <li>Питай родителя дали е съгласен и питай самото дете дали иска да пробва. Ако откаже по средата, спираме.</li>
+    <li>Включи звука на телефона. Ерчо и героят говорят.</li>
+    <li>Кажи на детето: „Това е ново приложение за НВО. Искам да видя как го ползваш. Няма грешни отговори. Мисли на глас, ако искаш.“</li>
+    <li>Не показвай и не подсказвай. Ако детето пита „Къде да натисна?“, кажи „Къде мислиш?“. Засичай секундите.</li>
+  </ul>
+
+  <h2>5 задачи за детето</h2>
+  <ol class="tasks">
+    <li><q>Какво трябва да направиш днес?</q><small>Успех: натиска „Продължи“ или първата стъпка от „Планът за днес“ за под 10 секунди.</small></li>
+    <li><q>Колко ти остава от „Причастия“?</q><small>Успех: казва „7 от 20“ – в „Път“ или в „Продължи“.</small></li>
+    <li><q>С каква оценка би излязъл, ако изпитът е днес?</q><small>Успех: отваря „Бележник“ и казва „около 4,50–5,00“.</small></li>
+    <li><q>Искаш Ерчо да мълчи. Как?</q><small>Успех: отваря „Аз“ и спира „Ерчо говори“.</small></li>
+    <li><q>Покажи какво ще види мама или татко.</q><small>Успех: намира „Покажи на родител“.</small></li>
+  </ol>
+  <div class="box"><b>После 5 минути свободно</b><span>„Направи плана за днес“ и „Кой е Бойчо Огнянов? Виж го.“ Гледай: усмихва ли се, отегчава ли се, кое прескача, какво казва на глас.</span></div>
+
+  <h2>За родителя (5 минути)</h2>
+  <ul>
+    <li>Отвори модела, натисни „Аз“ → „Покажи на родител“ и дай телефона на родителя.</li>
+    <li>Питай: <b>„Как се справя детето по правопис и какво да упражни?“</b> Успех: отговаря за под 30 секунди.</li>
+    <li>После: „Какво още бихте искали да виждате?“ и „Бихте ли искали това по имейл всяка неделя?“</li>
+  </ul>
+
+  <h2>Бележки за всеки участник</h2>
+  <p class="muted small">Попълни веднага след теста. Пиши „Дете 1“, „Родител 2“ и т.н., без имена и фамилии. Бележките се пазят тук и аз ги чета, за да оправим модела.</p>
+  <form id="f" class="who-child" novalidate>
+    <fieldset><legend>Кой</legend>
+      <div class="seg" role="radiogroup" aria-label="Кой"><label><input type="radio" name="who" value="child" checked> Дете</label><label><input type="radio" name="who" value="parent"> Родител</label></div>
+      <div class="two"><label>Означение<input id="tag" name="tag" placeholder="Дете 1" maxlength="30"></label><label data-for="child">Клас<select id="grade" name="grade"><option>5</option><option>6</option><option selected>7</option></select></label></div>
+    </fieldset>
+    <fieldset data-for="child"><legend>5-те задачи</legend>
+      ${TASKS}
+    </fieldset>
+    <fieldset data-for="child"><legend>Впечатления на детето</legend>
+      <div class="qline" role="radiogroup" aria-label="Направи ли плана докрай?"><span>Направи ли плана докрай?</span><span class="seg"><label><input type="radio" name="plan" value="да"> да</label><label><input type="radio" name="plan" value="отчасти"> отчасти</label><label><input type="radio" name="plan" value="не"> не</label></span></div>
+      <div class="qline" role="radiogroup" aria-label="Ерчо (гласът) му беше…"><span>Ерчо (гласът) му беше…</span><span class="seg"><label><input type="radio" name="erco" value="готин"> готин</label><label><input type="radio" name="erco" value="нормален"> нормален</label><label><input type="radio" name="erco" value="дразнещ"> дразнещ</label></span></div>
+      <div class="qline" role="radiogroup" aria-label="Говорещият Бойчо Огнянов…"><span>Говорещият Бойчо Огнянов…</span><span class="seg"><label><input type="radio" name="hero" value="хареса"> хареса</label><label><input type="radio" name="hero" value="все едно"> все едно</label><label><input type="radio" name="hero" value="не"> не</label><label><input type="radio" name="hero" value="не го видя"> не го видя</label></span></div>
+      <div class="qline" role="radiogroup" aria-label="„Би ли го отворил утре сам?“ (1 – не, 5 – да)"><span>„Би ли го отворил утре сам?“ (1 – не, 5 – да)</span><span class="seg">${SCALE}</span></div>
+    </fieldset>
+    <fieldset data-for="parent"><legend>Родител</legend>
+      <div class="two"><label>Отговори ли кое да упражни детето?<select id="pok" name="pok"><option value="">–</option><option>сам</option><option>с помощ</option><option>не успя</option></select></label><label>Секунди<input id="psec" name="psec" type="number" min="0" max="600" inputmode="numeric"></label></div>
+      <label>Какво още иска да вижда<textarea id="pwant" name="pwant"></textarea></label>
+      <div class="qline" role="radiogroup" aria-label="Имейл всяка неделя?"><span>Имейл всяка неделя?</span><span class="seg"><label><input type="radio" name="pmail" value="да"> да</label><label><input type="radio" name="pmail" value="не"> не</label><label><input type="radio" name="pmail" value="не знам"> не знам</label></span></div>
+    </fieldset>
+    <fieldset><legend>Какво каза, какво го обърка</legend>
+      <label>Думите му (цитати)<textarea id="quotes" name="quotes" placeholder="„Това е като игра“…"></textarea></label>
+      <label>Къде се обърка или се отегчи<textarea id="stuck" name="stuck"></textarea></label>
+    </fieldset>
+    <button type="submit" id="save">Запази бележките</button>
+    <p class="status" id="status" role="status"></p>
+  </form>
+
+  <h2>Записани досега</h2>
+  <div id="list" class="muted small">Бележките ще се появят тук, когато запишеш първите.</div>
+</div>
+
+<script>
+const TASKS = ["Какво да правя днес", "Колко остава от „Причастия“", "Оценка, ако изпитът е днес", "Ерчо да мълчи", "Какво вижда родителят"];
+const f = document.getElementById("f");
+// the 5 tasks and the 1–5 scale are built here, so the markup stays short
+f.innerHTML = f.innerHTML
+  .replace("${TASKS}", TASKS.map((t, i) => `<div class="two"><label>${i + 1}. ${t}<select id="t${i}" name="t${i}"><option value="">–</option><option>сам</option><option>с помощ</option><option>не успя</option></select></label><label>Секунди<input id="s${i}" name="s${i}" type="number" min="0" max="600" inputmode="numeric"></label></div>`).join(""))
+  .replace("${SCALE}", [1, 2, 3, 4, 5].map((n) => `<label><input type="radio" name="again" value="${n}"> ${n}</label>`).join(""));
+const status = document.getElementById("status"), list = document.getElementById("list"), save = document.getElementById("save");
+f.addEventListener("change", (e) => { if (e.target.name === "who") f.className = "who-" + e.target.value; });
+let db = null;
+const show = (rows) => {
+  if (!rows.length) { list.textContent = "Още няма записани бележки."; return; }
+  list.className = "";
+  list.replaceChildren(...rows.map((r) => {
+    const d = r.data(), div = document.createElement("div");
+    div.className = "entry";
+    const b = document.createElement("b");
+    b.textContent = `${d.tag || "Без означение"} · ${d.who === "parent" ? "родител" : d.grade + ". клас"}`;
+    const s = document.createElement("span");
+    s.className = "muted";
+    s.textContent = d.who === "parent" ? `отговори: ${d.pok || "–"} · ${d.psec || "?"} сек.` : `задачи сам: ${(d.tasks || []).filter((t) => t.r === "сам").length} от 5 · утре пак: ${d.again || "–"}/5 · Ерчо: ${d.erco || "–"}`;
+    div.append(b, s);
+    return div;
+  }));
+};
+(async () => {
+  try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+  if (!db) { list.textContent = "Бележките се пазят само когато страницата е отворена в claude.ai с твоя профил."; return; }
+  const t = setTimeout(() => { list.textContent = "Не успях да заредя записаните бележки. Опитай по-късно."; }, 10000);
+  db.collection("tests").orderBy("at", "desc").onSnapshot((snap) => { clearTimeout(t); show(snap.docs); }, () => { clearTimeout(t); list.textContent = "Не успях да заредя записаните бележки."; });
+})();
+f.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!db) { status.className = "status err"; status.textContent = "Тук бележките не могат да се запазят. Отвори страницата в claude.ai."; return; }
+  const v = (n) => (f.elements[n] ? f.elements[n].value.trim() : "");
+  const who = v("who");
+  const row = { at: Date.now(), who, tag: v("tag").slice(0, 30), quotes: v("quotes").slice(0, 2000), stuck: v("stuck").slice(0, 2000) };
+  if (who === "child") Object.assign(row, { grade: +v("grade"), tasks: TASKS.map((t, i) => ({ t, r: v("t" + i), s: +v("s" + i) || null })), plan: v("plan"), erco: v("erco"), hero: v("hero"), again: +v("again") || null });
+  else Object.assign(row, { pok: v("pok"), psec: +v("psec") || null, pwant: v("pwant").slice(0, 2000), pmail: v("pmail") });
+  save.disabled = true;
+  status.className = "status"; status.textContent = "Записвам…";
+  try {
+    await db.collection("tests").add(row);
+    status.className = "status ok"; status.textContent = "Записано. Благодаря! Следващият участник:";
+    const keepWho = who;
+    f.reset();
+    f.elements.who.value = keepWho;
+    f.className = "who-" + keepWho;
+  } catch (err) {
+    status.className = "status err"; status.textContent = "Не се записа. Опитай пак след малко.";
+  } finally { save.disabled = false; }
+});
+</script>
