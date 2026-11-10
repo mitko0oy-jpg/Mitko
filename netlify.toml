@@ -4,6 +4,12 @@
 [functions]
   directory = "netlify/functions"
 
+# The QR code on each math card ("Още задачи и видео") leads to app.edubel.site/m/N: that card in the trainer.
+[[redirects]]
+  from = "/m/:n"
+  to = "/t/?m=:n"
+  status = 302
+
 # Security headers for the static pages. API responses set their own headers in code.
 [[headers]]
   for = "/*"

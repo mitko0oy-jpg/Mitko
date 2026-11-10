@@ -177,8 +177,10 @@ export default handle(async (req, ctx) => {
     if (questions.length < 10 || !b.passages || typeof b.passages !== "object") throw bad("bank", "Липсват задачите.");
     // The game „Литературни досиета“ travels with the bank (optional).
     const dossiers = b.dossiers && typeof b.dossiers === "object" && Array.isArray(b.dossiers.dossiers) ? b.dossiers : null;
-    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers })]);
-    return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0 });
+    // Math for НВО (the 50 cards; their practice is in questions/modules), also optional.
+    const math = b.math && typeof b.math === "object" && Array.isArray(b.math.cards) && Array.isArray(b.math.sections) ? b.math : null;
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math })]);
+    return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0, mathCards: math ? math.cards.length : 0 });
   }
 
   // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.

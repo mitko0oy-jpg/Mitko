@@ -27,6 +27,13 @@ bank = {"passages": passages, "questions": questions, "modules": mods}
 dos_file = os.path.join(os.path.dirname(os.path.abspath(bank_dir)), "dossiers.json")
 if os.path.exists(dos_file):
     bank["dossiers"] = json.load(open(dos_file, encoding="utf8"))
+# Math for НВО (50 cards + practice, made by math_cards.py from the card page, see README), if it is there.
+math_file = os.path.join(os.path.dirname(os.path.abspath(bank_dir)), "math.json")
+if os.path.exists(math_file):
+    m = json.load(open(math_file, encoding="utf8"))
+    bank["math"] = {k: m[k] for k in ("title", "sections", "index", "cards")}
+    bank["questions"] = questions = questions + m["questions"]
+    bank["modules"] = mods + m["modules"]
 assets = os.path.join(here, "..", "..", "public", "assets")
 media = os.path.join(here, "..", "..", "public", "media")
 css = open(os.path.join(assets, "trener.css"), encoding="utf8").read()

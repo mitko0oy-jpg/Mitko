@@ -47,6 +47,9 @@ createServer(async (req, res) => {
     res.end(Buffer.from(await response.arrayBuffer()));
     return;
   }
+  // The QR codes on the math cards: /m/12 -> /t/?m=12 (as in netlify.toml).
+  const card = url.pathname.match(/^\/m\/(\d{1,2})\/?$/);
+  if (card) return res.writeHead(302, { location: `/t/?m=${card[1]}` }).end();
   let file = path.join(root, "public", decodeURIComponent(url.pathname));
   if (!file.startsWith(path.join(root, "public"))) return res.writeHead(403).end();
   try {

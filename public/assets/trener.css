@@ -555,3 +555,132 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .game::before{background:linear-gradient(180deg,rgba(14,9,40,.95) 0%,rgba(14,9,40,.82) 60%,rgba(14,9,40,.35) 100%)}
   .game-m{width:150px}
 }
+
+/* ---------- математика: превключвател БЕЛ / Математика, картите по раздели, една карта (лице и гръб), задачи ---------- */
+.subj{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:var(--paper);border-radius:20px;box-shadow:0 1px 0 var(--edge),0 10px 24px -18px var(--shadow)}
+.subj button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:48px;padding:0 8px;border:0;border-radius:15px;background:transparent;font:800 16px/1 var(--sans);color:var(--muted);transition:background .15s,color .15s}
+.subj button[aria-pressed="true"]{background:var(--violet);color:#fff;box-shadow:0 3px 0 var(--violet-d)}
+.sj-i{width:28px;height:28px;object-fit:contain;flex:none}
+.mx-sum{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:start}
+.mx-i{width:56px;height:56px;object-fit:contain;margin-top:4px}
+.mx-sum h2{font-size:clamp(18px,4.2vw,22px);margin:4px 0 6px}
+.mx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.mx-stats .stat{padding:10px 12px}
+.mx-si{width:36px;height:36px;object-fit:contain;margin-left:-4px}
+.mx-sec .part-hd{align-items:center}
+.mtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mtile{display:grid;gap:5px;align-content:start;text-align:left;min-height:122px;padding:12px 12px 10px;border:0;border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 30%,transparent),0 4px 0 color-mix(in srgb,var(--c) 34%,transparent);transition:transform .08s}
+.mtile:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 30%,transparent),0 1px 0 color-mix(in srgb,var(--c) 34%,transparent)}
+.mtile .no{font:800 13px/1 var(--display);color:#fff;background:var(--c);border-radius:10px;padding:5px 8px;justify-self:start}
+.mtile b{font:700 14.5px/1.25 var(--sans)}
+.mtile small{font-size:12.5px;color:var(--muted)}
+.mtile.played{background:color-mix(in srgb,var(--c) 9%,var(--paper))}
+.mtile.soon{min-height:0;background:transparent;box-shadow:inset 0 0 0 2px var(--line);opacity:.62}
+.mtile.soon .no{background:var(--muted)}
+.mtile.soon b{font-weight:600;font-size:13.5px;color:var(--muted)}
+.mtile .ro{font-weight:700}
+.mx-mix{justify-self:start}
+/* one card */
+.mcard{--soft:color-mix(in srgb,var(--c) 12%,var(--paper));--ct:color-mix(in srgb,var(--c) 72%,var(--ink));container-type:inline-size;position:relative;overflow:hidden;background:var(--paper);border-radius:26px;box-shadow:0 1px 0 var(--edge),0 18px 36px -24px var(--shadow);padding:clamp(18px,4.5vw,28px) clamp(16px,4vw,26px);display:grid;gap:14px;animation:rise .28s ease-out both}
+.mcard::before{content:"";position:absolute;inset:0 0 auto 0;height:8px;background:var(--c)}
+.mcard.flip{animation:mflip .45s cubic-bezier(.2,.8,.3,1) both}
+@keyframes mflip{from{transform:perspective(1400px) rotateY(-75deg);opacity:.25}to{transform:none;opacity:1}}
+.mc-hd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.mc-ic{width:48px;height:48px;object-fit:contain}
+.mc-area{display:grid;gap:3px;font:800 12px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ct)}
+.mc-area small{font:600 13px/1.2 var(--sans);letter-spacing:0;text-transform:none;color:var(--muted)}
+.mc-no{font:800 28px/1 var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.mc-no small{font-size:13px;color:var(--muted);font-weight:700}
+.mc-hd.bk{grid-template-columns:auto minmax(0,1fr)}
+.mc-hd.bk .mc-no{background:var(--c);color:#fff;border-radius:12px;padding:7px 10px;font-size:18px}
+.mc-hd.bk .mc-area{font:700 16px/1.3 var(--sans);letter-spacing:0;text-transform:none;color:var(--ink)}
+.mc-t{font-size:clamp(22px,5.6vw,30px);line-height:1.15}
+.mc-nvo{font-size:14.5px;color:var(--muted);margin-top:-4px}
+.mc-nvo .st{color:#E8A400;letter-spacing:.06em}
+.mc-act{display:flex;flex-wrap:wrap;gap:10px}
+.mc-act .btn{flex:1 1 210px}
+.mc-last{display:flex;align-items:center;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:14px}
+.mc-nav{display:flex;justify-content:space-between;gap:10px}
+.mc-nav .btn{max-width:49%;font-size:13.5px;line-height:1.25;text-align:left}
+/* what is printed on the card (also the solutions shown in the tasks) */
+:is(.mcard,.msol,.self-sol){--c-def:var(--violet)}
+.msol,.self-sol{--c:var(--violet);--soft:var(--band);--ct:var(--violet)}
+:is(.mcard,.msol) :is(p,ol,ul,h5){margin:0;padding:0}
+.mcard .mb{margin:0}
+:is(.mcard,.msol) h5{margin:0 0 7px;font:800 12px/1.2 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ct);display:flex;align-items:center;gap:8px}
+:is(.mcard,.msol,.qcard,.rv) b{color:var(--ink)}
+:is(.mcard,.msol,.qcard,.rv) .m{font-family:var(--serif);font-style:italic}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.05;font-size:.85em;margin:0 .15em}
+.fr>span:first-child{border-bottom:1.5px solid currentColor;padding:0 .2em .12em}
+.fr>span:last-child{padding:.12em .2em 0}
+.mcard .key{background:var(--soft);border-radius:16px;padding:12px 14px;display:grid;gap:7px}
+.mcard .key .f{font-size:18.5px;line-height:1.5;color:var(--ink)}
+.mcard .badge{margin-left:auto;font:800 10.5px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:99px;white-space:nowrap}
+.mcard .badge.mem{background:var(--ink);color:var(--paper)}
+.mcard .badge.sheet{color:var(--sky);box-shadow:inset 0 0 0 1.5px var(--sky)}
+:is(.mcard,.msol) ol.steps{list-style:none;counter-reset:s;display:grid;gap:9px}
+:is(.mcard,.msol) ol.steps>li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;align-items:start}
+:is(.mcard,.msol) ol.steps>li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font:800 13px/1 var(--sans);grid-row:span 2}
+:is(.mcard,.msol) .sol .do{grid-column:2;display:block;color:var(--ink);font-weight:700}
+:is(.mcard,.msol) .sol .why{grid-column:2;display:block;font-size:14px;color:var(--muted);font-style:italic;line-height:1.35}
+.mcard .remember{background:color-mix(in srgb,var(--gold) 20%,var(--paper));border-radius:14px;padding:10px 14px;font-size:15.5px}
+.mcard .remember b{color:var(--gold-t);text-transform:uppercase;letter-spacing:.05em;font-size:13px;margin-right:6px}
+.mcard .task,.mcard p.task{background:var(--soft);border-left:5px solid var(--c);border-radius:12px;padding:10px 14px;color:var(--ink)}
+:is(.mcard,.self-sol) .ans{background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:9px 14px;font-weight:600}
+:is(.mcard,.self-sol) .ans b{color:inherit}
+.mcard .trap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;font-size:15px;padding:8px 0;border-top:1px dashed var(--line)}
+.mcard .traps h5+.trap,.mcard .trap:first-child{border-top:0}
+.mcard .trap .bad{color:var(--bad)}
+.mcard .trap .good{color:var(--ok);font-weight:600}
+.mcard .trap .why{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
+.mcard .try{background:var(--soft);border-radius:16px;padding:12px 14px;display:grid;gap:8px}
+.mcard details.upside summary{cursor:pointer;color:var(--violet);font-weight:700;list-style:none;width:max-content}
+.mcard details.upside summary::-webkit-details-marker{display:none}
+.mcard details.upside summary::before{content:"👀 "}
+.mcard details.upside[open] summary{display:none}
+.mcard details.upside p{color:var(--ok);font-weight:700}
+.mcard .slip{background:var(--soft);border-radius:16px;padding:12px 14px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start}
+.mcard :is(.slip,.fix) .who{width:34px;height:34px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font:800 15px/1 var(--serif)}
+.mcard .slip p{font-size:17px;color:var(--ink);line-height:1.4}
+:is(.mcard,.qcard,.rv) .slip small,:is(.qcard,.rv) .qtext small{display:block;font-size:13px;color:var(--muted)}
+.mcard .fix{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mcard .fix p+p{margin-top:4px}
+.mcard .fix .ok{color:var(--ok);font-weight:700}
+.mcard .fix .ref{font-size:13px;color:var(--ct);font-weight:700}
+:is(.mcard,.msol) .ladder{list-style:none;display:grid;gap:8px}
+:is(.mcard,.msol) .ladder li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--soft);border-radius:12px;padding:8px 12px}
+:is(.mcard,.msol) .ladder .k{width:28px;height:28px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font:800 13px/1 var(--sans)}
+:is(.mcard,.msol) :is(.ladder,.sheetlines) em{font-style:normal;font:800 11.5px/1 var(--sans);color:var(--ok);background:var(--ok-soft);padding:5px 8px;border-radius:99px;white-space:nowrap;flex:none}
+:is(.mcard,.msol) .sheetlines{box-shadow:inset 0 0 0 2px var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:9px}
+:is(.mcard,.msol) .sheetlines p{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--ink)}
+.mcard .chips{display:flex;flex-wrap:wrap;gap:6px}
+.mcard .chips span{box-shadow:inset 0 0 0 1.5px var(--line);border-radius:99px;padding:5px 11px;font-size:14px;color:var(--ink)}
+.mcard .tips{list-style:none;display:grid;gap:8px}
+.mcard .tips li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px}
+.mcard .tips li::before{content:"✓";width:24px;height:24px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;font-weight:800;font-size:13px}
+.mcard .memlist{list-style:none;display:grid}
+.mcard .memlist li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px;color:var(--ink)}
+.mcard .memlist i{font-style:normal;font-size:12px;color:var(--ct);white-space:nowrap;font-weight:700}
+.mcard .fig{display:flex;justify-content:center;flex-wrap:wrap;gap:20px;align-items:flex-end}
+.mcard figure{margin:0;display:grid;justify-items:center;gap:4px;font-size:13px;color:var(--muted)}
+.mcard figure svg{display:block;max-width:100%}
+.mcard .cref{border:0;background:none;padding:0;font:inherit;color:var(--violet);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.mcard svg [stroke="#1B2A4A"]{stroke:var(--ink)}
+.mcard svg [fill="#1B2A4A"]{fill:var(--ink)}
+/* tasks from the cards */
+.qq.mq{line-height:1.5}
+.qtext.mtext{font-family:var(--sans);font-style:normal;color:var(--ink)}
+.numrow{display:flex;align-items:center;gap:10px}
+.numrow .field{flex:1;min-width:0}
+.unit{font:700 19px/1 var(--serif);color:var(--ink)}
+.self-tip{color:var(--muted);font-size:15.5px}
+.self-sol{display:grid;gap:10px}
+.msol{display:grid;gap:10px}
+.self-q{display:grid;gap:10px;padding:14px;border-radius:18px;background:var(--band)}
+.self-q p{font-weight:700;color:var(--ink)}
+.btn.ok-btn{background:var(--ok);box-shadow:0 4px 0 color-mix(in srgb,var(--ok) 55%,#000)}
+.btn.ok-btn:active:not(:disabled){box-shadow:0 1px 0 color-mix(in srgb,var(--ok) 55%,#000)}
+.msol-d summary{cursor:pointer;color:var(--violet);font-weight:700;font-size:15px}
+.msol-d .msol{margin-top:8px}
+@media (prefers-reduced-motion: reduce){.mcard,.mcard.flip{animation:none}}
+.hero.long h1{font-size:clamp(22px,5.7vw,34px)}

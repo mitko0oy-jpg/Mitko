@@ -288,12 +288,18 @@ test("lessons and texts: empty template, written lesson, locked text", async () 
 test("НВО тренажор: personal code, three devices, merged grades, support page", async () => {
   const bank = await admin("trener-bank", {
     passages: { p1: { title: "Текст", text: ["Абзац."] } },
-    questions: Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото така казва правилото за правопис." })),
-    modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }],
+    questions: [
+      ...Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото така казва правилото за правопис." })),
+      { id: "m12-k1", m: "mk-12", t: "mc", h: 1, q: "Кое е вярно?", o: ["96 · 0,8", "96 · 0,2"], a: 0, why: 'Второто <span class="fr"><span>1</span><span>5</span></span> се смята от <b class="x y">новата цена</b>, а не от старата.' },
+    ],
+    modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }, { id: "mk-12", n: 112, area: "math", sec: "pct", title: "Карта 12", desc: "" }],
     dossiers: { title: "Литературни досиета", dossiers: [{ id: "d01", no: 1, work: "„Творба“" }], message: { fields: 1, groups: [[1]], text: "А" } },
+    math: { title: "Математика", sections: [{ id: "pct", t: "Проценти и пари", c: "#A8641B" }], index: [{ n: 12, area: "pct", title: "Две поредни промени", grades: "6–7" }],
+      cards: [{ n: 12, area: "pct", title: "Две поредни промени", front: [{ tag: "section", cls: "key", html: '<h5>Ключът <span class="badge mem">Наизуст</span></h5><p class="f">умножи по <span class="fr"><span>p</span><span>100</span></span> и после пак</p>' }], back: [] }] },
   });
   assert.ok(bank.id > 0);
   assert.equal(bank.dossiers, 1, "the game is kept with the bank");
+  assert.equal(bank.mathCards, 1, "the math cards are kept with the bank");
   const { codes } = await admin("trener-codes", { count: 2, batch: `test-${run}` });
   const [code, other] = codes;
   const t = client();
@@ -303,8 +309,15 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   assert.equal(r.status, 404, "unknown code");
   r = await t("trener/open", { code: code.toLowerCase().replace("-", ""), device: dev(1), label: "iPhone · Safari" });
   assert.equal(r.code, code, "code typed in lower case without the dash");
-  assert.equal(r.bank.questions.length, 12);
+  assert.equal(r.bank.questions.length, 13);
   assert.equal(r.bank.dossiers.dossiers[0].id, "d01", "the game reaches the browser");
+  assert.equal(r.bank.math.cards[0].n, 12, "the math cards reach the browser");
+  // The fingerprint goes into the math HTML too, but never inside a tag.
+  const unmark = (x) => x.replace(/\u2060[\u200b\u200c]{32}\u2060/g, "");
+  const mathWhy = r.bank.questions.find((x) => x.id === "m12-k1").why, cardHtml = r.bank.math.cards[0].front[0].html;
+  assert.ok(/\u2060[\u200b\u200c]{32}\u2060/.test(mathWhy) && /\u2060[\u200b\u200c]{32}\u2060/.test(cardHtml), "math text and cards carry the fingerprint");
+  assert.ok(!/<[^>]*\u2060/.test(mathWhy) && !/<[^>]*\u2060/.test(cardHtml), "not inside an HTML tag");
+  assert.ok(unmark(mathWhy).startsWith("Второто <span") && unmark(cardHtml).includes('<span class="fr">'), "the HTML is unchanged apart from the mark");
   assert.equal(r.devices.length, 1);
   r = await t("trener/open", { code, device: dev(1), have: bank.id });
   assert.equal(r.bank, undefined, "the bank is not sent again when the browser has it");

@@ -14,7 +14,8 @@ const pic = (n, cls = "", alt = "", eager) => `<img class="${cls}" src="${img(n)
 const ANIM = ["hi", "yay", "oops", "trophy", "detective"];
 const mascot = (pose) => (ANIM.includes(pose) && !matchMedia("(prefers-reduced-motion: reduce)").matches && img(`a-${pose}`) ? `a-${pose}` : `m-${pose}`);
 const MOD_IMG = { chetene: "i-chetene", pravopis: "i-pravopis", glagol: "i-glagol", morfologia: "i-morfologia", sintaksis: "i-sintaksis", punktuacia: "i-punktuacia", leksika: "i-leksika", lit1: "i-lit1", lit2: "i-lit2", teoria: "i-teoria" };
-const modImg = (m) => MOD_IMG[m.id] || (/^ezik/.test(m.id) ? "i-ezik" : /^karti/.test(m.id) ? "i-karti" : m.area === "read" ? "i-chetene" : m.area === "lit" ? "i-lit1" : "i-pravopis");
+const mIcon = (sec) => `mt-${sec === "fin" ? "sys" : sec || "sys"}`;
+const modImg = (m) => (m.area === "math" ? mIcon(m.sec) : MOD_IMG[m.id]) || (/^ezik/.test(m.id) ? "i-ezik" : /^karti/.test(m.id) ? "i-karti" : m.area === "read" ? "i-chetene" : m.area === "lit" ? "i-lit1" : "i-pravopis");
 
 const AREAS = {
   read: { t: "Четене с разбиране", nvo: "задачи 1–7 на НВО", w: 7, c: "var(--read)" },
@@ -25,10 +26,19 @@ const AREAS = {
 const EXTRA = { cards: { t: "Карти за преговор", nvo: "не влизат в прогнозата за НВО", c: "var(--gold)" } };
 const ALL_AREAS = { ...AREAS, ...EXTRA };
 const isNvo = (m) => !!AREAS[m.area];
+// Math (bank.math): the 50 cards „Математика за НВО, 5.–7. клас“; each written card has a practice module "mk-N" (area "math").
+const isMath = (m) => !!m && m.area === "math";
 let BANK = null, MODULES = [], MOD = {}, Q = {};
 function setBank(b) {
   BANK = b;
-  MODULES = b.modules || [];
+  MODULES = (b.modules || []).slice();
+  // Math: one mixed practice per section that has two or more cards ("ms-<section>", questions from its cards).
+  if (b.math && Array.isArray(b.math.sections)) {
+    for (const sec of b.math.sections) {
+      const ms = MODULES.filter((m) => m.area === "math" && m.sec === sec.id && /^mk-/.test(m.id));
+      if (ms.length >= 2) MODULES.push({ id: `ms-${sec.id}`, n: 900, title: `${sec.t}: смесено упражнение`, area: "math", sec: sec.id, mix: true, desc: `Задачи от ${ms.length} карти` });
+    }
+  }
   MOD = Object.fromEntries(MODULES.map((m) => [m.id, m]));
   Q = {};
   for (const q of b.questions) Q[q.id] = q;
@@ -63,6 +73,16 @@ function save() {
   if (ONLINE) return Online.changed();
   canSave = ls.set(KEY, JSON.stringify(S));
 }
+
+/* ---------- two subjects: БЕЛ and математика (the choice is kept in this browser) ---------- */
+const K_SUBJ = "edubel-trener-subject";
+let SUBJ = ls.get(K_SUBJ) === "math" ? "math" : "bel";
+// A card's QR code leads to /m/N -> /t/?m=N: open that card (after the code, if the device has none yet).
+let GOTO = Number(new URLSearchParams(location.search).get("m")) || 0;
+if (GOTO) SUBJ = "math";
+const hasMath = () => !!(BANK && BANK.math && Array.isArray(BANK.math.cards) && BANK.math.cards.length);
+const mathOn = () => SUBJ === "math" && hasMath();
+const qMath = (q) => isMath(MOD[q.m]);
 
 /* ---------- helpers ---------- */
 const app = document.getElementById("app");
@@ -174,6 +194,32 @@ const Theme = (() => {
 })();
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const rich = (s) => esc(s).replace(/&lt;(\/?)(i|b|u|em|strong)&gt;/g, "<$1$2>").replace(/&lt;br\s*\/?&gt;/g, "<br>");
+// Math content comes as HTML (fractions, italic letters, small drawings): only these tags and attributes get through.
+const MH_TAGS = new Set("span b i em strong small sup sub p ol ul li div section br h5 figure figcaption details summary svg g path circle line rect ellipse polyline polygon text tspan".split(" "));
+const MH_ATTR = /^(class|width|height|viewbox|d|stroke|stroke-width|fill|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|points|transform|text-anchor|font-size|font-style|font-family|font-weight|stroke-dasharray|stroke-linecap|stroke-linejoin|opacity|dominant-baseline|fill-opacity|stroke-opacity|style)$/i;
+const mhCache = new Map();
+function mh(s) {
+  s = String(s ?? "");
+  if (mhCache.has(s)) return mhCache.get(s);
+  const t = document.createElement("template");
+  t.innerHTML = s;
+  const walk = (el) => {
+    for (const c of [...el.children]) {
+      if (!MH_TAGS.has(c.tagName.toLowerCase())) { c.remove(); continue; }
+      for (const a of [...c.attributes]) {
+        if (!MH_ATTR.test(a.name) || /javascript:|url\(|expression/i.test(a.value) || (a.name === "style" && c.tagName.toLowerCase() !== "svg")) c.removeAttribute(a.name);
+      }
+      walk(c);
+    }
+  };
+  walk(t.content);
+  const out = t.innerHTML;
+  mhCache.set(s, out);
+  return out;
+}
+const R = (q, s) => (q && q.h ? mh(s) : rich(s));
+const rightHtml = (q) => (q.t === "mc" ? R(q, rightText(q)) : rich(rightText(q)));
+const ansHtml = (q, a) => (q.t === "input" || q.t === "self" ? esc(answerText(q, a)) : R(q, answerText(q, a)));
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pct = (p, n) => (n ? p / n : 0);
 const gradeOf = (r) => (r >= 0.9 ? 6 : r >= 0.76 ? 5 : r >= 0.63 ? 4 : r >= 0.5 ? 3 : 2);
@@ -196,7 +242,8 @@ const modTitle = (m) => (m === "mock" ? "Пробна матура" : MOD[m] ? M
 const attemptsOf = (m) => S.hist.filter((h) => h.m === m);
 const lastOf = (m) => { const a = attemptsOf(m); return a.length ? a[a.length - 1] : null; };
 const bestOf = (m) => attemptsOf(m).reduce((b, h) => (!b || pct(h.p, h.n) > pct(b.p, b.n) ? h : b), null);
-const mistIds = () => Object.keys(S.mist).filter((id) => Q[id]).sort((a, b) => S.mist[b].d - S.mist[a].d);
+// The mistakes notebook, for one subject (math = true / false) or for both.
+const mistIds = (math) => Object.keys(S.mist).filter((id) => Q[id] && MOD[Q[id].m] && (math === undefined || qMath(Q[id]) === math)).sort((a, b) => S.mist[b].d - S.mist[a].d);
 
 function forecast() {
   const areas = {};
@@ -250,12 +297,15 @@ const BADGES = [
   { id: "worlds", e: "🧭", t: "Трите части", d: "Реши модул от четене, език и литература", ok: () => Object.keys(AREAS).every((k) => MODULES.some((m) => m.area === k && lastOf(m.id))) },
   { id: "mock", e: "🏁", t: "Генерална репетиция", d: "Направи пробна матура", ok: () => !!lastOf("mock") },
   { id: "ten", e: "⚡", t: "Десетка", d: "Реши 10 теста", ok: () => S.hist.length >= 10 },
-  { id: "all", e: "🗺️", t: "Изследовател", d: "Реши всеки модул поне веднъж", ok: () => MODULES.length > 0 && MODULES.every((m) => lastOf(m.id)) },
+  { id: "all", e: "🗺️", t: "Изследовател", d: "Реши всеки модул по БЕЛ поне веднъж", ok: () => { const ms = MODULES.filter((m) => !isMath(m)); return ms.length > 0 && ms.every((m) => lastOf(m.id)); } },
+  { id: "m1", e: "📐", t: "Математик", d: "Упражни първата карта по математика", ok: () => S.hist.some((h) => isMath(MOD[h.m])), math: true },
+  { id: "m5", e: "🧮", t: "Пет по три", d: "Вземи ★★★ на 5 карти по математика", ok: () => MODULES.filter((m) => isMath(m) && starsOf(m.id) === 3).length >= 5, math: true },
+  { id: "mtrap", e: "🪤", t: "Ловец на капани", d: "Реши карта „Капан“ без нито една грешка", ok: () => S.hist.some((h) => MOD[h.m] && MOD[h.m].sec === "trap" && h.p === h.n), math: true },
   { id: "det", e: "🔎", t: "Детектив", d: "Разкрий 5 литературни досиета", ok: () => Game.solvedN() >= 5, game: true },
   { id: "col", e: "🃏", t: "Колекционер", d: "Събери 12 героя в колекцията", ok: () => Game.solvedN() >= 12, game: true },
   { id: "king", e: "👑", t: "Главен инспектор", d: "Разкрий тайното послание", ok: () => Game.finished(), game: true },
 ];
-const badgeList = () => BADGES.filter((b) => !b.game || BANK.dossiers);
+const badgeList = () => BADGES.filter((b) => (!b.game || BANK.dossiers) && (!b.math || hasMath()));
 const earned = () => new Set(badgeList().filter((b) => { try { return b.ok(); } catch (e) { return false; } }).map((b) => b.id));
 // Erčo's lines on the board: dry, kind, never about the child's mistakes.
 const ERCHO = [
@@ -278,34 +328,45 @@ function home(scrollTo) {
   stopTimer();
   sess = null;
   Game.leave();
+  if (GOTO && hasMath()) {
+    const n = GOTO;
+    GOTO = 0;
+    SUBJ = "math";
+    if (mCard(n)) return mathCard(n);
+    scrollTo = `mt-${n}`; // a card that is not in the app yet: show where it will be
+  }
+  const M = mathOn();
   const nvoCount = BANK.questions.filter((q) => MOD[q.m] && isNvo(MOD[q.m])).length;
-  const cardCount = BANK.questions.length - nvoCount;
+  const cardCount = BANK.questions.filter((q) => MOD[q.m] && MOD[q.m].area === "cards").length;
   const f = forecast();
-  const mist = mistIds().length;
+  const mist = mistIds(false).length;
   const lv = level(), nx = nextSteps()[0], name = S.name.trim();
-  const tip = ERCHO[Math.floor(Date.now() / 3.6e6) % ERCHO.length];
+  const tips = M ? MATH_TIPS : ERCHO;
+  const tip = tips[Math.floor(Date.now() / 3.6e6) % tips.length];
+  const mx = M ? mathNext() : null;
   let h = `<header class="top">
-      <div class="topbar"><img class="logo" src="${LOGO}" alt="Еду БЕЛ" width="44" height="44"><span class="eyebrow">НВО по БЕЛ · 7. клас</span>
+      <div class="topbar"><img class="logo" src="${LOGO}" alt="Еду БЕЛ" width="44" height="44"><span class="eyebrow">${M ? "Математика за НВО" : "НВО по БЕЛ · 7. клас"}</span>
         <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button></span></div>
-      <section class="hero" aria-labelledby="heroT">
+      ${hasMath() ? `<div class="subj" role="group" aria-label="Предмет"><button data-act="subj" data-s="bel" aria-pressed="${!M}">${pic("i-lit1", "sj-i", "", true)}<span>БЕЛ</span></button><button data-act="subj" data-s="math" aria-pressed="${M}">${pic("mt-geo", "sj-i", "", true)}<span>Математика</span></button></div>` : ""}
+      <section class="hero ${M ? "long" : ""}" aria-labelledby="heroT">
         <div class="hero-txt">
           <p class="hi">${name ? `Здрасти, ${esc(name)}!` : "Здрасти!"}</p>
-          <h1 id="heroT">НВО тренажор <em>по БЕЛ</em></h1>
+          <h1 id="heroT">НВО тренажор <em>${M ? "по математика" : "по БЕЛ"}</em></h1>
           <button class="lvl" data-act="go-badges" aria-label="Ниво ${lv.L}: ${esc(lv.name)}. Виж значките"><b>${lv.L}</b><span><small>Ниво</small>${esc(lv.name)}</span></button>
           <div class="xp" role="img" aria-label="${lv.x - lv.from} от ${lv.to - lv.from} точки опит до ниво ${lv.L + 1}"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div>
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
         <div class="hero-art">${avatarPic("hero-m", true)}<p class="bubble">${esc(tip)}</p></div>
-        <div class="hero-go">${nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
+        <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
       </section>
-      <div class="facts"><span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span><span>Пробна матура</span></div>
+      <div class="facts">${M ? `<span>${BANK.math.cards.length} ${pl(BANK.math.cards.length, "карта", "карти")}</span><span>${BANK.questions.filter(qMath).length} задачи</span><span>Решен пример и капани</span><span>Оценки 2–6</span>`
+        : `<span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span><span>Пробна матура</span>`}</div>
     </header>`;
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
-  h += forecastPanel(f, mist);
-  h += Game.card();
-  h += modulesSection();
+  if (M) h += mathBoard();
+  else h += forecastPanel(f, mist) + Game.card() + modulesSection();
   h += badgesSection();
   h += gradebook();
   if (ONLINE) h += Online.accessSection();
@@ -529,6 +590,90 @@ function shareBlock(id, title, sub, msg) {
 }
 
 /* ---------- sessions ---------- */
+/* ---------- math: the cards by section, one card (front and back, like the printed one), practice ---------- */
+const MATH_TIPS = [
+  "Нарисувай чертеж. Чертежът мисли вместо теб.",
+  "Процентите не се събират един след друг. Умножават се.",
+  "Провери отговора: може ли периметърът да е −5 cm? Не може.",
+  "Празен лист = 0 точки. Започни с „Нека x е…“.",
+  "Една карта на ден – и до изпита минаваш всичките. Сметнах го.",
+  "Минусът пред степента е хитър. Аз съм Ъ – и аз съм хитър.",
+  "Прочети задачата два пъти. Числата обичат да се крият в думите.",
+  "Грешката е улика. В картите „Капан“ ги ловим нарочно.",
+];
+let mview = null;
+const mCard = (n) => (hasMath() ? BANK.math.cards.find((c) => c.n === n) : null);
+const mSec = (id) => (BANK.math.sections || []).find((s) => s.id === id) || { id, t: "", c: "#6C4BFF" };
+const mMod = (n) => MOD[`mk-${n}`];
+const shortT = (t) => (t.length > 34 ? t.slice(0, 32).replace(/[\s,:;–-]+\S*$/, "") + "…" : t);
+const mBlock = (b) => { const tg = ["section", "p", "div", "ol", "ul"].includes(b.tag) ? b.tag : "div"; return `<${tg} class="mb ${esc(b.cls || "")}">${mh(b.html)}</${tg}>`; };
+// What to do next: the first card not practised yet, else the one with the fewest stars.
+function mathNext() {
+  const cs = BANK.math.cards.filter((c) => mMod(c.n));
+  if (!cs.length) return null;
+  const fresh = cs.find((c) => !lastOf(`mk-${c.n}`));
+  if (fresh) return { c: fresh, again: false };
+  const low = cs.slice().sort((a, b) => starsOf(`mk-${a.n}`) - starsOf(`mk-${b.n}`))[0];
+  return starsOf(`mk-${low.n}`) < 3 ? { c: low, again: true } : null;
+}
+function mathBoard() {
+  const M = BANK.math, idx = M.index && M.index.length ? M.index : M.cards, total = idx.length;
+  const mods = MODULES.filter((m) => isMath(m) && !m.mix), done = mods.filter((m) => lastOf(m.id)).length;
+  const got = mods.reduce((s, m) => s + starsOf(m.id), 0), mist = mistIds(true).length;
+  let h = `<section class="fc mx-top" aria-labelledby="mxT"><div class="mx-sum">
+      ${pic("mt-sys", "mx-i", "", true)}<div><span class="eyebrow">${esc(M.title || "Математика за НВО")}</span>
+      <h2 id="mxT">${total} карти: правилото отпред, практиката отзад</h2>
+      <p class="muted small">Отвори карта, обърни я и я упражни. Числовите отговори се проверяват сами, а големите задачи решаваш на лист и сравняваш.</p></div></div>
+    <div class="mx-stats"><div class="stat"><b>${done}/${mods.length}</b><span>упражнени карти</span></div><div class="stat"><b>★ ${got}</b><span>от ${mods.length * 3} звезди</span></div>${M.cards.length < total ? `<div class="stat"><b>${M.cards.length}/${total}</b><span>карти вече тук</span></div>` : ""}</div>
+    <div class="fc-actions"><button class="tool alt" data-act="mist" ${mist ? "" : "disabled"}>${pic("i-mist", "tool-i")}<span class="tool-t"><b>Грешки по математика${mist ? ` · ${mist}` : ""}</b><span>${mist ? "Задачите, в които си сгрешил. Реши ги вярно 2 пъти и изчезват." : "Тук ще се събират задачите, в които сгрешиш."}</span></span></button></div></section>
+    <section class="parts" id="modules"><h2 class="sec-t">Картите по раздели</h2>`;
+  for (const sec of M.sections || []) {
+    const list = idx.filter((e) => (e.sec || e.area) === sec.id);
+    if (!list.length) continue;
+    const ms = mods.filter((m) => m.sec === sec.id), st = ms.reduce((s, m) => s + starsOf(m.id), 0), mix = MOD[`ms-${sec.id}`];
+    h += `<div class="part mx-sec" style="--c:${esc(sec.c)}"><div class="part-hd">${pic(mIcon(sec.id), "mx-si", "", true)}<h3>${esc(sec.t)}</h3><span class="part-s">${list.length} ${pl(list.length, "карта", "карти")}</span>${ms.length ? `<span class="part-st" aria-label="${st} от ${ms.length * 3} звезди">★ ${st}/${ms.length * 3}</span>` : ""}</div>
+      <div class="mtiles">`;
+    for (const e of list) {
+      const c = mCard(e.n), mod = c && mMod(c.n), last = mod && lastOf(mod.id);
+      if (!c) { h += `<div class="mtile soon" id="mt-${e.n}"><span class="no">${e.n}</span><b>${esc(shortT(e.title))}</b><small>скоро</small></div>`; continue; }
+      h += `<button class="mtile ${last ? "played" : ""}" id="mt-${e.n}" data-act="mcard" data-n="${c.n}"><span class="no">${c.n}</span><b>${esc(c.title)}</b>
+        <small>${c.grades ? `${esc([...c.grades].join(", "))} клас` : ""}${c.stars ? ` · на НВО ${"★".repeat(c.stars)}` : ""}</small>${mod ? starRow(starsOf(mod.id), "sm") : `<small class="ro">за четене</small>`}</button>`;
+    }
+    h += `</div>${mix ? `<button class="btn line sm mx-mix" data-act="mmix" data-m="${mix.id}">🔀 Смесено упражнение по раздела</button>` : ""}</div>`;
+  }
+  return h + `</section>`;
+}
+function mathCard(n, back = false, flip = false) {
+  const c = mCard(n);
+  if (!c) return home();
+  stopTimer();
+  sess = null;
+  Game.leave();
+  mview = { n, back };
+  const M = BANK.math, total = (M.index && M.index.length) || M.cards.length, list = M.cards, i = list.indexOf(c);
+  const prev = list[i - 1], next = list[i + 1], mod = mMod(n), last = mod && lastOf(mod.id), qn = mod ? ofMod(mod.id).length : 0;
+  const sec = mSec(c.sec || c.area);
+  let h = `<div class="qbar"><button class="back" data-act="home">← Табло</button><span class="qtitle">Карта ${n} от ${total}</span><span class="pill">${back ? "Гръб" : "Лице"}</span></div>
+    <article class="mcard a-${esc(c.area)} ${back ? "is-back" : ""} ${flip ? "flip" : ""}" style="--c:${esc(sec.c)}" aria-label="Карта ${n}, ${back ? "гръб" : "лице"}">`;
+  if (!back) {
+    h += `<header class="mc-hd">${pic(mIcon(c.sec || c.area), "mc-ic", "", true)}<span class="mc-area">${esc(c.areaT || sec.t)}${c.grades ? `<small>${esc([...c.grades].join(", "))} клас</small>` : ""}</span><span class="mc-no">${two(n)}<small>/${total}</small></span></header>
+      <h1 class="mc-t">${esc(c.title)}</h1>${c.nvo ? `<p class="mc-nvo">${c.stars ? `<span class="st" aria-label="${c.stars} от 3">${"★".repeat(c.stars)}${"☆".repeat(3 - c.stars)}</span> ` : ""}${esc(c.nvo)}</p>` : ""}
+      ${(c.front || []).map(mBlock).join("")}`;
+  } else {
+    h += `<header class="mc-hd bk"><span class="mc-no">${two(n)}</span><span class="mc-area">${esc(c.backT || c.title)}</span></header>${(c.back || []).map(mBlock).join("")}`;
+  }
+  h += `</article>
+    <div class="mc-act"><button class="btn line" data-act="mflip">${back ? "↺ Към лицето" : "↻ Обърни картата"}</button>${qn ? `<button class="btn gold" data-act="start" data-m="${mod.id}">▶ Упражни · ${qn} ${pl(qn, "задача", "задачи")}</button>` : ""}</div>
+    ${last ? `<p class="mc-last">${starRow(starsOf(mod.id))}<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span>${gradeBadge(gradeOf(pct(last.p, last.n)), "sm")}</p>` : ""}
+    <nav class="mc-nav" aria-label="Други карти">${prev ? `<button class="btn line sm" data-act="mcard" data-n="${prev.n}">← ${prev.n}. ${esc(shortT(prev.title))}</button>` : "<span></span>"}${next ? `<button class="btn line sm" data-act="mcard" data-n="${next.n}">${next.n}. ${esc(shortT(next.title))} →</button>` : ""}</nav>`;
+  app.innerHTML = h;
+  // "Повтори: карта 7", "карта 11" in the list: a tap opens that card (when it is in the app)
+  app.querySelectorAll(".mcard .ref, .mcard .memlist i").forEach((el) => {
+    el.innerHTML = el.innerHTML.replace(/карта (\d{1,2})/g, (all, k) => (mCard(+k) && +k !== n ? `<button class="cref" data-act="mcard" data-n="${+k}">${all}</button>` : all));
+  });
+  window.scrollTo(0, 0);
+}
+
 function prepView(q) {
   if (q.t === "mc") return { ord: q.fix ? q.o.map((_, i) => i) : shuffle(q.o.map((_, i) => i)) };
   if (q.t === "match") return { right: shuffle(q.pairs.map((_, i) => i)) };
@@ -552,6 +697,7 @@ function newSess(kind, m, title, qs) {
 }
 // Reading questions stay together with their text; passages come in random order.
 function moduleQs(m) {
+  if (/^ms-/.test(m)) return shuffle(BANK.questions.filter((q) => MOD[q.m] && MOD[q.m].sec === m.slice(3))).slice(0, 15);
   const qs = ofMod(m);
   if (!qs.some((q) => q.p)) return shuffle(qs);
   const groups = {};
@@ -562,7 +708,7 @@ function startModule(m) { newSess("module", m, MOD[m].title, moduleQs(m)); }
 function startMistakes(ids) {
   const list = (ids && ids.length ? ids : mistIds()).filter((id) => Q[id]).slice(0, 20);
   if (!list.length) return home();
-  newSess("mist", "mist", "Тетрадка с грешки", shuffle(list.map((id) => Q[id])));
+  newSess("mist", "mist", list.every((id) => qMath(Q[id])) ? "Грешки по математика" : "Тетрадка с грешки", shuffle(list.map((id) => Q[id])));
 }
 function pick(arr, n) { return shuffle(arr).slice(0, n); }
 function buildMock() {
@@ -597,9 +743,22 @@ function startTimer() {
 }
 function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
+// The one number in a math answer: "2,42 €", "2.42", "x = 240", "1/6", "−17", "10 000" (null if there is none or more than one).
+function numOf(s) {
+  s = String(s ?? "").replace(/[−–]/g, "-").replace(/(\d)\s+(?=\d{3}\b)/g, "$1");
+  if (s.includes("=")) s = s.split("=").pop();
+  const m = s.match(/-?\d+(?:[.,]\d+)?(?:\s*\/\s*-?\d+(?:[.,]\d+)?)?/g);
+  if (!m || m.length !== 1) return null;
+  const [a, b] = m[0].replace(/,/g, ".").replace(/\s/g, "").split("/");
+  const v = b === undefined ? +a : +a / +b;
+  return Number.isFinite(v) ? v : null;
+}
+const numEq = (v, x) => v !== null && Math.abs(v - x) <= (Math.abs(x * 100 - Math.round(x * 100)) > 1e-9 ? 0.0051 : 1e-9 * Math.max(1, Math.abs(x)));
 function isRight(q, a) {
   if (q.t === "mc") return a === q.a;
+  if (q.t === "input" && q.num) return q.num.some((x) => numEq(numOf(a), x)) || q.a.some((x) => norm(x) === norm(a));
   if (q.t === "input") return a != null && q.a.some((x) => norm(x) === norm(a));
+  if (q.t === "self") return a === true;
   if (q.t === "match" || q.t === "order") return Array.isArray(a) && a.every((v, i) => v === i);
   return false;
 }
@@ -607,6 +766,7 @@ function answered(q, a) {
   if (q.t === "mc") return a !== null && a !== undefined;
   if (q.t === "input") return !!String(a || "").trim();
   if (q.t === "match") return Array.isArray(a) && a.every((v) => v >= 0);
+  if (q.t === "self") return a === true || a === false;
   return true;
 }
 function answerText(q, a) {
@@ -614,10 +774,12 @@ function answerText(q, a) {
   if (q.t === "input") return String(a || "").trim() || "без отговор";
   if (q.t === "match") return q.pairs.map((p, i) => `${p[0]} – ${a && a[i] >= 0 ? q.pairs[a[i]][1] : "?"}`).join("; ");
   if (q.t === "order") return (a || []).map((k) => q.items[k]).join(" → ");
+  if (q.t === "self") return a === true ? "Решено вярно" : a === false ? "Не стана" : "без отговор";
   return "";
 }
 function rightText(q) {
   if (q.t === "mc") return q.o[q.a];
+  if (q.t === "self") return q.a[0];
   if (q.t === "input") return q.a[0];
   if (q.t === "match") return q.pairs.map((p) => `${p[0]} – ${p[1]}`).join("; ");
   if (q.t === "order") return q.items.join(" → ");
@@ -645,12 +807,21 @@ function body(q, v, a, locked, showKey) {
     return `<div class="opts" role="radiogroup" aria-label="Отговори">${v.ord.map((oi, k) => {
       let c = a === oi ? "sel" : "";
       if (showKey) c = oi === q.a ? "right" : a === oi ? "wrong" : "";
-      return `<button class="opt ${c}" role="radio" aria-checked="${a === oi}" data-act="pick" data-v="${oi}" ${locked ? "disabled" : ""}><span class="key">${LET[k]}</span><span>${rich(q.o[oi])}</span></button>`;
+      return `<button class="opt ${c}" role="radio" aria-checked="${a === oi}" data-act="pick" data-v="${oi}" ${locked ? "disabled" : ""}><span class="key">${LET[k]}</span><span>${R(q, q.o[oi])}</span></button>`;
     }).join("")}</div>`;
   }
   if (q.t === "input") {
     const c = showKey ? (isRight(q, a) ? "right" : "wrong") : "";
-    return `<input class="field ${c}" id="ansIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Твоят отговор" placeholder="Напиши отговора" value="${esc(a || "")}" ${locked ? "readonly" : ""}>${q.hint ? `<p class="hint">${rich(q.hint)}</p>` : ""}`;
+    const field = `<input class="field ${c}" id="ansIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Твоят отговор" placeholder="${q.num ? "Напиши числото" : "Напиши отговора"}" value="${esc(a || "")}" ${locked ? "readonly" : ""}>`;
+    if (q.num) return `<div class="numrow">${field}${q.unit ? `<span class="unit">${esc(q.unit)}</span>` : ""}</div><p class="hint">Пиши с десетична запетая (2,5) или като дроб (5/2).</p>`;
+    return field + (q.hint ? `<p class="hint">${rich(q.hint)}</p>` : "");
+  }
+  if (q.t === "self") {
+    // Solved on paper (like on the exam), then compared with the solution; the pupil says how it went.
+    if (!v.rev && !locked) return `<p class="self-tip">✏️ Реши на лист или в тетрадка. Когато си готов, сравни с решението.</p><button class="btn line" data-act="reveal">Покажи решението</button>`;
+    let h = `<div class="self-sol">${q.sol ? `<div class="msol">${mh(q.sol)}</div>` : ""}<p class="ans"><b>Отговор:</b> ${esc(q.a[0])}</p></div>`;
+    if (!locked) h += `<div class="self-q"><p>Как се справи?</p><div class="row"><button class="btn ok-btn" data-act="self" data-v="1">✓ Решено вярно</button><button class="btn line" data-act="self" data-v="0">✗ Не стана</button></div></div>`;
+    return h;
   }
   if (q.t === "match") {
     return `<div class="match">${q.pairs.map((p, i) => {
@@ -679,20 +850,20 @@ function renderQ() {
   const nav = `<nav class="nav" aria-label="Задачи">${s.qs.map((qq, i) => `<button data-act="go" data-i="${i}" class="${i === s.i ? "cur" : ""} ${answered(qq, s.ans[i]) && (qq.t !== "order" || s.touchedIdx?.[i]) ? "done" : ""}" aria-label="Задача ${i + 1}">${i + 1}</button>`).join("")}</nav>`;
   h += `<article class="qcard"><p class="qnum">${pic(modImg(MOD[q.m]), "qn-i", "", true)}<span>Задача ${s.i + 1} от ${s.qs.length} · ${esc(MOD[q.m].title)}${q.nvo ? ` · като задача ${esc(q.nvo)} на НВО` : ""}</span></p>`;
   if (q.p && BANK.passages[q.p]) h += passageBlock(q.p);
-  if (q.text) h += `<blockquote class="qtext">${rich(q.text)}</blockquote>`;
-  h += `<h2 class="qq">${rich(q.q)}</h2>`;
+  if (q.text) h += `<blockquote class="qtext ${q.h ? "mtext" : ""}">${R(q, q.text)}</blockquote>`;
+  h += `<h2 class="qq ${q.h ? "mq" : ""}">${R(q, q.q)}</h2>`;
   h += body(q, v, a, done || false, done && !mock);
   if (done && !mock) {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
-    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${rich(rightText(q))}</b></span>`}${q.why ? `<span class="why">${rich(q.why)}</span>` : ""}</div></div>`;
+    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}</span>` : ""}</div></div>`;
   }
   h += `<div class="qact">`;
   if (mock) {
     h += `<button class="btn line sm" data-act="prev" ${s.i === 0 ? "disabled" : ""}>← Предишна</button>
       ${s.i < s.qs.length - 1 ? `<button class="btn sm" data-act="mnext">Следваща →</button>` : `<button class="btn gold sm" data-act="submitAsk">Предай матурата</button>`}`;
   } else if (!done) {
-    h += `<button class="link" data-act="restartAsk">Започни отначало</button><button class="btn" id="checkBtn" data-act="check" ${answered(q, a) ? "" : "disabled"}>Провери</button>`;
+    h += `<button class="link" data-act="restartAsk">Започни отначало</button>${q.t === "self" ? "" : `<button class="btn" id="checkBtn" data-act="check" ${answered(q, a) ? "" : "disabled"}>Провери</button>`}`;
   } else {
     h += `<button class="link" data-act="restartAsk">Започни отначало</button><button class="btn gold" id="nextBtn" data-act="next">${s.i < s.qs.length - 1 ? "Следваща задача →" : "Виж оценката"}</button>`;
   }
@@ -808,7 +979,8 @@ function result(r) {
     }
     h += `</div></section>`;
   }
-  h += `<div class="row">${s.kind === "module" ? `<button class="btn" data-act="start" data-m="${s.m}">Реши модула пак</button>` : s.kind === "mock" ? `<button class="btn" data-act="mock">Нова пробна матура</button>` : ""}
+  const mc = s.kind === "module" && isMath(MOD[s.m]) && /^mk-\d+$/.test(s.m) ? +s.m.slice(3) : 0;
+  h += `<div class="row">${mc ? `<button class="btn" data-act="mcard" data-n="${mc}">← Към картата</button><button class="btn line" data-act="start" data-m="${s.m}">Реши пак</button>` : s.kind === "module" ? `<button class="btn" data-act="start" data-m="${s.m}">Реши модула пак</button>` : s.kind === "mock" ? `<button class="btn" data-act="mock">Нова пробна матура</button>` : ""}
     ${wrongIdx.length ? `<button class="btn gold" data-act="mistThese">Упражни ${wrongIdx.length} ${pl(wrongIdx.length, "грешка", "грешки")}</button>` : ""}
     <button class="btn line" data-act="home">Към таблото</button></div>`;
   if (s.kind !== "mist") h += shareBlock("res", "Покажи на родител", "Изпрати резултата с едно докосване или копирай текста.", resultMsg(r));
@@ -816,9 +988,10 @@ function result(r) {
     h += `<section class="review"><h2>Какво да запомниш</h2>`;
     for (const i of wrongIdx) {
       const q = s.qs[i];
-      h += `<article class="rv"><span class="qnum">${esc(MOD[q.m].title)}</span>${q.text ? `<blockquote class="qtext">${rich(q.text)}</blockquote>` : ""}<p class="q">${rich(q.q)}</p>
-        <dl><dt>Твоят отговор</dt><dd class="bad">${rich(answerText(q, s.ans[i]))}</dd><dt>Верният</dt><dd class="good">${rich(rightText(q))}</dd></dl>
-        ${q.why ? `<p class="why">${rich(q.why)}</p>` : ""}</article>`;
+      h += `<article class="rv"><span class="qnum">${esc(MOD[q.m].title)}</span>${q.text ? `<blockquote class="qtext ${q.h ? "mtext" : ""}">${R(q, q.text)}</blockquote>` : ""}<p class="q">${R(q, q.q)}</p>
+        <dl><dt>Твоят отговор</dt><dd class="bad">${ansHtml(q, s.ans[i])}</dd><dt>Верният</dt><dd class="good">${rightHtml(q)}</dd></dl>
+        ${q.sol ? `<details class="msol-d"><summary>Виж решението</summary><div class="msol">${mh(q.sol)}</div></details>` : ""}
+        ${q.why ? `<p class="why">${R(q, q.why)}</p>` : ""}</article>`;
     }
     h += `</section>`;
   } else {
@@ -844,12 +1017,16 @@ function confirmBox(zoneId, text, yesAct, yesLabel, extra) {
 const ACT = {
   home: () => home(),
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
+  subj: (b) => { SUBJ = b.dataset.s === "math" ? "math" : "bel"; ls.set(K_SUBJ, SUBJ); FX.pop(); home(); },
+  mcard: (b) => mathCard(+b.dataset.n),
+  mflip: () => { if (mview) { FX.pop(); mathCard(mview.n, !mview.back, true); } },
+  mmix: (b) => startModule(b.dataset.m),
   sound: () => { const y = scrollY; FX.toggle(); home(); scrollTo(0, y); },
   "go-badges": () => document.getElementById("badges")?.scrollIntoView({ behavior: "smooth", block: "start" }),
   avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); if (ONLINE) Online.soon(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
   start: (b) => startModule(b.dataset.m),
   mock: () => startMock(),
-  mist: () => startMistakes(),
+  mist: () => startMistakes(mistIds(mathOn())),
   mistThese: () => startMistakes(lastWrong),
   histToggle: () => { histAll = !histAll; home("book"); },
   pick: (b) => {
@@ -871,6 +1048,8 @@ const ACT = {
     app.querySelector(`.ord li:nth-child(${j + 1}) [data-d="${d}"]`)?.focus({ preventScroll: true }) || app.querySelector(`.ord li:nth-child(${j + 1}) button:not(:disabled)`)?.focus({ preventScroll: true });
   },
   check: () => check(),
+  reveal: () => { if (!sess) return; sess.view[sess.i].rev = true; sess.touched = true; FX.pop(); renderQ(); },
+  self: (b) => { if (!sess) return; sess.ans[sess.i] = b.dataset.v === "1"; check(); },
   next: () => { if (sess.i < sess.qs.length - 1) { sess.i++; renderQ(); } else finish(false); },
   prev: () => { if (sess.i > 0) { sess.i--; renderQ(); } },
   mnext: () => { if (sess.i < sess.qs.length - 1) { sess.i++; renderQ(); } },
@@ -918,7 +1097,7 @@ function restart() {
   if (!sess) return home();
   if (sess.kind === "module") startModule(sess.m);
   else if (sess.kind === "mock") startMock();
-  else startMistakes();
+  else startMistakes(mistIds(mathOn()));
 }
 app.addEventListener("click", (e) => {
   const b = e.target.closest("[data-act]");
@@ -1240,7 +1419,7 @@ const Online = (() => {
     if (renew.length >= 8) ls.set(K_RENEW, renew);
     try { stay = stay || sessionStorage.getItem("edubel-trener-stay") === "1"; } catch (e) {}
     if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : `${location.origin}/t/`);
-    if (url.searchParams.has("k") || url.searchParams.has("r") || location.hash) history.replaceState(null, "", "/t/");
+    if (url.searchParams.has("k") || url.searchParams.has("r") || url.searchParams.has("m") || location.hash) history.replaceState(null, "", "/t/");
     code = norm(ls.get(K_CODE)) || fromUrl;
     if (code.length < 8) return codeScreen(ls.get(K_RENEW) ? "Въведи първо своя код за достъп (от PDF-а или стикера) – удължаването ще се добави след това." : "");
     start();

@@ -25,14 +25,29 @@ export async function latestBank(): Promise<{ id: number; data: any } | null> {
 // to its code (scripts/admin.mjs trener-trace <file>) and the code stopped.
 const ZW0 = "​", ZW1 = "‌", ZWMARK = "⁠";
 export const fingerprint = (code: string) => createHash("sha256").update("edubel-wm:" + code).digest("hex").slice(0, 8);
+// Puts the mark at a space near the middle of the text, never inside an HTML tag (the math explanations are HTML).
+function markText(s: string, mark: string) {
+  let inTag = false;
+  for (let i = Math.floor(s.length / 2); i < s.length; i++) {
+    const c = s[i];
+    if (c === "<") inTag = true;
+    else if (c === ">") inTag = false;
+    else if (c === " " && !inTag && s.lastIndexOf("<", i) <= s.lastIndexOf(">", i)) return s.slice(0, i) + mark + s.slice(i);
+  }
+  return s + mark;
+}
 export function watermark(data: any, code: string) {
   const bits = [...parseInt(fingerprint(code), 16).toString(2).padStart(32, "0")].map((b) => (b === "1" ? ZW1 : ZW0)).join("");
   const mark = ZWMARK + bits + ZWMARK;
   const out = JSON.parse(JSON.stringify(data));
   for (const q of out.questions || []) {
-    if (typeof q.why === "string" && q.why.length > 20) {
-      const i = q.why.indexOf(" ", Math.floor(q.why.length / 2));
-      q.why = i > 0 ? q.why.slice(0, i) + mark + q.why.slice(i) : q.why + mark;
+    if (typeof q.why === "string" && q.why.length > 20) q.why = markText(q.why, mark);
+  }
+  // The math cards too: one block on each side.
+  for (const c of out.math?.cards || []) {
+    for (const side of [c.front, c.back]) {
+      const b = Array.isArray(side) ? side.find((x: any) => typeof x?.html === "string" && x.html.length > 40) : null;
+      if (b) b.html = markText(b.html, mark);
     }
   }
   return out;
