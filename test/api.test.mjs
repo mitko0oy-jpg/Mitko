@@ -290,8 +290,10 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
     passages: { p1: { title: "Текст", text: ["Абзац."] } },
     questions: Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото." })),
     modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }],
+    dossiers: { title: "Литературни досиета", dossiers: [{ id: "d01", no: 1, work: "„Творба“" }], message: { fields: 1, groups: [[1]], text: "А" } },
   });
   assert.ok(bank.id > 0);
+  assert.equal(bank.dossiers, 1, "the game is kept with the bank");
   const { codes } = await admin("trener-codes", { count: 2, batch: `test-${run}` });
   const [code, other] = codes;
   const t = client();
@@ -302,6 +304,7 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   r = await t("trener/open", { code: code.toLowerCase().replace("-", ""), device: dev(1), label: "iPhone · Safari" });
   assert.equal(r.code, code, "code typed in lower case without the dash");
   assert.equal(r.bank.questions.length, 12);
+  assert.equal(r.bank.dossiers.dossiers[0].id, "d01", "the game reaches the browser");
   assert.equal(r.devices.length, 1);
   r = await t("trener/open", { code, device: dev(1), have: bank.id });
   assert.equal(r.bank, undefined, "the bank is not sent again when the browser has it");

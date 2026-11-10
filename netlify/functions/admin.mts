@@ -160,8 +160,10 @@ export default handle(async (req) => {
   if (parts[0] === "trener-bank") {
     const questions = Array.isArray(b.questions) ? b.questions : [];
     if (questions.length < 10 || !b.passages || typeof b.passages !== "object") throw bad("bank", "Липсват задачите.");
-    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null })]);
-    return json({ ok: true, id: Number(row.id), questions: questions.length });
+    // The game „Литературни досиета“ travels with the bank (optional).
+    const dossiers = b.dossiers && typeof b.dossiers === "object" && Array.isArray(b.dossiers.dossiers) ? b.dossiers : null;
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers })]);
+    return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0 });
   }
 
   // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.
