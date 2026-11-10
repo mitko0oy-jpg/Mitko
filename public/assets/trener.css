@@ -444,6 +444,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .dhero h1 em{font-style:normal;color:var(--violet)}
 .dhero .rank{color:var(--violet)}
 .dh-hero{justify-self:center}
+.fin-key{width:150px;height:auto;filter:drop-shadow(0 10px 14px rgba(120,80,0,.3));animation:float 5s ease-in-out infinite}
 .brief{background:var(--band);border-radius:16px;padding:12px 14px;display:grid;gap:4px}
 .brief b{font:700 11.5px/1.2 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--lit)}
 .dpanel{background:var(--paper);border-radius:22px;box-shadow:0 1px 0 var(--edge);padding:16px 18px;display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}

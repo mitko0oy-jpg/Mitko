@@ -1468,7 +1468,7 @@ const Game = (() => {
     view = { kind: "final", id: "final" };
     const all = D().dossiers.length, n = solvedCount(), L = letters();
     let h = top("gameHome", f.title || "Финал");
-    h += `<section class="dhero"><h1>${esc(f.title || "Финал")}</h1><p class="lead">Пет въпроса за последния ключ. Буквите на верните отговори дават последната буква на посланието – можеш да проверяваш в досиетата.</p></section>`;
+    h += `<section class="dhero"><div class="dh-hero">${pic("g-key", "fin-key", "", true)}</div><h1>${esc(f.title || "Финал")}</h1><p class="lead">Пет въпроса за последния ключ. Буквите на верните отговори дават последната буква на посланието – можеш да проверяваш в досиетата.</p></section>`;
     h += `<section class="dtask">${quizHtml("final", f.quiz, f.code, f.take, f.field)}</section>`;
     const full = Object.keys(L).length === D().message.fields;
     h += `<section class="dpanel"><h3>Тайното послание</h3>${board()}
