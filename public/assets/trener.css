@@ -294,3 +294,5 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .linkbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .linkbox .preview{flex:1 1 240px;margin:0;white-space:pre-wrap;word-break:break-all;font:500 14px/1.5 var(--sans);background:var(--band);color:var(--text);border-radius:10px;padding:10px 12px;user-select:all}
 .access{display:grid;gap:12px;padding:20px;border-radius:16px;background:var(--paper);box-shadow:0 1px 0 var(--edge);grid-template-columns:minmax(0,1fr)}
+.okbox{padding:12px 16px;border-radius:12px;background:var(--ok-soft);color:var(--text);font-size:15px;font-weight:600}
+.renewbox{display:grid;gap:8px;padding-top:4px}

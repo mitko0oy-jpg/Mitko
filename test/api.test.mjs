@@ -369,4 +369,25 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   r = await owner("trener/admin/key", { code: old, action: "extend", months: 12 });
   r = await t("trener/open", { code: old, device: dev(8) });
   assert.ok(r.expiresAt, "opens after the owner extends a code that was never opened");
+
+  // Renewal codes: bought for 1, 6 or 12 months, entered on a device of the family, used once.
+  r = await owner("trener/admin/codes", { count: 2, batch: `renew-${run}`, kind: "renew", months: 6 });
+  const [ren1, ren2] = r.codes;
+  r = await t("trener/open", { code: ren1, device: dev(9) });
+  assert.equal(r.error, "renew_code", "a renewal code does not open the trainer by itself");
+  const before = new Date((await t("trener/open", { code: year, device: dev(7) })).expiresAt);
+  r = await t("trener/renew", { code: year, device: dev(9), renew: ren1 });
+  assert.equal(r.error, "device_removed", "only a registered device can renew");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: ren1 });
+  const added = (new Date(r.expiresAt) - before) / 86_400_000;
+  assert.ok(added > 180 && added < 186, "six months are added to the end date");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: ren1 });
+  assert.equal(r.error, "used", "a renewal code works once");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: other.replace("-", "") });
+  assert.ok(r.status >= 400, "an access code is not a renewal code");
+  r = await owner(`trener/admin/key?code=${ren1}`);
+  assert.equal(r.key.usedFor, year);
+  await t("trener/open", { code, device: dev(1) });
+  r = await t("trener/renew", { code, device: dev(1), renew: ren2 });
+  assert.equal(r.error, "unlimited", "a code without an end date needs no renewal");
 });

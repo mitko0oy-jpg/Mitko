@@ -176,8 +176,8 @@ export default handle(async (req) => {
     while (codes.length < count) {
       const c = newCode();
       const r = await q(
-        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (code) DO NOTHING RETURNING code",
-        [c, batch, maxDevices, months, validUntil],
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, kind) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, maxDevices, months, validUntil, b.kind === "renew" && months ? "renew" : "access"],
       );
       if (r.length) codes.push(formatCode(c));
     }

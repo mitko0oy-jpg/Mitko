@@ -64,17 +64,38 @@ function pdfPage(code) {
       <li><b>Пази този документ</b> – с него отваряш тренажора навсякъде.</li></ul>
     <footer>Еду БЕЛ · edubel.site · Кодът е личен – не го публикувай.</footer></section>`;
 }
+// A renewal: the QR code opens the trainer on the pupil's own device and adds the months there.
+function renewPage(code) {
+  const n = TERM.months || 12;
+  return `<section class="pdfp">
+    <header><img src="/assets/logo.png" alt="Еду БЕЛ" width="86" height="62"><span>Учебен център по български език и литература</span></header>
+    <h1>НВО тренажор <em>по БЕЛ</em></h1>
+    <p class="sub">Код за удължаване на достъпа с <b>${esc(monthsWord(n))}</b>. Бележникът, оценките и прогнозата за НВО остават.</p>
+    <div class="pdf-main">${qrSvg(`${BASE}/t/?r=${code}`, 62)}<div>
+      <p class="big">Сканирай QR кода с телефона, на който детето вече решава – удължаването се добавя само.</p>
+      <p>Или в тренажора отвори „Твоят достъп“ (най-долу) и въведи кода в „Код за удължаване“:</p>
+      <p class="code">${esc(code)}</p>
+      <p class="small">Кодът се използва веднъж. Добавя ${esc(monthsWord(n))} към досегашния срок – или от днес, ако срокът вече е изтекъл.</p>
+    </div></div>
+    <h2>Ако нещо не става</h2>
+    <ul><li><b>Тренажорът иска код за достъп?</b> Въведи първо стария код (от PDF-а или стикера), после кода за удължаване.</li>
+      <li><b>Отваря се във Viber или Facebook?</b> Натисни ⋮ или ··· горе вдясно и избери „Отвори в браузър“.</li></ul>
+    <footer>Еду БЕЛ · edubel.site · Кодът е личен – не го публикувай.</footer></section>`;
+}
+
 function showPrint(kind, codes, title, term) {
   TERM = termOf(term);
   const p = $("print");
-  const help = kind === "pdf"
+  const help = kind === "renew" ? "Всяка страница е един код за удължаване за един клиент. Натисни „Печат“ и избери „Запази като PDF“."
+    : kind === "pdf"
     ? "Всяка страница е един PDF за един клиент. Натисни „Печат“ и избери „Запази като PDF“. За един клиент направи партида от 1 код."
     : kind === "single" ? "Всяка страница е един стикер 99,1 × 38,1 мм – за печатница с рязане." : "A4 листове с по 14 стикера 99,1 × 38,1 мм (2 × 7, като Avery L7163). Печатай в реален размер (100 %).";
   let body = "";
   if (kind === "sheet") for (let i = 0; i < codes.length; i += 14) body += `<div class="sheet">${codes.slice(i, i + 14).map(sticker).join("")}</div>`;
   else if (kind === "single") body = codes.map((c) => `<div class="one">${sticker(c)}</div>`).join("");
+  else if (kind === "renew") body = codes.map(renewPage).join("");
   else body = codes.map(pdfPage).join("");
-  p.className = `print-${kind}`;
+  p.className = `print-${kind === "renew" ? "pdf" : kind}`;
   p.innerHTML = `<div class="ptools"><b>${esc(title)}</b> · ${codes.length} ${codes.length === 1 ? "код" : "кода"} · ${esc(termLong(TERM) || "без срок")}<p>${esc(help)}</p>
     <div class="row"><button class="btn" id="doPrint">Печат</button><button class="btn ghost" id="closePrint">Назад</button></div></div>${body}`;
   p.hidden = false;
@@ -102,10 +123,10 @@ async function render(found) {
 
     <section class="panel"><h3>Нови кодове</h3>
       <form id="newForm" class="newform">
-        <label class="field"><span>За какво</span><select id="newKind"><option value="sheet">Стикери за кутии (A4, 14 на лист)</option><option value="single">Стикери, по един на страница</option><option value="pdf">PDF за клиент (по една страница)</option></select></label>
+        <label class="field"><span>За какво</span><select id="newKind"><option value="sheet">Стикери за кутии (A4, 14 на лист)</option><option value="single">Стикери, по един на страница</option><option value="pdf">PDF за клиент (по една страница)</option><option value="renew">Код за удължаване (PDF)</option></select></label>
         <label class="field"><span>Брой</span><input type="text" inputmode="numeric" id="newCount" value="140"></label>
         <label class="field"><span>Име на партидата</span><input type="text" id="newBatch" value="стикери-${new Date().toISOString().slice(0, 10)}"></label>
-        <label class="field"><span>Срок на достъпа</span><select id="newTerm"><option value="12">12 месеца от първото отваряне</option><option value="6">6 месеца от първото отваряне</option><option value="24">24 месеца от първото отваряне</option><option value="date">до дата…</option><option value="">без срок</option></select></label>
+        <label class="field"><span>Срок на достъпа</span><select id="newTerm"><option value="1">1 месец от първото отваряне</option><option value="6">6 месеца от първото отваряне</option><option value="12" selected>12 месеца от първото отваряне</option><option value="24">24 месеца от първото отваряне</option><option value="date">до дата…</option><option value="">без срок</option></select></label>
         <label class="field" id="newDateBox" hidden><span>Важи до</span><input type="date" id="newDate"></label>
         <button class="btn gold">Направи кодовете</button></form>
       <p class="small muted">140 стикера = 10 листа. Кодовете се правят веднага и после се отварят за печат.</p><p class="formerr" id="newErr" role="alert"></p></section>
@@ -115,8 +136,8 @@ async function render(found) {
   else {
     h += `<div class="tblwrap"><table class="ktbl"><thead><tr><th>Партида</th><th>Общо</th><th>Отворени</th><th>Активни 7 дни</th><th>Неотворени</th><th>Изтекли</th><th>Спрени</th><th>Печат</th></tr></thead><tbody>`;
     for (const x of summary.batches) {
-      h += `<tr><td><b>${esc(x.batch || "без име")}</b><small>${fmtDate(x.created_at)} · ${esc(termLong(termOf({ months: x.months, validUntil: x.valid_until })) || "без срок")}</small></td><td>${x.total}</td><td>${x.used}</td><td>${x.active7}</td><td>${x.total - x.used}</td><td>${x.expired}</td><td>${x.disabled}</td>
-        <td class="acts"><button class="linkbtn" data-print="sheet" data-batch="${esc(x.batch)}">стикери A4</button><button class="linkbtn" data-print="single" data-batch="${esc(x.batch)}">по един</button><button class="linkbtn" data-print="pdf" data-batch="${esc(x.batch)}">PDF</button></td></tr>`;
+      h += `<tr><td><b>${esc(x.batch || "без име")}</b><small>${fmtDate(x.created_at)} · ${x.kind === "renew" ? `удължаване с ${esc(monthsWord(x.months))}` : esc(termLong(termOf({ months: x.months, validUntil: x.valid_until })) || "без срок")}</small></td><td>${x.total}</td><td>${x.used}</td><td>${x.active7}</td><td>${x.total - x.used}</td><td>${x.expired}</td><td>${x.disabled}</td>
+        <td class="acts">${x.kind === "renew" ? `<button class="linkbtn" data-print="renew" data-batch="${esc(x.batch)}">PDF</button>` : `<button class="linkbtn" data-print="sheet" data-batch="${esc(x.batch)}">стикери A4</button><button class="linkbtn" data-print="single" data-batch="${esc(x.batch)}">по един</button><button class="linkbtn" data-print="pdf" data-batch="${esc(x.batch)}">PDF</button>`}</td></tr>`;
     }
     h += `</tbody></table></div><label class="chk"><input type="checkbox" id="onlyUnused" checked> Печатай само неотворените кодове</label>`;
   }
@@ -125,8 +146,8 @@ async function render(found) {
 
   $("newKind").addEventListener("change", () => {
     const k = $("newKind").value;
-    $("newCount").value = k === "pdf" ? "1" : k === "single" ? "50" : "140";
-    $("newBatch").value = `${k === "pdf" ? "pdf" : "стикери"}-${new Date().toISOString().slice(0, 10)}`;
+    $("newCount").value = k === "pdf" || k === "renew" ? "1" : k === "single" ? "50" : "140";
+    $("newBatch").value = `${k === "renew" ? "удължаване" : k === "pdf" ? "pdf" : "стикери"}-${new Date().toISOString().slice(0, 10)}`;
   });
   $("newForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -137,7 +158,8 @@ async function render(found) {
     try {
       const t = $("newTerm").value;
       if (t === "date" && !$("newDate").value) return ($("newErr").textContent = "Избери до коя дата важи достъпът.");
-      const r = await api("trener/admin/codes", { count, batch: $("newBatch").value.trim(), months: /^\d+$/.test(t) ? Number(t) : undefined, validUntil: t === "date" ? $("newDate").value : undefined });
+      if (kind === "renew" && !/^\d+$/.test(t)) return ($("newErr").textContent = "Кодът за удължаване е за определен брой месеци – избери 1, 6, 12 или 24.");
+      const r = await api("trener/admin/codes", { count, batch: $("newBatch").value.trim(), kind: kind === "renew" ? "renew" : "access", months: /^\d+$/.test(t) ? Number(t) : undefined, validUntil: t === "date" ? $("newDate").value : undefined });
       await render();
       showPrint(kind, r.codes, r.batch, r);
     } catch (err) {
@@ -164,6 +186,17 @@ async function find(raw, action) {
     const code = String(raw || "").trim();
     const r = action ? await api("trener/admin/key", { code, ...action }) : await api(`trener/admin/key?code=${encodeURIComponent(code)}`);
     const k = r.key;
+    if (k.kind === "renew") {
+      $("found").innerHTML = `<div class="kcard ${k.disabled ? "off" : ""}">
+        <p class="kcode">${esc(k.code)} <span class="tag">удължаване с ${esc(monthsWord(k.months || 12))}</span> ${k.usedFor ? `<span class="tag ok">използван</span>` : k.disabled ? `<span class="tag bad">спрян</span>` : `<span class="tag">неизползван</span>`}</p>
+        <dl><dt>Партида</dt><dd>${esc(k.batch || "–")}</dd><dt>Създаден</dt><dd>${fmtDate(k.createdAt)}</dd>
+          <dt>Използван</dt><dd>${k.usedFor ? `${fmtTime(k.firstUsed)} за код <b>${esc(k.usedFor)}</b>` : "още не"}</dd></dl>
+        <label class="field"><span>Бележка (например номер на поръчка)</span><input type="text" id="noteIn" value="${esc(k.note)}" maxlength="300"></label>
+        <div class="row"><button class="btn ghost" id="saveNote">Запази бележката</button>${k.usedFor ? "" : `<button class="btn ghost" id="toggle">${k.disabled ? "Пусни кода" : "Спри кода"}</button>`}</div></div>`;
+      $("saveNote").addEventListener("click", () => find(k.code, { action: "note", note: $("noteIn").value }).then(() => toast("Бележката е записана.")));
+      $("toggle")?.addEventListener("click", () => find(k.code, { action: k.disabled ? "enable" : "disable" }));
+      return;
+    }
     $("found").innerHTML = `<div class="kcard ${k.disabled ? "off" : ""}">
       <p class="kcode">${esc(k.code)} ${k.disabled ? `<span class="tag bad">спрян</span>` : k.expired ? `<span class="tag bad">изтекъл</span>` : k.firstUsed ? `<span class="tag ok">отворен</span>` : `<span class="tag">неотворен</span>`}</p>
       <dl><dt>Партида</dt><dd>${esc(k.batch || "–")}</dd><dt>Създаден</dt><dd>${fmtDate(k.createdAt)}</dd><dt>Първо отваряне</dt><dd>${fmtTime(k.firstUsed)}</dd><dt>Последно</dt><dd>${fmtTime(k.lastUsed)}</dd>
@@ -175,12 +208,15 @@ async function find(raw, action) {
       <div class="row"><button class="btn ghost" id="saveNote">Запази бележката</button>
         ${r.devices.length ? `<button class="btn" id="freeDev">Освободи устройствата</button>` : ""}
         <button class="btn ghost" id="toggle">${k.disabled ? "Пусни кода" : "Спри кода"}</button>
-        ${k.months || k.validUntil || k.expiresAt ? `<button class="btn ghost" id="extend">Удължи с 12 месеца</button>` : ""}</div>
+        </div>
+      ${k.months || k.validUntil || k.expiresAt ? `<div class="row"><span class="small muted">Удължи с:</span><button class="btn ghost" data-ext="1">1 месец</button><button class="btn ghost" data-ext="6">6 месеца</button><button class="btn ghost" data-ext="12">12 месеца</button></div>` : ""}
       <p class="small muted">„Освободи устройствата“ изтрива списъка – следващите 3 отваряния заемат местата наново. Оценките остават.</p></div>`;
     $("saveNote").addEventListener("click", () => find(k.code, { action: "note", note: $("noteIn").value }).then(() => toast("Бележката е записана.")));
     $("freeDev")?.addEventListener("click", () => find(k.code, { action: "free" }).then(() => toast("Устройствата са освободени.")));
     $("toggle").addEventListener("click", () => find(k.code, { action: k.disabled ? "enable" : "disable" }));
-    $("extend")?.addEventListener("click", () => find(k.code, { action: "extend", months: 12 }).then(() => toast("Достъпът е удължен с 12 месеца.")));
+    document.querySelectorAll("[data-ext]").forEach((btn) =>
+      btn.addEventListener("click", () => find(k.code, { action: "extend", months: Number(btn.dataset.ext) }).then(() => toast(`Достъпът е удължен с ${monthsWord(Number(btn.dataset.ext))}.`))),
+    );
   } catch (err) {
     $("found").innerHTML = "";
     $("findErr").textContent = err.message;

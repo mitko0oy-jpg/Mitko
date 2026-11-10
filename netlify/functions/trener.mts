@@ -47,6 +47,7 @@ async function findKey(req: Request, ctx: any, code: string, forUpdate?: (text: 
     if (!(await hit(`trener-miss:${clientIp(req, ctx)}`, 20, 3600))) throw tooMany();
     throw notFound("Няма такъв код. Провери буквите и цифрите.");
   }
+  if (key.kind === "renew") throw new HttpError(400, "renew_code", "Това е код за удължаване. Отвори тренажора със своя код и въведи този в „Твоят достъп“.");
   if (key.disabled_at) throw new HttpError(403, "disabled", "Този код е спрян. Свържи се с Еду БЕЛ.");
   if (key.expires_at && new Date(key.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(key.expires_at)}`);
   return key;
@@ -137,6 +138,35 @@ export default handle(async (req, ctx) => {
     return json({ state });
   }
 
+  // Renewal: a code bought for 1, 6 or 12 more months is added to the pupil's own code, also after it expired.
+  // Only a device already registered to the code can do it, so the grades stay with the family.
+  if (parts[0] === "renew") {
+    if (!validDevice(b.device)) throw bad("device", "Отвори тренажора от линка отново.");
+    const renew = codeOf(b.renew);
+    const res = await tx(async (t) => {
+      const [key] = await t<any>("SELECT * FROM trener_keys WHERE code = $1 FOR UPDATE", [code]);
+      if (!key || key.kind !== "access") throw notFound("Няма такъв код. Провери буквите и цифрите.");
+      if (key.disabled_at) throw new HttpError(403, "disabled", "Този код е спрян. Свържи се с Еду БЕЛ.");
+      const [known] = await t("SELECT 1 FROM trener_devices WHERE code = $1 AND device = $2", [code, deviceHash(b.device)]);
+      if (!known) throw new HttpError(409, "device_removed", "Това устройство вече не е записано към кода.");
+      if (!key.expires_at && !key.months && !key.valid_until) throw bad("unlimited", "Твоят достъп е без срок – не е нужно удължаване.");
+      const [r] = await t<any>("SELECT * FROM trener_keys WHERE code = $1 FOR UPDATE", [renew]);
+      if (!r) {
+        if (!(await hit(`trener-miss:${clientIp(req, ctx)}`, 20, 3600))) throw tooMany();
+        throw notFound("Няма такъв код за удължаване. Провери буквите и цифрите.");
+      }
+      if (r.kind !== "renew") throw bad("not_renew", "Това е код за нов достъп, не за удължаване. Отвори тренажора с него отначало.");
+      if (r.disabled_at) throw new HttpError(403, "disabled", "Този код е спрян. Свържи се с Еду БЕЛ.");
+      if (r.first_used) throw bad("used", "Този код за удължаване вече е използван.");
+      const months = r.months || 12;
+      const [k] = await t("UPDATE trener_keys SET expires_at = GREATEST(COALESCE(expires_at, now()), now()) + make_interval(months => $2) WHERE code = $1 RETURNING expires_at", [code, months]);
+      await t("UPDATE trener_keys SET first_used = now(), last_used = now(), used_for = $2 WHERE code = $1", [renew, code]);
+      return { expiresAt: k.expires_at, months, batch: r.batch };
+    });
+    await event("trener_renewed", { batch: res.batch, months: res.months });
+    return json({ expiresAt: res.expiresAt, months: res.months });
+  }
+
   // Frees a place: from one of the registered devices, remove another one (or this one).
   if (parts[0] === "forget") {
     await findKey(req, ctx, code);
@@ -163,7 +193,7 @@ async function admin(req: Request, parts: string[]) {
               count(first_used)::int AS used,
               count(*) FILTER (WHERE last_used > now() - interval '7 days')::int AS active7,
               count(disabled_at)::int AS disabled, count(*) FILTER (WHERE expires_at < now())::int AS expired,
-              min(created_at) AS created_at, max(months) AS months, max(valid_until) AS valid_until
+              min(created_at) AS created_at, max(months) AS months, max(valid_until) AS valid_until, max(kind) AS kind
          FROM trener_keys GROUP BY batch ORDER BY min(created_at) DESC`,
     );
     const full = await one<{ n: number }>(
@@ -180,27 +210,29 @@ async function admin(req: Request, parts: string[]) {
     const count = Math.max(1, Math.min(500, Number(b.count) || 1));
     const batch = str(b.batch, 60) || `партида-${new Date().toISOString().slice(0, 10)}`;
     const term = termOf(b);
+    const kind = b.kind === "renew" ? "renew" : "access";
+    if (kind === "renew" && !term.months) throw bad("months", "Кодът за удължаване трябва да е за определен брой месеци.");
     const codes: string[] = [];
     while (codes.length < count) {
       const c = newCode();
       const r = await q(
-        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until) VALUES ($1, $2, 3, $3, $4) ON CONFLICT (code) DO NOTHING RETURNING code",
-        [c, batch, term.months, term.validUntil],
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, kind) VALUES ($1, $2, 3, $3, $4, $5) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, term.months, term.validUntil, kind],
       );
       if (r.length) codes.push(formatCode(c));
     }
     await event("trener_codes_created", { batch, count });
-    return json({ batch, codes, months: term.months, validUntil: term.validUntil });
+    return json({ batch, codes, kind, months: term.months, validUntil: term.validUntil });
   }
 
   // The codes of one batch, to print them again (optionally only the ones nobody has opened yet).
   if (req.method === "GET" && parts[0] === "batch") {
     const sp = new URL(req.url).searchParams;
     const rows = await q<any>(
-      `SELECT code, first_used, disabled_at, note, months, valid_until FROM trener_keys WHERE batch = $1 AND ($2 = '' OR first_used IS NULL) ORDER BY created_at, code`,
+      `SELECT code, first_used, disabled_at, note, months, valid_until, kind FROM trener_keys WHERE batch = $1 AND ($2 = '' OR first_used IS NULL) ORDER BY created_at, code`,
       [sp.get("batch") || "", sp.get("unused") === "1" ? "1" : ""],
     );
-    return json({ codes: rows.map((r) => ({ code: formatCode(r.code), used: !!r.first_used, disabled: !!r.disabled_at, note: r.note, months: r.months, validUntil: r.valid_until })) });
+    return json({ codes: rows.map((r) => ({ code: formatCode(r.code), used: !!r.first_used, disabled: !!r.disabled_at, note: r.note, months: r.months, validUntil: r.valid_until, kind: r.kind })) });
   }
 
   if (req.method === "GET" && parts[0] === "key") {
@@ -222,6 +254,7 @@ async function admin(req: Request, parts: string[]) {
     else if (b.action === "extend") {
       // Opened: push the end date (from today if it already passed). Not opened yet: a longer term from the first opening.
       const n = Math.max(1, Math.min(36, Number(b.months) || 12));
+      if (key.kind === "renew") throw bad("kind", "Кодовете за удължаване не се удължават.");
       if (key.first_used) await q("UPDATE trener_keys SET expires_at = GREATEST(COALESCE(expires_at, now()), now()) + make_interval(months => $2) WHERE code = $1", [code, n]);
       else await q("UPDATE trener_keys SET months = COALESCE(months, 0) + $2, valid_until = NULL WHERE code = $1", [code, n]);
     }
@@ -248,6 +281,8 @@ function keyView(k: any) {
     validUntil: k.valid_until,
     expiresAt: k.expires_at,
     expired: !!k.expires_at && new Date(k.expires_at) < new Date(),
+    kind: k.kind,
+    usedFor: k.used_for ? formatCode(k.used_for) : null,
     tests: hist.length,
     last: last ? { m: last.m, p: last.p, n: last.n, d: last.d } : null,
   };

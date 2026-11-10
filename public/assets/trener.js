@@ -114,6 +114,7 @@ function home(scrollTo) {
       <div class="facts"><span>${BANK.questions.length} задачи</span><span>${MODULES.length} модула</span><span>Оценки от 2 до 6</span><span>Пробна матура с таймер</span></div>
     </header>`;
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
+  if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
   h += forecastPanel(f, mist);
   h += modulesSection();
@@ -704,11 +705,12 @@ addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if 
 /* ---------- on the site: personal code, up to N devices, grades synced with the code ---------- */
 const Online = (() => {
   const K_CODE = "edubel-trener-code", K_DEV = "edubel-trener-device", K_BANK = "edubel-trener-bank";
-  const K_STATE = "edubel-trener-state:", K_DIRTY = "edubel-trener-dirty:";
+  const K_STATE = "edubel-trener-state:", K_DIRTY = "edubel-trener-dirty:", K_RENEW = "edubel-trener-renew";
   // Browsers built into apps keep their own storage and may forget it: every visit could take a new device place.
   const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Viber|Line\/|MicroMessenger|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Pinterest/i;
   let code = "", device = "", devices = [], maxDevices = 3, idleDays = 60, expiresAt = null, timer = 0, busy = false, stay = false;
-  const o = { offline: false };
+  const o = { offline: false, flash: "" };
+  let onExpired = false;
 
   const norm = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const fmt = (c) => { c = norm(c); return c.length === 10 ? `${c.slice(0, 5)}-${c.slice(5)}` : c; };
@@ -807,13 +809,45 @@ const Online = (() => {
       ${btns([["retryOpen", "Опитай пак"], ["otherCode", "Въведи друг код"]])}`);
   }
 
-  // The gradebook stays readable after the end date: the parent can still see and send it.
-  function expiredScreen(text) {
+  const renewForm = (err) => `<form id="renewForm" class="codeform" novalidate><label for="renewIn">Код за удължаване</label>
+      <div class="row"><input id="renewIn" class="field code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX" maxlength="14">
+      <button class="btn gold">Удължи</button></div><p class="${err ? "err" : "small muted"}" id="renewMsg" role="status">${esc(err || "")}</p></form>`;
+
+  // The access ended: the grades stay, and a renewal code continues with the same gradebook.
+  // No offer to the child here – the screen is meant to be shown to a parent.
+  function expiredScreen(text, err) {
+    onExpired = true;
     const local = readState();
     const n = local ? local.hist.length : 0;
     const sentence = /[.!?]$/.test(text) ? text : `${text}.`;
-    message("Достъпът до тренажора изтече", `${sentence} Свържи се с Еду БЕЛ, ако искаш да го удължиш.${n ? ` В бележника на това устройство има ${n} ${n === 1 ? "оценка" : "оценки"}.` : ""}`, [["otherCode", "Въведи друг код"]]);
+    screen(`<h1>Достъпът до тренажора изтече</h1><p class="lead">${esc(sentence)}</p>
+      ${n ? `<p>В бележника на това устройство има ${n} ${n === 1 ? "оценка" : "оценки"} – те остават.</p>` : ""}
+      <p><b>Покажи този екран на родител.</b> С код за удължаване тренажорът продължава със същия бележник и оценки.</p>
+      ${renewForm(err)}
+      <div><button class="link" data-act="otherCode">Въведи друг код</button></div>`);
   }
+
+  async function doRenew(rc) {
+    const msgEl = document.getElementById("renewMsg");
+    if (msgEl) { msgEl.className = "small muted"; msgEl.textContent = "Удължавам…"; }
+    try {
+      const r = await call("renew", { code, device, renew: rc });
+      ls.del(K_RENEW);
+      expiresAt = r.expiresAt;
+      o.flash = `Достъпът е удължен с ${r.months} ${r.months === 1 ? "месец" : "месеца"} – до ${fmtDate(r.expiresAt)}`;
+      if (onExpired) { onExpired = false; return open(); }
+      home();
+    } catch (e) {
+      ls.del(K_RENEW);
+      const text = e.status === 0 ? "Няма връзка с интернет. Опитай пак." : e.code === "device_removed" ? "Въведи кода за удължаване на устройство, на което тренажорът вече е отварян." : e.message;
+      if (onExpired) return expiredScreen(lastExpired, text);
+      if (sess) return;
+      home("access");
+      const m = document.getElementById("renewMsg");
+      if (m) { m.className = "err"; m.textContent = text; }
+    }
+  }
+  let lastExpired = "";
 
   async function open() {
     screen(`<p class="lead">Отварям тренажора…</p>`);
@@ -833,6 +867,10 @@ const Online = (() => {
       S = normState(r.state);
       saveLocal();
       ls.del(K_DIRTY + code);
+      onExpired = false;
+      const pending = ls.get(K_RENEW);
+      if (pending && expiresAt) return doRenew(pending);
+      if (pending) ls.del(K_RENEW);
       home();
     } catch (e) {
       if (e.status === 0) {
@@ -842,7 +880,18 @@ const Online = (() => {
       if (e.code === "devices_full") return fullScreen(e.data);
       if (e.status === 404 || e.code === "code") { ls.del(K_CODE); code = ""; return codeScreen(e.message); }
       if (e.code === "disabled") return message("Този код е спрян", "Свържи се с Еду БЕЛ, за да го пуснем отново.", [["otherCode", "Въведи друг код"]]);
-      if (e.code === "expired") return expiredScreen(e.message);
+      if (e.code === "expired") {
+        lastExpired = e.message;
+        const pending = ls.get(K_RENEW);
+        if (pending) { onExpired = true; expiredScreen(e.message); return doRenew(pending); }
+        return expiredScreen(e.message);
+      }
+      if (e.code === "renew_code") {
+        ls.set(K_RENEW, code);
+        ls.del(K_CODE);
+        code = "";
+        return codeScreen("Това е код за удължаване. Въведи първо своя код за достъп (от PDF-а или стикера) – удължаването ще се добави след това.");
+      }
       return message("Нещо се обърка", e.message, [["retryOpen", "Опитай пак"]]);
     }
   }
@@ -884,13 +933,21 @@ const Online = (() => {
       if (e.status === 0) { o.offline = true; schedule(); }
       else if (e.code === "device_removed") message("Това устройство беше премахнато от кода", "Някой от семейството е освободил мястото му. Натисни „Отвори отново“ – ако има свободно място, устройството ще се запише пак и оценките ще се заредят.", [["retryOpen", "Отвори отново"]]);
       else if (e.code === "disabled") message("Този код е спрян", "Свържи се с Еду БЕЛ, за да го пуснем отново.", []);
-      else if (e.code === "expired") expiredScreen(e.message);
+      else if (e.code === "expired") { lastExpired = e.message; expiredScreen(e.message); }
       else schedule();
     } finally {
       busy = false;
     }
   }
   addEventListener("online", () => syncNow());
+  app.addEventListener("submit", (e) => {
+    if (e.target.id !== "renewForm") return;
+    e.preventDefault();
+    const v = norm(document.getElementById("renewIn").value);
+    const m = document.getElementById("renewMsg");
+    if (v.length < 8) { m.className = "err"; m.textContent = "Провери кода – той е от 10 букви и цифри."; return; }
+    doRenew(v);
+  });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") syncNow(true); });
 
   function accessSection() {
@@ -898,6 +955,7 @@ const Online = (() => {
       <p class="small muted">Код <b class="num">${esc(fmt(code))}</b>.${expiresAt ? ` Достъпът е до <b>${fmtDate(expiresAt)}</b>` : ""} Работи на до ${maxDevices} устройства. Устройство, което не е ползвано ${idleDays} дни, освобождава мястото си само.</p>
       <ul class="devlist">${devices.map((d) => `<li><span><b>${esc(d.label)}</b>${d.me ? ` <i class="me">това устройство</i>` : ""}<small>отворено за последно на ${fmtDate(d.lastSeen)}</small></span>
         ${d.me ? "" : `<button class="link" data-act="devForgetAsk" data-id="${esc(d.id)}">Премахни</button>`}<div class="zone" id="dz-${esc(d.id)}" hidden></div></li>`).join("")}</ul>
+      ${expiresAt ? `<div class="renewbox"><p class="small muted">Имаш код за удължаване? Въведи го тук – достъпът се удължава, а бележникът и оценките остават.</p>${renewForm("")}</div>` : ""}
       <div class="linkbox"><pre class="preview" id="pv-link">${esc(link())}</pre><button class="btn line sm" data-act="copyLink">Копирай линка</button></div>
       <p class="small muted" id="cp-link" role="status">С този линк отваряш тренажора на друго устройство с всички оценки.</p></section>`;
   }
@@ -930,11 +988,13 @@ const Online = (() => {
     const url = new URL(location.href);
     const fromUrl = norm(url.searchParams.get("k") || location.hash.slice(1));
     if (fromUrl.length >= 8) ls.set(K_CODE, fromUrl);
+    const renew = norm(url.searchParams.get("r"));
+    if (renew.length >= 8) ls.set(K_RENEW, renew);
     try { stay = stay || sessionStorage.getItem("edubel-trener-stay") === "1"; } catch (e) {}
     if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : `${location.origin}/t/`);
-    if (url.searchParams.has("k") || location.hash) history.replaceState(null, "", "/t/");
+    if (url.searchParams.has("k") || url.searchParams.has("r") || location.hash) history.replaceState(null, "", "/t/");
     code = norm(ls.get(K_CODE)) || fromUrl;
-    if (code.length < 8) return codeScreen();
+    if (code.length < 8) return codeScreen(ls.get(K_RENEW) ? "Въведи първо своя код за достъп (от PDF-а или стикера) – удължаването ще се добави след това." : "");
     start();
   }
 
