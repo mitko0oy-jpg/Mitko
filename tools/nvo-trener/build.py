@@ -32,9 +32,13 @@ css = open(os.path.join(assets, "trener.css"), encoding="utf8").read()
 app_js = open(os.path.join(assets, "trener.js"), encoding="utf8").read()
 html = open(os.path.join(here, "app.html"), encoding="utf8").read()
 logo = base64.b64encode(open(os.path.join(assets, "logo.png"), "rb").read()).decode()
+# The illustrations (public/assets/trener/*.webp) go inside the file, so it works without the site.
+imgs = {os.path.basename(f)[:-5]: "data:image/webp;base64," + base64.b64encode(open(f, "rb").read()).decode()
+        for f in sorted(glob.glob(os.path.join(assets, "trener", "*.webp")))}
 html = (html.replace("/*__CSS__*/", css)
             .replace("/*__BANK__*/null", js(bank))
             .replace("__LOGO__", "data:image/png;base64," + logo)
+            .replace("/*__IMG__*/null", js(imgs))
             .replace("/*__JS__*/", app_js.replace("</script", "<\\/script")))
 # The same bank for the site: python3 tools/nvo-trener/build.py, then scripts/admin.mjs trener-bank <bank-all.json>
 json.dump(bank, open(os.path.join(os.path.dirname(out), "bank-all.json"), "w", encoding="utf8"), ensure_ascii=False)

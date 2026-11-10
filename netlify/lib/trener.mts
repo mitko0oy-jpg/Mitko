@@ -21,7 +21,7 @@ export async function latestBank(): Promise<{ id: number; data: any } | null> {
 
 /* ---------- the pupil's saved state ---------- */
 // Shape (written by public/assets/trener.js):
-// { name, hist: [{m, d, p, n, s, w: [ids], a?: {read:[p,n], lang:[p,n], lit:[p,n]}}], mist: {id: {n, ok, d}},
+// { name, avatar, hist: [{m, d, p, n, s, w: [ids], a?: {read:[p,n], lang:[p,n], lit:[p,n]}}], mist: {id: {n, ok, d}},
 //   resetAt, resets: {module: ts}, at }
 const ID = /^[a-z0-9-]{1,24}$/;
 const MIN_TS = Date.UTC(2026, 0, 1);
@@ -32,9 +32,11 @@ const ts = (v: unknown) => {
 };
 
 export function cleanState(s: any) {
-  const out: any = { name: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 };
+  const out: any = { name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 };
   if (!s || typeof s !== "object") return out;
   out.name = typeof s.name === "string" ? s.name.trim().slice(0, 40) : "";
+  // The picture the child chose (Erčo or a hero from the game), by its file name.
+  out.avatar = typeof s.avatar === "string" && ID.test(s.avatar) ? s.avatar : "";
   out.at = ts(s.at);
   out.resetAt = ts(s.resetAt);
   if (s.resets && typeof s.resets === "object") {
@@ -85,7 +87,7 @@ export function mergeState(a: any, b: any) {
     .sort((x, y) => x.d - y.d)
     .slice(-1000);
   const newer = b.at >= a.at ? b : a;
-  return { name: newer.name, hist, mist: newer.mist, dos: newer.dos, resetAt, resets, at: Math.max(a.at, b.at) };
+  return { name: newer.name, avatar: newer.avatar, hist, mist: newer.mist, dos: newer.dos, resetAt, resets, at: Math.max(a.at, b.at) };
 }
 
 // "iPhone · Safari", "Android · Chrome" – just enough for the family to recognise its devices.

@@ -5,6 +5,12 @@
 const EMBED = window.TRENER_BANK || null;
 const ONLINE = !EMBED;
 const LOGO = window.TRENER_LOGO || "/assets/logo.png";
+// Illustrations: on the site from /assets/trener/, in the standalone file built in (window.TRENER_IMG).
+const IMGS = window.TRENER_IMG || null;
+const img = (n) => (IMGS ? IMGS[n] || "" : `/assets/trener/${n}.webp`);
+const pic = (n, cls = "", alt = "", eager) => `<img class="${cls}" src="${img(n)}" alt="${alt.replace(/"/g, "&quot;")}" ${eager ? "" : `loading="lazy"`} decoding="async">`;
+const MOD_IMG = { chetene: "i-chetene", pravopis: "i-pravopis", glagol: "i-glagol", morfologia: "i-morfologia", sintaksis: "i-sintaksis", punktuacia: "i-punktuacia", leksika: "i-leksika", lit1: "i-lit1", lit2: "i-lit2", teoria: "i-teoria" };
+const modImg = (m) => MOD_IMG[m.id] || (/^ezik/.test(m.id) ? "i-ezik" : /^karti/.test(m.id) ? "i-karti" : m.area === "read" ? "i-chetene" : m.area === "lit" ? "i-lit1" : "i-pravopis");
 
 const AREAS = {
   read: { t: "Четене с разбиране", nvo: "задачи 1–7 на НВО", w: 7, c: "var(--read)" },
@@ -31,7 +37,7 @@ const KEY = "edubel-nvo-trener-v1";
 /* ---------- saved progress ---------- */
 // Standalone file: this browser only. On the site: a copy in this browser, synced to the server with the code.
 let canSave = true;
-const blank = () => ({ v: 1, name: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 });
+const blank = () => ({ v: 1, name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 });
 const ls = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
@@ -39,7 +45,7 @@ const ls = {
 };
 function normState(o) {
   if (!o || typeof o !== "object" || !Array.isArray(o.hist)) return blank();
-  return { ...blank(), ...o, v: 1, name: o.name || "", mist: o.mist || {}, dos: o.dos && typeof o.dos === "object" ? o.dos : {}, resets: o.resets || {} };
+  return { ...blank(), ...o, v: 1, name: o.name || "", avatar: typeof o.avatar === "string" ? o.avatar : "", mist: o.mist || {}, dos: o.dos && typeof o.dos === "object" ? o.dos : {}, resets: o.resets || {} };
 }
 function loadLocal() {
   try {
@@ -56,6 +62,81 @@ function save() {
 
 /* ---------- helpers ---------- */
 const app = document.getElementById("app");
+
+/* ---------- feel: short sounds, a light vibration and confetti (sound can be switched off; no motion if the device asks for less) ---------- */
+const FX = (() => {
+  const K = "edubel-trener-sound";
+  let on = ls.get(K) !== "0", ctx = null;
+  const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function tone(freqs, dur = 0.12, type = "sine", vol = 0.07) {
+    if (!on) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+      const t0 = ctx.currentTime + 0.01;
+      freqs.forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), s = t0 + i * dur * 0.75;
+        o.type = type;
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, s);
+        g.gain.exponentialRampToValueAtTime(vol, s + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+        o.connect(g).connect(ctx.destination);
+        o.start(s);
+        o.stop(s + dur + 0.03);
+      });
+    } catch (e) {}
+  }
+  const buzz = (p) => { try { if (on && navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+  const COLORS = ["#7C5CFF", "#FF5FA2", "#FFC83D", "#2BD4A4", "#38B6FF", "#FF8A3D"];
+  function confetti(n) {
+    if (still()) return;
+    const c = document.createElement("canvas");
+    c.className = "fx-confetti";
+    c.setAttribute("aria-hidden", "true");
+    document.body.appendChild(c);
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+    c.width = W * dpr;
+    c.height = H * dpr;
+    const g = c.getContext("2d");
+    g.scale(dpr, dpr);
+    const ps = Array.from({ length: n }, () => ({
+      x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35,
+      vx: (Math.random() - 0.5) * 13, vy: -Math.random() * 13 - 5,
+      r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.35,
+      w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, col: COLORS[(Math.random() * COLORS.length) | 0],
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+      const k = (t - t0) / 1000;
+      g.clearRect(0, 0, W, H);
+      for (const p of ps) {
+        p.vy += 0.38; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        g.save(); g.globalAlpha = Math.max(0, 1 - k / 2.4); g.translate(p.x, p.y); g.rotate(p.r);
+        g.fillStyle = p.col; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2)) + 2); g.restore();
+      }
+      if (k < 2.4) requestAnimationFrame(frame);
+      else c.remove();
+    })(t0);
+  }
+  return {
+    get on() { return on; },
+    toggle() { on = !on; ls.set(K, on ? "1" : "0"); if (on) tone([660, 880], 0.09, "triangle"); return on; },
+    right() { tone([587, 784, 988], 0.09, "triangle"); buzz(12); },
+    wrong() { tone([247, 208], 0.13, "sine", 0.05); buzz([25, 40, 25]); },
+    win(big) { tone(big ? [523, 659, 784, 1047, 1319] : [523, 659, 784, 1047], 0.12, "triangle"); buzz(35); confetti(big ? 170 : 90); },
+    pop() { tone([880, 1175], 0.06, "triangle", 0.05); },
+  };
+})();
+
+/* ---------- light / dark ("Нощна смяна") – chosen on this device, else as the device is set ---------- */
+const Theme = (() => {
+  const K = "edubel-trener-theme", root = document.documentElement;
+  const apply = (v) => { if (v === "dark" || v === "light") root.dataset.theme = v; else delete root.dataset.theme; };
+  apply(ls.get(K));
+  const dark = () => root.dataset.theme === "dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  return { dark, toggle() { const v = dark() ? "light" : "dark"; ls.set(K, v); apply(v); } };
+})();
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const rich = (s) => esc(s).replace(/&lt;(\/?)(i|b|u|em|strong)&gt;/g, "<$1$2>").replace(/&lt;br\s*\/?&gt;/g, "<br>");
 const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -103,6 +184,58 @@ function nextSteps() {
   }).filter((x) => x.p === null || x.p < 0.9).sort((a, b) => b.gain - a.gain).slice(0, 3);
 }
 
+/* ---------- progress you can see: XP, levels, stars, badges (all worked out from the saved results – nothing to buy, nothing random) ---------- */
+const LEVELS = ["Новобранец", "Читател", "Откривател", "Тълкувател", "Майстор на запетаята", "Словесен стратег", "Пазител на словото", "Магьосник на думите", "Легенда на НВО", "Безсмъртен класик"];
+function xpNow() {
+  let x = 0;
+  for (const h of S.hist) x += h.p * 10 + (h.m === "mock" ? 50 : 0);
+  for (const [k, v] of Object.entries(S.dos || {})) {
+    if (!v || typeof v !== "object") continue;
+    if (v.done) x += k === "final" ? 150 : 60;
+    if (v.b4) x += 20;
+    if (v.b5) x += 20;
+  }
+  return x;
+}
+const lvlFrom = (L) => 75 * L * (L - 1); // XP needed for level L: 0, 150, 450, 900, 1500…
+function level(x = xpNow()) {
+  let L = 1;
+  while (x >= lvlFrom(L + 1)) L++;
+  return { L, x, name: LEVELS[Math.min(L, LEVELS.length) - 1], from: lvlFrom(L), to: lvlFrom(L + 1) };
+}
+// Stars on a module, like in a game: the best grade 4 → ★, 5 → ★★, 6 → ★★★.
+const starsOf = (m) => { const b = bestOf(m); const g = b ? gradeOf(pct(b.p, b.n)) : 0; return g >= 6 ? 3 : g === 5 ? 2 : g === 4 ? 1 : 0; };
+const starRow = (n, cls = "") => `<span class="stars ${cls}" role="img" aria-label="${n} от 3 звезди">${[1, 2, 3].map((i) => `<i class="${i <= n ? "on" : ""}">★</i>`).join("")}</span>`;
+const firstLast = (m) => { const a = attemptsOf(m); return a.length > 1 ? [a[0], a[a.length - 1]] : null; };
+const BADGES = [
+  { id: "first", e: "🚀", t: "Първа стъпка", d: "Реши първия си тест", ok: () => S.hist.length > 0 },
+  { id: "six", e: "⭐", t: "Шестица", d: "Изкарай Отличен 6 на тест", ok: () => S.hist.some((h) => gradeOf(pct(h.p, h.n)) === 6) },
+  { id: "perfect", e: "💯", t: "Без грешка", d: "Реши тест без нито една грешка", ok: () => S.hist.some((h) => h.p === h.n) },
+  { id: "up", e: "📈", t: "Нагоре", d: "Подобри оценката си в модул", ok: () => MODULES.some((m) => { const f = firstLast(m.id); return f && gradeOf(pct(f[1].p, f[1].n)) > gradeOf(pct(f[0].p, f[0].n)); }) },
+  { id: "worlds", e: "🧭", t: "Трите части", d: "Реши модул от четене, език и литература", ok: () => Object.keys(AREAS).every((k) => MODULES.some((m) => m.area === k && lastOf(m.id))) },
+  { id: "mock", e: "🏁", t: "Генерална репетиция", d: "Направи пробна матура", ok: () => !!lastOf("mock") },
+  { id: "ten", e: "⚡", t: "Десетка", d: "Реши 10 теста", ok: () => S.hist.length >= 10 },
+  { id: "all", e: "🗺️", t: "Изследовател", d: "Реши всеки модул поне веднъж", ok: () => MODULES.length > 0 && MODULES.every((m) => lastOf(m.id)) },
+  { id: "det", e: "🔎", t: "Детектив", d: "Разкрий 5 литературни досиета", ok: () => Game.solvedN() >= 5, game: true },
+  { id: "col", e: "🃏", t: "Колекционер", d: "Събери 12 героя в колекцията", ok: () => Game.solvedN() >= 12, game: true },
+  { id: "king", e: "👑", t: "Главен инспектор", d: "Разкрий тайното послание", ok: () => Game.finished(), game: true },
+];
+const badgeList = () => BADGES.filter((b) => !b.game || BANK.dossiers);
+const earned = () => new Set(badgeList().filter((b) => { try { return b.ok(); } catch (e) { return false; } }).map((b) => b.id));
+// Erčo's lines on the board: dry, kind, never about the child's mistakes.
+const ERCHO = [
+  "Запетаите не хапят. Проверих.",
+  "Днес е добър ден за една шестица.",
+  "Бай Ганьо пак търси килимчето си. Ти търси верния отговор.",
+  "Аз съм Ъ. Все ме изпускат. Ти – не.",
+  "Пет минути сега са по-добре от два часа в нощта преди изпита.",
+  "Грешката е улика. Детективите обичат улики.",
+  "Вазов е писал и в трудни дни. Ти можеш един модул.",
+  "Обещавам: глаголните времена са по-лесни от домашното по физика.",
+  "Чавдар на 12 е бил по-смел от всички. Ти си на ход.",
+  "Не бързай. Прочети въпроса два пъти – той често сам подсказва.",
+];
+
 /* ---------- home: forecast, modules, gradebook ---------- */
 let sess = null, timer = null, histAll = false;
 
@@ -114,11 +247,23 @@ function home(scrollTo) {
   const cardCount = BANK.questions.length - nvoCount;
   const f = forecast();
   const mist = mistIds().length;
-  let h = `<header class="hd">
-      <div class="brand"><img src="${LOGO}" alt="Еду БЕЛ" width="60" height="60"><span class="eyebrow">НВО по БЕЛ · 7. клас</span></div>
-      <h1>НВО тренажор <em>по БЕЛ</em></h1>
-      <p class="lead">${nvoCount} задачи в ${MODULES.filter(isNvo).length} модула, подредени като трите части на националното външно оценяване${cardCount ? `, и ${cardCount} карти за преговор` : ""}. След всеки модул получаваш оценка, а тя се записва в бележника с датата.</p>
-      <div class="facts"><span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}<span>Оценки от 2 до 6</span><span>Пробна матура с таймер</span></div>
+  const lv = level(), nx = nextSteps()[0], name = S.name.trim();
+  const tip = ERCHO[Math.floor(Date.now() / 3.6e6) % ERCHO.length];
+  let h = `<header class="top">
+      <div class="topbar"><img class="logo" src="${LOGO}" alt="Еду БЕЛ" width="44" height="44"><span class="eyebrow">НВО по БЕЛ · 7. клас</span>
+        <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button></span></div>
+      <section class="hero" aria-labelledby="heroT">
+        <div class="hero-txt">
+          <p class="hi">${name ? `Здрасти, ${esc(name)}!` : "Здрасти!"}</p>
+          <h1 id="heroT">НВО тренажор <em>по БЕЛ</em></h1>
+          <button class="lvl" data-act="go-badges" aria-label="Ниво ${lv.L}: ${esc(lv.name)}. Виж значките"><b>${lv.L}</b><span><small>Ниво</small>${esc(lv.name)}</span></button>
+          <div class="xp" role="img" aria-label="${lv.x - lv.from} от ${lv.to - lv.from} точки опит до ниво ${lv.L + 1}"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div>
+          <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
+        </div>
+        <div class="hero-art">${avatarPic("hero-m")}<p class="bubble">${esc(tip)}</p></div>
+        <div class="hero-go">${nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
+      </section>
+      <div class="facts"><span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span><span>Пробна матура</span></div>
     </header>`;
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
@@ -126,6 +271,7 @@ function home(scrollTo) {
   h += forecastPanel(f, mist);
   h += Game.card();
   h += modulesSection();
+  h += badgesSection();
   h += gradebook();
   if (ONLINE) h += Online.accessSection();
   h += `<section class="reset" id="reset"><h3>Започни отначало</h3>
@@ -140,21 +286,23 @@ function home(scrollTo) {
 function ring(r) {
   const R = 64, C = 2 * Math.PI * R;
   const v = r === null ? 0 : Math.max(0.004, r);
-  return `<svg viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--band)" stroke-width="12"/>
-    <circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--gold)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * v).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 75 75)"/></svg>`;
+  return `<svg viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C5CFF"/><stop offset=".55" stop-color="#FF5FA2"/><stop offset="1" stop-color="#FFC83D"/></linearGradient></defs>
+    <circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--band)" stroke-width="13"/>
+    <circle class="ring-v" cx="75" cy="75" r="${R}" fill="none" stroke="url(#ringG)" stroke-width="13" stroke-linecap="round" stroke-dasharray="${(C * v).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 75 75)"/></svg>`;
 }
+const gradeBadge = (g, cls = "") => `<span class="gb g${g} ${cls}" aria-label="${GW[g]} ${g}"><b>${g}</b><small>${GW[g]}</small></span>`;
 
 function forecastPanel(f, mist) {
   const r = f.total;
   let h = `<section class="fc" aria-labelledby="fcT"><div class="fc-top">
       <div class="meter">${ring(r)}<div class="in"><b>${r === null ? "–" : pc(r)}</b><span>готовност</span></div></div>
-      <div class="fc-text"><span class="eyebrow">Прогноза за НВО</span>`;
+      <div class="fc-text"><span class="fc-eb">${pic("i-ready", "fc-i")}<span class="eyebrow">Прогноза за НВО</span></span>`;
   if (r === null) {
     h += `<h2 id="fcT">Реши първия модул и тук ще видиш с каква оценка би излязъл днес.</h2>
       <p class="muted small">Прогнозата претегля частите като на изпита: четенето е 7 задачи, езикът – 10, литературата – 8.</p>`;
   } else {
     const g = gradeOf(r);
-    h += `<h2 id="fcT">Ако изпитът е днес: <span class="fc-grade">${GW[g]} ${g}</span></h2>
+    h += `<h2 id="fcT">Ако изпитът е днес:</h2>${gradeBadge(g, "fc-gb")}
       <p class="muted small">По последната оценка от ${f.done} от ${MODULES.length} модула${f.done < MODULES.length ? ". С всеки следващ модул прогнозата става по-точна" : ""}.</p>`;
   }
   h += `</div></div><div class="areas">`;
@@ -174,8 +322,8 @@ function forecastPanel(f, mist) {
     h += `</ol></div>`;
   }
   h += `<div class="fc-actions">
-      <button class="tool" data-act="mock"><b>Пробна матура</b><span>25 задачи от всички модули, ${MOCK_MIN} минути, оценка накрая</span></button>
-      <button class="tool alt" data-act="mist" ${mist ? "" : "disabled"}><b>Тетрадка с грешки${mist ? ` · ${mist}` : ""}</b><span>${mist ? "Задачите, в които си сгрешил. Изчезват, след като ги решиш вярно 2 пъти." : "Тук ще се събират задачите, в които сгрешиш."}</span></button>
+      <button class="tool" data-act="mock">${pic("i-mock", "tool-i")}<span class="tool-t"><b>Пробна матура</b><span>25 задачи, ${MOCK_MIN} минути, оценка накрая – като на изпита</span></span></button>
+      <button class="tool alt" data-act="mist" ${mist ? "" : "disabled"}>${pic("i-mist", "tool-i")}<span class="tool-t"><b>Улики за преразглеждане${mist ? ` · ${mist}` : ""}</b><span>${mist ? "Задачите, в които си сгрешил. Реши ги вярно 2 пъти и изчезват." : "Тук ще се събират задачите, в които сгрешиш. Грешката е улика."}</span></span></button>
     </div></section>`;
   return h;
 }
@@ -191,26 +339,43 @@ function spark(m) {
 }
 
 function modulesSection() {
-  let h = `<section class="parts" id="modules" style="display:grid;gap:26px"><h2>Модули</h2>`;
+  let h = `<section class="parts" id="modules"><h2 class="sec-t">Модули</h2>`;
   for (const k in ALL_AREAS) {
     if (!MODULES.some((x) => x.area === k)) continue;
-    h += `<div class="part"><div class="part-hd"><h3>${ALL_AREAS[k].t}</h3><span>${AREAS[k] ? "като " : ""}${ALL_AREAS[k].nvo}</span></div><div class="mods">`;
-    for (const m of MODULES.filter((x) => x.area === k)) {
+    const ms = MODULES.filter((x) => x.area === k), got = ms.reduce((s, m) => s + starsOf(m.id), 0);
+    h += `<div class="part" style="--c:${ALL_AREAS[k].c}"><div class="part-hd"><h3>${ALL_AREAS[k].t}</h3><span class="part-s">${AREAS[k] ? "като " : ""}${ALL_AREAS[k].nvo}</span><span class="part-st" aria-label="${got} от ${ms.length * 3} звезди">★ ${got}/${ms.length * 3}</span></div><div class="mods">`;
+    for (const m of ms) {
       const n = ofMod(m.id).length, last = lastOf(m.id), best = bestOf(m.id), cnt = attemptsOf(m.id).length;
       const g = last ? gradeOf(pct(last.p, last.n)) : null;
-      h += `<article class="mod" id="mod-${m.id}">
-        <span class="no" style="--c:${ALL_AREAS[k].c}">${m.n}</span>
+      h += `<article class="mod ${last ? "played" : ""}" id="mod-${m.id}">
+        <span class="mod-art">${pic(modImg(m))}</span>
         <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc)}</p>
-          <div class="meta"><span>${n} ${k === "cards" ? "карти" : "задачи"}</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span><span>${cnt} ${pl(cnt, "опит", "опита")}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
+          <div class="meta">${starRow(starsOf(m.id))}<span>${n} ${k === "cards" ? "карти" : "задачи"}</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
           ${cnt ? `<div><button class="link" data-act="resetModAsk" data-m="${m.id}">Нулирай модула</button></div>` : ""}</div>
-        <div class="side"><span class="gbox"><span class="g ${g ? "" : "none"}" aria-label="${g ? `Последна оценка: ${GW[g]} ${g}` : "Няма оценка"}">${g ?? "–"}</span><small>${g ? "оценка" : "без оценка"}</small></span>
-          <button class="btn sm ${last ? "line" : ""}" data-act="start" data-m="${m.id}">${last ? "Реши пак" : "Започни"}</button></div>
+        <div class="side ${g ? "" : "nog"}">${g ? gradeBadge(g, "sm") : ""}
+          <button class="btn sm ${last ? "line" : ""}" data-act="start" data-m="${m.id}">${last ? "Реши пак" : "Играй"}</button></div>
         <div class="zone" id="zone-${m.id}" hidden></div>
       </article>`;
     }
     h += `</div></div>`;
   }
   return h + `</section>`;
+}
+
+// Avatar: Erčo by default, or any hero the child has unlocked in the game.
+const avatarOk = (a) => a === "m-hi" || a === "m-detective" || a === "m-read" || (/^h-d\d\d$/.test(a || "") && Game.unlocked(a.slice(2)));
+const avatarPic = (cls) => pic(avatarOk(S.avatar) ? S.avatar : "m-hi", cls, "Твоят аватар", true);
+function badgesSection() {
+  const have = earned(), list = badgeList();
+  let h = `<section class="badges" id="badges" aria-labelledby="bdT"><div class="sec-hd"><h2 id="bdT" class="sec-t">Значки</h2><span class="muted small">${have.size} от ${list.length}</span></div>
+    <ul class="bdg">${list.map((b) => `<li class="${have.has(b.id) ? "on" : ""}"><span class="bdg-e" aria-hidden="true">${have.has(b.id) ? b.e : "🔒"}</span><b>${esc(b.t)}</b><small>${esc(b.d)}</small></li>`).join("")}</ul>`;
+  const opts = ["m-hi", "m-detective", "m-read", ...(BANK.dossiers ? BANK.dossiers.dossiers.map((d) => "h-" + d.id) : [])];
+  h += `<details class="avpick"><summary>${avatarPic("av-now")}<span><b>Избери аватар</b><small>Ерчо или герой, когото си отключил в „Литературни досиета“</small></span></summary>
+    <div class="avgrid">${opts.map((a) => {
+      const ok = avatarOk(a), cur = (avatarOk(S.avatar) ? S.avatar : "m-hi") === a;
+      return `<button class="av ${cur ? "cur" : ""} ${ok ? "" : "locked"}" data-act="avatar" data-a="${a}" ${ok ? "" : "disabled"} aria-label="${ok ? "Избери" : "Заключен – разкрий досието"}">${pic(a)}</button>`;
+    }).join("")}</div></details></section>`;
+  return h;
 }
 
 function gradebook() {
@@ -476,14 +641,15 @@ function renderQ() {
       <div class="prog"><i style="width:${((mock ? s.ans.filter((x, i) => answered(s.qs[i], x) && (s.qs[i].t !== "order" || s.touchedIdx?.[i])).length : s.i + (done ? 1 : 0)) / s.qs.length) * 100}%"></i></div></div>
     <div id="quitZone"></div>`;
   const nav = `<nav class="nav" aria-label="Задачи">${s.qs.map((qq, i) => `<button data-act="go" data-i="${i}" class="${i === s.i ? "cur" : ""} ${answered(qq, s.ans[i]) && (qq.t !== "order" || s.touchedIdx?.[i]) ? "done" : ""}" aria-label="Задача ${i + 1}">${i + 1}</button>`).join("")}</nav>`;
-  h += `<article class="qcard"><p class="qnum">Задача ${s.i + 1} от ${s.qs.length} · ${esc(MOD[q.m].title)}${q.nvo ? ` · като задача ${esc(q.nvo)} на НВО` : ""}</p>`;
+  h += `<article class="qcard"><p class="qnum">${pic(modImg(MOD[q.m]), "qn-i", "", true)}<span>Задача ${s.i + 1} от ${s.qs.length} · ${esc(MOD[q.m].title)}${q.nvo ? ` · като задача ${esc(q.nvo)} на НВО` : ""}</span></p>`;
   if (q.p && BANK.passages[q.p]) h += passageBlock(q.p);
   if (q.text) h += `<blockquote class="qtext">${rich(q.text)}</blockquote>`;
   h += `<h2 class="qq">${rich(q.q)}</h2>`;
   h += body(q, v, a, done || false, done && !mock);
   if (done && !mock) {
     const ok = s.ok[s.i];
-    h += `<div class="fb ${ok ? "ok" : "no"}" id="fb" tabindex="-1"><b class="t">${ok ? "Вярно!" : "Не е вярно."}</b>${ok ? "" : `<span>Верният отговор: <b>${rich(rightText(q))}</b></span>`}${q.why ? `<span class="why">${rich(q.why)}</span>` : ""}</div>`;
+    const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
+    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(ok ? "m-yay" : "m-oops", "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${rich(rightText(q))}</b></span>`}${q.why ? `<span class="why">${rich(q.why)}</span>` : ""}</div></div>`;
   }
   h += `<div class="qact">`;
   if (mock) {
@@ -533,8 +699,15 @@ function check() {
   s.ok[s.i] = isRight(q, s.ans[s.i]);
   s.touched = true;
   track(q.id, s.ok[s.i]);
+  s.fresh = true;
   renderQ();
+  s.fresh = false;
+  if (s.ok[s.i]) FX.right(); else FX.wrong();
+  document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
 }
+// Short, varied and calm: praise that is not "Браво, юнак!" every time, and no jokes about a mistake.
+const CHEER = ["Точно така.", "Вярно!", "Уцели.", "Да, точно това е.", "Чисто попадение.", "Вярно – и бързо.", "Именно."];
+const CALM = ["Не точно. Ето защо:", "Почти. Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
 
 /* ---------- result ---------- */
 function finish(timeUp) {
@@ -544,6 +717,7 @@ function finish(timeUp) {
   const p = s.ok.filter(Boolean).length, n = s.qs.length;
   const sec = Math.min(Math.round((Date.now() - s.t0) / 1000), s.kind === "mock" ? MOCK_MIN * 60 : Infinity);
   const prev = s.kind === "mist" ? null : lastOf(s.m);
+  const before = { lv: level(), badges: earned(), stars: s.kind === "module" ? starsOf(s.m) : 0 };
   let rec = null;
   if (s.kind !== "mist") {
     rec = { m: s.m, d: Date.now(), p, n, s: sec, w: s.qs.filter((q, i) => !s.ok[i]).map((q) => q.id) };
@@ -558,7 +732,7 @@ function finish(timeUp) {
     save();
     if (ONLINE) Online.syncNow();
   }
-  result({ s, p, n, sec, prev, rec, timeUp });
+  result({ s, p, n, sec, prev, rec, timeUp, before });
 }
 
 function result(r) {
@@ -572,14 +746,24 @@ function result(r) {
       : d < 0 ? `<span class="delta down">С ${-d} ${pl(-d, "точка", "точки")} по-малко от миналия път (${fmtDate(r.prev.d)}).</span>`
       : `<span class="delta">Толкова точки, колкото и миналия път (${fmtDate(r.prev.d)}).</span>`;
   }
-  const praise = g === 6 ? "Браво! Това е отлично представяне." : g === 5 ? "Много добре. Още малко и стигаш шестицата." : g === 4 ? "Добра основа. Прегледай грешките по-долу и реши пак." : g === 3 ? "Има какво да се упражни. Прочети обясненията към грешките и опитай отново." : "Не се отказвай. Прочети обясненията, упражни грешките и реши модула пак.";
+  const praise = g === 6 ? "Отлично представяне. Това е ниво НВО." : g === 5 ? "Много добре. Още малко и стигаш шестицата." : g === 4 ? "Добра основа. Прегледай уликите по-долу и реши пак." : g === 3 ? "Има какво да се упражни. Прочети обясненията и опитай отново." : "Не се отказвай. Прочети обясненията, упражни грешките и реши модула пак.";
+  const b = r.before || {}, lv = level(), xpGot = b.lv ? lv.x - b.lv.x : 0, up = b.lv && lv.L > b.lv.L;
+  const newB = b.badges ? badgeList().filter((x) => earned().has(x.id) && !b.badges.has(x.id)) : [];
+  const stars = s.kind === "module" ? starsOf(s.m) : 0, thisStars = g >= 6 ? 3 : g === 5 ? 2 : g === 4 ? 1 : 0;
+  const mascot = g === 6 ? "m-trophy" : g === 5 ? "m-yay" : g === 4 ? "m-hi" : "m-think";
   let h = `<div class="qbar"><button class="back" data-act="home">← Табло</button><span class="qtitle">${esc(s.title)}</span><span></span></div>
-    <section class="res"><div class="stamp" role="img" aria-label="Оценка ${GW[g]} ${g}"><span class="gn">${g}</span><span class="gw">${GW[g]}</span></div>
+    <section class="res g${g}">
+      <div class="res-art">${pic(mascot, "res-m", "", true)}<div class="medal" role="img" aria-label="Оценка ${GW[g]} ${g}"><b>${g}</b><small>${GW[g]}</small></div></div>
       <div class="info"><span class="eyebrow">${s.kind === "mist" ? "Упражнение · не влиза в бележника" : `Записано в бележника · ${fmtDate(r.rec.d, true)}`}</span>
-        <h1 style="font-size:clamp(28px,6vw,40px)">${esc(s.title)}</h1>
+        <h1>${esc(s.title)}</h1>
+        ${s.kind === "module" || s.kind === "mock" ? starRow(thisStars, "big pop") : ""}
         <p class="score">${p} от ${n} ${pl(n, "точка", "точки")} · ${pc(pct(p, n))}</p>
-        <p class="muted">${r.timeUp ? "Времето изтече и матурата се предаде сама. " : ""}Време: ${fmtDur(r.sec)}</p>
-        ${delta}<p>${praise}</p></div></section>`;
+        <p class="muted small">${r.timeUp ? "Времето изтече и матурата се предаде сама. " : ""}Време: ${fmtDur(r.sec)}</p>
+        ${delta}<p>${praise}</p></div>
+      ${xpGot > 0 ? `<div class="res-xp"><span class="xp-plus">+${xpGot} XP</span>${up ? `<span class="lvup">Ново ниво ${lv.L}: <b>${esc(lv.name)}</b></span>` : `<span class="muted small">Ниво ${lv.L} · още ${lv.to - lv.x} XP до следващото</span>`}<div class="xp"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div></div>` : ""}
+      ${s.kind === "module" && stars > (b.stars || 0) ? `<p class="res-new">Нов рекорд в модула: ${starRow(stars)}</p>` : ""}
+      ${newB.length ? `<div class="res-badges"><b>${newB.length === 1 ? "Нова значка!" : "Нови значки!"}</b>${newB.map((x) => `<span class="nb"><i aria-hidden="true">${x.e}</i>${esc(x.t)}</span>`).join("")}</div>` : ""}
+    </section>`;
   if (s.kind === "mock") {
     h += `<section class="fc"><h2>По части, като на НВО</h2><div class="areas">`;
     for (const k in AREAS) {
@@ -607,6 +791,8 @@ function result(r) {
   app.innerHTML = h;
   window.scrollTo(0, 0);
   lastWrong = wrongIdx.map((i) => s.qs[i].id);
+  // The big celebration only at the end of a module, and only for a good result (calm otherwise).
+  if (g >= 5 || newB.length || up) setTimeout(() => FX.win(g === 6 || up), 250);
 }
 let lastWrong = [];
 
@@ -620,6 +806,10 @@ function confirmBox(zoneId, text, yesAct, yesLabel, extra) {
 }
 const ACT = {
   home: () => home(),
+  theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
+  sound: () => { const y = scrollY; FX.toggle(); home(); scrollTo(0, y); },
+  "go-badges": () => document.getElementById("badges")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+  avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
   start: (b) => startModule(b.dataset.m),
   mock: () => startMock(),
   mist: () => startMistakes(),
@@ -1030,6 +1220,15 @@ const Game = (() => {
     return S.dos[id];
   };
   const dossier = (id) => D().dossiers.find((x) => x.id === id);
+  // The hero each solved dossier adds to the collection. Frame: solved → violet, one bonus → silver, both bonuses → gold.
+  const HEROES = { d01: "Чавдар", d02: "Влюбеният в гората", d03: "Поетът", d04: "Благолаж", d05: "Художникът", d06: "Бойчо Огнянов", d07: "Рада Госпожина", d08: "Братчетата", d09: "Серафим", d10: "Тръбачът", d11: "Юнакът балкански", d12: "Синът бунтовник", d13: "Хъшът", d14: "Странджата", d15: "Бръчков", d16: "Баба Илийца", d17: "Опълченецът", d18: "Българският език", d19: "Пътешественикът", d20: "Бай Ганьо", d21: "Неразделните", d22: "Заточеникът", d23: "Пенка", d24: "Гунчо и Нонка" };
+  const heroName = (d) => HEROES[d.id] || d.work;
+  const tier = (id) => { const s = (S.dos || {})[id] || {}; return !s.done ? "" : s.b4 && s.b5 ? "gold" : s.b4 || s.b5 ? "silver" : "base"; };
+  const TIER = { base: "Карта", silver: "Сребърна карта", gold: "Златна карта" };
+  const heroCard = (d, big) => {
+    const t = tier(d.id);
+    return `<figure class="hcard ${t || "locked"} ${big ? "big" : ""}">${pic("h-" + d.id, "", t ? heroName(d) : "Заключен герой")}<figcaption>${t ? `<b>${esc(heroName(d))}</b><small>${TIER[t]}</small>` : `<b>?</b><small>Досие ${String(d.no).padStart(2, "0")}</small>`}</figcaption></figure>`;
+  };
   const solved = (id) => !!(S.dos && S.dos[id] && S.dos[id].done);
   const solvedCount = () => D().dossiers.filter((d) => solved(d.id)).length;
   function rank() {
@@ -1055,12 +1254,15 @@ const Game = (() => {
   function card() {
     if (!BANK.dossiers) return "";
     const n = solvedCount(), all = D().dossiers.length, r = rank();
-    return `<section class="game" aria-labelledby="gameT"><div class="game-in">
-      <span class="eyebrow">Игра · ${all} досиета · 1 таен код</span>
+    const got = D().dossiers.filter((d) => solved(d.id)).slice(-5);
+    return `<section class="game" aria-labelledby="gameT" style="--bg:url('${img("g-banner")}')"><div class="game-in">
+      <span class="eyebrow">Игра · ${all} досиета · ${all} героя</span>
       <h2 id="gameT">Литературни досиета</h2>
-      <p>Разследвай творбите като детектив: намери думите, събери уликите и разбий кода. Всяко разкрито досие дава буква от тайното послание.</p>
+      <p>Разследвай творбите като детектив: намери думите, събери уликите и разбий кода. Всяко разкрито досие отключва герой и буква от тайното послание.</p>
       <div class="game-row"><span class="rank">${esc(r.t)}</span><span class="small">Разкрити: <b>${n} от ${all}</b></span></div>
-      <button class="btn gold" data-act="gameHome">${n ? "Продължи разследването" : "Започни разследването"}</button></div></section>`;
+      ${got.length ? `<div class="game-heroes" aria-label="Последно отключени герои">${got.map((d) => pic("h-" + d.id, "", heroName(d))).join("")}</div>` : ""}
+      <button class="btn gold" data-act="gameHome">${n ? "Продължи разследването" : "Започни разследването"}</button></div>
+      ${pic("m-detective", "game-m")}</section>`;
   }
 
   function top(back, title) {
@@ -1077,6 +1279,9 @@ const Game = (() => {
       <p class="lead">${all} досиета. Един таен код. Разследването започва с теб.</p>
       <div class="game-row"><span class="rank">${esc(r.t)}</span><span class="small">Разкрити: <b>${n} от ${all}</b>${r.next ? ` · ${esc(r.next)}` : ""}</span></div></section>
       <section class="dpanel"><h3>Тайното послание</h3><p class="small muted">Всяко разкрито досие попълва едно поле. Последната буква е във финала.</p>${board()}</section>
+      <details class="dpanel coll" ${n ? "open" : ""}><summary><h3>Колекция герои</h3><span class="small muted">${n} от ${all} · ${D().dossiers.filter((d) => tier(d.id) === "gold").length} златни</span></summary>
+        <p class="small muted">Разкрий досието и героят е твой. Реши единия бонус – картата става сребърна, двата – златна. Без късмет и без покупки: само разследване.</p>
+        <div class="hgrid">${D().dossiers.map((d) => `<button class="hbtn" data-act="gameHero" data-id="${d.id}" aria-label="Досие ${d.no}: ${solved(d.id) ? esc(heroName(d)) : "заключено"}">${heroCard(d)}</button>`).join("")}</div></details>
       <details class="dpanel how"><summary>Как се играе</summary><ol>
         <li><b>Следата.</b> Намери трите думи със звездичка: докосни първата им буква (тя е отбелязана), после последната. Думите вървят → ↓ ↘ ↗.</li>
         <li><b>Уликите.</b> Отговори на трите въпроса с тези думи.</li>
@@ -1086,7 +1291,7 @@ const Game = (() => {
     for (const d of D().dossiers) {
       const s = (S.dos || {})[d.id] || {};
       const stars = (s.b4 ? "★" : "") + (s.b5 ? "★" : "");
-      h += `<button class="dcase ${solved(d.id) ? "done" : ""}" data-act="gameOpen" data-id="${d.id}"><span class="dno">${String(d.no).padStart(2, "0")}</span>
+      h += `<button class="dcase ${solved(d.id) ? "done" : ""}" data-act="gameOpen" data-id="${d.id}"><span class="dno ${solved(d.id) ? "" : "locked"}">${pic("h-" + d.id)}<i>${String(d.no).padStart(2, "0")}</i></span>
         <span class="dt"><b>${esc(d.work)}</b><small>${esc(d.author)}</small></span>
         <span class="dst">${solved(d.id) ? `<i class="stamp-s">Разкрито</i>` : s.t1 || s.t3 ? "започнато" : ""}${stars ? `<em>${stars}</em>` : ""}</span></button>`;
     }
@@ -1216,7 +1421,8 @@ const Game = (() => {
     sess = null;
     const idx = D().dossiers.indexOf(d), next = D().dossiers[idx + 1];
     let h = top("gameHome", `Досие ${String(d.no).padStart(2, "0")}`);
-    h += `<section class="dhero"><span class="eyebrow">Досие ${String(d.no).padStart(2, "0")} · ${esc(d.author)}</span><h1>${esc(d.work)}</h1>
+    h += `<section class="dhero with-hero"><div class="dh-hero">${heroCard(d, true)}</div><span class="eyebrow">Досие ${String(d.no).padStart(2, "0")} · ${esc(d.author)}</span><h1>${esc(d.work)}</h1>
+      ${solved(id) ? "" : `<p class="small muted">Разкрий досието, за да отключиш героя в колекцията.</p>`}
       <div class="brief"><b>Накратко за творбата</b><p>${esc(d.brief)}</p>${(d.gloss || []).map((g) => `<p class="small">${esc(g)}</p>`).join("")}</div>
       ${solved(id) ? `<p class="okbox">Досието е разкрито! Буквата „${esc(d.code[d.take - 1])}“ е в поле ${d.field} на тайното послание.</p>` : ""}</section>`;
     h += task1(d) + task2(d) + task3(d) + bonus4(d) + bonus5(d);
@@ -1319,6 +1525,7 @@ const Game = (() => {
     if (hit) {
       s.t1 = [...f, hit.w];
       save();
+      FX.pop();
       rerender("t1");
       const m = document.getElementById("gridMsg");
       if (m) m.textContent = `Намери „${hit.w}“!${hit.star ? "" : " (бонус дума)"}`;
@@ -1332,6 +1539,7 @@ const Game = (() => {
   const ACT = {
     gameHome: () => home(),
     gameOpen: (b) => open(b.dataset.id),
+    gameHero: (b) => open(b.dataset.id),
     gameCell: (b) => tapCell(+b.dataset.r, +b.dataset.c),
     gameHint: () => {
       const d = dossier(view.id), s = st(d.id), f = new Set(s.t1 || []);
@@ -1358,11 +1566,17 @@ const Game = (() => {
     },
     gameCheck: (b) => {
       const id = b.dataset.id, s = st(id), quiz = id === "final" ? D().final.quiz : dossier(id).quiz;
-      if (quiz.every((q, i) => s.t3 && s.t3[i] === q.a)) s.done = Date.now();
+      const ok = quiz.every((q, i) => s.t3 && s.t3[i] === q.a);
+      if (ok) s.done = Date.now();
       else s.t3c = true;
       save();
+      if (ok) FX.win(id === "final"); else FX.wrong();
       if (id === "final") return rerender();
       rerender("t3");
+      if (ok) {
+        const z = document.getElementById("t3"), d = dossier(id);
+        if (z && d) z.insertAdjacentHTML("beforeend", `<div class="unlock" role="status"><span class="eyebrow">Нов герой в колекцията</span>${heroCard(d, true)}</div>`);
+      }
     },
     gameMove: (b) => {
       const s = st(b.dataset.id), k = +b.dataset.k, j = k + +b.dataset.d;
@@ -1387,6 +1601,7 @@ const Game = (() => {
       if (ok) s.b4 = Date.now();
       else s.b4c = true;
       save();
+      if (ok) FX.right(); else FX.wrong();
       rerender("t4");
     },
     gameThink: (b) => {
@@ -1394,6 +1609,7 @@ const Game = (() => {
       s.b5t = (document.getElementById("b5in")?.value || "").slice(0, 1000);
       s.b5 = Date.now();
       save();
+      FX.right();
       rerender("t5");
     },
     gameAfter: (b) => {
@@ -1429,7 +1645,13 @@ const Game = (() => {
     else if (el.dataset.after != null) { const s = st("final"); s.afterT = { ...(s.afterT || {}), [el.dataset.after]: v }; save(); }
   });
 
-  return { card, home, act: (b, e) => { const f = ACT[b.dataset.act]; if (f) { f(b, e); return true; } return false; }, leave: () => { view = null; } };
+  const has = () => !!BANK.dossiers;
+  return {
+    card, home, act: (b, e) => { const f = ACT[b.dataset.act]; if (f) { f(b, e); return true; } return false; }, leave: () => { view = null; },
+    solvedN: () => (has() ? solvedCount() : 0),
+    finished: () => has() && solved("final") && solvedCount() === D().dossiers.length,
+    unlocked: (id) => has() && solved(id),
+  };
 })();
 
 if (EMBED) {
