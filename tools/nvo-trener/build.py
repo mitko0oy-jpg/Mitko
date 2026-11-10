@@ -46,6 +46,8 @@ imgs = {os.path.basename(f)[:-5]: "data:image/webp;base64," + base64.b64encode(o
 # Sounds and the short video, under their path ("sfx/right.mp3", "g-banner.mp4").
 for f in sorted(glob.glob(os.path.join(media, "sfx", "*.mp3"))):
     imgs["sfx/" + os.path.basename(f)] = "data:audio/mpeg;base64," + base64.b64encode(open(f, "rb").read()).decode()
+for f in sorted(glob.glob(os.path.join(media, "voice", "*.mp3"))):  # Erčo's greetings
+    imgs["voice/" + os.path.basename(f)] = "data:audio/mpeg;base64," + base64.b64encode(open(f, "rb").read()).decode()
 for f in sorted(glob.glob(os.path.join(media, "*.mp4"))):
     imgs[os.path.basename(f)] = "data:video/mp4;base64," + base64.b64encode(open(f, "rb").read()).decode()
 html = (html.replace("/*__CSS__*/", css)

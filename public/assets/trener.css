@@ -102,6 +102,11 @@ button:disabled{cursor:default}
 .hero-m{width:100%;max-width:170px;height:auto;filter:drop-shadow(0 14px 18px rgba(20,8,60,.45));animation:float 4.5s ease-in-out infinite}
 .bubble{position:relative;margin-top:6px;background:#fff;color:#2A2350;border-radius:14px;padding:8px 10px;font:600 12.5px/1.35 var(--sans);box-shadow:0 8px 18px -10px rgba(0,0,0,.4)}
 .bubble::before{content:"";position:absolute;top:-6px;left:50%;width:12px;height:12px;background:#fff;transform:translateX(-50%) rotate(45deg);border-radius:2px}
+.hero-say{display:block;width:100%;border:0;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hero-say:active .hero-m{transform:scale(.96)}
+.bubble.talk{animation:talk .55s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes talk{0%{transform:scale(.7);opacity:.3}60%{transform:scale(1.06)}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.bubble.talk{animation:none}}
 .hero-go{grid-column:1/-1;margin-top:8px}
 .facts{display:flex;flex-wrap:wrap;gap:8px}
 .facts span{padding:6px 12px;border-radius:999px;background:var(--paper);box-shadow:0 1px 0 var(--edge);font-size:13.5px;font-weight:700;color:var(--violet)}

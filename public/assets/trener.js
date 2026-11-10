@@ -266,6 +266,61 @@ function nextSteps() {
   }).filter((x) => x.p === null || x.p < 0.9).sort((a, b) => b.gain - a.gain).slice(0, 3);
 }
 
+/* ---------- Erčo says hello: a short chime and a spoken line (public/media/voice/, made by tools/nvo-trener/voice.py) ---------- */
+// Once a day, on the board, only with the sound on. Browsers play sound only after a tap: if the first try is refused,
+// the greeting waits for the first tap (and is skipped if that tap switched the sound off). Tapping Erčo says it again.
+const Hello = (() => {
+  const K = "edubel-trener-hello", V = 1;
+  const LINES = {
+    hello: "Хей, здравей! Аз съм Ерчо. Хайде да учим и да играем!",
+    back: "Ей, пак си тук! Супер. Да продължим ли?",
+    math: "Здрасти! Днес сме с числата. Да започваме!",
+  };
+  let audio = null, waiting = false;
+  const day = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  const pick = (tap) => (mathOn() ? "math" : !ls.get(K) || (tap && !/^h-/.test(S.avatar || "")) ? "hello" : "back");
+  function show(line) {
+    const b = document.querySelector(".hero .bubble");
+    if (!b) return;
+    b.textContent = LINES[line];
+    b.classList.remove("talk");
+    void b.offsetWidth;
+    b.classList.add("talk");
+  }
+  function say(line) {
+    const url = asset(`voice/${line}-${V}.mp3`);
+    if (!FX.on || !url) return Promise.resolve(false);
+    try {
+      if (audio) audio.pause();
+      audio = new Audio(url);
+      audio.volume = 0.8;
+      return audio.play().then(() => { show(line); return true; }, () => false);
+    } catch (e) { return Promise.resolve(false); }
+  }
+  // Played right inside the tap (Safari allows sound only there). A tap on the sound switch itself greets nobody:
+  // switching off means quiet, and switching on redraws the board, which greets then.
+  function onTap(e) {
+    removeEventListener("click", onTap, true);
+    removeEventListener("keydown", onTap, true);
+    waiting = false;
+    if (e.target && e.target.closest && e.target.closest('[data-act="sound"]')) return;
+    greet();
+  }
+  function greet() {
+    if (!FX.on || ls.get(K) === day() || waiting) return;
+    say(pick()).then((ok) => {
+      if (ok) ls.set(K, day());
+      else if (!waiting) { waiting = true; addEventListener("click", onTap, true); addEventListener("keydown", onTap, true); }
+    });
+  }
+  // A tap on Erčo: the line again (the words show in the bubble even with the sound off).
+  function tap() {
+    const line = pick(true);
+    say(line).then((ok) => { if (!ok) show(line); else ls.set(K, day()); });
+  }
+  return { greet, tap };
+})();
+
 /* ---------- progress you can see: XP, levels, stars, badges (all worked out from the saved results – nothing to buy, nothing random) ---------- */
 const LEVELS = ["Новобранец", "Читател", "Откривател", "Тълкувател", "Майстор на запетаята", "Словесен стратег", "Пазител на словото", "Магьосник на думите", "Легенда на НВО", "Безсмъртен класик"];
 function xpNow() {
@@ -356,7 +411,7 @@ function home(scrollTo) {
           <div class="xp" role="img" aria-label="${lv.x - lv.from} от ${lv.to - lv.from} точки опит до ниво ${lv.L + 1}"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div>
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
-        <div class="hero-art">${avatarPic("hero-m", true)}<p class="bubble">${esc(tip)}</p></div>
+        <div class="hero-art"><button class="hero-say" data-act="hello" aria-label="Чуй Ерчо">${avatarPic("hero-m", true)}</button><p class="bubble" aria-live="polite">${esc(tip)}</p></div>
         <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
       </section>
       <div class="facts">${M ? `<span>${BANK.math.cards.length} ${pl(BANK.math.cards.length, "карта", "карти")}</span><span>${BANK.questions.filter(qMath).length} задачи</span><span>Решен пример и капани</span><span>Оценки 2–6</span>`
@@ -378,6 +433,7 @@ function home(scrollTo) {
   drawChart();
   if (scrollTo) document.getElementById(scrollTo)?.scrollIntoView({ block: "start" });
   else window.scrollTo(0, 0);
+  Hello.greet();
 }
 
 function ring(r) {
@@ -1017,6 +1073,7 @@ function confirmBox(zoneId, text, yesAct, yesLabel, extra) {
 const ACT = {
   home: () => home(),
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
+  hello: () => Hello.tap(),
   subj: (b) => { SUBJ = b.dataset.s === "math" ? "math" : "bel"; ls.set(K_SUBJ, SUBJ); FX.pop(); home(); },
   mcard: (b) => mathCard(+b.dataset.n),
   mflip: () => { if (mview) { FX.pop(); mathCard(mview.n, !mview.back, true); } },
