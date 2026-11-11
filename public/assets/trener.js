@@ -1066,9 +1066,9 @@ function check() {
   Voice.say(s.ok[s.i] ? `ok-${(s.i + s.qs.length) % CHEER.length}` : `no-${s.i % CALM.length}`, 380);
   document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
 }
-// Short, varied and calm: praise that is not "Браво, юнак!" every time, and no jokes about a mistake.
-const CHEER = ["Точно така.", "Вярно!", "Уцели.", "Да, точно това е.", "Чисто попадение.", "Вярно – и бързо.", "Именно."];
-const CALM = ["Не точно. Ето защо:", "Почти. Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
+// Warm, varied praise – the same words Erčo says out loud (voice lines ok-0…ok-6, no-0…no-3); calm words after a mistake, never a joke about it.
+const CHEER = ["Браво! Точно така!", "Браво! Позна!", "Супер! Справи се!", "Да! Точно това е!", "Отлично! Браво!", "Чудесно! Продължавай!", "Браво! Чисто попадение!"];
+const CALM = ["Не точно. Ето защо:", "Почти! Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
 
 /* ---------- result ---------- */
 function finish(timeUp) {

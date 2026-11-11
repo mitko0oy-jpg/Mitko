@@ -49,10 +49,12 @@ if specs[:1] == ["--dir"]:
 for spec in specs:
     line, src = spec.split("=", 1)
     voice_wav = os.path.join(tmp, f"{line}.wav")
-    # trim the silence at both ends, level the loudness, a soft fade at the end
+    # trim the silence at both ends, but gently: soft first sounds (х, н, в) stay – keep 0.1 s before the first sound
+    # and 0.15 s after the last; then level the loudness
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af",
-                    "silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
-                    "loudnorm=I=-16:TP=-2:LRA=9,afade=t=in:d=0.02",
+                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.1,areverse,"
+                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.15,areverse,"
+                    "loudnorm=I=-16:TP=-2:LRA=9,afade=t=in:d=0.005",
                     "-ac", "1", "-ar", str(SR), voice_wav], check=True)
     path = os.path.join(out_dir, f"{line}-{version}.mp3")
     if line in GREET:  # chime, then the voice 0.12 s after the last bell starts to ring out
