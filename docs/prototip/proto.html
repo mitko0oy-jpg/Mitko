@@ -473,7 +473,7 @@ function taskScreen() {
   }
   if (s.done) {
     const ok = s.ok[s.i];
-    const CHEER = ["Точно така!", "Вярно!", "Уцели!", "Да, точно това е!", "Чисто попадение!", "Вярно – и бързо!", "Именно!"], CALM = ["Не точно. Ето защо:", "Почти! Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
+    const CHEER = ["Браво! Точно така!", "Браво! Позна!", "Супер! Справи се!", "Да! Точно това е!", "Отлично! Браво!", "Чудесно! Продължавай!", "Браво! Чисто попадение!"], CALM = ["Не точно. Ето защо:", "Почти! Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
     const say = ok ? CHEER[s.i % CHEER.length] : CALM[s.i % CALM.length];
     h += `<div class="fb ${ok ? "ok" : "no"}"><img src="${M(ok ? "m-yay.webp" : "m-oops.webp")}" alt=""><span><b class="t">${say}${ok ? `<span class="xp">+10 XP</span>` : ""}</b>${ok ? "" : `<span>Верният отговор: <b>${esc(q.t === "mc" ? q.o[q.a] : String(q.a).replace(".", ",") + (q.unit ? " " + q.unit : ""))}</b></span>`}<span class="why">${esc(q.why)}</span></span></div>
       <div class="qact"><button class="report" data-act="toast" data-msg="Благодарим! Ерчо ще провери задачата.">Мисля, че тук има грешка</button><button class="btn gold" data-act="next">${last ? "Готово" : "Следваща →"}</button></div>`;
