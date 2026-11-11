@@ -30,12 +30,14 @@ tmp = tempfile.mkdtemp()
 def load(path):
     """One piece: gentle trim of the silence at both ends (soft first sounds stay), its loudness levelled."""
     wav = os.path.join(tmp, os.path.basename(path) + ".wav")
-    af = ("silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.08,areverse,"
-          "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.12,areverse,"
-          "loudnorm=I=-17:TP=-2:LRA=9")
-    if speed != 1.0:
-        af += f",atempo={speed}"
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", path, "-af", af, "-ac", "1", "-ar", str(SR), wav], check=True)
+    trimmed = wav + ".trim.wav"
+    # two steps: trimming and levelling in one ffmpeg run sometimes hangs
+    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", path, "-af",
+                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.08,areverse,"
+                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.12,areverse",
+                    "-ac", "1", "-ar", str(SR), trimmed], check=True, timeout=60)
+    af = "loudnorm=I=-17:TP=-2:LRA=9" + (f",atempo={speed}" if speed != 1.0 else "")
+    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", trimmed, "-af", af, "-ac", "1", "-ar", str(SR), wav], check=True, timeout=60)
     with wave.open(wav) as w:
         return np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
 
@@ -86,7 +88,7 @@ os.makedirs(out_dir, exist_ok=True)
 base = f"{name}-v{version}"
 mp3 = os.path.join(out_dir, base + ".mp3")
 # speech only: mono 56 kbit/s is clear and keeps 4 minutes under 2 MB
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", mix, "-af", "alimiter=limit=0.9", "-ac", "1", "-b:a", "56k", mp3], check=True)
+subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", mix, "-af", "alimiter=limit=0.9", "-ac", "1", "-b:a", "56k", mp3], check=True)
 meta = {"audio": base + ".mp3", "dur": round(t, 2), "version": version, "parts": parts, "segs": segs}
 json.dump(meta, open(os.path.join(out_dir, base + ".json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)
 print(f"{mp3}: {int(t // 60)}:{int(t % 60):02d}, {os.path.getsize(mp3) // 1024} KB, {len(parts)} parts, {len(segs)} pieces")

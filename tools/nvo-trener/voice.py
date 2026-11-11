@@ -51,18 +51,20 @@ for spec in specs:
     line, src = spec.split("=", 1)
     voice_wav = os.path.join(tmp, f"{line}.wav")
     # trim the silence at both ends, but gently: soft first sounds (х, н, в) stay – keep 0.1 s before the first sound
-    # and 0.15 s after the last; then level the loudness
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af",
+    # and 0.15 s after the last; then, in a second step, level the loudness (in one step ffmpeg sometimes hangs)
+    trimmed = os.path.join(tmp, f"{line}-trim.wav")
+    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", src, "-af",
                     "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.1,areverse,"
-                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.15,areverse,"
-                    "loudnorm=I=-16:TP=-2:LRA=9,afade=t=in:d=0.005",
-                    "-ac", "1", "-ar", str(SR), voice_wav], check=True)
+                    "silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.15,areverse",
+                    "-ac", "1", "-ar", str(SR), trimmed], check=True, timeout=60)
+    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", trimmed, "-af", "loudnorm=I=-16:TP=-2:LRA=9,afade=t=in:d=0.005",
+                    "-ac", "1", "-ar", str(SR), voice_wav], check=True, timeout=60)
     path = os.path.join(out_dir, f"{line}-{version}.mp3")
     if line in GREET:  # chime, then the voice 0.12 s after the last bell starts to ring out
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", chime_wav, "-i", voice_wav, "-filter_complex",
+        subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", chime_wav, "-i", voice_wav, "-filter_complex",
                         "[1]adelay=420|420[v];[0][v]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.9",
                         "-ac", "1", "-b:a", "64k", path], check=True)
     else:
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", voice_wav, "-af", "alimiter=limit=0.9", "-ac", "1", "-b:a", "64k", path], check=True)
+        subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", voice_wav, "-af", "alimiter=limit=0.9", "-ac", "1", "-b:a", "64k", path], check=True)
     d = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], capture_output=True, text=True).stdout)
     print(line, f"{d:.2f}s", f"{os.path.getsize(path) // 1024} KB")
