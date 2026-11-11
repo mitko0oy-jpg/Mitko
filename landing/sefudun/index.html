@@ -930,7 +930,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="17.90">€15,90</b><s>€17,90</s></div>
           <p class="bv-unit">Специална цена <span class="bv-dose">€0,27 / доза</span></p>
-          <a class="bv-btn" href="/checkout1">Избирам този пакет</a>
+          <a class="bv-btn" href="/krem-checkout1">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -948,7 +948,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="53.70">€22,90</b><s>€53,70</s></div>
           <p class="bv-unit">само €7,63 за бурканче <span class="bv-dose">€0,13 / доза</span></p>
-          <a class="bv-btn bv-pulse" href="/checkout2">Избирам този пакет</a>
+          <a class="bv-btn bv-pulse" href="/krem-checkout2">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -966,7 +966,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="89.50">€29,90</b><s>€89,50</s></div>
           <p class="bv-unit">само €5,98 за бурканче <span class="bv-dose">€0,10 / доза</span></p>
-          <a class="bv-btn" href="/checkout3">Избирам този пакет</a>
+          <a class="bv-btn" href="/krem-checkout3">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -1123,7 +1123,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="17.90">€15,90</b><s>€17,90</s></div>
           <p class="bv-unit">Специална цена <span class="bv-dose">€0,27 / доза</span></p>
-          <a class="bv-btn" href="/checkout1">Избирам този пакет</a>
+          <a class="bv-btn" href="/krem-checkout1">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -1141,7 +1141,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="53.70">€22,90</b><s>€53,70</s></div>
           <p class="bv-unit">само €7,63 за бурканче <span class="bv-dose">€0,13 / доза</span></p>
-          <a class="bv-btn bv-pulse" href="/checkout2">Избирам този пакет</a>
+          <a class="bv-btn bv-pulse" href="/krem-checkout2">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -1159,7 +1159,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
           </ul>
           <div class="bv-price"><b data-from="89.50">€29,90</b><s>€89,50</s></div>
           <p class="bv-unit">само €5,98 за бурканче <span class="bv-dose">€0,10 / доза</span></p>
-          <a class="bv-btn" href="/checkout3">Избирам този пакет</a>
+          <a class="bv-btn" href="/krem-checkout3">Избирам този пакет</a>
           <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
         </div>
       </article>
@@ -1267,7 +1267,7 @@ html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   try {
     var qs = new URLSearchParams(location.search), keep = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id','fbclid','gclid','ttclid'];
     if (keep.some(function(k){ return qs.has(k); })) {
-      root.querySelectorAll('a[href*="/checkout"]').forEach(function(a){
+      root.querySelectorAll('a[href*="krem-checkout"]').forEach(function(a){
         var u = new URL(a.href);
         keep.forEach(function(k){ if (qs.has(k) && !u.searchParams.has(k)) u.searchParams.set(k, qs.get(k)); });
         a.href = u.toString();
