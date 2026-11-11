@@ -1,0 +1,97 @@
+<!-- BeeVenom: лента „Черен петък“ с брояч до 30.11 (ConvertBuilder → HTML / Custom code). След крайния срок се скрива сама. -->
+<div class="bvbf" data-end="2026-11-30T23:59:59+02:00" role="region" aria-label="Черен петък: безплатна доставка за пакет 3+2 до 30 ноември">
+  <div class="bvbf__badge"><span>ЧЕРЕН</span> <span>ПЕТЪК</span></div>
+  <div class="bvbf__marquee">
+    <div class="bvbf__track">
+      <div class="bvbf__group">
+        <span class="bvbf__item">🚚 <b>БЕЗПЛАТНА ДОСТАВКА</b> ЗА ПАКЕТ 3+2</span>
+        <span class="bvbf__item">🎁 3+2 ПОДАРЪК + 12 БИЛКОВИ ПЛАСТИРА – <b>29,90 €</b></span>
+        <span class="bvbf__item">⏳ <b>САМО ДО 30 НОЕМВРИ</b></span>
+        <span class="bvbf__item">💳 ПЛАЩАНЕ ПРИ ДОСТАВКА</span>
+        <span class="bvbf__item">🚚 <b>БЕЗПЛАТНА ДОСТАВКА</b> ЗА ПАКЕТ 3+2</span>
+        <span class="bvbf__item">🎁 3+2 ПОДАРЪК + 12 БИЛКОВИ ПЛАСТИРА – <b>29,90 €</b></span>
+        <span class="bvbf__item">⏳ <b>САМО ДО 30 НОЕМВРИ</b></span>
+        <span class="bvbf__item">💳 ПЛАЩАНЕ ПРИ ДОСТАВКА</span>
+      </div>
+      <div class="bvbf__group" aria-hidden="true">
+        <span class="bvbf__item">🚚 <b>БЕЗПЛАТНА ДОСТАВКА</b> ЗА ПАКЕТ 3+2</span>
+        <span class="bvbf__item">🎁 3+2 ПОДАРЪК + 12 БИЛКОВИ ПЛАСТИРА – <b>29,90 €</b></span>
+        <span class="bvbf__item">⏳ <b>САМО ДО 30 НОЕМВРИ</b></span>
+        <span class="bvbf__item">💳 ПЛАЩАНЕ ПРИ ДОСТАВКА</span>
+        <span class="bvbf__item">🚚 <b>БЕЗПЛАТНА ДОСТАВКА</b> ЗА ПАКЕТ 3+2</span>
+        <span class="bvbf__item">🎁 3+2 ПОДАРЪК + 12 БИЛКОВИ ПЛАСТИРА – <b>29,90 €</b></span>
+        <span class="bvbf__item">⏳ <b>САМО ДО 30 НОЕМВРИ</b></span>
+        <span class="bvbf__item">💳 ПЛАЩАНЕ ПРИ ДОСТАВКА</span>
+      </div>
+    </div>
+  </div>
+  <div class="bvbf__timer"><span class="bvbf__lbl">Остават</span> <span class="bvbf__time">до 30 ноември</span></div>
+</div>
+<style>
+  .bvbf {
+    width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; overflow: hidden;
+    display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "badge marquee timer";
+    align-items: center; gap: 0 18px; padding: 10px 18px;
+    background: #0b0907; border-top: 3px solid #d79a32; border-bottom: 3px solid #d79a32;
+    font-family: "Assistant", Arial, sans-serif; color: #fffaf2;
+  }
+  .bvbf__badge {
+    grid-area: badge; white-space: nowrap; font-size: 26px; font-weight: 800; letter-spacing: 2px; line-height: 1;
+    padding: 8px 16px; border: 2px solid #d79a32; border-radius: 8px;
+    background: linear-gradient(100deg, #b87521 0%, #f7d27a 25%, #fff3cf 35%, #f7d27a 45%, #b87521 70%, #f7d27a 100%);
+    background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: bvbf-shine 3.2s linear infinite;
+  }
+  .bvbf__marquee {
+    grid-area: marquee; overflow: hidden; min-width: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+  .bvbf__track { display: flex; width: max-content; animation: bvbf-move 34s linear infinite; }
+  .bvbf:hover .bvbf__track { animation-play-state: paused; }
+  .bvbf__group { display: flex; flex-shrink: 0; }
+  .bvbf__item { display: block; white-space: nowrap; font-size: 19px; font-weight: 800; letter-spacing: .3px; line-height: 1.2; }
+  .bvbf__item b { color: #f5c04a; font-weight: 800; }
+  .bvbf__item::after { content: "✦"; color: #d79a32; margin: 0 24px; font-size: .8em; }
+  .bvbf__timer {
+    grid-area: timer; white-space: nowrap; font-size: 17px; font-weight: 800; line-height: 1;
+    padding: 9px 14px; border-radius: 8px; background: #a9271d; box-shadow: 0 0 0 2px #d79a32 inset;
+  }
+  .bvbf__lbl { font-weight: 700; opacity: .9; }
+  .bvbf__time { font-variant-numeric: tabular-nums; color: #fff; }
+  @keyframes bvbf-move { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes bvbf-shine { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+  @media (max-width: 760px) {
+    .bvbf { display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+            gap: 8px 10px; padding: 8px 0 9px; }
+    .bvbf__marquee { order: 3; flex: 0 0 100%; }
+    .bvbf__badge { font-size: 19px; letter-spacing: 1.5px; padding: 6px 10px; }
+    .bvbf__timer { font-size: 14px; padding: 7px 10px; }
+    .bvbf__item { font-size: 15px; }
+    .bvbf__item::after { margin: 0 16px; }
+    .bvbf__track { animation-duration: 28s; }
+  }
+  @media (max-width: 420px) {
+    .bvbf__badge { font-size: 16px; letter-spacing: 1px; padding: 5px 8px; }
+    .bvbf__timer { font-size: 13px; padding: 6px 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bvbf__track, .bvbf__badge { animation: none; } }
+</style>
+<script>
+(function () {
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  document.querySelectorAll('.bvbf').forEach(function (bar) {
+    var end = new Date(bar.getAttribute('data-end')).getTime();
+    var out = bar.querySelector('.bvbf__time');
+    function tick() {
+      var left = Math.floor((end - Date.now()) / 1000);
+      if (left <= 0) { bar.style.display = 'none'; clearInterval(timer); return; } // офертата е свършила
+      var d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600),
+          m = Math.floor(left % 3600 / 60), s = left % 60;
+      out.textContent = (d ? d + (d === 1 ? ' ден ' : ' дни ') : '') + two(h) + ':' + two(m) + ':' + two(s);
+    }
+    var timer = setInterval(tick, 1000);
+    tick();
+  });
+})();
+</script>
