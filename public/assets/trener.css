@@ -325,6 +325,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .fb.fresh .fb-m{animation:jump .6s cubic-bezier(.2,1.6,.4,1) both}
 .xp-plus{display:inline-block;font:800 13px/1 var(--display);color:#2B1C00;background:linear-gradient(180deg,#FFD866,#FFB81C);padding:6px 9px;border-radius:99px;box-shadow:0 2px 0 var(--gold-d)}
 .fb.fresh .xp-plus{animation:xpup .9s ease-out both}
+/* „Мисля, че тук има грешка“ under the feedback */
+.rep{display:grid;gap:8px}
+.replink{justify-self:start;border:0;background:none;color:var(--muted);font:600 13.5px/1.3 var(--sans);text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+.rep-q{font-weight:800;color:var(--ink)}
+.rep-ch{display:flex;flex-wrap:wrap;gap:6px}
+.rep-ch label{display:flex;gap:6px;align-items:center;background:var(--paper);border-radius:99px;padding:7px 12px;box-shadow:inset 0 0 0 2px var(--line);font-size:14.5px;font-weight:600;cursor:pointer}
+.rep-ch label:has(input:checked){box-shadow:inset 0 0 0 2px var(--violet);color:var(--violet)}
+.rep textarea{width:100%;border-radius:14px;border:2px solid var(--line);background:var(--paper);color:var(--ink);font:500 15px/1.4 var(--sans);padding:9px 11px;resize:vertical}
+.rep-act{display:flex;justify-content:flex-end;gap:12px;align-items:center}
+.repdone{color:var(--ok);font-weight:700;font-size:14.5px}
 .qact{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .qact .grow{flex:1 1 200px}
 .nav{display:flex;flex-wrap:wrap;gap:6px}

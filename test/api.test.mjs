@@ -430,3 +430,27 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   const trace = await admin("trener-trace", { text: whyText });
   assert.deepEqual(trace.codes.map((c) => c.code), [swap]);
 });
+
+test("signals about problems: errors and task reports, counted, nobody identified", async () => {
+  const send = (data) => fetch(`${BASE}/api/report`, { method: "POST", headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile" }, body: JSON.stringify(data) });
+  const msg = `TypeError: x is undefined ${run}`;
+  for (let i = 0; i < 3; i++) assert.equal((await send({ kind: "error", message: msg, page: "/t/", ref: "module:m1:q1", version: "test", detail: "trener.js:10:5" })).status, 204);
+  await send({ kind: "task", ref: `q-${run}`, note: "Грешен отговор: пиши ми на test@example.com или 0888 123 456", version: "test" });
+  assert.equal((await send({ kind: "nonsense", message: "x" })).status, 204, "bad signals are dropped quietly");
+  let r = await admin("reports");
+  const err = r.reports.find((x) => x.message === msg);
+  assert.ok(err, "the error is listed");
+  assert.equal(err.count, 3, "the same error is one line with a count");
+  assert.equal(err.device, "Android · Chrome");
+  const task = r.reports.find((x) => x.ref === `q-${run}`);
+  assert.ok(task && !/test@example|0888/.test(task.note), "e-mails and phone numbers are removed from the note");
+  assert.ok(!r.reports.some((x) => x.message === "x"));
+  assert.ok(!("ip" in err) && !("code" in err), "nothing says who it was");
+  r = await admin("report", { id: err.id, status: "fixed" });
+  assert.equal(r.status, "fixed");
+  r = await admin("reports");
+  assert.ok(!r.reports.some((x) => x.id === err.id), "a fixed signal leaves the list");
+  await send({ kind: "error", message: msg, page: "/t/", ref: "module:m1:q1", version: "test" });
+  r = await admin("reports");
+  assert.equal(r.reports.find((x) => x.message === msg)?.count, 1, "if it happens again after the fix, it is a new line");
+});

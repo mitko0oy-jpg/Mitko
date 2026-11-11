@@ -5,6 +5,39 @@
 const EMBED = window.TRENER_BANK || null;
 const ONLINE = !EMBED;
 const LOGO = window.TRENER_LOGO || "/assets/logo.png";
+// The version of the app; it goes with every signal about a problem, so a fix can be checked. Change it with each release.
+const APP_V = "2026-11-11";
+// Signals about problems (netlify/lib/reports.mts): errors the app notices by itself and „Мисля, че тук има грешка“
+// under a task. Nobody is identified – no code and no device go with them, only what, where and in which version.
+// Only on the site; at most 8 per visit and each one once.
+const Report = (() => {
+  const sent = new Set();
+  let n = 0;
+  const where = () => { try { return sess ? `${sess.kind}:${sess.m}:${sess.qs[sess.i]?.id || ""}` : "табло"; } catch (e) { return "старт"; } };
+  function send(r) {
+    if (!ONLINE) return;
+    const key = [r.kind, r.message, r.ref, r.note].join("|");
+    if (sent.has(key) || n >= 8) return;
+    sent.add(key);
+    n++;
+    try {
+      fetch("/api/report", { method: "POST", headers: { "content-type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ page: location.pathname.slice(0, 60), version: APP_V, ...r }) }).catch(() => {});
+    } catch (e) {}
+  }
+  const error = (message, detail = "") => send({ kind: "error", message: String(message).slice(0, 300), detail: String(detail).slice(0, 1500), ref: where() });
+  addEventListener("error", (e) => {
+    const t = e.target;
+    if (t && t !== window && t.tagName) {
+      // a picture, sound or video that did not load (these events do not bubble, hence the capture below)
+      if (/^(IMG|AUDIO|VIDEO|SOURCE)$/.test(t.tagName) && navigator.onLine !== false) error(`не се зареди: ${(t.currentSrc || t.src || "").split("/").slice(-2).join("/")}`);
+      return;
+    }
+    error(e.message || "грешка", `${String(e.filename || "").split("/").pop()}:${e.lineno}:${e.colno}\n${e.error?.stack || ""}`);
+  }, true);
+  addEventListener("unhandledrejection", (e) => error(`promise: ${e.reason?.message || e.reason}`, e.reason?.stack || ""));
+  return { error, task: (id, note) => send({ kind: "task", ref: id, note, message: "" }) };
+})();
 // Illustrations, sounds and the video: on the site from /media/ (cached for 30 days), in the standalone file built in (window.TRENER_IMG).
 const IMGS = window.TRENER_IMG || null;
 const img = (n) => (IMGS ? IMGS[n] || "" : `/media/${n}.webp`);
@@ -275,7 +308,10 @@ const Voice = (() => {
   let on = ls.get(K) !== "0", el = null, queue = [], timer = 0, unlocked = false;
   const can = () => FX.on && on;
   const elem = () => {
-    if (!el) { el = new Audio(); el.preload = "auto"; el.addEventListener("ended", next); }
+    if (!el) {
+      el = new Audio(); el.preload = "auto"; el.addEventListener("ended", next);
+      el.addEventListener("error", () => { if (el.src.indexOf("data:") !== 0 && navigator.onLine !== false) Report.error(`гласът не се зареди: ${el.src.split("/").pop()}`); });
+    }
     return el;
   };
   function next() {
@@ -997,6 +1033,7 @@ function renderQ() {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
     h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
+    if (ONLINE) h += s.reported?.[s.i] ? `<p class="repdone" role="status">Благодарим! Ще проверим задачата.</p>` : `<div class="rep" id="rep"><button class="replink" data-act="repOpen">Мисля, че тук има грешка</button></div>`;
   }
   h += `<div class="qact">`;
   if (mock) {
@@ -1066,6 +1103,7 @@ function check() {
   Voice.say(s.ok[s.i] ? `ok-${(s.i + s.qs.length) % CHEER.length}` : `no-${s.i % CALM.length}`, 380);
   document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
 }
+const REP_WHY = ["Грешен отговор", "Неясен въпрос", "Правописна грешка", "Друго"];
 // Warm, varied praise – the same words Erčo says out loud (voice lines ok-0…ok-6, no-0…no-3); calm words after a mistake, never a joke about it.
 const CHEER = ["Браво! Точно така!", "Браво! Позна!", "Супер! Справи се!", "Да! Точно това е!", "Отлично! Браво!", "Чудесно! Продължавай!", "Браво! Чисто попадение!"];
 const CALM = ["Не точно. Ето защо:", "Почти! Виж обяснението:", "Този път не. Запомни:", "Не е това. Ето уликата:"];
@@ -1207,6 +1245,24 @@ const ACT = {
     app.querySelector(`.ord li:nth-child(${j + 1}) [data-d="${d}"]`)?.focus({ preventScroll: true }) || app.querySelector(`.ord li:nth-child(${j + 1}) button:not(:disabled)`)?.focus({ preventScroll: true });
   },
   check: () => check(),
+  // „Мисля, че тук има грешка“: what is wrong (one tap) and, if they want, a few words. Goes to the teacher's list.
+  repOpen: () => {
+    const box = document.getElementById("rep");
+    if (!box) return;
+    box.innerHTML = `<p class="rep-q">Какво не е наред?</p><div class="rep-ch">${REP_WHY.map((w, i) => `<label><input type="radio" name="repWhy" value="${i}" ${i ? "" : "checked"}> ${w}</label>`).join("")}</div>
+      <textarea id="repNote" maxlength="300" rows="2" placeholder="Можеш да добавиш няколко думи (не пиши име или телефон)"></textarea>
+      <div class="rep-act"><button class="link" data-act="repClose">Откажи</button><button class="btn sm" data-act="repSend">Изпрати</button></div>`;
+    box.querySelector("input")?.focus();
+  },
+  repClose: () => renderQ(),
+  repSend: () => {
+    if (!sess) return;
+    const why = REP_WHY[+(document.querySelector('input[name="repWhy"]:checked')?.value || 0)];
+    const note = (document.getElementById("repNote")?.value || "").trim().slice(0, 300);
+    Report.task(sess.qs[sess.i].id, note ? `${why}: ${note}` : why);
+    (sess.reported ||= {})[sess.i] = true;
+    renderQ();
+  },
   reveal: () => { if (!sess) return; sess.view[sess.i].rev = true; sess.touched = true; FX.pop(); renderQ(); },
   self: (b) => { if (!sess) return; sess.ans[sess.i] = b.dataset.v === "1"; check(); },
   next: () => { if (sess.i < sess.qs.length - 1) { sess.i++; renderQ(); } else finish(false); },
@@ -1305,6 +1361,7 @@ const Online = (() => {
     let j = {};
     try { j = await res.json(); } catch (e) {}
     if (!res.ok) {
+      if (res.status >= 500) Report.error(`сървър ${res.status}: ${path}`, j.error || "");
       const err = new Error(j.message || "Нещо се обърка. Опитай пак след малко.");
       err.status = res.status; err.code = j.error; err.data = j;
       throw err;

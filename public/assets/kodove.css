@@ -69,3 +69,9 @@
   .one{page:stk}
   .stk{outline:none}
 }
+
+/* signals about problems */
+.pillnew{display:inline-block;font:800 12px/1 var(--sans, sans-serif);color:#fff;background:#E5484D;border-radius:99px;padding:4px 8px;margin-left:6px;vertical-align:3px}
+.reps tr.seen td{opacity:.7}
+.reps pre{white-space:pre-wrap;font-size:12px;max-width:520px;margin:4px 0 0}
+.reps details{display:inline}

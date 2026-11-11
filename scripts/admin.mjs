@@ -11,6 +11,7 @@
 //   ... node scripts/admin.mjs role owner@example.com admin
 //   ... node scripts/admin.mjs trener-backup [private/backups/trener-YYYY-MM-DD.json]   (codes + grades, keep it safe)
 //   ... node scripts/admin.mjs trener-trace <leaked-text-file>   (which code a copied text came from)
+//   ... node scripts/admin.mjs reports [all] | report <id> [seen|fixed]   (signals about problems from the app)
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
@@ -54,6 +55,8 @@ else if (cmd === "trener-backup") {
 }
 else if (cmd === "delete-user") out = await call("POST", "delete-user", { email: a, confirm: a });
 else if (cmd === "users") out = await call("GET", `users?q=${encodeURIComponent(a || "")}`);
+else if (cmd === "reports") out = await call("GET", `reports${a === "all" ? "?all=1" : ""}`);
+else if (cmd === "report") out = await call("POST", "report", { id: Number(a), status: b || "fixed" });
 else if (["stats", "comments", "export"].includes(cmd)) out = await call("GET", cmd);
 else {
   console.error("Unknown command");

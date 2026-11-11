@@ -3,6 +3,7 @@ import { requireUser } from "../lib/auth.mts";
 import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { listReports, setReport } from "../lib/reports.mts";
 import { cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
@@ -215,6 +216,15 @@ async function admin(req: Request, parts: string[]) {
     );
     const bank = await one("SELECT id, created_at, jsonb_array_length(data->'questions') AS questions FROM trener_bank ORDER BY id DESC LIMIT 1");
     return json({ batches, full: full?.n || 0, bank });
+  }
+
+  // Signals about problems (errors the app noticed, „Мисля, че тук има грешка“) for /kodove/.
+  if (req.method === "GET" && parts[0] === "reports") return json({ reports: await listReports() });
+  if (req.method === "POST" && parts[0] === "report") {
+    const b = await body(req);
+    const r = await setReport(Number(b.id), str(b.status, 10));
+    if (!r.length) throw notFound("Няма такъв сигнал.");
+    return json(r[0]);
   }
 
   // A new batch of codes: stickers for the boxes or PDFs for customers. Printed from /kodove/.

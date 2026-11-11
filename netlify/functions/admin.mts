@@ -3,6 +3,7 @@ import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
 import { hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { listReports, setReport } from "../lib/reports.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
 
 const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading"];
@@ -38,6 +39,15 @@ export default handle(async (req, ctx) => {
     const events = await q("SELECT name, count(*)::int AS n FROM events WHERE at > now() - interval '7 days' GROUP BY name ORDER BY n DESC");
     const ai = await one("SELECT COALESCE(sum(count), 0)::int AS messages FROM ai_usage WHERE day > current_date - 7");
     return json({ counts, events, aiLast7Days: ai });
+  }
+
+  // Signals about problems from the app (netlify/lib/reports.mts): ?all=1 also lists the fixed ones.
+  if (req.method === "GET" && parts[0] === "reports") return json({ reports: await listReports(new URL(req.url).searchParams.get("all") === "1") });
+  if (req.method === "POST" && parts[0] === "report") {
+    const b = await body(req);
+    const r = await setReport(Number(b.id), str(b.status, 10));
+    if (!r.length) throw notFound("Няма такъв сигнал.");
+    return json(r[0]);
   }
 
   if (req.method === "GET" && parts[0] === "comments") {

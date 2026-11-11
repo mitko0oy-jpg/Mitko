@@ -105,10 +105,29 @@ function showPrint(kind, codes, title, term) {
   $("closePrint").addEventListener("click", () => { p.hidden = true; p.innerHTML = ""; $("screen").hidden = false; });
 }
 
+/* ---------- signals about problems ---------- */
+// Errors the app noticed by itself and „Мисля, че тук има грешка“ from children and parents (netlify/lib/reports.mts).
+// Nobody is identified – only what, where, which version and which kind of device.
+function reportsPanel(list) {
+  const fresh = list.filter((r) => r.status === "new").length;
+  let h = `<section class="panel"><h3>Сигнали за грешки${fresh ? ` <span class="pillnew">${fresh} нови</span>` : ""}</h3>
+    <p class="small muted">Грешки, които приложението забелязва само, и „Мисля, че тук има грешка“ от децата и родителите. Не се пази кой е бил – само какво, къде и в коя версия. Claude ги вижда с <code>admin.mjs reports</code>.</p>`;
+  if (!list.length) return h + `<p class="muted">Няма отворени сигнали. 🎉</p></section>`;
+  h += `<div class="tblwrap"><table class="ktbl reps"><thead><tr><th>Какво</th><th>Къде</th><th>Пъти</th><th>Последно</th><th></th></tr></thead><tbody>`;
+  for (const r of list) {
+    const what = r.kind === "task" ? `📝 ${esc(r.note || "сигнал за задача")}` : `⚠️ ${esc(r.message)}`;
+    h += `<tr class="${r.status}"><td><b>${what}</b><small>${esc(r.device)} · версия ${esc(r.version || "–")}${r.detail ? ` · <details><summary>подробно</summary><pre>${esc(r.detail)}</pre></details>` : ""}</small></td>
+      <td>${esc(r.ref || r.page)}</td><td>${r.count}</td><td>${fmtTime(r.last_at)}</td>
+      <td class="acts">${r.status === "new" ? `<button class="linkbtn" data-rep="${r.id}" data-st="seen">Видях</button>` : ""}<button class="linkbtn" data-rep="${r.id}" data-st="fixed">Оправено</button></td></tr>`;
+  }
+  return h + `</tbody></table></div></section>`;
+}
+
 /* ---------- the page ---------- */
 let summary = null;
 async function render(found) {
   summary = await api("trener/admin/summary");
+  const reports = (await api("trener/admin/reports").catch(() => ({ reports: [] }))).reports;
   const b = summary.bank;
   let h = `<h1>Кодове за НВО тренажора</h1>
     <p class="lead">Всеки код отваря тренажора на до 3 устройства. Стикерите и PDF-ите се печатат оттук.</p>
@@ -116,6 +135,8 @@ async function render(found) {
       <div><b>${summary.batches.reduce((s, x) => s + x.total, 0)}</b><span>кода общо</span></div>
       <div><b>${summary.batches.reduce((s, x) => s + x.used, 0)}</b><span>отворени</span></div>
       <div><b>${summary.full}</b><span>със заети 3 места</span></div></div>
+
+    ${reportsPanel(reports)}
 
     <section class="panel"><h3>Намери код</h3><p class="small muted">Когато клиент пише, въведи кода му. Можеш да освободиш устройствата му, да го спреш или да запишеш бележка (например номер на поръчка).</p>
       <form id="findForm" class="row"><input type="text" id="findIn" placeholder="XXXXX-XXXXX" autocomplete="off" aria-label="Код"><button class="btn">Търси</button></form>
@@ -143,6 +164,13 @@ async function render(found) {
   }
   h += `</section>`;
   $("main").innerHTML = h;
+  document.querySelectorAll("[data-rep]").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      await api("trener/admin/report", { id: Number(btn.dataset.rep), status: btn.dataset.st });
+      toast(btn.dataset.st === "fixed" ? "Отбелязано като оправено." : "Отбелязано като видяно.");
+      render();
+    }),
+  );
 
   $("newKind").addEventListener("change", () => {
     const k = $("newKind").value;

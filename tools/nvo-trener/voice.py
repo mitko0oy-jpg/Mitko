@@ -1,6 +1,7 @@
 """Erčo's voice lines for the trainer -> public/media/voice/<line>-<version>.mp3.
 The greetings (hello, back, math) start with a short bell chime; every line has its silence trimmed and its loudness
-levelled to the other sounds, mono 64 kbit/s. The lines were made with a text-to-speech voice (ElevenLabs v4 through Higgsfield);
+levelled to the other sounds, mono 64 kbit/s. The lines are made with ElevenLabs multilingual through Higgsfield (text2speech_v2,
+variant "elevenlabs", voice Benji) – not Eleven v4, which says an unstressed Bulgarian „о“ like a Russian „а“ („Пачти“);
 the words are in trener.js (Hello.LINES). A new voice gets a new version number, because browsers keep /media/ 30 days.
 Usage: python3 -I tools/nvo-trener/voice.py <version> hello=<mp3> back=<mp3> math=<mp3> ok-0=<mp3> ...
        python3 -I tools/nvo-trener/voice.py <version> --dir <folder with <line>.mp3 files>
