@@ -106,7 +106,11 @@ p{margin:0}
 .mastery i{display:block;height:100%;background:linear-gradient(90deg,#7C5CFF,#FF5FA2)}
 .tlist{display:grid;gap:8px}
 .ti{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--paper);border:0;border-radius:16px;padding:12px;text-align:left;width:100%;box-shadow:0 1px 0 var(--edge)}
-.ti span{font-size:20px}
+.ti .ic{font-size:20px}
+.ti small{display:block;color:var(--muted);font-size:13px;font-weight:500}
+.ti .upd{display:inline-block;font:800 10.5px/1 var(--sans);color:#2B1C00;background:var(--gold);border-radius:99px;padding:4px 7px;margin-left:6px;vertical-align:2px}
+.ti.lock{opacity:.6}
+.updnote{background:var(--warn-soft);border-radius:14px;padding:10px 12px;font-weight:600;color:var(--ink)}
 .ti b{color:var(--ink)}
 .ti em{font-style:normal;font-size:13px;color:var(--muted)}
 .ti.done{opacity:.7} .ti.done em{color:var(--ok);font-size:16px}
@@ -210,6 +214,70 @@ p{margin:0}
 .grades{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:360px}
 .grades button{min-height:64px;border:0;border-radius:18px;background:var(--paper);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--line);font:800 22px/1 var(--display);color:var(--ink)}
 .grades button[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--violet),0 3px 0 var(--violet-d)}
+/* audio lesson */
+.player{display:grid;gap:12px;background:var(--hero);color:#fff;border-radius:22px;padding:16px}
+.player .cover{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:center}
+.player img{width:84px;height:84px;object-fit:contain;border-radius:16px;background:rgba(255,255,255,.12)}
+.player h1{font-size:18px;color:#fff}
+.player small{color:rgba(255,255,255,.82)}
+.player .eyebrow{color:rgba(255,255,255,.75)}
+.seek{width:100%;accent-color:#FFD866;margin:0}
+.ptime{display:flex;justify-content:space-between;font:700 13px/1 var(--sans);color:rgba(255,255,255,.85)}
+.pctl{display:flex;justify-content:center;align-items:center;gap:18px}
+.pctl button{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:50%;width:54px;height:54px;font:800 14px/1 var(--sans)}
+.pctl .pp{width:74px;height:74px;background:linear-gradient(180deg,#FFD866,#FFB81C);color:#2B1C00;font-size:26px;box-shadow:0 4px 0 var(--gold-d)}
+.pctl .spd{border-radius:99px;width:auto;height:38px;padding:0 14px}
+.parts{display:grid;gap:6px}
+.part{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--paper);border:0;border-radius:14px;padding:11px 12px;text-align:left;box-shadow:0 1px 0 var(--edge);width:100%}
+.part b{color:var(--ink);font-size:15px}
+.part span{font:700 13px/1 var(--sans);color:var(--muted)}
+.part.on{box-shadow:inset 0 0 0 2px var(--violet)} .part.on b{color:var(--violet)}
+.tscript{display:grid;gap:8px}
+.tscript p{background:var(--paper);border-radius:14px;padding:10px 12px;box-shadow:0 1px 0 var(--edge);transition:background .2s}
+.tscript p small{display:block;font:800 11px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--pink);margin-bottom:3px}
+.tscript p.on{background:var(--band);box-shadow:inset 4px 0 0 var(--violet)}
+.mini{position:fixed;left:50%;transform:translateX(-50%);z-index:30;width:min(448px,calc(100% - 32px));display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:6px;align-items:center;background:var(--ink);border-radius:16px;padding:6px;box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
+.mini button{border:0;background:none;color:var(--page)}
+.mini .mo{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;text-align:left;padding:2px}
+.mini img{width:40px;height:40px;object-fit:contain}
+.mini b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini small{display:block;opacity:.75;font-size:12px}
+.mini .mp{font-size:20px;height:46px}
+/* short lesson */
+.ltoc{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.ltoc button{flex:none;border:0;font:700 13px/1 var(--sans);color:var(--violet);background:var(--band);border-radius:99px;padding:9px 11px}
+.lsec{background:var(--paper);border-radius:18px;padding:14px;box-shadow:0 1px 0 var(--edge);display:grid;gap:8px;scroll-margin-top:12px}
+.lsec h2{font-size:17px;display:flex;gap:8px;align-items:center}
+.lsec h2 .n{width:26px;height:26px;border-radius:50%;background:var(--violet);color:#fff;font:800 13px/26px var(--sans);text-align:center;flex:none}
+.lsteps,.llist{margin:0;padding-left:22px;display:grid;gap:6px}
+.lpeople{display:grid;gap:8px}
+.lpeople div{display:grid;gap:2px;background:var(--band);border-radius:12px;padding:8px 10px}
+.lpeople b{color:var(--ink)}
+.lquote{margin:0;border-left:4px solid var(--pink);padding:6px 0 6px 12px;font-weight:700;color:var(--ink)}
+.lquote span{display:block;font-weight:500;color:var(--muted);font-size:14px;margin-top:3px}
+.lqa{background:var(--band);border-radius:12px;padding:10px 12px}
+.lqa summary{font-weight:700;color:var(--ink);cursor:pointer}
+.lqa p{margin-top:6px}
+/* dossier */
+.dos{display:grid;gap:12px}
+.dos .hd{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;background:var(--hero);color:#fff;border-radius:22px;padding:14px}
+.dos .hd img{width:96px;height:96px;object-fit:contain;transition:filter .6s}
+.dos .hd img.hid{filter:brightness(0) opacity(.45)}
+.dos .hd h1{color:#fff;font-size:19px}
+.dos .hd small{color:rgba(255,255,255,.82)}
+.dos .hd .eyebrow{color:rgba(255,255,255,.75)}
+.clue{background:var(--paper);border-radius:18px;padding:12px;box-shadow:0 1px 0 var(--edge);display:grid;gap:8px}
+.clue b{color:var(--ink)}
+.slots{display:flex;flex-wrap:wrap;gap:4px}
+.slots i{width:25px;height:31px;border-radius:7px;background:var(--band);display:grid;place-items:center;font:800 15px/1 var(--display);font-style:normal;color:var(--ink)}
+.clue.ok{box-shadow:inset 0 0 0 2px var(--ok)}
+.clue.ok .slots i{background:var(--ok-soft);color:var(--ok)}
+.clue .row2{display:flex;gap:8px}
+.clue .row2 .field{flex:1;min-width:0;min-height:46px;font-size:17px;text-transform:uppercase}
+.clue .link{justify-self:start}
+.trail{background:var(--ink);color:var(--page);border-radius:16px;padding:14px;text-align:center;font:800 17px/1.35 var(--display);letter-spacing:.08em}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--page);border-radius:14px;padding:10px 14px;font-weight:700;max-width:90%;text-align:center}
 </style>
 
@@ -269,8 +337,8 @@ const FAM = {
     { t: "mc", q: "Кой е главният герой на „Под игото“?", o: ["Бойчо Огнянов", "Бай Ганьо", "Хаджи Генчо"], a: 0, why: "Бойчо Огнянов (Иван Кралича) е главният герой. Хаджи Генчо е от „Немили-недраги“, а Бай Ганьо – от Алеко Константинов." },
   ] },
   igo2: { skill: "igo", v: [
-    { t: "mc", q: "Коя пиеса играят в глава „Представлението“?", o: ["„Геновева“", "„Хъшове“", "„Ромео и Жулиета“"], a: 0, why: "В читалището играят „Многострадалната Геновева“. „Хъшове“ е по-късна пиеса на самия Вазов." },
-    { t: "mc", q: "Къде се играе представлението в „Под игото“?", o: ["в читалището", "в църквата", "на мегдана"], a: 0, why: "Представлението е в читалището, пред цялото градче – затова се помни дълго." },
+    { t: "mc", q: "Коя пиеса играят в глава „Представлението“?", o: ["„Хъшове“", "„Многострадална Геновева“", "„Ромео и Жулиета“"], a: 1, why: "В мъжкото училище играят „Многострадална Геновева“. „Хъшове“ е по-късна пиеса на самия Вазов." },
+    { t: "mc", q: "Къде се играе представлението в „Под игото“?", o: ["в читалището", "в черквата", "в мъжкото училище"], a: 2, why: "Вазов пише, че драмата „щеше да се представи довечера в мъжкото училище“ – пред цялото градче." },
   ] },
   pct1: { skill: "pct", v: [
     { t: "num", q: "Книга струва 50 €. Поевтинява с 10%, после поскъпва с 10%. Колко струва сега?", a: 49.5, unit: "€", why: "50 · 0,9 = 45 €; 45 · 1,1 = 49,50 €. Втората промяна е от новата цена, затова не се връща на 50." },
@@ -328,6 +396,8 @@ function render() {
   document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-current", b.dataset.go === view ? "page" : "false"));
   app.innerHTML = `<section class="view">${(SCREENS[view] || SCREENS.today)()}</section>`;
   if (view === "topic") playHero(false);
+  mini();
+  if (view === "listen") laSync();
 }
 const seg = () => `<div class="seg" role="group" aria-label="Предмет"><button data-act="subj" data-s="bel" aria-pressed="${S.subj === "bel"}">БЕЛ</button><button data-act="subj" data-s="math" aria-pressed="${S.subj === "math"}">Математика</button></div>`;
 const planSteps = () => S.subj === "math"
@@ -362,7 +432,7 @@ const SCREENS = {
         ${row("i-punktuacia.webp", "Запетая при обръщение", "3 грешки тази седмица", "↻ за преговор", "rev", "focusvok")}
         ${row("i-sintaksis.webp", "Пряка реч", "още не е започнато", "○ ново", "new", "noop")}</div>
         <span class="grp">Литература</span><div class="rows">
-        ${row("h-d06.webp", "„Под игото“ – „Представлението“", "Бойчо Огнянов · 5 стъпки", "2/5", "part", "topic")}
+        ${row("h-d06.webp", "„Под игото“ – „Представлението“", "Бойчо Огнянов · 5 стъпки", `${TOPIC ? tCount() : 1}/5`, "part", "topic")}
         ${row("h-d20.webp", "„Бай Ганьо пътува“", "Бай Ганьо · досие разкрито", "● 6,00<br>★★★", "done", "noop")}
         ${row("h-d16.webp", "„Една българка“", "Баба Илийца", "○ ново", "new", "noop")}</div>
         <span class="grp">Писане и изпит</span><div class="rows">
@@ -377,17 +447,58 @@ const SCREENS = {
         ${row("mt-alg.webp", "Карта 17 · Линейно уравнение", "скоро", "скоро", "new", "noop")}</div>`}`;
   },
   topic() {
-    return `<button class="back" data-act="back">← Път</button>
+    const hero = `<button class="back" data-act="back">← Път</button>
       <div class="herobox"><video id="hv" playsinline preload="auto" poster="${M("ognyanov-poster.jpg")}" src="${M("ognyanov.mp4")}"></video>
         <p class="say">„Здравей! Аз съм Бойчо Огнянов. Тази вечер на сцената в Бяла черква ще стане нещо, за което цял град ще говори. Искаш ли да видиш какво?“<small>Бойчо Огнянов · докосни видеото, за да го чуеш пак</small></p></div>
-      <h1 style="font-size:22px">„Под игото“ – „Представлението“</h1>
-      <div class="mastery" role="img" aria-label="Владееш 40%"><i style="width:40%"></i></div><p class="muted small">Ниво 1 от 3 · 2 от 5 стъпки</p>
-      <div class="tlist">
-        <button class="ti done" data-act="noop"><span>🎧</span><b>Слушай · 4 мин</b><em>✓</em></button>
-        <button class="ti done" data-act="noop"><span>📖</span><b>Кратък урок</b><em>✓</em></button>
-        <button class="ti now" data-act="play" data-fam="igo1,igo2" data-title="„Под игото“: упражнение"><span>✍️</span><b>Упражнение · 2 задачи</b><em>▶</em></button>
-        <button class="ti" data-act="toast" data-msg="Тук е досието от „Литературни досиета“."><span>🔎</span><b>Досие №6</b><em></em></button>
-        <button class="ti" data-act="toast" data-msg="„Провери се“ се отключва след упражнението: 10 нови варианта."><span>🏁</span><b>Провери се</b><em>🔒 след упражнението</em></button>
+      <h1 style="font-size:22px">„Под игото“ – „Представлението“</h1>`;
+    if (!TOPIC) return hero + `<p class="muted">Зареждам темата…</p>`;
+    const n = tCount(), all = TOPIC.steps.length, open = TOPIC.steps.find((st) => tState(st) === "open");
+    return hero + `<div class="mastery" role="img" aria-label="Готови ${n} от ${all} стъпки"><i style="width:${Math.round((n / all) * 100)}%"></i></div>
+      <p class="muted small">Ниво ${S.tp.level} от 3 · ${n} от ${all} стъпки${S.tp.level > 1 ? " · преговор след 3 дни" : ""}</p>
+      <div class="tlist">${TOPIC.steps.map((st) => {
+        const k = tState(st), now = open && open.id === st.id;
+        const em = k === "done" || k === "upd" ? "✓" : k === "lock" ? "🔒 след упражнението" : now ? "▶" : "";
+        return `<button class="ti ${k === "done" ? "done" : ""} ${k === "lock" ? "lock" : ""} ${now ? "now" : ""}" data-act="tstep" data-id="${st.id}"><span class="ic">${st.icon}</span><span><b>${esc(st.t)}${k === "upd" ? `<span class="upd">обновено</span>` : ""}</b><small>${esc(st.sub || "")}</small></span><em>${em}</em></button>`;
+      }).join("")}</div>`;
+  },
+  listen() {
+    const a = TOPIC.audio, st = tStep("listen"), t = LA.currentTime || 0;
+    return `<button class="back" data-act="back">← Тема</button>
+      ${tState(st) === "upd" ? `<p class="updnote">✨ Обновено: ${esc(st.note)} Постигнатото ти се пази.</p>` : ""}
+      <div class="player">
+        <div class="cover"><img src="${M("h-d06.webp")}" alt=""><span><span class="eyebrow">Аудио урок · ${fmt(a.dur)}</span><h1>${esc(a.title)}</h1><small>С гласовете на ${esc(a.by)}</small></span></div>
+        <input class="seek" id="seek" type="range" min="0" max="${Math.floor(a.dur)}" step="1" value="${Math.round(t)}" aria-label="Къде си в записа">
+        <div class="ptime"><span id="tcur">${fmt(t)}</span><span>${fmt(a.dur)}</span></div>
+        <div class="pctl"><button data-act="ajump" data-d="-15" aria-label="15 секунди назад">↺15</button><button class="pp" id="pp" data-act="aplay" aria-label="${LA.paused ? "Пусни" : "Пауза"}">${LA.paused ? "▶" : "❚❚"}</button><button data-act="ajump" data-d="15" aria-label="15 секунди напред">15↻</button></div>
+        <div class="pctl"><button class="spd" data-act="aspeed">Скорост ${String(LA.playbackRate).replace(".", ",")}×</button></div>
+      </div>
+      <p class="muted small">Можеш да слушаш и по пътя – като подкаст. Записът продължава, докато разглеждаш другите екрани.</p>
+      <span class="grp">Части</span>
+      <div class="parts">${a.parts.map((p, i) => `<button class="part" data-act="aseek" data-t="${p.at}"><b>${esc(p.t)}</b><span>${fmt(p.at)}</span></button>`).join("")}</div>
+      <span class="grp">Текстът</span>
+      <div class="tscript">${a.segs.map((g) => `<p>${g.who !== "Ерчо" ? `<small>${esc(g.who)}</small>` : ""}${esc(g.text)}</p>`).join("")}</div>`;
+  },
+  lesson() {
+    const L = TOPIC.lesson.sections;
+    return `<button class="back" data-act="back">← Тема</button>
+      <span class="eyebrow">Кратък урок · ≈ 5 мин</span><h1 style="font-size:22px">${esc(TOPIC.title)}</h1>
+      <nav class="ltoc" aria-label="Раздели">${LESSON_TPL.map((x, i) => `<button data-act="ljump" data-k="${x.key}">${i + 1}. ${esc(x.title)}</button>`).join("")}</nav>
+      ${LESSON_TPL.map((x, i) => `<section class="lsec" id="l-${x.key}"><h2><span class="n">${i + 1}</span>${esc(x.title)}</h2>${lessonPart(x.type, L[x.key])}</section>`).join("")}
+      <button class="btn gold wide" data-act="lessondone">✓ Прочетох урока</button>`;
+  },
+  dossier() {
+    const D = TOPIC.dossier, ok = S.tp.clues, all = ok.length === D.clues.length;
+    return `<button class="back" data-act="back">← Тема</button>
+      <div class="dos">
+        <div class="hd"><img class="${all ? "" : "hid"}" src="${M(D.img)}" alt="${all ? esc(D.hero) : "Скрит герой"}"><span><span class="eyebrow">Досие №${D.no}</span><h1>${all ? esc(D.hero) : "Кой е героят?"}</h1><small>${all ? "влезе в колекцията ти" : `${ok.length} от ${D.clues.length} улики`}</small></span></div>
+        <p class="qtext">${esc(D.brief)}</p>
+        ${D.clues.map((c, i) => {
+          const solved = ok.includes(i), shown = S.tp.hint[i] || 1;
+          return `<div class="clue ${solved ? "ok" : ""}" id="clue${i}"><b>Улика ${i + 1}. ${esc(c.q)}</b>
+            <div class="slots" aria-hidden="true">${[...c.a].map((ch, k) => `<i>${solved || k < shown ? ch : ""}</i>`).join("")}</div>
+            ${solved ? "" : `<div class="row2"><input class="field" id="ci${i}" autocomplete="off" autocapitalize="characters" placeholder="${c.a.length} букви" aria-label="Отговор на улика ${i + 1}"><button class="btn sm" data-act="clue" data-i="${i}">Провери</button></div><button class="link small" data-act="chint" data-i="${i}">Покажи още една буква</button>`}</div>`;
+        }).join("")}
+        ${all ? `<div class="trail">${esc(D.trail)}</div><p class="muted small" style="text-align:center">${esc(D.done)}</p><button class="btn gold wide" data-act="back">← Към темата</button>` : ""}
       </div>`;
   },
   task() { return taskScreen(); },
@@ -408,8 +519,8 @@ const SCREENS = {
     return `<div class="card meh"><img src="${M("a-hi.webp")}" alt="Ерчо"><div class="lvl"><span class="eyebrow">Ниво ${lv}</span><b>${LEVELS[lv - 1]}</b><div class="xpbar"><i style="width:${pct}%"></i></div><span class="muted small">${S.xp} XP · още 320 до ниво ${lv + 1}</span></div></div>
       <span class="grp">Значки · 5 от 12</span>
       <div class="bdg">${[["🚀", "Първа стъпка", 1], ["⭐", "Шестица", 1], ["📈", "Нагоре", 1], ["🔎", "Детектив", 1], ["🧭", "Трите части", 1], ["🏁", "Матура", 0], ["💯", "Без грешка", 0], ["👑", "Инспектор", 0]].map(([e, t, on]) => `<span class="${on ? "" : "off"}">${on ? e : "🔒"}<small>${t}</small></span>`).join("")}</div>
-      <span class="grp">Колекция герои · 3 от 24</span>
-      <div class="coll">${["h-d20", "h-d01", "h-d16", "h-d06"].map((h, i) => `<span class="${i < 3 ? "" : "off"}"><img src="${M(h + ".webp")}" alt=""></span>`).join("")}</div>
+      <span class="grp">Колекция герои · ${S.tp.done.dossier !== undefined ? 4 : 3} от 24</span>
+      <div class="coll">${["h-d20", "h-d01", "h-d16", "h-d06"].map((h, i) => `<span class="${i < 3 || S.tp.done.dossier !== undefined ? "" : "off"}"><img src="${M(h + ".webp")}" alt=""></span>`).join("")}</div>
       <span class="grp">Родителят ти</span>
       <div class="parentnote"><b>👁 Родителят ти вижда седмичното обобщение</b><span class="muted small">Вижда колко дни и колко време си учил, кое ти върви и кое да упражниш. Не вижда отделните ти отговори.</span><button class="btn sm line" data-act="parent">Покажи на родител</button></div>
       <span class="grp">Настройки</span>
@@ -506,6 +617,7 @@ function next() {
   if (!s.ok[s.i] && S.wrong >= 2 && s.kind === "focus" && !s.easy) { s.easy = true; s.qs.splice(s.i + 1, 0, { ...FAM.vok3.v[0], fam: "vok3", skill: "vok" }); S.wrong = 0; }
   if (s.i < s.qs.length - 1) { s.i++; s.ans = null; s.done = false; render(); scrollTo(0, 0); return; }
   if (s.step !== null) S.plan[s.step] = true;
+  if (s.tstep) { tDone(s.tstep); if (s.tstep === "check" && s.ok.filter(Boolean).length >= 4) S.tp.level = 2; }
   if (!S.week[S.today]) S.week[S.today] = 1;
   go("result", true);
 }
@@ -516,9 +628,9 @@ function resultScreen() {
   setTimeout(() => Voice.say(`r${g}`), 300);
   return `<div class="res"><img src="${M(p === n ? "m-trophy.webp" : p / n >= 0.5 ? "m-yay.webp" : "m-think.webp")}" alt=""><h2>${p} от ${n} верни</h2>
     <span class="pill">+${p * 10} XP</span>
-    <p>${s.step !== null ? (allPlan ? "🎉 Планът за днес е готов! Можеш да спреш или да продължиш." : `Стъпка ${s.step + 1} от 3 от плана е готова.`) : "Записано в бележника."}</p>
+    <p>${s.tstep === "check" ? (p >= 4 ? "🎉 Темата е овладяна на ниво 1! Ерчо ще ти я върне за преговор след 3 дни – с нови въпроси." : "Почти! Прегледай урока и опитай пак – въпросите ще са нови.") : s.tstep ? "Упражнението е готово. „Провери се“ вече е отключено." : s.step !== null ? (allPlan ? "🎉 Планът за днес е готов! Можеш да спреш или да продължиш." : `Стъпка ${s.step + 1} от 3 от плана е готова.`) : "Записано в бележника."}</p>
     <p class="muted small">${p === n ? "Нито една грешка." : "Грешките влизат в „Моите грешки“ и се връщат утре като нов вариант."}</p>
-    <button class="btn gold wide" data-act="tab" data-go="today">Към „Днес“</button></div>`;
+    ${s.tstep ? `<button class="btn gold wide" data-act="totopic">← Към темата</button>` : `<button class="btn gold wide" data-act="tab" data-go="today">Към „Днес“</button>`}</div>`;
 }
 
 /* ---------- Erčo's hero video ---------- */
@@ -529,6 +641,115 @@ function playHero(again) {
   v.muted = !(S.sound);
   if (!S.hero || again) { S.hero = true; Voice.stop(); v.currentTime = 0; v.play().catch(() => {}); }
   v.onclick = () => { v.muted = !S.sound; v.currentTime = 0; v.play().catch(() => {}); };
+}
+
+/* ---------- the topic: its content comes from media/topic-pred.json (not in git) ----------
+   Every step has a version. The child's progress keeps the version of each step it finished: a newer version shows
+   "обновено", and what the child has done stays. A new step or a new lesson part is new data, not new code. */
+let TOPIC = null;
+S.tp = { done: { listen: 0 }, level: 1, clues: [], hint: {} }; // example: "Слушай" was finished in an older version
+fetch(M("topic-pred.json")).then((r) => r.json()).then((d) => {
+  TOPIC = d;
+  Object.assign(FAM, d.fam);
+  if (["topic", "path", "listen", "lesson", "dossier"].includes(view)) render();
+}).catch(() => {});
+const tStep = (id) => TOPIC.steps.find((x) => x.id === id);
+function tState(st) {
+  const v = S.tp.done[st.id];
+  if (v === undefined) return st.after && S.tp.done[st.after] === undefined ? "lock" : "open";
+  return v < st.v ? "upd" : "done";
+}
+const tCount = () => TOPIC.steps.filter((st) => S.tp.done[st.id] !== undefined).length;
+function tDone(id) { S.tp.done[id] = tStep(id).v; }
+const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+// the short lesson: the same parts and order as public/assets/lesson-view.js (LESSON_TEMPLATES.literature)
+const LESSON_TPL = [
+  { key: "short", title: "Накратко", type: "text" }, { key: "author", title: "Авторът", type: "text" }, { key: "plot", title: "Какво се случва", type: "steps" },
+  { key: "characters", title: "Героите", type: "people" }, { key: "ideas", title: "Идеите", type: "list" }, { key: "craft", title: "Как е написано", type: "list" },
+  { key: "quotes", title: "Цитати за запомняне", type: "quotes" }, { key: "traps", title: "Внимавай", type: "list" }, { key: "check", title: "Провери се", type: "qa" },
+];
+function lessonPart(type, v) {
+  if (!v || (Array.isArray(v) && !v.length)) return `<p class="hint">Скоро.</p>`;
+  if (type === "text") return `<p>${esc(v)}</p>`;
+  if (type === "steps") return `<ol class="lsteps">${v.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>`;
+  if (type === "list") return `<ul class="llist">${v.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  if (type === "people") return `<div class="lpeople">${v.map((x) => `<div><b>${esc(x.name)}</b><span>${esc(x.text)}</span></div>`).join("")}</div>`;
+  if (type === "quotes") return v.map((x) => `<blockquote class="lquote">${esc(x.q)}<span>${esc(x.why)}</span></blockquote>`).join("");
+  if (type === "qa") return v.map((x) => `<details class="lqa"><summary>${esc(x.q)}</summary><p>${esc(x.a)}</p></details>`).join("");
+  return "";
+}
+// the dossier: three clues, then the hero joins the collection
+function clue(i) {
+  const D = TOPIC.dossier, c = D.clues[i], inp = $("#ci" + i);
+  const v = (inp?.value || "").toUpperCase().replace(/[^А-ЯЁЪЬЮЯ]/g, "");
+  if (!v) return inp?.focus();
+  if (v !== c.a) { const el = $("#clue" + i); el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); return toast("Не е това. Покажи още една буква, ако искаш."); }
+  S.tp.clues.push(i);
+  if (S.tp.clues.length === D.clues.length) { tDone("dossier"); Voice.say("dos"); } else Voice.say(`ok-${S.tp.clues.length}`);
+  render();
+}
+
+/* ---------- the audio lesson: one player for the whole app, so it keeps playing on other screens ---------- */
+const LA = new Audio();
+LA.preload = "none";
+let laHeard = 0, laLast = 0;
+function laSrc() {
+  if (LA.getAttribute("src")) return;
+  LA.src = M(TOPIC.audio.file);
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: TOPIC.audio.title, artist: "Еду БЕЛ · Ерчо", album: TOPIC.title, artwork: [{ src: M("h-d06.webp"), sizes: "512x512", type: "image/webp" }] });
+    navigator.mediaSession.setActionHandler("seekbackward", () => laSeek(LA.currentTime - 15));
+    navigator.mediaSession.setActionHandler("seekforward", () => laSeek(LA.currentTime + 15));
+  } catch (e) {}
+}
+function laSeek(t) {
+  laSrc();
+  const to = () => { LA.currentTime = Math.max(0, Math.min(TOPIC.audio.dur - 0.5, t)); laLast = LA.currentTime; laSync(); };
+  if (LA.readyState) to(); else LA.addEventListener("loadedmetadata", to, { once: true });
+}
+function laSync() {
+  if (!TOPIC) return;
+  const a = TOPIC.audio, t = LA.currentTime || 0, d = t - laLast;
+  if (!LA.paused && d > 0 && d < 1.5) laHeard += d; // only what was really heard, not skipped
+  laLast = t;
+  if (view === "listen") {
+    const sk = $("#seek");
+    if (sk && document.activeElement !== sk) sk.value = Math.round(t);
+    const c = $("#tcur");
+    if (c) c.textContent = fmt(t);
+    const pi = a.parts.reduce((k, p, i) => (t >= p.at ? i : k), 0);
+    document.querySelectorAll(".part").forEach((el, i) => el.classList.toggle("on", i === pi));
+    const si = a.segs.findIndex((g) => t >= g.at && t < g.end + 0.3);
+    document.querySelectorAll(".tscript p").forEach((el, i) => el.classList.toggle("on", i === si));
+  }
+  const m = $("#mini");
+  if (m) m.querySelector("small").textContent = `${fmt(t)} / ${fmt(a.dur)}`;
+  if (laHeard >= a.dur * 0.8 && tState(tStep("listen")) !== "done") { tDone("listen"); toast("🎧 Стъпката „Слушай“ е готова."); if (["listen", "topic", "path"].includes(view)) render(); }
+}
+function laUi() {
+  const p = $("#pp");
+  if (p) { p.textContent = LA.paused ? "▶" : "❚❚"; p.setAttribute("aria-label", LA.paused ? "Пусни" : "Пауза"); }
+  mini();
+}
+LA.addEventListener("timeupdate", laSync);
+LA.addEventListener("play", () => { Voice.stop(); if (heroVideo) heroVideo.pause(); laUi(); });
+LA.addEventListener("pause", laUi);
+LA.addEventListener("ended", laUi);
+function mini() {
+  let m = $("#mini");
+  const show = TOPIC && LA.getAttribute("src") && LA.currentTime > 0 && !LA.ended && view !== "listen";
+  if (!show) { if (m) m.remove(); return; }
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "mini";
+    m.className = "mini";
+    m.innerHTML = `<button class="mo" data-act="openlisten"><img src="${M("h-d06.webp")}" alt=""><span><b>${esc(TOPIC.audio.title)}</b><small></small></span></button><button class="mp" data-act="aplay"></button>`;
+    document.body.appendChild(m);
+  }
+  m.style.bottom = tabs.hidden ? "calc(14px + env(safe-area-inset-bottom,0px))" : "calc(78px + env(safe-area-inset-bottom,0px))";
+  m.querySelector(".mp").textContent = LA.paused ? "▶" : "❚❚";
+  m.querySelector(".mp").setAttribute("aria-label", LA.paused ? "Пусни" : "Пауза");
+  m.querySelector("small").textContent = `${fmt(LA.currentTime)} / ${fmt(TOPIC.audio.dur)}`;
 }
 
 /* ---------- small things ---------- */
@@ -587,6 +808,22 @@ const ACT = {
   next: () => next(),
   read: () => readAloud(),
   topic: () => go("topic", true),
+  tstep: (b) => {
+    const st = tStep(b.dataset.id), k = tState(st);
+    if (k === "lock") return toast("„Провери се“ се отключва след упражнението.");
+    if (st.fams) { startSession(st.fams, st.t, "topic"); sess.tstep = st.id; return; }
+    go(st.id, true);
+  },
+  totopic: () => { view = "topic"; stack = ["path"]; render(); scrollTo(0, 0); },
+  aplay: () => { laSrc(); if (LA.paused) LA.play().catch(() => toast("Натисни ▶ още веднъж.")); else LA.pause(); },
+  ajump: (b) => laSeek((LA.currentTime || 0) + +b.dataset.d),
+  aseek: (b) => { laSeek(+b.dataset.t); if (LA.paused) LA.play().catch(() => {}); },
+  aspeed: (b) => { const r = [1, 1.25, 0.85]; LA.playbackRate = r[(r.indexOf(LA.playbackRate) + 1) % r.length]; b.textContent = `Скорост ${String(LA.playbackRate).replace(".", ",")}×`; },
+  openlisten: () => go("listen", true),
+  ljump: (b) => document.getElementById("l-" + b.dataset.k)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }),
+  lessondone: () => { tDone("lesson"); Voice.say("ok-4"); toast("📖 Урокът е готов."); back(); },
+  clue: (b) => clue(+b.dataset.i),
+  chint: (b) => { const i = +b.dataset.i; S.tp.hint[i] = Math.min(TOPIC.dossier.clues[i].a.length - 1, (S.tp.hint[i] || 1) + 1); render(); $("#ci" + i)?.focus(); },
   parent: () => go("parent", true),
   goal: () => {
     const d = sheet(`<h2 style="font-size:20px">Колко дни в седмицата?</h2><p class="muted small">Ти решаваш. Пропуснат ден не се наказва.</p><div class="grades" style="max-width:none">${[3, 4, 5].map((g) => `<button data-g="${g}" aria-pressed="${S.goal === g}">${g}</button>`).join("")}</div><button class="link" data-close>Затвори</button>`);
@@ -606,12 +843,14 @@ document.addEventListener("click", (e) => {
   if (f) f(b, e);
 });
 document.addEventListener("input", (e) => {
+  if (e.target.id === "seek") return laSeek(+e.target.value);
   if (e.target.id !== "ans" || !sess || sess.done) return;
   sess.ans = e.target.value;
   const c = $("#checkBtn");
   if (c) c.disabled = !e.target.value.trim();
 });
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && view === "dossier" && /^ci\d$/.test(e.target.id)) { e.preventDefault(); return clue(+e.target.id.slice(2)); }
   if (e.key === "Enter" && view === "task") { const c = $("#checkBtn") || document.querySelector('[data-act="next"]'); if (c && !c.disabled) { e.preventDefault(); c.click(); } }
 });
 view = "onb";
