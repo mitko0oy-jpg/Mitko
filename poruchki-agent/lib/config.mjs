@@ -12,7 +12,7 @@ export function readConfig() {
     testPhone: env("TEST_PHONE"),
     hours: env("CALL_HOURS", "09:00-21:00"),
     hoursSunday: env("CALL_HOURS_SUNDAY", "10:00-19:00"),
-    shopName: env("SHOP_NAME", "Здравец Натура"),
+    shopName: env("SHOP_NAME", "магазина с пчелната отрова"),
     deliveryDays: env("DELIVERY_DAYS", "един до два работни дни"),
     sites: env("SITES", "bg").split(",").map((s) => s.trim()).filter(Boolean),
   };

@@ -10,7 +10,7 @@ function deps() {
   return {
     calls,
     store: memoryStore(),
-    config: { mode: "test", testPhone: "+359877000000", hours: "09:00-21:00", hoursSunday: "10:00-19:00", shopName: "Здравец Натура", deliveryDays: "един до два работни дни" },
+    config: { mode: "test", testPhone: "+359877000000", hours: "09:00-21:00", hoursSunday: "10:00-19:00", shopName: "магазина с пчелната отрова", deliveryDays: "един до два работни дни" },
     async call(a) {
       calls.push(a);
       return { conversationId: "c1" };
