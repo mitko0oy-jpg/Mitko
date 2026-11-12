@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, formalNameBG } from "../lib/format.mjs";
+import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, formalNameBG, spoken } from "../lib/format.mjs";
 import { verifySignature, readPostCall } from "../lib/elevenlabs.mjs";
 import { applyOutcome, buildMessage, MAX_ATTEMPTS } from "../lib/policy.mjs";
 
@@ -31,7 +31,7 @@ test("items text", () => {
       { name: "BeeVenom Care Gel 2+1 броя", qty: 1, price: 19.9 },
       { name: "Подарък 8 бр. пластири за стави и мускули", qty: 1, price: 0 },
     ]),
-    "BeeVenom Care Gel 2+1 броя, и подарък: 8 бр. пластири за стави и мускули",
+    "BeeVenom Care Gel 2 плюс 1 броя, и подарък: 8 броя пластири за стави и мускули",
   );
   assert.equal(itemsTextBG([{ name: "Пластири с пчелна отрова", qty: 2, price: 7.8 }]), "2 броя Пластири с пчелна отрова");
 });
@@ -125,4 +125,13 @@ test("polite form of the name", () => {
   assert.equal(formalNameBG("Maria Petrova"), "госпожа Petrova");
   assert.equal(formalNameBG("Мария"), "");
   assert.equal(formalNameBG("Мария Х."), "");
+});
+
+test("product names read aloud", () => {
+  assert.equal(spoken("Кутия Билкови пластири 12бр."), "Кутия Билкови пластири 12 броя");
+  assert.equal(spoken("Пчелна отрова Пакет 3+2 бр."), "Пчелна отрова Пакет 3 плюс 2 броя");
+  assert.equal(spoken("Bee Venom крем за стави 30 г"), "Bee Venom крем за стави 30 грама");
+  assert.equal(spoken("Подарък 8 бр. пластири"), "Подарък 8 броя пластири");
+  assert.equal(spoken("Гел 50 мл"), "Гел 50 милилитра");
+  assert.equal(spoken("BeeVenom Care Gel"), "BeeVenom Care Gel");
 });

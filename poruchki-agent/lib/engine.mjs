@@ -20,6 +20,8 @@ async function save(store, key, rec, opts) {
 }
 
 const MAX_CALLS_PER_RUN = 3;
+// Never call about an order older than this (e.g. after a pause or before setup was finished).
+const MAX_ORDER_AGE_H = 48;
 
 /**
  * @typedef {object} Deps
@@ -97,10 +99,16 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       report.stale++;
       continue;
     }
+    if (rec.state === "queued" && now - new Date(rec.createdAt) > MAX_ORDER_AGE_H * 3_600_000) {
+      await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: "too old to call" }] });
+      report.skipped++;
+      continue;
+    }
     if (rec.state === "queued" && new Date(rec.nextAttemptAt) <= now) due.push({ key, rec, etag: entry.etag });
   }
 
   if (config.mode === "off") return { ...report, reason: "off" };
+  if (config.ready === false) return { ...report, reason: "ElevenLabs not configured yet" };
   if (settings.paused) return { ...report, reason: "paused" };
   const hours = sofiaNow(now).weekday === 0 ? config.hoursSunday || config.hours : config.hours;
   if (!inCallingHours(hours, now)) return { ...report, reason: "outside hours" };

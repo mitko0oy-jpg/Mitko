@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { convertBuilder, deliveryText } from "../lib/convertbuilder.mjs";
+import { convertBuilder, deliveryText, officeName } from "../lib/convertbuilder.mjs";
 
 const SITES = JSON.stringify([
   { id: "bg", label: "BeeVenom BG", domain: "beevenombg.eu", key: "w-test-key" },
@@ -62,5 +62,24 @@ test("delivery text", () => {
   assert.equal(
     deliveryText({ shippingName: "Офис на СПИДИ - Безплатна доставка", shippingAddress: { city: "Варна", address: "Варна" } }),
     "Офис на СПИДИ, Варна",
+  );
+});
+
+test("office names as they come from ConvertBuilder", () => {
+  const cases = {
+    "До офис speedy[141]: БОТЕВГРАД - СКЛАД жк Васил Левски ул. Цар Иван Шишман No 42 СКЛАДОВА БАЗА ЛЪЧ Л": "до офис на Спиди „Ботевград – Склад“",
+    "До офис speedy[35]: ПЕРНИК ул. Св. св. Кирил и Методий No 23 БЦ ЕЛЕНА": "до офис на Спиди „Перник“",
+    "До офис speedy[9317]: КИЛИФАРЕВО - СУПЕРМАРКЕТ СТИВИ (АВТОМАТ) ул. Иван Вазов": "до автомат на Спиди „Килифарево – Супермаркет Стиви“",
+    "До офис speedy[870]: СОФИЯ - ЗОНА Б-18 жк Зона Б-18 бл. 8": "до офис на Спиди „София – Зона Б-18“",
+    "До офис speedy[48]: СВИЛЕНГРАД пл. 14-ти март No 13": "до офис на Спиди „Свиленград“",
+    "До офис econt[8028]: Бургас Ветрен -  Бургас кв. Ветрен ул. Българка - кв. Ветрен №78 Автокомплекс В": "до офис на Еконт „Бургас Ветрен“",
+    "До офис econt[7538]: Айдемир -  Айдемир кв. Деленките ул. София №7": "до офис на Еконт „Айдемир“",
+    "До офис econt[6308]: Хасково -  Хасково Източна индустриална зона бул. Съединение №66": "до офис на Еконт „Хасково – Източна индустриална зона“",
+  };
+  for (const [raw, want] of Object.entries(cases)) assert.equal(officeName(raw), want, raw);
+  assert.equal(officeName("ул. Шипка 5"), "");
+  assert.equal(
+    deliveryText({ shippingName: "Доставка до офис на Спиди", shippingAddress: { city: "Перник", address: "До офис speedy[35]: ПЕРНИК ул. Св. св. Кирил и Методий No 23" } }),
+    "до офис на Спиди „Перник“",
   );
 });

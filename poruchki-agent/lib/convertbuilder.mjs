@@ -61,9 +61,16 @@ export function normalizeOrder(site, o) {
   };
 }
 
-/** "Доставка до офис на Еконт, Пловдив, офис Тракия" – read out by the agent. */
+/**
+ * What the agent reads out, e.g. "до офис на Спиди „Ботевград – Склад“".
+ * ConvertBuilder stores the office in the address line:
+ *   "До офис speedy[141]: БОТЕВГРАД - СКЛАД жк Васил Левски ул. …"
+ *   "До офис econt[6308]: Хасково -  Хасково Източна индустриална зона бул. …"
+ */
 export function deliveryText(o) {
   const ship = o.shippingAddress || o.billingAddress || {};
+  const office = officeName(ship.address);
+  if (office) return office;
   const method = String(o.shippingName || "")
     .replace(/^\s*безплатна\s+/i, "")
     .replace(/\s*-\s*безплатна доставка\s*$/i, "")
@@ -72,4 +79,33 @@ export function deliveryText(o) {
     .map((p) => String(p || "").trim())
     .filter(Boolean);
   return [...new Set(parts)].join(", ");
+}
+
+const STREET = /\s(?:жк|ж\.к\.|ул\.|бул\.|пл\.|кв\.|бл\.|No|№)(?=[\s\d.]|$)/i;
+
+export function officeName(address) {
+  const m = /^\s*До офис (econt|speedy)\[\d+\]:\s*(.+)$/i.exec(String(address || ""));
+  if (!m) return "";
+  const courier = m[1].toLowerCase() === "econt" ? "Еконт" : "Спиди";
+  const rest = m[2].replace(/\s+/g, " ").trim();
+  const dash = rest.indexOf(" - ");
+  let left = dash >= 0 ? rest.slice(0, dash) : rest;
+  let right = dash >= 0 ? rest.slice(dash + 3) : "";
+  // Cut the street part off.
+  if (!right) left = left.split(STREET)[0];
+  let place = right.split(STREET)[0].trim();
+  if (place.toLowerCase().startsWith(left.toLowerCase())) place = place.slice(left.length).trim();
+  if (place && left.toLowerCase().includes(place.toLowerCase())) place = ""; // "Бургас Ветрен - Бургас кв. …"
+  const automat = /\(?автомат\)?/i.test(place);
+  place = place.replace(/\(?автомат\)?/i, "").trim();
+  const name = [titleCase(left.trim()), titleCase(place)].filter(Boolean).join(" – ");
+  return `до ${automat ? "автомат" : "офис"} на ${courier} „${name}“`;
+}
+
+/** "БОТЕВГРАД" → "Ботевград" (all-caps words are read letter by letter by some voices). */
+function titleCase(text) {
+  return String(text || "")
+    .split(" ")
+    .map((w) => (w.length > 1 && w === w.toUpperCase() && /\p{L}/u.test(w) ? w.charAt(0) + w.slice(1).toLowerCase() : w))
+    .join(" ");
 }

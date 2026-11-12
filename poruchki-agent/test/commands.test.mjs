@@ -44,3 +44,20 @@ test("stop, resume, status and test call", async () => {
   assert.equal(d.calls[0].to, "+359877000000");
   assert.match((await handleTelegram(d, upd(1, "здрасти"), {})).reply, /Команди/);
 });
+
+test("telegram webhook is registered once", async () => {
+  const { ensureTelegramWebhook } = await import("../lib/telegram.mjs");
+  const store = memoryStore();
+  const hits = [];
+  const fetchImpl = async (url, init) => {
+    hits.push({ url, body: JSON.parse(init.body) });
+    return new Response("{}", { status: 200 });
+  };
+  const args = { store, token: "123:abc", secret: "s3cret", url: "https://x.netlify.app/webhook/telegram", fetchImpl };
+  assert.equal(await ensureTelegramWebhook(args), "registered");
+  assert.equal(await ensureTelegramWebhook(args), "ok");
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].url, "https://api.telegram.org/bot123:abc/setWebhook");
+  assert.equal(hits[0].body.secret_token, "s3cret");
+  assert.equal(await ensureTelegramWebhook({ ...args, token: "" }), "not configured");
+});

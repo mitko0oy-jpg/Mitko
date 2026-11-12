@@ -15,6 +15,7 @@ export function readConfig() {
     shopName: env("SHOP_NAME", "магазина с пчелната отрова"),
     deliveryDays: env("DELIVERY_DAYS", "един до два работни дни"),
     sites: env("SITES", "bg").split(",").map((s) => s.trim()).filter(Boolean),
+    ready: Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
   };
 }
 

@@ -78,7 +78,7 @@ test("new order → call → confirmed → moved to done and Mitko notified", as
   assert.equal(calls[0].to, "+359888123456");
   assert.equal(calls[0].variables.customer_name, "госпожа Петрова");
   assert.equal(calls[0].variables.order_total, "24 евро и 40 цента");
-  assert.equal(calls[0].variables.order_items, "BeeVenom Care Gel 2+1 броя");
+  assert.equal(calls[0].variables.order_items, "BeeVenom Care Gel 2 плюс 1 броя");
 
   // While waiting for the result, the order is not called again.
   await runDueCalls(deps, min(5));
@@ -126,7 +126,9 @@ test("outside calling hours, paused, test mode and handled orders", async () => 
   await syncOrders(deps, min(1));
 
   const night = new Date("2026-11-12T19:30:00Z"); // 21:30 Sofia
-  assert.equal((await runDueCalls(deps, new Date("2026-11-15T17:30:00Z"))).reason, "outside hours", "Sunday 19:30");
+  const sunday = setup();
+  await syncOrders(sunday.deps, T0);
+  assert.equal((await runDueCalls(sunday.deps, new Date("2026-11-15T17:30:00Z"))).reason, "outside hours", "Sunday 19:30");
   assert.equal((await runDueCalls(deps, night)).reason, "outside hours");
 
   await store.setJSON("meta/settings", { ...(await store.get("meta/settings", { type: "json" })), paused: true });
@@ -182,4 +184,17 @@ test("purge removes old finished orders", async () => {
   assert.equal(await purgeOld(store, min(60)), 0);
   assert.equal(await purgeOld(store, new Date(T0.getTime() + 15 * 86_400_000)), 1);
   assert.equal(await store.get("done/bg/12"), null);
+});
+
+test("orders older than 48 hours are skipped, and nothing is called before setup", async () => {
+  const { deps, orders, calls, order } = setup();
+  await syncOrders(deps, T0);
+  orders.push(order(20));
+  await syncOrders(deps, min(1));
+  deps.config.ready = false;
+  assert.equal((await runDueCalls(deps, min(2))).reason, "ElevenLabs not configured yet");
+  deps.config.ready = true;
+  const rep = await runDueCalls(deps, min(49 * 60));
+  assert.equal(rep.skipped, 1);
+  assert.equal(calls.length, 0);
 });
