@@ -2,6 +2,12 @@
 
 Отделен проект от Еду БЕЛ. Започва с магазина BeeVenom BG (beevenombg.eu).
 
+## Къде работи
+
+- Netlify проект `mitko-obazhdania` (site id `ed6a6cc4-9068-4e84-a563-d283d598d3f9`), https://mitko-obazhdania.netlify.app
+- Деплой от тази папка: MCP `deploy-site` със site id-то по-горе, командата се пуска в `poruchki-agent/`. Промяна на env променлива влиза в сила чак след нов деплой.
+- `CB_SITES` съдържа само BeeVenom BG. Ключът е копиран от проекта `mitko-prodazhbi`.
+
 ## Как работи
 
 1. На всеки 5 минути проверява ConvertBuilder за нови поръчки със статус „pending“ (`lib/convertbuilder.mjs`).
