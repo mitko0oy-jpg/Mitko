@@ -1,6 +1,6 @@
 // The calling loop: pick up new orders, call when due, apply results.
 // All I/O comes in through arguments, so this file is testable with fakes.
-import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow } from "./format.mjs";
+import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
 import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN } from "./policy.mjs";
 import { readPostCall } from "./elevenlabs.mjs";
 import { orderKey, getSettings } from "./store.mjs";
@@ -124,7 +124,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
           order_key: key,
           test: testMode ? "yes" : "no",
           shop_name: config.shopName,
-          customer_name: rec.firstName || rec.name,
+          customer_name: formalNameBG(rec.name) || rec.firstName || rec.name,
           order_number: String(rec.orderNo),
           order_items: rec.itemsText,
           order_total: rec.totalText,

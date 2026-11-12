@@ -19,6 +19,21 @@ export function normalizePhoneBG(raw) {
   return null;
 }
 
+/**
+ * Polite form for the call: "господин Георгиев" / "госпожа Петрова", from the
+ * Bulgarian surname ending. Returns "" when it cannot tell (then use the first name).
+ * @param {string} fullName
+ */
+export function formalNameBG(fullName) {
+  const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return "";
+  const raw = parts[parts.length - 1];
+  const last = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+  if (/(ова|ева|ска|цка|ova|eva|ska|cka)$/i.test(last)) return `госпожа ${last}`;
+  if (/(ов|ев|ски|цки|ov|ev|ski|cki)$/i.test(last)) return `господин ${last}`;
+  return "";
+}
+
 /** @param {number} amount EUR, e.g. 27.4 → "27 евро и 40 цента" */
 export function moneyBG(amount) {
   const cents = Math.round(Number(amount) * 100);

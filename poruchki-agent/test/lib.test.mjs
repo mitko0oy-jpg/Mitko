@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours } from "../lib/format.mjs";
+import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, formalNameBG } from "../lib/format.mjs";
 import { verifySignature, readPostCall } from "../lib/elevenlabs.mjs";
 import { applyOutcome, buildMessage, MAX_ATTEMPTS } from "../lib/policy.mjs";
 
@@ -115,4 +115,14 @@ test("telegram message escapes and is short", () => {
   assert.match(msg, /^🧪 ТЕСТ/);
   assert.match(msg, /Иван &lt;script&gt;/);
   assert.ok(msg.length <= 4000);
+});
+
+test("polite form of the name", () => {
+  assert.equal(formalNameBG("Иван Георгиев"), "господин Георгиев");
+  assert.equal(formalNameBG("мария петрова"), "госпожа Петрова");
+  assert.equal(formalNameBG("Петър Иванов Стоянов"), "господин Стоянов");
+  assert.equal(formalNameBG("Ана Маринска"), "госпожа Маринска");
+  assert.equal(formalNameBG("Maria Petrova"), "госпожа Petrova");
+  assert.equal(formalNameBG("Мария"), "");
+  assert.equal(formalNameBG("Мария Х."), "");
 });

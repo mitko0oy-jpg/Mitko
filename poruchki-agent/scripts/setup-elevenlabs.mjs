@@ -76,7 +76,8 @@ const body = {
       },
     },
     conversation: { max_duration_seconds: 300 },
-    ...(opt("voice") ? { tts: { voice_id: opt("voice") } } : {}),
+    // Lively, expressive delivery like the demo Mitko liked (lower stability = more intonation).
+    tts: { ...(opt("voice") ? { voice_id: opt("voice") } : {}), stability: 0.4, similarity_boost: 0.8, speed: 1 },
   },
   platform_settings: {
     data_collection: Object.fromEntries(

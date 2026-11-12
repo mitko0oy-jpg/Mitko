@@ -76,7 +76,7 @@ test("new order → call → confirmed → moved to done and Mitko notified", as
   const rep = await runDueCalls(deps, min(3));
   assert.equal(rep.started, 1);
   assert.equal(calls[0].to, "+359888123456");
-  assert.equal(calls[0].variables.customer_name, "Мария");
+  assert.equal(calls[0].variables.customer_name, "госпожа Петрова");
   assert.equal(calls[0].variables.order_total, "24 евро и 40 цента");
   assert.equal(calls[0].variables.order_items, "BeeVenom Care Gel 2+1 броя");
 
