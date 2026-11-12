@@ -1,0 +1,6 @@
+# Separate Netlify project for the order-confirmation call agent (not the Еду БЕЛ site).
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
