@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import priceList from "../agent/pricelist-bg.json" with { type: "json" };
 import { quote, renderPriceList, findOrders, submitOrder } from "../lib/inbound.mjs";
 import { memoryStore } from "../lib/store.mjs";
-import { handleWebhook } from "../lib/engine.mjs";
+import { handleWebhook, purgeOld } from "../lib/engine.mjs";
 
 test("totals come from the price list, not from the AI", () => {
   const q = quote(priceList, { items: [{ product_id: "gel-2p1", quantity: 1 }, { product_id: "spray", quantity: 2 }], delivery: "speedy_office" });
@@ -58,6 +58,8 @@ test("submit order: validation, saving and Telegram message", async () => {
   assert.match(msgs[0], /Пчелна отрова Пакет 3\+2 бр\./);
   assert.match(msgs[0], /\+359888123456/);
   assert.match(msgs[0], /34 евро и 40 цента/);
+  assert.equal(await purgeOld(store, new Date("2026-11-20T00:00:00Z")), 0);
+  assert.equal(await purgeOld(store, new Date("2026-12-14T00:00:00Z")), 1);
 });
 
 test("inbound post-call: notify only when someone must act", async () => {

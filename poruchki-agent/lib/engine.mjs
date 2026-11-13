@@ -216,6 +216,14 @@ export async function purgeOld(store, now = new Date(), days = 14) {
       n++;
     }
   }
+  // Orders taken by phone: kept 30 days (Mitko has entered them in Middleware by then).
+  for (const { key } of (await store.list({ prefix: "phone-orders/" })).blobs) {
+    const day = key.split("/")[1];
+    if (day && now - new Date(`${day}T00:00:00Z`) > 30 * 86_400_000) {
+      await store.delete(key);
+      n++;
+    }
+  }
   // "seen" markers hold no personal data; they only need to outlive the 7-day order window.
   for (const { key } of (await store.list({ prefix: "seen/" })).blobs) {
     const m = await store.get(key, { type: "json" });
