@@ -1,0 +1,59 @@
+{
+  "name": "BeeVenom BG – входяща линия",
+  "language": "bg",
+  "prompt_file": "inbound-bg-prompt.md",
+  "price_list_file": "pricelist-bg.json",
+  "first_message": "Здравейте! Аз съм дигиталният асистент на магазина с пчелната отрова – изкуствен интелект, а разговорът се записва. С какво мога да Ви помогна?",
+  "defaults": {},
+  "data_collection": {
+    "intent": "За какво се обади клиентът. Точно една от стойностите: order_placed (направи поръчка), order_status (пита за пратка или поръчка), question (въпрос за продукт, цена или доставка), complaint (оплакване, връщане, проблем с пратка), other (друго или неясно).",
+    "needs_human": { "type": "boolean", "description": "true, ако колега трябва да се обади на клиента: поиска човек, оплакване, неуспешна поръчка или въпрос без отговор. Иначе false." },
+    "questions": "Въпроси, на които асистентът не можа да отговори. Иначе празно.",
+    "allergy_or_health": { "type": "boolean", "description": "true, ако клиентът спомена алергия към пчели, бременност, кърмене или друг здравословен проблем; иначе false." },
+    "summary": "Обобщение на разговора на български в едно-две изречения."
+  },
+  "evaluation_criteria": {
+    "ai_disclosed": "Асистентът каза, че е дигитален асистент с изкуствен интелект, и не твърдеше, че е човек.",
+    "no_health_claims": "Асистентът НЕ каза, че продуктът лекува, спира или маха болка или замества лечение, и не даде медицински съвет.",
+    "prices_from_tools": "Асистентът каза обща сума само след като инструментът get_total или submit_order я върна, и не измисли цени или отстъпки."
+  },
+  "tools": [
+    {
+      "name": "find_order",
+      "path": "find-order",
+      "description": "Намира последните поръчки на клиента по телефонен номер и казва дали са изпратени. Използвай, когато клиентът пита за пратка или поръчка.",
+      "properties": {
+        "caller_phone": { "type": "string", "description": "Номерът, от който се обажда клиентът.", "dynamic_variable": "system__caller_id" },
+        "phone": { "type": "string", "description": "Друг номер, който клиентът каза, че е използвал при поръчката. Празно, ако не е казал друг." }
+      },
+      "required": ["caller_phone"]
+    },
+    {
+      "name": "get_total",
+      "path": "quote-order",
+      "description": "Смята общата сума на поръчка с доставката по ценоразписа. Използвай преди да попиташ клиента дали да запишеш поръчката.",
+      "properties": {
+        "items": "$ITEMS",
+        "delivery": "$DELIVERY"
+      },
+      "required": ["items", "delivery"]
+    },
+    {
+      "name": "submit_order",
+      "path": "submit-order",
+      "description": "Записва нова поръчка по телефона и я праща на екипа. Използвай само след като клиентът е потвърдил продуктите, името, телефона и доставката.",
+      "properties": {
+        "customer_name": { "type": "string", "description": "Име и фамилия на клиента." },
+        "phone": { "type": "string", "description": "Телефон за доставката, ако клиентът е дал различен от номера, от който звъни. Иначе празно." },
+        "caller_phone": { "type": "string", "description": "Номерът, от който се обажда клиентът.", "dynamic_variable": "system__caller_id" },
+        "items": "$ITEMS",
+        "delivery": "$DELIVERY",
+        "city": { "type": "string", "description": "Град или село за доставката." },
+        "office_or_address": { "type": "string", "description": "Кой офис на куриера (име или улица), или пълен адрес при доставка до адрес." },
+        "note": { "type": "string", "description": "Бележка от клиента, ако има. Иначе празно." },
+        "conversation_id": { "type": "string", "description": "Номер на разговора.", "dynamic_variable": "system__conversation_id" }
+      },
+      "required": ["customer_name", "caller_phone", "items", "delivery", "city", "office_or_address"]
+    }
+  ]
+}

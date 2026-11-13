@@ -22,6 +22,17 @@
 - Няма ъпсел.
 - `MODE=test` звъни само на `TEST_PHONE` с данните на истинската поръчка, а не на клиента.
 
+## Входяща линия
+
+Вторият агент (`agent/inbound-bg.json`, `agent/inbound-bg-prompt.md`) отговаря на обаждания. По време на разговора вика функцията `/tools/<TOOLS_SECRET>/…`:
+- `find-order` намира поръчките по номера на обаждащия се (`system__caller_id`) в ConvertBuilder за последните 45 дни.
+- `quote-order` смята сумата по `agent/pricelist-bg.json`. Сумите никога не се смятат от AI.
+- `submit-order` записва поръчката в Blobs (`phone-orders/…`) и я праща в Telegram.
+
+ConvertBuilder API не може да създава поръчки, а само да ги чете и променя. Затова поръчката по телефона се въвежда в Middleware на ръка.
+
+Ценоразписът е чернова, докато Митко не го потвърди. Доставката е 4,50 € до офис на Спиди или Еконт и 5,90 € до адрес със Спиди.
+
 ## Telegram
 
 Командите са `/stop`, `/pusni`, `/status` и `/test`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
@@ -36,6 +47,8 @@
 | `EL_AGENT_ID`, `EL_PHONE_NUMBER_ID`, `EL_PHONE_PROVIDER` (`sip` или `twilio`) | от ElevenLabs |
 | `EL_WEBHOOK_SECRET` | дава го `scripts/setup-elevenlabs.mjs` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SETUP_CODE` | бот от @BotFather; другите две са произволни дълги низове |
+| `TOOLS_SECRET` | тайната част от адреса на инструментите |
+| `EL_INBOUND_AGENT_ID` | id на входящия агент (за известията след разговор) |
 | `MODE` | `test` (по подразбиране), `live` или `off` |
 | `TEST_PHONE` | номерът на Митко за тестовете |
 | `CALL_HOURS`, `CALL_HOURS_SUNDAY`, `SHOP_NAME`, `DELIVERY_DAYS` | по желание |

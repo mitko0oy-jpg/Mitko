@@ -4,10 +4,12 @@
 //
 //   ELEVENLABS_API_KEY=… node scripts/setup-elevenlabs.mjs agent/beevenom-bg.json \
 //     [--agent <agent_id>] [--voice <voice_id>] [--webhook https://<site>/webhook/elevenlabs] [--webhook-id <id>]
+//   Inbound agent (has "tools"): also --site https://<site> and TOOLS_SECRET=… in the environment.
 //
 // Prints the agent id and, when a webhook is created, its secret (put it in EL_WEBHOOK_SECRET on Netlify).
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { renderPriceList } from "../lib/inbound.mjs";
 
 const API = "https://api.elevenlabs.io";
 const args = process.argv.slice(2);
@@ -34,7 +36,57 @@ async function api(method, path, body) {
 }
 
 const spec = JSON.parse(await readFile(file, "utf8"));
-const prompt = await readFile(join(dirname(file), spec.prompt_file), "utf8");
+let prompt = await readFile(join(dirname(file), spec.prompt_file), "utf8");
+let priceList = null;
+if (spec.price_list_file) {
+  priceList = JSON.parse(await readFile(join(dirname(file), spec.price_list_file), "utf8"));
+  prompt = prompt.replace("[[PRICE_LIST]]", renderPriceList(priceList));
+}
+
+// Webhook tools (inbound agent): created in the workspace, then attached by id.
+const toolIds = [];
+if (spec.tools?.length) {
+  const site = opt("site");
+  const secret = process.env.TOOLS_SECRET;
+  if (!site || !secret) throw new Error("tools need --site https://<site> and TOOLS_SECRET");
+  const shared = {
+    $ITEMS: {
+      type: "array",
+      description: "Продуктите в поръчката.",
+      items: {
+        type: "object",
+        properties: {
+          product_id: { type: "string", description: "Кодът на продукта от ценоразписа.", enum: priceList.products.map((p) => p.id) },
+          quantity: { type: "integer", description: "Брой (обикновено 1)." },
+        },
+        required: ["product_id", "quantity"],
+      },
+    },
+    $DELIVERY: {
+      type: "string",
+      description: "Начин на доставка: econt_office (офис на Еконт), speedy_office (офис на Спиди) или speedy_address (до адрес със Спиди).",
+      enum: Object.keys(priceList.delivery),
+    },
+  };
+  for (const t of spec.tools) {
+    const properties = Object.fromEntries(Object.entries(t.properties).map(([k, v]) => [k, typeof v === "string" ? shared[v] : v]));
+    const r = await api("POST", "/v1/convai/tools", {
+      tool_config: {
+        type: "webhook",
+        name: t.name,
+        description: t.description,
+        response_timeout_secs: 20,
+        api_schema: {
+          url: `${site.replace(/\/$/, "")}/tools/${secret}/${t.path}`,
+          method: "POST",
+          request_body_schema: { type: "object", properties, required: t.required },
+        },
+      },
+    });
+    toolIds.push(r.id);
+    console.log(`tool ${t.name} id=${r.id}`);
+  }
+}
 
 let webhookId = opt("webhook-id");
 const webhookUrl = opt("webhook");
@@ -47,7 +99,7 @@ if (webhookUrl && !webhookId) {
   console.log(`EL_WEBHOOK_SECRET=${w.webhook_secret ?? "(not returned – copy it from the ElevenLabs dashboard)"}`);
 }
 
-const placeholders = {
+const placeholders = spec.tools?.length ? {} : {
   shop_name: spec.defaults.shop_name,
   delivery_days: spec.defaults.delivery_days,
   customer_name: "Мария",
@@ -66,10 +118,11 @@ const body = {
     agent: {
       first_message: spec.first_message,
       language: spec.language,
-      dynamic_variables: { dynamic_variable_placeholders: placeholders },
+      ...(Object.keys(placeholders).length ? { dynamic_variables: { dynamic_variable_placeholders: placeholders } } : {}),
       prompt: {
         prompt,
         llm: spec.llm || "claude-opus-5-5",
+        ...(toolIds.length ? { tool_ids: toolIds } : {}),
         built_in_tools: {
           end_call: { type: "system", name: "end_call", description: "", params: { system_tool_type: "end_call" } },
         },
@@ -81,9 +134,9 @@ const body = {
   },
   platform_settings: {
     data_collection: Object.fromEntries(
-      Object.entries(spec.data_collection).map(([id, description]) => [
+      Object.entries(spec.data_collection).map(([id, d]) => [
         id,
-        { type: id === "allergy_or_health" ? "boolean" : "string", description },
+        typeof d === "string" ? { type: id === "allergy_or_health" ? "boolean" : "string", description: d } : d,
       ]),
     ),
     evaluation: {

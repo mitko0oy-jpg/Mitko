@@ -180,6 +180,7 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
 
   let key = call?.variables?.order_key;
   if (!key && conversationId) key = (await store.get(`conv/${conversationId}`, { type: "json" }))?.key;
+  if (!key && call && deps.config.inboundAgentId && call.agentId === deps.config.inboundAgentId) return handleInboundCall(deps, call);
   if (!key) return { ignored: "unknown conversation" };
   const testMode = call?.variables?.test === "yes";
 
@@ -221,4 +222,22 @@ export async function purgeOld(store, now = new Date(), days = 14) {
     if (m?.at && now - new Date(m.at) > 30 * 86_400_000) await store.delete(key);
   }
   return n;
+}
+
+const INBOUND_LABELS = {
+  order_placed: "📥 Поръчка по телефона",
+  order_status: "📦 Пита за пратка",
+  question: "❓ Въпрос",
+  complaint: "⚠️ Оплакване",
+  other: "📞 Входящо обаждане",
+};
+
+/** After an inbound call: tell Mitko only when someone has to act. */
+async function handleInboundCall({ notify }, call) {
+  const caller = call.variables?.system__caller_id || "";
+  const act = call.needsHuman || call.health || call.questions || ["complaint", "other", ""].includes(call.intent) || call.failedChecks.length;
+  if (!act) return { inbound: true, notified: false };
+  const label = (call.needsHuman ? "🙋 Обади се – " : "") + (INBOUND_LABELS[call.intent] || INBOUND_LABELS.other);
+  await notify(buildMessage({ orderNo: "входящо", site: "входяща линия", name: "клиент", phone: caller }, label, call));
+  return { inbound: true, notified: true };
 }

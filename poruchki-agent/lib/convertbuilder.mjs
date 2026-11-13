@@ -1,6 +1,8 @@
 // ConvertBuilder shop API (docs: https://websitebuilder.app-sources.com).
 // Base: https://<shop domain>/api/site, header "Authorization: Bearer <key>".
 // CB_SITES env var: JSON [{ "id": "bg", "label": "BeeVenom BG", "domain": "beevenombg.eu", "key": "…" }]
+// The API can read and update orders, but it cannot create them.
+import { normalizePhoneBG, itemsTextBG } from "./format.mjs";
 
 const PAGE = 50;
 
@@ -33,6 +35,33 @@ export function convertBuilder({ sites, env, fetchImpl = fetch }) {
         }
       }
       return out;
+    },
+    /** Orders of the last `days` days placed with this phone number (E.164), newest first. */
+    async searchByPhone(phone, days = 45) {
+      const out = [];
+      for (const site of active) {
+        const q = { created_at_min: Math.floor(Date.now() / 1000) - days * 86400, created_at_max: Math.floor(Date.now() / 1000) + 60, limit: PAGE };
+        const first = await cb(site, "/orders", { ...q, skip: 0 });
+        const rest = [];
+        for (let skip = PAGE; skip < (first.totalCount || 0); skip += PAGE) rest.push(cb(site, "/orders", { ...q, skip }));
+        const all = [first, ...(await Promise.all(rest))].flatMap((p) => p.items || []);
+        for (const o of all) {
+          const s = o.shippingAddress || {};
+          const b = o.billingAddress || {};
+          if (normalizePhoneBG(s.phone) !== phone && normalizePhoneBG(b.phone) !== phone) continue;
+          out.push({
+            orderNo: o.invoiceNo ?? o.id,
+            created: Number(o.created) || 0,
+            dateText: new Intl.DateTimeFormat("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "long" }).format(new Date(Number(o.created) * 1000)),
+            itemsText: itemsTextBG((o.items || []).map((it) => ({ name: String(it.name || "").trim(), qty: it.quantity || 1, price: Number(it.total) || 0 }))),
+            total: Number(o.total) || 0,
+            status: o.status,
+            courier: o.fulfillment?.courier || "",
+            trackingNo: o.fulfillment?.trackingNo || "",
+          });
+        }
+      }
+      return out.sort((a, b) => b.created - a.created);
     },
     /** False when Mitko already shipped, cancelled or archived the order. */
     async isStillPending(rec) {
