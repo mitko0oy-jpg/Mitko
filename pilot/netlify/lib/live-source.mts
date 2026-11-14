@@ -1,57 +1,75 @@
 // Live data source for the shared service: reads what the sync job stored in Postgres,
 // and writes changes to Meta.
+//
+// Profit is counted per business line („направление“), not per Meta ad account: one ad
+// account can run ads for several shops (the "Bio" account runs Еду БЕЛ and BeeVenom BG).
+// Each campaign goes to a line by keywords in its name, else to its account's default line.
 import { q, pgStore } from "./db.mts";
 import * as meta from "./meta.mts";
 import { env, HttpError } from "./http.mts";
-
-// Sensible first guesses for this business; everything is editable in Settings.
-export function guessCountry(name = ""): string {
-  const n = name.toLowerCase();
-  if (/словен|sloven|\bsi\b/.test(n)) return "SI";
-  if (/словак|slovak|\bsk\b/.test(n)) return "SK";
-  if (/унгар|hungar|magyar|\bhu\b/.test(n)) return "HU";
-  return "BG";
-}
-export function guessSites(name = "", country = "BG", currency = "EUR"): string[] {
-  // Accounts without a real name (only digits) or in another currency are not ours to map.
-  if (!name || /^\s*\d+\s*$/.test(name) || currency !== "EUR") return [];
-  if (/bio/i.test(name)) return ["bioshop"];
-  return { BG: ["bg", "max4"], SK: ["sk", "vcelijed"], SI: ["sl"], HU: ["hu"] }[country] || [];
-}
+import { DEFAULT_LINES, defaultLineFor, lineForCampaign } from "../../public/core/lines.js";
 
 async function settingsRaw() {
   return ((await pgStore.get("settings", "main")) as any) || {};
 }
 
-export async function accountsConfigured() {
-  const S = await settingsRaw();
+// Real Meta ad accounts worth syncing: active, in EUR, with a real name.
+export async function realAccounts() {
   const list: any[] = ((await pgStore.get("meta", "accounts")) as any)?.list || [];
-  return list.map((a) => {
-    const cfg = S.accounts?.[a.id] || {};
-    const country = cfg.country || guessCountry(a.name);
-    const sites = cfg.sites?.length ? cfg.sites : guessSites(a.name, country, a.currency);
-    const usable = a.status === 1 && (cfg.on === true || (cfg.on !== false && sites.length > 0));
-    return { ...a, country, sites, on: usable, pageId: cfg.pageId, link: cfg.link };
-  });
+  const S = await settingsRaw();
+  return list.filter((a) => a.status === 1 && (a.currency || "EUR") === "EUR" && a.name && !/^\s*\d+\s*$/.test(a.name) && S.metaAccounts?.[a.id]?.on !== false);
+}
+
+async function model() {
+  const S = await settingsRaw();
+  const lines: any[] = S.lines?.length ? S.lines : DEFAULT_LINES;
+  const reals = await realAccounts();
+  const structures: Record<string, any> = {};
+  const campLine = new Map<string, string>();
+  const lineMeta: Record<string, Set<string>> = {};
+  for (const a of reals) {
+    const s: any = (await pgStore.get("structure", a.id)) || {};
+    structures[a.id] = s;
+    const dflt = S.metaAccounts?.[a.id]?.defaultLine || defaultLineFor(a.name, lines);
+    for (const c of s.campaigns || []) {
+      const l = lineForCampaign(c.name, dflt, lines);
+      campLine.set(c.id, l);
+      (lineMeta[l] ||= new Set()).add(a.id);
+    }
+  }
+  return { S, lines, reals, structures, campLine, lineMeta };
 }
 
 export function liveSource() {
   return {
     async snapshot({ since }: { today: string; since: string }) {
-      const accounts = (await accountsConfigured()).filter((a) => a.on);
+      const { S, lines, reals, structures, campLine, lineMeta } = await model();
+      const L = (cid: string, fallback: string) => campLine.get(cid) || fallback;
       const campaigns: any[] = [], adsets: any[] = [], ads: any[] = [], creatives: any[] = [];
-      for (const a of accounts) {
-        const s: any = (await pgStore.get("structure", a.id)) || {};
-        campaigns.push(...(s.campaigns || []));
-        adsets.push(...(s.adsets || []));
-        ads.push(...(s.ads || []));
-        for (const c of s.creatives || []) if (!creatives.some((x) => x.id === c.id)) creatives.push({ ...c, country: a.country });
+      const lineOf: Record<string, any> = Object.fromEntries(lines.map((l) => [l.id, l]));
+      for (const a of reals) {
+        const s = structures[a.id];
+        for (const c of s.campaigns || []) campaigns.push({ ...c, account: L(c.id, a.id), metaAccount: a.id });
+        for (const x of s.adsets || []) adsets.push({ ...x, account: L(x.campaign, a.id), metaAccount: a.id });
+        for (const x of s.ads || []) ads.push({ ...x, account: L(x.campaign, a.id), metaAccount: a.id });
+        const adCamp = new Map((s.ads || []).map((x: any) => [x.creative, x.campaign]));
+        for (const c of s.creatives || []) {
+          if (creatives.some((y) => y.id === c.id)) continue;
+          const line = L(adCamp.get(c.id) as string, a.id);
+          creatives.push({ ...c, account: line, country: lineOf[line]?.country || "BG" });
+        }
       }
-      const siteToAcct = new Map<string, string>();
-      for (const a of accounts) for (const s of a.sites) if (!siteToAcct.has(s)) siteToAcct.set(s, a.id);
-      const insights = (await q<{ data: any }>("SELECT data FROM insights WHERE date >= $1", [since])).map((r) => r.data);
-      const orders = (await q<{ data: any }>("SELECT data FROM orders WHERE date >= $1", [since])).map((r) => ({ ...r.data, account: siteToAcct.get(r.data.site) })).filter((o) => o.account);
-      const sessions = (await q<any>("SELECT site, to_char(date,'YYYY-MM-DD') AS date, sessions FROM site_sessions WHERE date >= $1", [since])).map((r) => ({ ...r, account: siteToAcct.get(r.site) })).filter((r) => r.account);
+      // Orders and sessions go to the line that owns the site.
+      const siteToLine = new Map<string, string>();
+      for (const l of lines) for (const s of l.sites || []) if (!siteToLine.has(s)) siteToLine.set(s, l.id);
+      const insights = (await q<{ data: any }>("SELECT data FROM insights WHERE date >= $1", [since])).map((r) => ({ ...r.data, account: L(r.data.campaign, r.data.account) }));
+      const orders = (await q<{ data: any }>("SELECT data FROM orders WHERE date >= $1", [since])).map((r) => ({ ...r.data, account: siteToLine.get(r.data.site) })).filter((o) => o.account);
+      const sessions = (await q<any>("SELECT site, to_char(date,'YYYY-MM-DD') AS date, sessions FROM site_sessions WHERE date >= $1", [since])).map((r) => ({ ...r, account: siteToLine.get(r.site) })).filter((r) => r.account);
+      // A line shows up when it has campaigns or orders.
+      const active = new Set([...campaigns.map((c) => c.account), ...orders.map((o) => o.account)]);
+      const accounts = lines
+        .filter((l) => active.has(l.id))
+        .map((l) => ({ id: l.id, name: l.name, country: l.country, sites: l.sites, currency: "EUR", metaAccounts: [...(lineMeta[l.id] || [])], ...(S.accounts?.[l.id] || {}) }));
       const market: Record<string, any[]> = {}, headlines: Record<string, any[]> = {};
       for (const c of ["BG", "SK", "SI", "HU"]) {
         const m: any = await pgStore.get("market", c);
@@ -69,10 +87,10 @@ export function liveSource() {
     },
 
     async apply(op: any) {
-      const accounts = await accountsConfigured();
-      const findAcct = async (id: string) => {
-        for (const a of accounts) {
-          const s: any = await pgStore.get("structure", a.id);
+      const { S, reals, structures, campLine } = await model();
+      const find = (id: string) => {
+        for (const a of reals) {
+          const s = structures[a.id];
           for (const k of ["campaigns", "adsets", "ads"]) {
             const e = (s?.[k] || []).find((x: any) => x.id === id);
             if (e) return { a, s, k, e };
@@ -81,8 +99,8 @@ export function liveSource() {
         return null;
       };
       if (op.op === "budget" || op.op === "status") {
-        const f = await findAcct(op.id);
-        if (!f) throw new HttpError(404, "not_found", "Обектът не е намерен в Мета данните.");
+        const f = find(op.id);
+        if (!f) throw new HttpError(404, "not_found", "Обектът не е намерен в данните от Мета.");
         if (op.op === "budget") {
           await meta.setBudget(op.id, op.value, f.a.currency);
           f.e.budget = op.value;
@@ -94,10 +112,12 @@ export function liveSource() {
         return { ok: true };
       }
       if (op.op === "launch") {
-        const as = await findAcct(op.adset);
-        if (!as) throw new HttpError(404, "not_found", "Адсетът не е намерен.");
-        if (!as.a.pageId || !as.a.link) throw new HttpError(422, "setup", "Задай Facebook страница и линк към лендинга за този акаунт в Настройки.");
-        return meta.launch({ acct: as.a.id, adset: op.adset, pageId: as.a.pageId, link: as.a.link, creative: op.creativeDoc });
+        const f = find(op.adset);
+        if (!f) throw new HttpError(404, "not_found", "Адсетът не е намерен.");
+        const line = campLine.get(f.e.campaign);
+        const cfg = { ...(S.metaAccounts?.[f.a.id] || {}), ...(S.accounts?.[line] || {}) };
+        if (!cfg.pageId || !cfg.link) throw new HttpError(422, "setup", "Задай Facebook страница и линк към лендинга за това направление в Настройки.");
+        return meta.launch({ acct: f.a.id, adset: op.adset, pageId: cfg.pageId, link: cfg.link, creative: op.creativeDoc });
       }
       throw new HttpError(400, "bad_op", "Непозната операция.");
     },

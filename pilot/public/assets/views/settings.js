@@ -43,8 +43,8 @@ export default {
       </div>
 
       <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Акаунти и доставка</h2><span class="hint">ДДС, куриер и връщания – за реалния марж</span></div>
-        <div class="tbl-wrap"><table class="tbl" id="accts"><thead><tr><th>Акаунт</th><th>Държава</th><th>ДДС %</th><th>Куриер €</th><th>Наложен пл. %</th><th>Връщане €</th><th>Сайтове</th><th>Потвърдени</th><th>Доставени</th><th>Мета↔магазин</th><th>Вкл.</th></tr></thead><tbody>
+        <div class="card-h"><h2>Направления и доставка</h2><span class="hint">ДДС, куриер и връщания – за реалния марж</span></div>
+        <div class="tbl-wrap"><table class="tbl" id="accts"><thead><tr><th>Направление</th><th>Държава</th><th>ДДС %</th><th>Куриер €</th><th>Наложен пл. %</th><th>Връщане €</th><th>Сайтове</th><th>Потвърдени</th><th>Доставени</th><th>Мета↔магазин</th><th>Вкл.</th></tr></thead><tbody>
           ${d.accounts.map((a) => html`<tr data-id="${a.id}">
             <td class="l"><b class="strong">${a.name}</b></td>
             <td><select class="select" name="country" style="width:80px">${["BG", "SK", "SI", "HU"].map((c) => html`<option ${a.country === c ? "selected" : ""}>${c}</option>`)}</select></td>
@@ -60,10 +60,19 @@ export default {
         <button class="btn primary sm" data-act="saveAccts" style="margin-top:10px">Запази</button>
       </section>
 
+      <section class="card" style="margin-top:16px">
+        <div class="card-h"><h2>Как се разпределят кампаниите</h2><span class="hint">Един рекламен акаунт може да върти няколко магазина</span></div>
+        <p class="tiny muted" style="margin-top:-6px">Всяка кампания отива в първото направление, чиято ключова дума се среща в името ѝ. Ако няма такава – в направлението по подразбиране на акаунта (Словения → BeeVenom SI, Словакия → SK, Унгария → HU, останалите → BeeVenom BG). Поръчките отиват по сайт.</p>
+        <div class="tbl-wrap"><table class="tbl" id="lines"><thead><tr><th>Направление</th><th>Държава</th><th>Сайтове</th><th>Ключови думи в името на кампанията</th><th></th></tr></thead><tbody>
+          ${(S.lines || []).map((l) => html`<tr data-id="${l.id}"><td><input class="input" name="name" value="${l.name}"></td><td><select class="select" name="country" style="width:80px">${["BG", "SK", "SI", "HU"].map((c) => html`<option ${l.country === c ? "selected" : ""}>${c}</option>`)}</select></td><td><input class="input" name="sites" style="width:120px" value="${(l.sites || []).join(",")}"></td><td><input class="input" name="keywords" value="${(l.keywords || []).join(", ")}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
+        </tbody></table></div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addLine">${icon("plus")} Направление</button><button class="btn primary sm" data-act="saveLines">Запази</button></div>
+      </section>
+
       <div class="grid g2" style="margin-top:16px">
         <section class="card">
           <div class="card-h"><h2>Продукти и себестойност</h2><label class="btn sm" for="tabloFile" style="cursor:pointer">${icon("upload")} От „Табло Печалба“</label><input type="file" id="tabloFile" accept=".json,application/json" hidden></div>
-          <p class="tiny muted" style="margin-top:-6px">Ключовите думи разпознават продукта в поръчката. Подаръците също имат себестойност.</p>
+          <p class="tiny muted" style="margin-top:-6px">Себестойността е <b>за цялата поръчка</b>, както в „Табло Печалба“ (с подаръка и доставката). Носи я най-скъпият разпознат продукт; допълнителните платени артикули добавят % от цената си. Ако доставката не е включена – впиши куриер в „Направления и доставка“.</p>
           <div class="tbl-wrap"><table class="tbl" id="prods"><thead><tr><th>Продукт</th><th>Ключови думи</th><th>Себест. €</th><th></th></tr></thead><tbody>
             ${S.econ.products.map((p) => html`<tr><td><input class="input" name="name" value="${p.name}"></td><td><input class="input" name="keys" value="${p.keys}"></td><td><input class="input" name="cost" type="number" step="0.01" style="width:80px" value="${p.cost}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
           </tbody></table></div>
@@ -134,6 +143,17 @@ export default {
           accounts[tr.dataset.id] = { country: v("country").value, vat: Number(v("vat").value) / 100, courier: Number(v("courier").value), codFeePct: Number(v("codFeePct").value) / 100, returnCost: Number(v("returnCost").value), sites: v("sites").value.split(",").map((s) => s.trim()).filter(Boolean), on: v("on").checked };
         });
         save({ accounts });
+      } else if (a === "addLine") {
+        page.querySelector("#lines tbody").insertAdjacentHTML("beforeend", `<tr data-id="l${Date.now().toString(36)}"><td><input class="input" name="name"></td><td><select class="select" name="country" style="width:80px"><option>BG</option><option>SK</option><option>SI</option><option>HU</option></select></td><td><input class="input" name="sites" style="width:120px"></td><td><input class="input" name="keywords"></td><td><button class="btn xs ghost" data-act="delRow">✕</button></td></tr>`);
+      } else if (a === "saveLines") {
+        const lines = [...page.querySelectorAll("#lines tbody tr")].map((tr) => ({
+          id: tr.dataset.id,
+          name: tr.querySelector('[name="name"]').value.trim(),
+          country: tr.querySelector('[name="country"]').value,
+          sites: tr.querySelector('[name="sites"]').value.split(",").map((x) => x.trim()).filter(Boolean),
+          keywords: tr.querySelector('[name="keywords"]').value.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean),
+        })).filter((l) => l.name);
+        save({ lines }, "Запазено – важи от следващото опресняване");
       } else if (a === "addProd") {
         page.querySelector("#prods tbody").insertAdjacentHTML("beforeend", '<tr><td><input class="input" name="name"></td><td><input class="input" name="keys"></td><td><input class="input" name="cost" type="number" step="0.01" style="width:80px"></td><td><button class="btn xs ghost" data-act="delRow">✕</button></td></tr>');
       } else if (a === "addFixed") {

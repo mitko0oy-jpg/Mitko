@@ -11,6 +11,8 @@ import { judge, ruleTrust, tagStats, nextBriefs, insightsText, EVAL_DAYS } from 
 import { templateConcept, briefPrompt, gate, PROVIDERS } from "./studio.js";
 import { lint } from "./compliance.js";
 import { DIMENSIONS, CONCEPT_DIMS } from "./taxonomy.js";
+import { START_PRODUCTS } from "./defaults.js";
+import { DEFAULT_LINES } from "./lines.js";
 
 export const DEFAULT_SETTINGS = {
   mode: "observe",
@@ -62,6 +64,8 @@ const zero = () => Object.fromEntries(SUMS.map((k) => [k, 0]));
 export function createService({ store, source, ai = null, video = null, now = () => new Date(), demo = false }) {
   async function settings() {
     const s = merge(DEFAULT_SETTINGS, (await store.get("settings", "main")) || {});
+    if (!demo && !s.econ.products.length) s.econ.products = START_PRODUCTS.map((p) => ({ ...p, start: true }));
+    if (!s.lines?.length) s.lines = DEFAULT_LINES;
     if (demo && !s.econ.products.length) {
       s.econ.products = source.demoProducts || [];
       if (!Object.keys(s.econ.fixedMonthly).length) s.econ.fixedMonthly = { "Счетоводство": 100, "Осигуровки": 190, "ConvertBuilder": 90, "AI инструменти": 200, "Софтуер": 130 };
@@ -92,7 +96,7 @@ export function createService({ store, source, ai = null, video = null, now = ()
       .map((a) => ({ ...a, ...(S.accounts[a.id] || {}), on: S.accounts[a.id]?.on !== false }))
       .filter((a) => a.on);
     const acctIds = new Set(accounts.map((a) => a.id));
-    const accts = Object.fromEntries(accounts.map((a) => [a.id, { ...a, vat: a.vat ?? COUNTRY[a.country]?.vat ?? 0.2, courier: a.courier ?? 4, codFeePct: a.codFeePct ?? 0.012, returnCost: a.returnCost ?? 3.5 }]));
+    const accts = Object.fromEntries(accounts.map((a) => [a.id, { ...a, vat: a.vat ?? COUNTRY[a.country]?.vat ?? 0.2, courier: a.courier ?? (demo ? 4 : 0), codFeePct: a.codFeePct ?? (demo ? 0.012 : 0), returnCost: a.returnCost ?? 3.5 }]));
     const orders = snap.orders.filter((o) => acctIds.has(o.account));
     const ordersBy = groupBy(orders, (o) => o.account);
     const rates = {};
@@ -645,6 +649,7 @@ export function createService({ store, source, ai = null, video = null, now = ()
     if (patch?.econ?.fixedMonthly) next.econ.fixedMonthly = patch.econ.fixedMonthly;
     if (patch?.competitors) next.competitors = patch.competitors;
     if (patch?.calendarCustom) next.calendarCustom = patch.calendarCustom;
+    if (patch?.lines) next.lines = patch.lines;
     if (next.mode && !MODES[next.mode]) throw Object.assign(new Error("Непознат режим."), { status: 400 });
     const f = next.econ?.marginFloor, t = next.econ?.marginTarget;
     if ((f != null && (f < 0 || f > 0.8)) || (t != null && (t < 0 || t > 0.9))) throw Object.assign(new Error("Маржът трябва да е между 0 и 80%."), { status: 400 });

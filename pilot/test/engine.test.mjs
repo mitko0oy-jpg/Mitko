@@ -148,3 +148,21 @@ test("learning: outcomes update rule trust; briefs explore untested values", () 
   assert.equal(b.length, 4);
   assert.ok(new Set(b.map((x) => x.tags.angle)).size >= 3, "a batch is diverse");
 });
+
+test("real-data rules: per-order cost, wholesale, digital, HUF already in EUR", async () => {
+  const { orderEconomics } = await import("../public/core/metrics.js");
+  const { lineForCampaign, defaultLineFor } = await import("../public/core/lines.js");
+  const econ2 = { defaultCogsPct: 0.3, products: [{ name: "Gel", keys: "care gel", cost: 12.37 }, { name: "Patches", keys: "пластири", cost: 5.9 }] };
+  const a = { country: "BG", vat: 0.2, courier: 0, codFeePct: 0, returnCost: 3.5 };
+  const rates = { confirm: 1, deliver: 1 };
+  const one = orderEconomics({ status: "c", shipped: 1, total: 20.4, items: [{ product: "BeeVenom Care Gel", qty: 1, total: 15.9 }, { product: "Подарък пластири", qty: 1, total: 0 }] }, a, econ2, rates);
+  assert.equal(Math.round(one.cogs * 100) / 100, 12.37, "gift adds nothing, cost counted once");
+  const bulk = orderEconomics({ status: "c", shipped: 1, total: 140.9, items: [{ product: "BeeVenom Care Gel", qty: 30, total: 135 }] }, a, econ2, rates);
+  assert.ok(bulk.cogs < 60, "30 units are not 30 order costs");
+  const pdf = orderEconomics({ status: "c", shipped: 0, total: 9.9, items: [{ product: "PDF тест", qty: 1, total: 9.9 }] }, { ...a, courier: 4 }, econ2, rates);
+  assert.equal(pdf.fulfil, 0, "digital orders have no courier");
+  assert.equal(lineForCampaign("АBO | Карти за НВО | 02.10 | FM", "bv-bg"), "edubel");
+  assert.equal(lineForCampaign("BeeVenom|Slovakia|21.09", "bv-bg"), "bv-sk");
+  assert.equal(lineForCampaign("Тест | Студ и дъжд | 5€", "bv-bg"), "bv-bg");
+  assert.equal(defaultLineFor("Словения"), "bv-si");
+});

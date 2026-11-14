@@ -3,7 +3,7 @@ import { q, pgStore } from "./db.mts";
 import * as meta from "./meta.mts";
 import * as sales from "./sales.mts";
 import * as video from "./video.mts";
-import { accountsConfigured } from "./live-source.mts";
+import { realAccounts } from "./live-source.mts";
 import { env } from "./http.mts";
 
 const todayStr = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -30,7 +30,7 @@ export async function syncMeta(deadline: number) {
   try {
     const list = await meta.accounts();
     await pgStore.put("meta", "accounts", { list, at: new Date().toISOString() });
-    const accounts = (await accountsConfigured()).filter((a) => a.on);
+    const accounts = await realAccounts();
     for (const a of accounts) {
       if (Date.now() > deadline) break;
       await pgStore.put("structure", a.id, await meta.structure(a));

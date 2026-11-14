@@ -14,11 +14,24 @@ export type Order = { site: string; date: string; status: string; shipped: numbe
 export function decodeV1(j: any): { orders: Order[]; sessions: { site: string; date: string; sessions: number }[] } {
   if (!j || j.v !== 1 || !Array.isArray(j.orders)) throw new HttpError(502, "sales_format", "Непознат формат на продажбите.");
   const sites = (j.sites || []).map((s: any) => s.id);
-  const orders: Order[] = j.orders.map((o: any[]) => ({
-    site: sites[o[0]] ?? String(o[0]), date: o[1], status: o[2], shipped: o[3] ? 1 : 0, subTotal: +o[4] || 0, shipping: +o[5] || 0, discount: +o[6] || 0, total: +o[7] || 0,
-    items: (o[8] || []).map((it: any[]) => ({ product: j.products?.[it[0]] ?? String(it[0]), qty: +it[1] || 1, total: +it[2] || 0 })),
-    orderNo: String(o[10] ?? `${o[1]}-${Math.random()}`),
-  }));
+  // Amounts come in the shop's currency (HUF for Hungary) – everything is kept in EUR.
+  const FALLBACK: Record<string, number> = { HUF: 390, BGN: 1.95583, CZK: 25, PLN: 4.3, RON: 5, USD: 1.1 };
+  const rateOf = (siteIdx: number) => {
+    const cur = j.sites?.[siteIdx]?.currency || "EUR";
+    if (cur === "EUR") return { cur, rate: 1 };
+    return { cur, rate: Number(j.eurRates?.[cur]) || FALLBACK[cur] || 1 };
+  };
+  const eur = (v: any, rate: number) => Math.round(((+v || 0) / rate) * 100) / 100;
+  const orders: Order[] = j.orders.map((o: any[]) => {
+    const { cur, rate } = rateOf(o[0]);
+    return {
+      site: sites[o[0]] ?? String(o[0]), date: o[1], status: o[2], shipped: o[3] ? 1 : 0,
+      subTotal: eur(o[4], rate), shipping: eur(o[5], rate), discount: eur(o[6], rate), total: eur(o[7], rate),
+      items: (o[8] || []).map((it: any[]) => ({ product: j.products?.[it[0]] ?? String(it[0]), qty: +it[1] || 1, total: eur(it[2], rate) })),
+      orderNo: String(o[10] ?? `${o[1]}-${Math.random()}`),
+      ...(cur !== "EUR" ? { currency: cur, fx: rate } : {}),
+    } as Order;
+  });
   const sessions = [];
   for (const s of j.sites || []) for (const [date, n] of Object.entries(s.sessions || {})) sessions.push({ site: s.id, date, sessions: Number(n) || 0 });
   return { orders, sessions };

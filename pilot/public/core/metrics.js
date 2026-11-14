@@ -54,13 +54,27 @@ export function orderEconomics(o, acct, econ, rates) {
   const p = cashProbability(o, rates);
   const vat = acct.vat ?? COUNTRY[acct.country]?.vat ?? 0.2;
   const gross = o.total || 0;
-  let cogs = 0;
-  for (const it of o.items || []) {
+  // Cost per ORDER, like „Табло Печалба“: the main (most expensive matched) product carries
+  // the order's cost; other paid items (upsells) add a share of their price; gifts add nothing.
+  const pct = econ.defaultCogsPct ?? 0.3;
+  const priced = (o.items || []).filter((it) => it.total > 0);
+  let main = null, mainCost = 0;
+  for (const it of priced) {
     const prod = productFor(it.product, econ.products);
-    const unit = prod ? Number(prod.cost) || 0 : (it.total / Math.max(1, it.qty)) * (econ.defaultCogsPct ?? 0.3);
-    cogs += unit * (it.qty || 1);
+    const c = prod ? Number(prod.cost) || 0 : 0;
+    if (c > mainCost) {
+      mainCost = c;
+      main = it;
+    }
   }
-  const willShip = o.status === "x" && !o.shipped ? 0 : o.shipped || o.status === "s" || o.status === "c" ? 1 : rates.confirm;
+  // The cost is per order, so extra units of the main product (e.g. a wholesale order of
+  // 30 gels) add a share of their price instead of a whole order cost each.
+  let cogs = mainCost;
+  if (main && (main.qty || 1) > 1) cogs += main.total * ((main.qty - 1) / main.qty) * pct;
+  for (const it of priced) if (it !== main) cogs += it.total * pct;
+  // A parcel is paid for only when it is (or will be) shipped. Completed orders that were
+  // never shipped are digital (PDF) or picked up – no courier.
+  const willShip = o.shipped || o.status === "s" ? 1 : o.status === "p" ? rates.confirm : 0;
   const courier = (acct.courier ?? 4) * willShip;
   const refusedCost = (acct.returnCost ?? 3) * willShip * (1 - (o.status === "c" ? 1 : rates.deliver));
   const codFee = gross * (acct.codFeePct ?? 0.012) * p;
@@ -114,7 +128,7 @@ export function thresholds(p, econ, vat = 0.2) {
   const varPct = Number.isFinite(p.varPct) ? p.varPct : 0.45;
   const floor = econ.marginFloor ?? 0.25, target = econ.marginTarget ?? 0.3;
   const room = (m) => 1 - varPct - m;
-  const beRoas = div(1, room(0));
+  const beRoas = room(0) > 0 ? 1 / room(0) : Infinity; // ≤ 0 room: every euro of ads loses money
   const floorRoas = room(floor) > 0 ? 1 / room(floor) : Infinity;
   const targetRoas = room(target) > 0 ? 1 / room(target) : Infinity;
   const netPerOrder = div(p.net, p.orders); // expected net per raw order (delivery risk included)

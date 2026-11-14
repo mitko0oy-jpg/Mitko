@@ -54,7 +54,8 @@ export function cusum(values, k = 0.5, h = 4) {
 
 // days: [{date, spend, impressions, clicks, purchases, orders, sessions, attention, trend}] ascending, complete days only.
 export function regimeFor(days) {
-  if (days.length < 10) return { regime: "nodata", ...REGIMES.nodata, metrics: {} };
+  if (days.length < 10) return { regime: "nodata", ...REGIMES.nodata, reasons: [], metrics: {} };
+  if (days.slice(-7).reduce((t, d) => t + (d.impressions || 0), 0) === 0) return { regime: "nodata", ...REGIMES.nodata, label: "Няма реклами", text: "Последната седмица няма показвания в тази държава.", reasons: [], metrics: {} };
   const col = (f) => days.map(f);
   const cpm = compare(col((d) => div(d.spend * 1000, d.impressions)));
   const ctr = compare(col((d) => div(d.clicks, d.impressions)));
@@ -88,13 +89,13 @@ export function regimeFor(days) {
     if (ctr.change < -0.08) reasons.push(`CTR ${Math.round(ctr.change * 100)}%`);
   } else if (sigDown && (cvr.change < -0.15 || opm.change < -0.2)) {
     regime = "down";
-    reasons.push(`купувания на 1000 показвания ${Math.round(opm.change * 100)}%`);
+    if (Number.isFinite(opm.change)) reasons.push(`купувания на 1000 показвания ${Math.round(opm.change * 100)}%`);
   } else if (cpm.change > 0.18 && !sigDown && !sigUp) {
     regime = "expensive";
     reasons.push(`CPM +${Math.round(cpm.change * 100)}%, конверсията се държи`);
   } else if (sigUp && (cvr.change > 0.1 || opm.change > 0.12) && !(trend.change < -0.1)) {
     regime = "up";
-    reasons.push(`купувания на 1000 показвания +${Math.round(opm.change * 100)}%`);
+    if (Number.isFinite(opm.change)) reasons.push(`купувания на 1000 показвания +${Math.round(opm.change * 100)}%`);
     if (trend.change > 0.05) reasons.push(`интерес в Google +${Math.round(trend.change * 100)}%`);
   }
   const cp = cusum(col((d) => div(d.orders * 1000, d.impressions)));
