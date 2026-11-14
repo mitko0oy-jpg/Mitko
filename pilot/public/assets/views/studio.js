@@ -23,7 +23,7 @@ export default {
           <select class="select" id="mkLine" style="width:auto">${d.lines.map((l) => html`<option value="${l.id}">${l.flag || ""} ${l.name}</option>`)}</select>
           <button class="btn honey" data-act="make" ${off ? "disabled" : ""}>${icon("sparkles")} Направи нова реклама</button>
         </div>
-        ${off ? html`<div class="issue warn" style="margin-top:12px">${icon("alert")}<div><b>За да рисува:</b> 1) console.higgsfield.ai → API Keys → създай ключ; 2) зареди баланс (от $5; банер ≈ $0,08); 3) прати ми ключа или го сложи в Netlify като HIGGSFIELD_API_KEY.</div></div>` : ""}
+        ${off ? html`<div class="issue warn" style="margin-top:12px">${icon("alert")}<div><b>За да рисува:</b> 1) console.higgsfield.ai → API Keys → създай ключ; 2) зареди баланс (от $5; банер ≈ $0,08); 3) в Netlify → kosher-reklami → Environment variables добави HIGGSFIELD_API_KEY със стойност „ID:SECRET“ (не го пращай в чата).</div></div>` : ""}
       </section>
 
       <section class="card" style="margin-top:16px">
