@@ -3,7 +3,7 @@ import { isDemo, resetDemo } from "../api.js";
 
 const CONN = {
   meta: ["Мета (Marketing API v27)", "META_TOKEN – токен на системен потребител с ads_read и ads_management"],
-  sales: ["Магазин (ConvertBuilder)", "SALES_URL + SALES_TOKEN или уебхук към /api/hook/orders"],
+  sales: ["Магазин (ConvertBuilder)", "SALES_MCP_URL (сървърът за продажби), SALES_URL или уебхук към /api/hook/orders"],
   ai: ["Claude (през Netlify AI Gateway)", "Включва се сам в Netlify – без ключ"],
   video: ["Видео модели (fal.ai)", "FAL_KEY – един ключ за Wan, MiniMax, Kling, Seedance"],
   adlib: ["Библиотека с реклами", "Същият токен на Мета + потвърдена самоличност"],

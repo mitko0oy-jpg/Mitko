@@ -60,7 +60,7 @@ export async function syncMeta(deadline: number) {
 
 export async function syncSales() {
   const sync: any = (await pgStore.get("meta", "sync")) || {};
-  if (!env("SALES_URL")) return { skipped: "no SALES_URL" };
+  if (!sales.salesConfigured()) return { skipped: "no sales source" };
   const today = todayStr();
   try {
     // Recent days every run; the last 60 days once a day (statuses change for weeks with COD).

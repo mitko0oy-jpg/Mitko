@@ -1,7 +1,9 @@
-// Shop orders. Two ways in:
-// 1) pull: SALES_URL returns the same JSON as the ConvertBuilder sales tool (format v1)
-//    for ?from=YYYY-MM-DD&to=YYYY-MM-DD, with Authorization: Bearer SALES_TOKEN;
-// 2) push: a webhook to /api/hook/orders with header x-pilot-secret = SALES_HOOK_SECRET.
+// Shop orders. Three ways in:
+// 1) MCP: SALES_MCP_URL is the address of the ConvertBuilder sales MCP server
+//    (tool get_sales, format v1) – the same source Claude reads;
+// 2) pull: SALES_URL returns format v1 for ?from=YYYY-MM-DD&to=YYYY-MM-DD,
+//    with Authorization: Bearer SALES_TOKEN;
+// 3) push: a webhook to /api/hook/orders with header x-pilot-secret = SALES_HOOK_SECRET.
 // Orders carry no personal data.
 import { env, HttpError } from "./http.mts";
 import { q } from "./db.mts";
@@ -36,7 +38,54 @@ export async function store(orders: Order[], sessions: { site: string; date: str
   return orders.length;
 }
 
+// Minimal MCP client (JSON-RPC over HTTP, JSON or SSE answers).
+async function rpc(url: string, body: unknown, session?: string) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json, text/event-stream", ...(session ? { "mcp-session-id": session } : {}) },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(25_000),
+  });
+  const text = await r.text();
+  let j: any = null;
+  if ((r.headers.get("content-type") || "").includes("text/event-stream")) {
+    const datas = text.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).filter(Boolean);
+    for (const d of datas) {
+      try {
+        const x = JSON.parse(d);
+        if (x.id === (body as any).id) j = x;
+      } catch {}
+    }
+  } else {
+    try {
+      j = JSON.parse(text);
+    } catch {}
+  }
+  return { status: r.status, j, session: r.headers.get("mcp-session-id") || session };
+}
+
+export async function pullMcp(from: string, to: string) {
+  const url = env("SALES_MCP_URL")!;
+  const call = { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "get_sales", arguments: { from, to } } };
+  let res = await rpc(url, call);
+  if (!res.j?.result) {
+    // Stateful servers want a handshake first.
+    const init = await rpc(url, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "pilot", version: "0.1" } } });
+    await fetch(url, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream", ...(init.session ? { "mcp-session-id": init.session } : {}) }, body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) }).catch(() => {});
+    res = await rpc(url, call, init.session);
+  }
+  if (res.j?.error || res.j?.result?.isError) throw new HttpError(502, "sales_mcp", `Сървърът за продажби върна грешка: ${res.j?.error?.message || "tool error"}`);
+  const text = (res.j?.result?.content || []).find((c: any) => c.type === "text")?.text;
+  const data = res.j?.result?.structuredContent || (text ? JSON.parse(text) : null);
+  if (!data) throw new HttpError(502, "sales_mcp", `Сървърът за продажби не отговори (HTTP ${res.status}).`);
+  const { orders, sessions } = decodeV1(data);
+  return { stored: await store(orders, sessions), source: "mcp" };
+}
+
+export const salesConfigured = () => !!(env("SALES_MCP_URL") || env("SALES_URL"));
+
 export async function pull(from: string, to: string) {
+  if (env("SALES_MCP_URL")) return pullMcp(from, to);
   const url = env("SALES_URL");
   if (!url) return { skipped: "no SALES_URL" };
   const u = new URL(url);

@@ -12,7 +12,9 @@ export function guessCountry(name = ""): string {
   if (/унгар|hungar|magyar|\bhu\b/.test(n)) return "HU";
   return "BG";
 }
-export function guessSites(name = "", country = "BG"): string[] {
+export function guessSites(name = "", country = "BG", currency = "EUR"): string[] {
+  // Accounts without a real name (only digits) or in another currency are not ours to map.
+  if (!name || /^\s*\d+\s*$/.test(name) || currency !== "EUR") return [];
   if (/bio/i.test(name)) return ["bioshop"];
   return { BG: ["bg", "max4"], SK: ["sk", "vcelijed"], SI: ["sl"], HU: ["hu"] }[country] || [];
 }
@@ -27,7 +29,9 @@ export async function accountsConfigured() {
   return list.map((a) => {
     const cfg = S.accounts?.[a.id] || {};
     const country = cfg.country || guessCountry(a.name);
-    return { ...a, country, sites: cfg.sites?.length ? cfg.sites : guessSites(a.name, country), on: cfg.on !== false && a.status === 1, pageId: cfg.pageId, link: cfg.link };
+    const sites = cfg.sites?.length ? cfg.sites : guessSites(a.name, country, a.currency);
+    const usable = a.status === 1 && (cfg.on === true || (cfg.on !== false && sites.length > 0));
+    return { ...a, country, sites, on: usable, pageId: cfg.pageId, link: cfg.link };
   });
 }
 
@@ -44,7 +48,7 @@ export function liveSource() {
         for (const c of s.creatives || []) if (!creatives.some((x) => x.id === c.id)) creatives.push({ ...c, country: a.country });
       }
       const siteToAcct = new Map<string, string>();
-      for (const a of accounts) for (const s of a.sites) siteToAcct.set(s, a.id);
+      for (const a of accounts) for (const s of a.sites) if (!siteToAcct.has(s)) siteToAcct.set(s, a.id);
       const insights = (await q<{ data: any }>("SELECT data FROM insights WHERE date >= $1", [since])).map((r) => r.data);
       const orders = (await q<{ data: any }>("SELECT data FROM orders WHERE date >= $1", [since])).map((r) => ({ ...r.data, account: siteToAcct.get(r.data.site) })).filter((o) => o.account);
       const sessions = (await q<any>("SELECT site, to_char(date,'YYYY-MM-DD') AS date, sessions FROM site_sessions WHERE date >= $1", [since])).map((r) => ({ ...r, account: siteToAcct.get(r.site) })).filter((r) => r.account);
@@ -59,7 +63,7 @@ export function liveSource() {
       const reasons: string[] = [];
       const ageH = (t?: string) => (t ? (Date.now() - new Date(t).getTime()) / 36e5 : Infinity);
       if (ageH(sync.metaAt) > 3) reasons.push("Данните от Мета са на повече от 3 часа.");
-      if (env("SALES_URL") && ageH(sync.salesAt) > 2) reasons.push("Поръчките от магазина са на повече от 2 часа.");
+      if ((env("SALES_URL") || env("SALES_MCP_URL")) && ageH(sync.salesAt) > 2) reasons.push("Поръчките от магазина са на повече от 2 часа.");
       const metaFatigue = Object.fromEntries((await pgStore.list("metaFatigue")).map((x: any) => [x.id, x.level]));
       return { accounts, campaigns, adsets, ads, creatives, insights, orders, sessions, market, headlines, competitors, metaFatigue, gate: { ok: !reasons.length, reasons } };
     },
@@ -102,7 +106,7 @@ export function liveSource() {
       const sync: any = (await pgStore.get("meta", "sync")) || {};
       return {
         meta: !env("META_TOKEN") ? "missing" : sync.metaError ? "error" : "ok",
-        sales: env("SALES_URL") || sync.hookAt ? (sync.salesError ? "error" : "ok") : "missing",
+        sales: env("SALES_URL") || env("SALES_MCP_URL") || sync.hookAt ? (sync.salesError ? "error" : "ok") : "missing",
         ai: env("ANTHROPIC_API_KEY") ? "ok" : "missing",
         video: env("FAL_KEY") ? "ok" : "missing",
         adlib: !env("META_TOKEN") ? "missing" : sync.adlibError ? "error" : "ok",
