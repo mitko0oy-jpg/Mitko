@@ -121,8 +121,8 @@ const body = {
       },
     },
     conversation: { max_duration_seconds: 300 },
-    // Lively, expressive delivery like the demo Mitko liked (lower stability = more intonation).
-    tts: { ...(opt("voice") ? { voice_id: opt("voice") } : {}), stability: 0.4, similarity_boost: 0.8, speed: 1 },
+    // Clear phone voice: moderate stability, quality over the last bit of latency.
+    tts: { ...(opt("voice") ? { voice_id: opt("voice") } : {}), stability: 0.55, similarity_boost: 0.75, speed: 1, optimize_streaming_latency: 1 },
   },
   platform_settings: {
     data_collection: Object.fromEntries(
