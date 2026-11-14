@@ -21,7 +21,7 @@ export default {
     const L = d.limits;
     return html`
       <section class="card">
-        <div class="card-h"><h2>Как работи пилотът</h2>
+        <div class="card-h"><h2>Как работи автопилотът</h2>
           <label class="row small" style="gap:8px"><span class="${d.paused ? "down" : "muted"}">${d.paused ? "СПРЯН" : "Работи"}</span><span class="switch"><input type="checkbox" data-act="pause" ${d.paused ? "" : "checked"} aria-label="Автопилотът работи"><span></span></span></label>
         </div>
         <div class="modes">${Object.entries(d.modes).map(([k, m]) => html`<button class="mode ${d.mode === k ? "on" : ""}" data-act="mode" data-v="${k}"><h3>${icon(k === "observe" ? "eye" : k === "copilot" ? "users" : "pilot")} ${m.label}</h3><p>${m.text}</p></button>`)}</div>
@@ -79,7 +79,7 @@ export default {
       try {
         if (t.dataset.act === "pause") {
           await ctx.call("saveSettings", { paused: !t.checked });
-          toast(t.checked ? "Пилотът работи" : "Пилотът е спрян – нищо не се променя само");
+          toast(t.checked ? "Автопилотът работи" : "Автопилотът е спрян – нищо не се променя само");
           window.dispatchEvent(new Event("pilot:changed"));
           ctx.refresh();
         } else if (t.dataset.act === "rule") {

@@ -39,7 +39,7 @@ export default {
         <section class="card">
           <div class="card-h"><h2>${icon("calendar")} Календар</h2><span class="hint">Следващите 45 дни</span></div>
           <div class="list">${d.calendar.slice(0, 18).map((e) => html`<div class="item" style="padding:8px 0"><div class="body"><div class="t small">${shortDate(e.date)} · ${e.country} · ${e.name}</div></div><span class="pill ${(KIND[e.kind] || [])[1]}">${(KIND[e.kind] || [e.kind])[0]}</span><span class="small ${e.effect > 0 ? "up" : e.effect < 0 ? "down" : "faint"}" style="min-width:42px;text-align:right">${e.effect ? signPct(e.effect) : ""}</span></div>`)}</div>
-          <p class="tiny faint">Ефектите са начални предположения. След 2–3 месеца пилотът ги заменя с измерените от твоите поръчки.</p>
+          <p class="tiny faint">Ефектите са начални предположения. След 2–3 месеца Кошерът ги заменя с измерените от твоите поръчки.</p>
         </section>
         <section class="card">
           <div class="card-h"><h2>${icon("shield")} Проследяване</h2><span class="hint">Мета ↔ реални поръчки</span></div>
@@ -57,7 +57,7 @@ export default {
             <td class="l small" style="white-space:normal;min-width:260px">${top ? html`„${top.text}“ <span class="faint">· ${ANGLE[top.angle] || top.angle} · ${top.days} дни · ${int(top.reach)} обхват${top.offer ? ` · ${top.offer}` : ""}</span>` : ""}</td></tr>`;
         })}
         </tbody></table></div>
-        <p class="tiny faint">Победител = активна 21+ дни, с 3+ варианта, голям обхват или в няколко държави. Пилотът не копира – прави оригинален бриф по същия ъгъл. При вълна от нови реклами на конкурент: 3–5 контра-креатива до 72 ч, без да режеш цената.</p>
+        <p class="tiny faint">Победител = активна 21+ дни, с 3+ варианта, голям обхват или в няколко държави. Кошерът не копира – прави оригинален бриф по същия ъгъл. При вълна от нови реклами на конкурент: 3–5 контра-креатива до 72 ч, без да режеш цената.</p>
       </section>`;
   },
 };

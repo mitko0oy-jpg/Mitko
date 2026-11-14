@@ -50,7 +50,7 @@ function shell() {
   root.innerHTML = String(html`
     <div class="shell">
       <aside class="side">
-        <div class="brand">${logo()}<div><b>Пилот</b><small>рекламен автопилот</small></div></div>
+        <div class="brand">${logo()}<div><b>Кошер</b><small>всичко за рекламите на едно място</small></div></div>
         <nav class="nav" id="nav"></nav>
         <div class="side-foot" id="sideFoot"></div>
       </aside>
@@ -98,7 +98,7 @@ export async function go(force = false) {
     page.classList.remove("loading");
     page.innerHTML = String(out);
     r.view.mount?.(page, ctx);
-    document.title = `${r.title} · Рекламен Пилот`;
+    document.title = `${r.title} · Кошер`;
   } catch (e) {
     if (my !== seq) return;
     page.classList.remove("loading");
@@ -120,7 +120,7 @@ async function refreshBadge() {
 function loginScreen(msg = "") {
   root.innerHTML = String(html`
     <div class="login"><form class="card stack" id="loginForm">
-      <div class="brand">${logo()}<div><b>Пилот</b><small>рекламен автопилот</small></div></div>
+      <div class="brand">${logo()}<div><b>Кошер</b><small>всичко за рекламите на едно място</small></div></div>
       <div class="field"><label for="pw">Парола</label><input class="input" id="pw" type="password" autocomplete="current-password" required></div>
       ${msg ? html`<div class="issue block">${msg}</div>` : ""}
       <button class="btn primary">Влез</button>

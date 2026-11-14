@@ -1,4 +1,4 @@
-# Пилот – рекламен автопилот (папка pilot/)
+# Кошер – рекламното приложение (папка pilot/)
 
 Отделно приложение от Еду БЕЛ в същото хранилище. Собственикът (Митко) не е програмист: обяснявай на български, просто.
 
@@ -19,10 +19,12 @@ BeeVenom (гел/крем/пластири с пчелна отрова) + Bio, 
 - Тайните само в Netlify env. Без лични данни на клиенти в базата.
 
 ## Netlify
-- Проект: `pilot-reklami` (site id `48cad0d2-7c73-46f2-8f0f-98145b887ba3`), отбор `mitko0oy`, адрес https://pilot-reklami.netlify.app.
+- Проект: `kosher-reklami` (преди `pilot-reklami`) (site id `48cad0d2-7c73-46f2-8f0f-98145b887ba3`), отбор `mitko0oy`, адрес https://kosher-reklami.netlify.app.
 - Сайтът е зад вход с Netlify акаунта на отбора (team login) + паролата на приложението (`APP_PASSWORD`). Преди уебхуците (поръчки, Мета) да заработят, защитата трябва да е само за непродукционни деплои.
 - Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска **от папка `pilot/`**. Всеки деплой е 15 кредита – тествай локално.
-- Env: зададени са `APP_PASSWORD` и `SALES_MCP_URL` (адресът на MCP сървъра за продажби от проекта `mitko-prodazhbi`, с ключа му – с изричното съгласие на Митко). Предстои `META_TOKEN` (+ `META_APP_SECRET`); по избор `FAL_KEY`, `SERPAPI_KEY`, `META_WEBHOOK_VERIFY`.
+- Env: зададени са `APP_PASSWORD`, `SALES_MCP_URL` (адресът на MCP сървъра за продажби от проекта `mitko-prodazhbi`, с ключа му – с изричното съгласие на Митко) и `META_TOKEN` (системен потребител „Tablo App“, приложение beevenom, права ads_management, ads_read, business_management, pages_show_list, pages_read_engagement; само Production). Предстои `META_APP_SECRET` (нужен е вход с профила, създал приложението); по избор `FAL_KEY`, `SERPAPI_KEY`, `META_WEBHOOK_VERIFY`.
+- Направления: акаунтът „Bio“ върти Еду БЕЛ (карти НВО) и BeeVenom BG; „Словения“ – BeeVenom SI. Кампаниите се разпределят по ключови думи в имената (`public/core/lines.js`, редактируемо в Настройки). Сумите в HUF се превръщат в EUR по курса от сървъра за продажби.
+- Себестойностите са от вградения списък на „Табло Печалба“ и се броят за цялата поръчка (с доставката); куриерът е 0 по подразбиране. Чакат потвърждение от Митко.
 - Поръчките се теглят от `mitko-prodazhbi` (MCP `get_sales`, формат v1) при всяка проверка на 15 мин.; веднъж дневно – последните 60 дни.
 
 ## Тестове

@@ -15,7 +15,7 @@ export default {
     if (!d.demo && !d.byAccount.length) return html`
       <section class="card hero" style="max-width:760px">
         <div class="card-h"><h2>${icon("bolt")} Първи стъпки</h2><span class="pill info">няма свързани акаунти</span></div>
-        <p class="muted" style="margin-top:-4px">Пилотът е готов. Остава да го свържем с рекламните акаунти и с поръчките. Докато чакаш, разгледай всичко с <a href="?demo=1">примерни данни</a>.</p>
+        <p class="muted" style="margin-top:-4px">Кошерът е готов. Остава да го свържем с рекламните акаунти и с поръчките. Докато чакаш, разгледай всичко с <a href="?demo=1">примерни данни</a>.</p>
         <ol class="stack" style="gap:10px;padding-left:20px;margin:6px 0 0">
           <li><b class="strong">Мета:</b> токен на системен потребител (ads_read, ads_management) – въвежда се в Netlify като скрита настройка META_TOKEN. До 15 минути след това акаунтите, кампаниите и рекламите се появяват тук.</li>
           <li><b class="strong">Поръчки:</b> адрес за продажбите от ConvertBuilder (SALES_URL) или уебхук към /api/hook/orders.</li>

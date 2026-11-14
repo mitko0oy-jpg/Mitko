@@ -36,7 +36,7 @@ export default {
       <div class="grid g2">
         <section class="card">
           <div class="card-h"><h2>${icon("wand")} Нови концепции</h2></div>
-          <p class="small muted" style="margin-top:-6px">Пилотът избира комбинации, които <b>още не сте правили</b> или които печелят, проверява ги срещу всичко досега и срещу правилата за твърдения.</p>
+          <p class="small muted" style="margin-top:-6px">Кошерът избира комбинации, които <b>още не сте правили</b> или които печелят, проверява ги срещу всичко досега и срещу правилата за твърдения.</p>
           <div class="grid g2" style="gap:10px">
             <div class="field"><label>Акаунт</label><select class="select" id="bAcct">${accounts.map((a) => html`<option value="${a.id}">${a.flag} ${a.name}</option>`)}</select></div>
             <div class="field"><label>Брой</label><select class="select" id="bCount">${[2, 3, 4, 6, 8].map((n) => html`<option ${n === 4 ? "selected" : ""}>${n}</option>`)}</select></div>
