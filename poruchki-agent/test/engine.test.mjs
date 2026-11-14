@@ -198,3 +198,20 @@ test("orders older than 48 hours are skipped, and nothing is called before setup
   assert.equal(rep.skipped, 1);
   assert.equal(calls.length, 0);
 });
+
+test("only orders that came after /rezhim are called", async () => {
+  const { deps, store, orders, calls, order } = setup({ mode: "off" });
+  await syncOrders(deps, T0);
+  orders.push(order(30, { createdAt: min(1).toISOString() }));
+  await syncOrders(deps, min(2));
+  assert.equal((await runDueCalls(deps, min(3))).reason, "off");
+  const st = await store.get("meta/settings", { type: "json" });
+  await store.setJSON("meta/settings", { ...st, mode: "test", modeSince: min(10).toISOString() });
+  orders.push(order(31, { createdAt: min(12).toISOString() }));
+  await syncOrders(deps, min(13));
+  const rep = await runDueCalls(deps, min(14));
+  assert.equal(rep.skipped, 1, "order 30 came before the switch");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].variables.order_number, "31");
+  assert.equal(calls[0].to, "+359877000000");
+});

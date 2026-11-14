@@ -10,6 +10,9 @@ const HELP = [
   "/pusni – пуска ги отново",
   "/status – какво става в момента",
   "/test – агентът звъни на твоя тестов номер с примерна поръчка",
+  "/rezhim test – звъни на теб за всяка нова поръчка (тест)",
+  "/rezhim live – звъни на клиентите",
+  "/rezhim off – не звъни за поръчки",
 ].join("\n");
 
 const SAMPLE = {
@@ -54,6 +57,18 @@ export async function handleTelegram(deps, update, opts = {}) {
     await saveSettings(store, { ...settings, paused: false });
     return { chatId, reply: "▶️ Обажданията са пуснати." };
   }
+  if (["/rezhim", "режим"].includes(cmd)) {
+    const want = (text.split(/\s+/)[1] || "").toLowerCase();
+    const map = { test: "test", тест: "test", live: "live", клиенти: "live", off: "off", изкл: "off" };
+    if (!map[want]) return { chatId, reply: "Напиши: /rezhim test, /rezhim live или /rezhim off" };
+    await saveSettings(store, { ...settings, mode: map[want], modeSince: new Date().toISOString(), paused: false });
+    const msg = {
+      test: "🧪 Режим ТЕСТ: за всяка нова поръчка агентът звъни на теб (" + esc(config.testPhone || "няма тестов номер") + ") с истинските ѝ данни.",
+      live: "📞 Режим КЛИЕНТИ: агентът звъни на клиентите за всяка нова поръчка. /stop спира веднага.",
+      off: "⏹ Изключено: агентът не звъни за поръчки. /test работи.",
+    }[map[want]];
+    return { chatId, reply: msg + "\nВажи за поръчките, дошли от този момент нататък." };
+  }
   if (["/status", "статус"].includes(cmd)) {
     const active = (await store.list({ prefix: "order/" })).blobs.length;
     const done = (await store.list({ prefix: "done/" })).blobs;
@@ -64,7 +79,7 @@ export async function handleTelegram(deps, update, opts = {}) {
     }
     recent.sort((a, b) => String(b.finishedAt).localeCompare(String(a.finishedAt)));
     const lines = [
-      `Режим: ${config.mode === "live" ? "звъни на клиентите" : config.mode === "test" ? "ТЕСТ – звъни само на теб" : "изключен"}`,
+      `Режим: ${{ live: "звъни на клиентите", test: "ТЕСТ – звъни само на теб", off: "изключен" }[settings.mode || config.mode] || "изключен"}`,
       settings.paused ? "⏸ На пауза" : "▶️ Работи",
       `Часове: ${config.hours} (неделя ${config.hoursSunday || config.hours})`,
       `Чакат обаждане: ${active}`,

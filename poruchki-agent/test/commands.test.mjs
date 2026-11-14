@@ -61,3 +61,16 @@ test("telegram webhook is registered once", async () => {
   assert.equal(hits[0].body.secret_token, "s3cret");
   assert.equal(await ensureTelegramWebhook({ ...args, token: "" }), "not configured");
 });
+
+test("/rezhim switches the mode from Telegram", async () => {
+  const d = deps();
+  await handleTelegram(d, upd(1, "/start abc"), { setupCode: "abc" });
+  assert.match((await handleTelegram(d, upd(1, "/rezhim test"), {})).reply, /Режим ТЕСТ/);
+  let st = await getSettings(d.store);
+  assert.equal(st.mode, "test");
+  assert.ok(st.modeSince);
+  assert.match((await handleTelegram(d, upd(1, "/rezhim live"), {})).reply, /КЛИЕНТИ/);
+  assert.equal((await getSettings(d.store)).mode, "live");
+  assert.match((await handleTelegram(d, upd(1, "/rezhim xyz"), {})).reply, /Напиши/);
+  assert.match((await handleTelegram(d, upd(1, "/status"), {})).reply, /звъни на клиентите/);
+});

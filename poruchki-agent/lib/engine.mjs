@@ -74,7 +74,7 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
     if (!modified) continue;
     await save(store, orderKey(o.site, o.orderNo), rec);
     added++;
-    if (!phone) await notify(buildMessage(rec, labelFor("bad_phone"), null, { testMode: config.mode === "test" }));
+    if (!phone && (settings.mode || config.mode) !== "off") await notify(buildMessage(rec, labelFor("bad_phone"), null, { testMode: (settings.mode || config.mode) === "test" }));
   }
   return added;
 }
@@ -84,7 +84,8 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
   const { store, cb, call, notify, config } = deps;
   const settings = await getSettings(store);
   const report = { started: 0, skipped: 0, stale: 0, reason: "" };
-  const testMode = config.mode === "test";
+  const mode = settings.mode || config.mode; // set from Telegram (/rezhim) or MODE env
+  const testMode = mode === "test";
 
   const { blobs } = await store.list({ prefix: "order/" });
   const due = [];
@@ -100,15 +101,18 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       report.stale++;
       continue;
     }
-    if (rec.state === "queued" && now - new Date(rec.createdAt) > MAX_ORDER_AGE_H * 3_600_000) {
-      await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: "too old to call" }] });
+    // Orders that came in before the current mode was switched on are never called.
+    const tooOld = now - new Date(rec.createdAt) > MAX_ORDER_AGE_H * 3_600_000;
+    const beforeMode = settings.modeSince && new Date(rec.createdAt) < new Date(settings.modeSince);
+    if (rec.state === "queued" && (tooOld || beforeMode)) {
+      await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: tooOld ? "too old to call" : "came before the mode was switched on" }] });
       report.skipped++;
       continue;
     }
     if (rec.state === "queued" && new Date(rec.nextAttemptAt) <= now) due.push({ key, rec, etag: entry.etag });
   }
 
-  if (config.mode === "off") return { ...report, reason: "off" };
+  if (mode === "off") return { ...report, reason: "off" };
   if (config.ready === false) return { ...report, reason: "ElevenLabs not configured yet" };
   if (settings.paused) return { ...report, reason: "paused" };
   const hours = sofiaNow(now).weekday === 0 ? config.hoursSunday || config.hours : config.hours;

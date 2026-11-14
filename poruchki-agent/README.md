@@ -8,7 +8,8 @@
 - Деплой от тази папка: MCP `deploy-site` със site id-то по-горе, командата се пуска в `poruchki-agent/`. Промяна на env променлива влиза в сила чак след нов деплой.
 - `CB_SITES` съдържа само BeeVenom BG. Ключът е копиран от проекта `mitko-prodazhbi`.
 - ElevenLabs (план Starter): изходящ агент `agent_2201m7cgch0jex6tkg81fc95ch2h`, входящ агент `agent_3401m7cgdf60esk8043hz0vwvj68`, webhook за резултатите `37f9d6d5e36244a0bab21494bda7bcf5`. Глас: Elena – Energetic, Friendly, and Clear (`fSxb5mPM1l5zTVVtM3Vb`), избрана от Митко. Друг кандидат: Zori (`Q7y69QlBd8K0CLYUdS1m`), най-близка до демото.
-- Входящата линия ще е 0988 88 05 07, пренасочена към номера на агента, когато никой не вдигне.
+- Номер на агента: Zadarma София +359 2 437 0192, вътрешен номер 605568-100 (`pbx.zadarma.com`, TCP). В ElevenLabs е `phnum_0401m7cqsxpqf439twk8p463dzxw`, входящите отиват при входящия агент. В Zadarma: CallerID на вътрешния номер = +35924370192, пренасочване „винаги“ към `+35924370192@sip.rtc.elevenlabs.io:5060;transport=tcp`.
+- Входящата линия ще е 0988 88 05 07, пренасочена към +359 2 437 0192, когато никой не вдигне.
 
 ## Как работи
 
@@ -37,7 +38,7 @@ ConvertBuilder API не може да създава поръчки, а само
 
 ## Telegram
 
-Командите са `/stop`, `/pusni`, `/status` и `/test`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
+Командите са `/stop`, `/pusni`, `/status`, `/test` и `/rezhim test|live|off`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
 
 ## Променливи в Netlify (отделен проект)
 
@@ -51,7 +52,7 @@ ConvertBuilder API не може да създава поръчки, а само
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SETUP_CODE` | бот от @BotFather; другите две са произволни дълги низове |
 | `TOOLS_SECRET` | тайната част от адреса на инструментите |
 | `EL_INBOUND_AGENT_ID` | id на входящия агент (за известията след разговор) |
-| `MODE` | `test` (по подразбиране), `live` или `off` |
+| `MODE` | начален режим: `off`, `test` или `live`. Митко го сменя от Telegram с `/rezhim test\|live\|off` (записва се в Blobs и важи само за поръчки след командата) |
 | `TEST_PHONE` | номерът на Митко за тестовете |
 | `CALL_HOURS`, `CALL_HOURS_SUNDAY`, `SHOP_NAME`, `DELIVERY_DAYS` | по желание |
 
