@@ -50,7 +50,7 @@ export default {
               actions: html`${c.status === "draft" ? html`<button class="btn sm honey" data-act="focus" data-id="${c.id}">${icon("video")} Генерирай</button>` : ""}${c.status === "review" ? html`<button class="btn sm good" data-act="approveCr" data-id="${c.id}">${icon("check")} Одобри</button>` : ""}${c.status === "bench" ? html`<button class="btn sm good" data-act="launch" data-id="${c.id}" data-account="${c.account || ""}">${icon("upload")} Пусни</button>` : ""}<button class="btn sm ghost" data-act="show" data-id="${c.id}">${icon("eye")} Виж</button>`,
             }),
           )}</div>`
-        : html`<div class="card empty">${icon("wand")}<p>Няма готови резерви. <a href="#studio">Направи нови концепции</a>.</p></div>`;
+        : html`<div class="card empty">${icon("wand")}<p>Няма готови резерви. <a href="#studio">Направи нови реклами</a>.</p></div>`;
       this._adsets = adsets;
     } else if (tab === "andromeda") {
       body = html`
@@ -96,7 +96,7 @@ export default {
         <div class="seg">${tabs.map(([k, l]) => html`<button data-act="tab" data-v="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)}</div>
         <span class="grow"></span>
         <select class="select" style="width:auto" data-act="acct" aria-label="Акаунт"><option value="all">Всички акаунти</option>${d.perAccount.map((a) => html`<option value="${a.id}" ${acct === a.id ? "selected" : ""}>${a.flag} ${a.name}</option>`)}</select>
-        <a class="btn honey sm" href="#studio">${icon("wand")} Нови концепции</a>
+        <a class="btn honey sm" href="#studio">${icon("wand")} Нови реклами</a>
       </div>
       ${body}`;
   },

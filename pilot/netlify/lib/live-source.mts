@@ -128,7 +128,7 @@ export function liveSource() {
         meta: !env("META_TOKEN") ? "missing" : sync.metaError ? "error" : "ok",
         sales: env("SALES_URL") || env("SALES_MCP_URL") || sync.hookAt ? (sync.salesError ? "error" : "ok") : "missing",
         ai: env("ANTHROPIC_API_KEY") ? "ok" : "missing",
-        video: env("FAL_KEY") ? "ok" : "missing",
+        video: env("HIGGSFIELD_API_KEY") || (env("HIGGSFIELD_KEY_ID") && env("HIGGSFIELD_KEY_SECRET")) ? "ok" : "missing",
         adlib: !env("META_TOKEN") ? "missing" : sync.adlibError ? "error" : "ok",
       };
     },

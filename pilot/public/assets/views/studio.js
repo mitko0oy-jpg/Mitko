@@ -1,119 +1,165 @@
-import { html, icon, toast, esc, modal } from "../ui.js";
-import { creativeCard } from "./creatives.js";
+// New ads – one button. Кошер decides what needs replacing and with which NEW idea;
+// "Направи" draws 4 banners (ChatGPT image model via Higgsfield); "Пусни" puts the
+// chosen one into the right ad set and pauses the ad it replaces.
+import { html, raw, icon, toast, esc, modal, thumbStyle, ask } from "../ui.js";
 
-let last = null;
-let checkResult = null;
-let checkInput = { tags: {}, hookText: "", script: "", country: "BG" };
+const isDemoUrl = (u) => String(u || "").startsWith("demo:");
+function pic(url, hook, id, cls = "") {
+  if (!url || isDemoUrl(url)) return html`<div class="mk-img ${cls}" style="${thumbStyle(id || url || hook)}"><span>${hook}</span></div>`;
+  return html`<img class="mk-img ${cls}" src="${url}" alt="${hook}" loading="lazy">`;
+}
+const STATUS = { making: ["Рисува се…", "info"], ready: ["Готово – избери", "honey"], live: ["Пусната", "good"], failed: ["Не се получи", "bad"] };
 
 export default {
   range: false,
-  async render({ call, arg }) {
-    const d = await call("creatives");
-    const accounts = d.perAccount;
-    const drafts = d.items.filter((c) => ["draft", "review", "generating"].includes(c.status)).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    const focus = arg ? d.items.find((c) => c.id === arg) : null;
-    const sel = (key) => {
-      const dim = d.dims.find((x) => x.key === key);
-      return html`<div class="field"><label>${dim.label}</label><select class="select" data-tag="${key}"><option value="">—</option>${Object.entries(dim.values).map(([k, v]) => html`<option value="${k}" ${checkInput.tags[key] === k ? "selected" : ""}>${v}</option>`)}</select></div>`;
-    };
+  async render({ call }) {
+    const d = await call("studio");
+    const off = d.connected === "missing";
     return html`
-      ${focus ? html`<section class="card" style="margin-bottom:16px;border-color:var(--honey)">
-        <div class="card-h"><h2>${icon("video")} Генерирай: ${focus.name}</h2><button class="btn ghost sm" data-act="unfocus">Затвори</button></div>
-        <div class="grid g2">
-          <div class="stack">
-            <p class="strong" style="margin:0">„${focus.hookText}“</p>
-            ${focus.script ? html`<pre class="script">${focus.script}</pre>` : ""}
-            ${focus.compliance ? html`<div class="stack" style="gap:6px">${focus.compliance.issues.length ? focus.compliance.issues.map((i) => html`<div class="issue ${i.level}">${i.text}</div>`) : html`<div class="issue">${icon("check")} Текстът минава проверката</div>`}</div>` : ""}
-          </div>
-          <div class="stack">
-            <div class="field"><label>Модел</label><select class="select" id="prov">${d.providers.filter((p) => ["video", "avatar", "image"].includes(p.kind)).map((p) => html`<option value="${p.id}">${p.name} – ${p.use} (${p.price})</option>`)}</select></div>
-            <div class="issue">${icon("shield")}<div>Видеото се прави <b>без говор и без текст</b>. Гласът (ElevenLabs v3 или истински човек) и надписите на ${esc(focus.country)} се добавят отделно – така диакритиката и твърденията са точни. Реалистичен AI човек получава етикет „Създадено с изкуствен интелект“.</div></div>
-            <button class="btn honey" data-act="generate" data-id="${focus.id}" ${focus.compliance && !focus.compliance.ok ? "disabled" : ""}>${icon("wand")} Генерирай</button>
-            <p class="tiny muted" style="margin:0">След генериране креативът отива „За преглед“. Ти го одобряваш и чак тогава става резерва.</p>
-          </div>
+      <section class="card">
+        <div class="card-h"><h2>${icon("wand")} Нова реклама</h2>${d.connected === "demo" ? html`<span class="pill honey">демо</span>` : off ? html`<span class="pill warn">Higgsfield не е свързан</span>` : html`<span class="pill good">Higgsfield свързан</span>`}</div>
+        <p class="small muted" style="margin-top:-6px">Кошер следи кои реклами не продават евтино и кои изгарят и предлага <b>нова идея</b> на тяхно място – различна от всичко в адсета. Банерите ги рисува ChatGPT (GPT Image 2.5) през Higgsfield: 4 варианта на идеята, ти избираш един и го пускаш.</p>
+        <div class="row">
+          <select class="select" id="mkLine" style="width:auto">${d.lines.map((l) => html`<option value="${l.id}">${l.flag || ""} ${l.name}</option>`)}</select>
+          <button class="btn honey" data-act="make" ${off ? "disabled" : ""}>${icon("sparkles")} Направи нова реклама</button>
         </div>
-      </section>` : ""}
-      <div class="grid g2">
-        <section class="card">
-          <div class="card-h"><h2>${icon("wand")} Нови концепции</h2></div>
-          <p class="small muted" style="margin-top:-6px">Кошерът избира комбинации, които <b>още не сте правили</b> или които печелят, проверява ги срещу всичко досега и срещу правилата за твърдения.</p>
-          <div class="grid g2" style="gap:10px">
-            <div class="field"><label>Акаунт</label><select class="select" id="bAcct">${accounts.map((a) => html`<option value="${a.id}">${a.flag} ${a.name}</option>`)}</select></div>
-            <div class="field"><label>Брой</label><select class="select" id="bCount">${[2, 3, 4, 6, 8].map((n) => html`<option ${n === 4 ? "selected" : ""}>${n}</option>`)}</select></div>
-          </div>
-          <div class="field" style="margin-top:10px"><label>Продукт</label><input class="input" id="bProduct" value="BeeVenom Care Gel"></div>
-          <div class="row" style="margin-top:12px"><button class="btn primary" data-act="briefs">${icon("sparkles")} Направи концепции</button></div>
-          ${last ? html`<div class="banner ${last.created ? "" : "bad"}" style="margin:14px 0 0">${last.created ? `Готови ${last.created} нови концепции${last.ai ? " (написани от Claude)" : " (по шаблон – AI не е свързан)"}.` : "Всички предложения се оказаха повторения – опитай пак."}</div>` : ""}
-        </section>
-        <section class="card">
-          <div class="card-h"><h2>${icon("shield")} Провери идея, преди да я снимаш</h2></div>
-          <div class="grid g3" style="gap:8px">${["angle", "persona", "format", "hook", "visual", "talent"].map(sel)}</div>
-          <div class="field" style="margin-top:8px"><label>Първото изречение (кука)</label><input class="input" id="cHook" value="${checkInput.hookText}" placeholder="напр. Пак ли не можете да се наведете в градината?"></div>
-          <div class="field" style="margin-top:8px"><label>Сценарий / текст (по желание)</label><textarea class="input" id="cScript" rows="3">${checkInput.script}</textarea></div>
-          <div class="row" style="margin-top:10px"><button class="btn" data-act="check">${icon("eye")} Провери</button></div>
-          ${checkResult ? html`<div class="stack" style="gap:8px;margin-top:12px">
-            <div class="row"><span class="pill ${checkResult.verdict.level === "new" ? "good" : checkResult.verdict.level === "related" ? "info" : "warn"}">${checkResult.verdict.label} · сходство ${checkResult.score}%</span><span class="small muted">${checkResult.verdict.hint}</span></div>
-            ${checkResult.nearest.length ? html`<div class="small"><b>Най-близко досега:</b> ${checkResult.nearest.map((n) => html`<div class="muted">• ${n.name} (${n.score}%) – „${n.hookText || ""}“</div>`)}</div>` : ""}
-            ${checkResult.compliance.issues.length ? checkResult.compliance.issues.map((i) => html`<div class="issue ${i.level}">${i.text}</div>`) : html`<div class="issue">${icon("check")} Текстът минава проверката</div>`}
-          </div>` : ""}
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Идеи и чакащи преглед (${drafts.length})</h2><a class="small" href="#kreativi">Всички креативи →</a></div>
-        ${drafts.length ? html`<div class="cards">${drafts.slice(0, 24).map((c) => creativeCard(c, d.dims, { actions: html`${c.status === "draft" ? html`<button class="btn sm honey" data-act="focus" data-id="${c.id}">${icon("video")} Генерирай</button>` : ""}${c.status === "review" ? html`<button class="btn sm good" data-act="approveCr" data-id="${c.id}">${icon("check")} Одобри → резерва</button>` : ""}<button class="btn sm ghost" data-act="show" data-id="${c.id}">${icon("eye")} Сценарий</button>` }))}</div>` : html`<div class="empty">Още няма идеи. Натисни „Направи концепции“.</div>`}
+        ${off ? html`<div class="issue warn" style="margin-top:12px">${icon("alert")}<div><b>За да рисува:</b> 1) console.higgsfield.ai → API Keys → създай ключ; 2) зареди баланс (от $5; банер ≈ $0,08); 3) прати ми ключа или го сложи в Netlify като HIGGSFIELD_API_KEY.</div></div>` : ""}
       </section>
 
       <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Инструменти (ноември 2026)</h2><span class="hint">Сменят се през седмици – в „Обучение → Радар“ следим новото</span></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Инструмент</th><th>За какво</th><th>Цена</th><th>Достъп</th></tr></thead><tbody>
-        ${d.providers.map((p) => html`<tr><td><b class="strong">${p.name}</b></td><td class="l" style="white-space:normal">${p.use}</td><td>${p.price}</td><td>${p.route}</td></tr>`)}
-        </tbody></table></div>
+        <div class="card-h"><h2>${icon("flame")} Трябват сега</h2><span class="pill info">${d.needs.length}</span></div>
+        ${d.needs.length
+          ? html`<div class="list">${d.needs.map((n) => html`<div class="item">
+              <div class="ic ${n.kind === "replace" ? "bad" : "honey"}">${icon(n.kind === "replace" ? "refresh" : "plus")}</div>
+              <div class="body">
+                <div class="t">${n.kind === "replace" ? html`Замени „${n.replaces.name}“` : html`Резерва за ${n.lineName}`}</div>
+                <div class="r">${n.lineName} · ${n.reason}</div>
+                <div class="r"><b class="strong">Нова идея:</b> ${n.concept.summary}${n.concept.layout?.trend ? html` <span class="pill violet">актуален формат</span>` : ""}</div>
+              </div>
+              <div class="acts"><button class="btn sm honey" data-act="make" data-slot="${n.id}" ${off ? "disabled" : ""}>${icon("sparkles")} Направи</button></div>
+            </div>`)}</div>`
+          : html`<div class="empty">${icon("check")}<p>Всички реклами продават в рамките на допустимото. Когато някоя поскъпне или изгори, ще се появи тук.</p></div>`}
+      </section>
+
+      <details class="card" style="margin-top:16px">
+        <summary class="strong" style="cursor:pointer">${icon("shield")} Правилата, по които се правят рекламите</summary>
+        <ol class="rules">${d.rules.map((r) => html`<li><b>${r.t}.</b> <span class="muted">${r.d}</span></li>`)}</ol>
+      </details>
+
+      <section class="card" style="margin-top:16px">
+        <div class="card-h"><h2>Направени</h2><span class="hint">Последните 24</span></div>
+        ${d.made.length
+          ? html`<div class="mk-grid">${d.made.map((m) => html`<button class="mk-card" data-act="open" data-id="${m.id}">
+              ${pic(m.images?.[0], m.hookText, m.id)}
+              <div class="mk-cap"><span class="pill ${(STATUS[m.status] || [])[1]}">${(STATUS[m.status] || [m.status])[0]}</span><b>${m.hookText}</b><span class="tiny muted">${m.lineName}</span></div>
+            </button>`)}</div>`
+          : html`<div class="empty small">Още няма. Натисни „Направи“.</div>`}
       </section>`;
   },
+
   mount(page, ctx) {
-    page.addEventListener("change", (e) => {
-      const t = e.target.dataset.tag;
-      if (t) checkInput.tags[t] = e.target.value || undefined;
-    });
+    let timer = null;
+    const stop = () => {
+      clearTimeout(timer);
+      timer = null;
+    };
+
+    function openDoc(doc) {
+      let current = doc;
+      const close = modal(`<div id="mkBody"></div>`, (m, closeFn) => {
+        const body = m.querySelector("#mkBody");
+        const draw = () => {
+          const d = current;
+          const st = STATUS[d.status] || [d.status, ""];
+          body.innerHTML = String(html`
+            <div class="row between"><h2>${d.hookText}</h2><button class="btn ghost sm" data-close>✕</button></div>
+            <p class="small muted" style="margin:4px 0 10px">${d.lineName} · ${d.concept.summary}${d.replaces ? html` · заменя „${d.replaces.name}“` : ""}</p>
+            <div class="row" style="margin-bottom:12px"><span class="pill ${st[1]}">${st[0]}</span>${d.adsetName ? html`<span class="pill">адсет: ${d.adsetName}</span>` : ""}</div>
+            ${d.status === "making" ? html`<div class="mk-wait">${icon("refresh")} ChatGPT рисува 4 банера по идеята… обикновено до минута-две. Можеш да затвориш – ще ги намериш в „Направени“.</div>` : ""}
+            ${d.status === "failed" ? html`<div class="issue block">${d.error || "Не се получи."}</div>` : ""}
+            ${d.images?.length ? html`<div class="mk-pick">${d.images.map((u, i) => html`<div class="mk-opt">${pic(u, d.hookText, d.id + i)}
+                ${d.status === "ready" ? html`<div class="row" style="gap:6px;margin-top:6px"><button class="btn sm good" data-do="launch" data-img="${u}">${icon("upload")} Пусни</button><button class="btn sm" data-do="video" data-img="${u}">${icon("video")} Видео</button></div>` : ""}
+                ${d.launchedWith === u ? html`<span class="pill good" style="margin-top:6px">пусната</span>` : ""}</div>`)}</div>` : ""}
+            ${d.concept.layout ? html`<div class="mk-struct" style="margin-top:12px"><b>Структура: ${d.concept.layout.name}</b>${d.concept.layout.trend ? html` <span class="pill violet">актуално 2026</span>` : ""}<ol>${d.concept.layout.steps.map((x) => html`<li>${x}</li>`)}</ol>${d.concept.why?.length ? html`<div class="tiny muted">Защо тази идея: ${d.concept.why.slice(0, 3).join(" · ")}</div>` : ""}</div>` : ""}
+            ${d.videoJob ? html`<div class="sep"></div><h3 style="margin-bottom:8px">${icon("video")} Видео (5 сек.)</h3>
+              ${d.videoUrl ? html`${isDemoUrl(d.videoUrl) ? pic(null, "демо видео", d.id + "v", "mk-video") : html`<video class="mk-video" src="${d.videoUrl}" controls playsinline muted loop></video>`}
+                ${d.status !== "live" ? html`<div class="row" style="margin-top:8px"><button class="btn sm good" data-do="launchVideo">${icon("upload")} Пусни видеото</button></div>` : ""}`
+              : d.videoError ? html`<div class="issue block">${d.videoError}</div>` : html`<div class="mk-wait">${icon("refresh")} Видеото се прави… 1–3 минути.</div>`}` : ""}
+            <div class="sep"></div>
+            <div class="row" style="justify-content:space-between"><span class="tiny muted">Ако не продава евтино, Кошер ще я предложи за смяна.</span>${d.status !== "live" ? html`<button class="btn sm" data-do="another">${icon("sparkles")} Друга идея</button>` : ""}</div>`);
+        };
+        const tick = async () => {
+          try {
+            current = await ctx.call("makeStatus", current.id);
+            if (!document.body.contains(body)) return stop();
+            draw();
+            const waiting = current.status === "making" || (current.videoJob && !current.videoUrl && !current.videoError);
+            if (waiting) timer = setTimeout(tick, 4000);
+          } catch (e) {
+            toast(e.message);
+          }
+        };
+        draw();
+        stop();
+        timer = setTimeout(tick, current.status === "making" ? 2500 : 10);
+        body.addEventListener("click", async (e) => {
+          const b = e.target.closest("[data-do]");
+          if (!b) return;
+          b.disabled = true;
+          try {
+            if (b.dataset.do === "launch" || b.dataset.do === "launchVideo") {
+              const video = b.dataset.do === "launchVideo";
+              const msg = current.replaces ? `Пускам ${video ? "видеото" : "този банер"} в „${current.adsetName}“ и спирам „${current.replaces.name}“?` : `Пускам ${video ? "видеото" : "този банер"} в „${current.adsetName}“?`;
+              if (!(await ask(msg, { ok: "Пусни", tone: "good" }))) return (b.disabled = false);
+              current = await ctx.call("launchMade", { id: current.id, image: b.dataset.img, useVideo: video });
+              toast(current.replaces ? "Пусната – старата е спряна" : "Пусната");
+              stop();
+              closeFn();
+              ctx.refresh();
+            } else if (b.dataset.do === "video") {
+              current = await ctx.call("makeVideo", { id: current.id, image: b.dataset.img });
+              draw();
+              stop();
+              timer = setTimeout(tick, 4000);
+            } else if (b.dataset.do === "another") {
+              stop();
+              const next = await ctx.call("make", { slot: current.slot?.startsWith("adhoc") ? null : current.slot, line: current.line, shift: Date.now() % 997 });
+              closeFn();
+              ctx.refresh();
+              openDoc(next);
+            }
+          } catch (err) {
+            toast(err.message);
+            b.disabled = false;
+          }
+        });
+      });
+      return close;
+    }
+
     page.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-act]");
       if (!b) return;
-      const act = b.dataset.act;
-      try {
-        if (act === "focus" || act === "unfocus") {
-          ctx.state.focus = act === "focus" ? b.dataset.id : null;
+      if (b.dataset.act === "make") {
+        b.disabled = true;
+        try {
+          const doc = await ctx.call("make", b.dataset.slot ? { slot: b.dataset.slot } : { line: page.querySelector("#mkLine").value });
+          openDoc(doc);
           ctx.refresh();
-          window.scrollTo({ top: 0 });
-        } else if (act === "briefs") {
-          b.disabled = true;
-          b.textContent = "Мисля…";
-          last = await ctx.call("briefs", { account: page.querySelector("#bAcct").value, count: Number(page.querySelector("#bCount").value), product: page.querySelector("#bProduct").value });
-          ctx.refresh();
-        } else if (act === "check") {
-          checkInput.hookText = page.querySelector("#cHook").value;
-          checkInput.script = page.querySelector("#cScript").value;
-          checkResult = await ctx.call("check", { ...checkInput });
-          ctx.refresh();
-        } else if (act === "generate") {
-          b.disabled = true;
-          await ctx.call("generate", { id: b.dataset.id, provider: page.querySelector("#prov").value });
-          toast("Изпратено за генериране – ще го видиш „За преглед“");
-          ctx.state.focus = null;
-          ctx.refresh();
-        } else if (act === "approveCr") {
-          await ctx.call("approveCreative", b.dataset.id);
-          toast("Одобрено – в резервите");
-          ctx.refresh();
-        } else if (act === "show") {
-          const d = await ctx.call("creatives");
-          const c = d.items.find((x) => x.id === b.dataset.id);
-          modal(`<div class="row between"><h2>${esc(c.name)}</h2><button class="btn ghost sm" data-close>✕</button></div><p class="strong">„${esc(c.hookText)}“</p>${c.script ? `<pre class="script">${esc(c.script)}</pre>` : ""}${c.firstFrame ? `<p class="small muted">${esc(c.firstFrame)}</p>` : ""}<div class="stack" style="gap:6px;margin-top:10px">${(c.compliance?.issues || []).map((i) => `<div class="issue ${i.level}">${esc(i.text)}</div>`).join("")}</div>`);
+        } catch (err) {
+          toast(err.message);
+        } finally {
+          b.disabled = false;
         }
-      } catch (err) {
-        toast(err.message);
-        b.disabled = false;
+      } else if (b.dataset.act === "open") {
+        try {
+          openDoc(await ctx.call("makeStatus", b.dataset.id));
+        } catch (err) {
+          toast(err.message);
+        }
       }
     });
   },
 };
+
+export { raw, esc };

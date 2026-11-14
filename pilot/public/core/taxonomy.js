@@ -97,6 +97,21 @@ export const DIMENSIONS = [
     key: "offer", label: "Оферта", weight: 0.03,
     values: { single: "1 брой", b21: "2+1", b32: "3+2", gift: "С подарък", free: "Безплатна доставка", none: "Без оферта" },
   },
+  {
+    key: "layout", label: "Структура на банера", weight: 0.1,
+    values: {
+      hero: "Голямо заглавие + продукт",
+      native: "Като снимка от телефон",
+      notes: "Бележка в телефона",
+      vs: "Ние срещу другите",
+      callouts: "Продукт с 3 стрелки",
+      offer: "Офертата е звездата",
+      story: "Историята зад продукта",
+      listicle: "3 причини",
+      social: "Звездите на клиентите",
+      editorial: "Като статия/новина",
+    },
+  },
 ];
 
 export const DIM = Object.fromEntries(DIMENSIONS.map((d) => [d.key, d]));

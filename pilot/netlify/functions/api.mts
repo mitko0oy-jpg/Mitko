@@ -13,8 +13,8 @@ import { app, isDemo } from "../lib/app.mts";
 import { pgStore } from "../lib/db.mts";
 import * as sales from "../lib/sales.mts";
 
-const VIEWS = new Set(["dashboard", "campaigns", "creatives", "autopilot", "market", "learning", "settingsView"]);
-const ACTIONS = new Set(["run", "approve", "reject", "act", "revert24h", "saveSettings", "importTablo", "saveCreative", "check", "briefs", "generate", "approveCreative", "launch", "saveRadar"]);
+const VIEWS = new Set(["dashboard", "campaigns", "creatives", "autopilot", "market", "learning", "settingsView", "studio"]);
+const ACTIONS = new Set(["run", "approve", "reject", "act", "revert24h", "saveSettings", "importTablo", "saveCreative", "check", "briefs", "generate", "approveCreative", "launch", "saveRadar", "make", "makeStatus", "makeVideo", "launchMade"]);
 
 function safeEq(a: string, b: string) {
   const x = Buffer.from(a), y = Buffer.from(b);

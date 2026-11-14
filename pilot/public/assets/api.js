@@ -2,6 +2,7 @@
 // demo (same service code, simulated data kept in localStorage).
 import { createService, memoryStore } from "../core/service.js";
 import { demoSource } from "../core/demo-source.js";
+import { demoGen } from "../core/demo-gen.js";
 
 const LS = "pilot.demo.v1";
 let mode = null;
@@ -32,7 +33,7 @@ export async function init() {
       localStorage.setItem(LS, JSON.stringify(d));
     } catch {}
   });
-  svc = createService({ store, source: demoSource(store), demo: true });
+  svc = createService({ store, source: demoSource(store), gen: demoGen(), demo: true });
   return { mode, auth: true };
 }
 
@@ -45,7 +46,7 @@ export function resetDemo() {
   location.reload();
 }
 
-const VIEWS = new Set(["dashboard", "campaigns", "creatives", "autopilot", "market", "learning", "settingsView"]);
+const VIEWS = new Set(["dashboard", "campaigns", "creatives", "autopilot", "market", "learning", "settingsView", "studio"]);
 
 export async function call(name, args) {
   if (mode === "demo") {

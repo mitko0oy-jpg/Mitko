@@ -5,7 +5,7 @@ const CONN = {
   meta: ["Мета (Marketing API v27)", "META_TOKEN – токен на системен потребител с ads_read и ads_management"],
   sales: ["Магазин (ConvertBuilder)", "SALES_MCP_URL (сървърът за продажби), SALES_URL или уебхук към /api/hook/orders"],
   ai: ["Claude (през Netlify AI Gateway)", "Включва се сам в Netlify – без ключ"],
-  video: ["Видео модели (fal.ai)", "FAL_KEY – един ключ за Wan, MiniMax, Kling, Seedance"],
+  video: ["Higgsfield (банери и видео)", "Ключ от console.higgsfield.ai – HIGGSFIELD_API_KEY"],
   adlib: ["Библиотека с реклами", "Същият токен на Мета + потвърдена самоличност"],
 };
 const ST = { ok: ["свързано", "good"], demo: ["демо", "honey"], missing: ["не е свързано", "warn"], error: ["грешка", "bad"], unknown: ["?", "muted"] };
@@ -20,6 +20,7 @@ export default {
       theme = localStorage.getItem("pilot.theme") || "auto";
     } catch {}
     return html`
+      <div class="row m-only" style="margin-bottom:14px"><a class="btn sm" href="#pazar">${icon("globe")} Пазар</a><a class="btn sm" href="#obuchenie">${icon("brain")} Обучение</a></div>
       <div class="grid g2">
         <section class="card">
           <div class="card-h"><h2>${icon("target")} Марж</h2><span class="hint">Изискването: минимум 25–30%</span></div>

@@ -81,7 +81,7 @@ export default {
             <div class="kpi"><div class="k">Разнообразие</div><div class="v" style="font-size:22px">${d.diversityAvg ?? "—"}<span class="faint" style="font-size:15px">/100</span></div><div class="d small muted">средно за адсетите</div></div>
           </div>
           <div class="sep"></div>
-          <div class="row"><a class="btn honey sm" href="#studio">${icon("wand")} Нови концепции</a><span class="small muted">Андромеда награждава различни идеи, не варианти на една.</span></div>
+          <div class="row"><a class="btn honey sm" href="#studio">${icon("wand")} Нови реклами</a><span class="small muted">Андромеда награждава различни идеи, не варианти на една.</span></div>
         </section>
       </div>
 

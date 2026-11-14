@@ -14,9 +14,9 @@ const ROUTES = [
   { id: "tablo", title: "Табло", icon: "home", view: home, tab: true },
   { id: "kampanii", title: "Кампании", icon: "layers", view: campaigns, tab: true },
   { id: "kreativi", title: "Креативи", icon: "image", view: creatives, tab: true },
-  { id: "studio", title: "Студио", icon: "sparkles", view: studio },
+  { id: "studio", title: "Нови реклами", short: "Нови", icon: "sparkles", view: studio, tab: true },
   { id: "avtopilot", title: "Автопилот", icon: "pilot", view: autopilot, tab: true, badge: true },
-  { id: "pazar", title: "Пазар", icon: "globe", view: market, tab: true },
+  { id: "pazar", title: "Пазар", icon: "globe", view: market },
   { id: "obuchenie", title: "Обучение", icon: "brain", view: learning },
   { id: "nastroyki", title: "Настройки", icon: "gear", view: settings },
 ];
@@ -65,7 +65,7 @@ function shell() {
 function renderNav(active) {
   const badge = (r) => (r.badge && state.pending ? html`<span class="cnt">${state.pending}</span>` : "");
   document.getElementById("nav").innerHTML = String(html`${ROUTES.map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.title}</span>${badge(r)}</a>`)}`);
-  document.getElementById("tabbar").innerHTML = String(html`${ROUTES.filter((r) => r.tab).map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.title}</span>${badge(r)}</a>`)}<a href="#nastroyki" class="${["nastroyki", "studio", "obuchenie"].includes(active) ? "on" : ""}">${icon("gear")}<span>Още</span></a>`);
+  document.getElementById("tabbar").innerHTML = String(html`${ROUTES.filter((r) => r.tab).map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.short || r.title}</span>${badge(r)}</a>`)}<a href="#nastroyki" class="${["nastroyki", "pazar", "obuchenie"].includes(active) ? "on" : ""}">${icon("gear")}<span>Още</span></a>`);
   const modeLabel = { observe: "Наблюдение", copilot: "Втори пилот", autopilot: "Автопилот" }[state.mode] || "";
   document.getElementById("sideFoot").innerHTML = String(html`
     <div class="row between"><span>Режим</span><a href="#avtopilot" class="pill ${state.mode === "autopilot" ? "good" : state.mode === "copilot" ? "honey" : "info"}">${modeLabel}</a></div>

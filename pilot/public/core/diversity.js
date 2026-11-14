@@ -96,7 +96,8 @@ export function sameConcept(a, b) {
   const x = a.tags || {}, y = b.tags || {};
   let diff = 0;
   for (const k of ["angle", "persona", "hook", "format"]) if (x[k] && y[k] && x[k] !== y[k]) diff++;
-  if ((x.talent && y.talent && x.talent !== y.talent) || (x.visual && y.visual && x.visual !== y.visual)) diff++;
+  // Talent, setting or banner layout: what changes the first frame Meta compares.
+  if ((x.talent && y.talent && x.talent !== y.talent) || (x.visual && y.visual && x.visual !== y.visual) || (x.layout && y.layout && x.layout !== y.layout)) diff++;
   const ff = phashSim(a.phash, b.phash);
   if (ff != null && ff >= 0.85) return true; // same first frame → Meta's Creative Diversity sees one visual
   return diff < 3;

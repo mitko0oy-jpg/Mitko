@@ -6,12 +6,12 @@
 // 3) push: a webhook to /api/hook/orders with header x-pilot-secret = SALES_HOOK_SECRET.
 // Orders carry no personal data.
 import { env, HttpError } from "./http.mts";
-import { q } from "./db.mts";
+import { q, pgStore } from "./db.mts";
 
 export type Order = { site: string; date: string; status: string; shipped: number; subTotal: number; shipping: number; discount: number; total: number; items: { product: string; qty: number; total: number }[]; orderNo: string; utm?: Record<string, string> };
 
 // Decode the compact v1 format: orders are arrays with indexes into sites/products.
-export function decodeV1(j: any): { orders: Order[]; sessions: { site: string; date: string; sessions: number }[] } {
+export function decodeV1(j: any): { orders: Order[]; sessions: { site: string; date: string; sessions: number }[]; sites: any[] } {
   if (!j || j.v !== 1 || !Array.isArray(j.orders)) throw new HttpError(502, "sales_format", "Непознат формат на продажбите.");
   const sites = (j.sites || []).map((s: any) => s.id);
   // Amounts come in the shop's currency (HUF for Hungary) – everything is kept in EUR.
@@ -34,7 +34,8 @@ export function decodeV1(j: any): { orders: Order[]; sessions: { site: string; d
   });
   const sessions = [];
   for (const s of j.sites || []) for (const [date, n] of Object.entries(s.sessions || {})) sessions.push({ site: s.id, date, sessions: Number(n) || 0 });
-  return { orders, sessions };
+  const siteList = (j.sites || []).map((s: any) => ({ id: s.id, label: s.label, domain: s.domain, currency: s.currency || "EUR" }));
+  return { orders, sessions, sites: siteList };
 }
 
 export async function store(orders: Order[], sessions: { site: string; date: string; sessions: number }[] = []) {
@@ -103,7 +104,8 @@ export async function pullMcp(from: string, to: string) {
   const text = (res.j?.result?.content || []).find((c: any) => c.type === "text")?.text;
   const data = res.j?.result?.structuredContent || (text ? JSON.parse(text) : null);
   if (!data) throw new HttpError(502, "sales_mcp", `Сървърът за продажби не отговори (HTTP ${res.status}).`);
-  const { orders, sessions } = decodeV1(data);
+  const { orders, sessions, sites } = decodeV1(data);
+  if (sites.length) await pgStore.put("meta", "sites", { list: sites, at: new Date().toISOString() });
   return { stored: await store(orders, sessions), source: "mcp" };
 }
 

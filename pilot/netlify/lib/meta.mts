@@ -162,8 +162,15 @@ export async function launch(o: { acct: string; adset: string; pageId: string; l
       await new Promise((r) => setTimeout(r, 2000));
     }
     mediaSpec = { video_data: { video_id: v.id, message: c.primaryText || c.hookText, title: c.headline || c.name, image_url: c.thumb || undefined, call_to_action: { type: "ORDER_NOW", value: { link: o.link } } } };
-  } else if (c.imageBase64) {
-    const img = await write(`act_${o.acct}/adimages`, "upload_image", { bytes: c.imageBase64 });
+  } else if (c.imageBase64 || c.imageUrl) {
+    // Meta takes image bytes, not a link: download the picked banner first.
+    let b64 = c.imageBase64;
+    if (!b64) {
+      const r = await fetch(c.imageUrl, { signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new HttpError(502, "img_download", "Не успях да изтегля банера.");
+      b64 = Buffer.from(await r.arrayBuffer()).toString("base64");
+    }
+    const img = await write(`act_${o.acct}/adimages`, "upload_image", { bytes: b64 });
     const hash = Object.values<any>(img.images || {})[0]?.hash;
     mediaSpec = { link_data: { image_hash: hash, link: o.link, message: c.primaryText || c.hookText, name: c.headline || c.name, call_to_action: { type: "ORDER_NOW" } } };
   } else {

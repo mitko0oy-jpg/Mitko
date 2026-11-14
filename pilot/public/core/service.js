@@ -3,7 +3,7 @@
 import { todayStr, addDays, dayDiff, daysBetween, rangeDates, RANGES, dayFraction, div, sum, round, groupBy, uid, median, TZ } from "./util.js";
 import { COUNTRY, deliveryRates, profit, thresholds, calibration, entityProfit, fixedPerDay, marginState, spendCurve } from "./metrics.js";
 import { fatigue, reasonText, benchPlan, STAGES } from "./fatigue.js";
-import { diversity, checkNew, clusters } from "./diversity.js";
+import { diversity, checkNew, clusters, sameConcept } from "./diversity.js";
 import { regimeFor, diagnose, REGIMES, POSTURES } from "./regime.js";
 import { calendar, dayEffect } from "./calendar.js";
 import { evaluate, autoRuns, RULES, MODES, DEFAULT_LIMITS } from "./rules.js";
@@ -13,6 +13,7 @@ import { lint } from "./compliance.js";
 import { DIMENSIONS, CONCEPT_DIMS } from "./taxonomy.js";
 import { START_PRODUCTS } from "./defaults.js";
 import { DEFAULT_LINES } from "./lines.js";
+import { computeNeeds, AD_RULES, adsPrompt, videoPrompt, nicheFor, summary, headline, creativePriors, layoutOf, whyOf } from "./needs.js";
 
 export const DEFAULT_SETTINGS = {
   mode: "observe",
@@ -61,7 +62,7 @@ const merge = (a, b) => {
 const SUMS = ["spend", "impressions", "reach", "clicks", "lpv", "purchases", "value", "video3s", "thruplay"];
 const zero = () => Object.fromEntries(SUMS.map((k) => [k, 0]));
 
-export function createService({ store, source, ai = null, video = null, now = () => new Date(), demo = false }) {
+export function createService({ store, source, ai = null, video = null, gen = null, now = () => new Date(), demo = false }) {
   async function settings() {
     const s = merge(DEFAULT_SETTINGS, (await store.get("settings", "main")) || {});
     if (!demo && !s.econ.products.length) s.econ.products = START_PRODUCTS.map((p) => ({ ...p, start: true }));
@@ -763,7 +764,114 @@ export function createService({ store, source, ai = null, video = null, now = ()
     return doc;
   }
 
-  return { settings, model, dashboard, campaigns, creatives, autopilot, market, learning, settingsView, run, approve, reject, act, revert24h, saveSettings, importTablo, saveCreative, check, briefs, generate, approveCreative, launch, saveRadar };
+  // ---------------------------------------------------------------------------
+  // One-button creative flow: what needs a new ad → "Направи" → Higgsfield → "Пусни".
+  const genReady = () => demo || !!gen?.available?.();
+  const needsOf = (M) => computeNeeds({ accounts: M.accounts, accts: M.accts, ads: M.adModels, adsets: M.adsetModels, library: M.library, tags: M.tags, today: M.today, bench: M.bench, competitors: M.snap.competitors || [] });
+
+  async function studio() {
+    const M = await model();
+    const made = (await store.list("made")).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 24);
+    return {
+      needs: needsOf(M),
+      made,
+      rules: AD_RULES,
+      connected: demo ? "demo" : genReady() ? "ok" : "missing",
+      lines: M.accounts.map((a) => ({ id: a.id, name: a.name, country: a.country, flag: COUNTRY[a.country]?.flag })),
+    };
+  }
+
+  async function make({ slot, line, shift = 0 } = {}) {
+    if (!genReady()) throw Object.assign(new Error("Higgsfield още не е свързан – виж най-горе на страницата."), { status: 503 });
+    const M = await model();
+    let s = slot ? needsOf(M).find((x) => x.id === slot) : null;
+    const a = M.accounts.find((x) => x.id === (s?.line || line)) || M.accounts[0];
+    if (!a) throw Object.assign(new Error("Няма свързано направление."), { status: 400 });
+    if (!s || shift) {
+      // A fresh idea for this line's main ad set, different from everything live there.
+      const adset = s?.adset ? M.adsetModels.find((x) => x.id === s.adset) : M.adsetModels.filter((x) => x.account === a.id && x.status === "ACTIVE").sort((x, y) => (y.activeAds || 0) - (x.activeAds || 0))[0];
+      const liveCr = M.adModels.filter((x) => x.adset === adset?.id && x.status === "ACTIVE").map((x) => x.cr);
+      const avoid = M.library.filter((c) => c.country === a.country).map((c) => c.tags || {});
+      let pick = null;
+      for (let i = 0; i < 8 && !pick; i++) {
+        const b = nextBriefs(M.tags, a.country, 1, `${Date.now()}|${shift}|${i}`, avoid, creativePriors({ competitors: M.snap.competitors || [], country: a.country }))[0];
+        if (!b) break;
+        b.tags.format = "static";
+        if (!liveCr.some((c) => sameConcept({ tags: b.tags }, c))) pick = b;
+        else avoid.push(b.tags);
+      }
+      if (!pick) throw Object.assign(new Error("Не намерих нова идея – всички комбинации са пробвани."), { status: 409 });
+      s = { ...(s || {}), id: s?.id || `adhoc:${uid("s")}`, kind: s?.kind || "new", line: a.id, lineName: a.name, country: a.country, adset: adset?.id, adsetName: adset?.name, reason: s?.reason || "нова идея за теста", concept: { tags: pick.tags, summary: summary(pick.tags, a.id), why: whyOf(pick), layout: layoutOf(pick.tags) } };
+    }
+    const hook = headline(s.line, s.concept.tags.angle, Date.now() + shift);
+    const comp = lint({ text: hook, language: COUNTRY[s.country]?.lang, angle: s.concept.tags.angle });
+    if (!comp.ok) throw Object.assign(new Error("Заглавието не мина проверката – опитай „Друга идея“."), { status: 422 });
+    const lineCfg = (M.S.lines || []).find((l) => l.id === s.line) || { id: s.line, sites: a.sites };
+    const n = nicheFor(s.line);
+    const productImages = gen?.productImages ? await gen.productImages({ ...lineCfg, id: s.line }).catch(() => []) : [];
+    const offer = s.line === "edubel" ? "" : s.concept.tags.offer && s.concept.tags.offer !== "none" ? { b21: "2+1 gratis", b32: "3+2", gift: "gift included", free: "free delivery", single: "" }[s.concept.tags.offer] : "";
+    const prompt = adsPrompt({ concept: s.concept, hook, country: s.country, lineId: s.line, offer });
+    const job = await gen.startImages({ prompt, niche: n.niche, language: COUNTRY[s.country]?.lang || "bg", audience: n.audience, imageUrls: productImages, aspect: "4:5", batch: 4 });
+    const doc = {
+      id: uid("mk"), slot: s.id, kind: s.kind, line: s.line, lineName: s.lineName, country: s.country, adset: s.adset, adsetName: s.adsetName,
+      replaces: s.replaces || null, reason: s.reason, concept: s.concept, hookText: hook, prompt, productImages, imageJob: job, images: [], status: "making", createdAt: now().toISOString(),
+    };
+    await store.put("made", doc.id, doc);
+    return doc;
+  }
+
+  async function makeStatus(id) {
+    const d = await store.get("made", typeof id === "object" ? id.id : id);
+    if (!d) throw Object.assign(new Error("Няма такава реклама."), { status: 404 });
+    let changed = false;
+    if (d.status === "making" && d.imageJob) {
+      const r = await gen.poll(d.imageJob);
+      if (r.done) {
+        changed = true;
+        if (r.error || !r.images?.length) Object.assign(d, { status: "failed", error: r.error || "Няма готови банери." });
+        else Object.assign(d, { status: "ready", images: r.images });
+      }
+    }
+    if (d.videoJob && !d.videoUrl && !d.videoError) {
+      const r = await gen.poll(d.videoJob);
+      if (r.done) {
+        changed = true;
+        if (r.error || !r.video) d.videoError = r.error || "Видеото не се получи.";
+        else d.videoUrl = r.video;
+      }
+    }
+    if (changed) await store.put("made", d.id, d);
+    return d;
+  }
+
+  async function makeVideo({ id, image }) {
+    const d = await store.get("made", id);
+    if (!d || !image) throw Object.assign(new Error("Избери банер за видеото."), { status: 400 });
+    d.videoJob = await gen.startVideo({ imageUrl: image, prompt: videoPrompt({ concept: d.concept }), duration: 5 });
+    Object.assign(d, { videoFrom: image, videoUrl: null, videoError: null });
+    await store.put("made", d.id, d);
+    return d;
+  }
+
+  async function launchMade({ id, image, useVideo = false }) {
+    const M = await model();
+    const d = await store.get("made", id);
+    if (!d) throw Object.assign(new Error("Няма такава реклама."), { status: 404 });
+    if (!d.adset) throw Object.assign(new Error("Няма активен адсет в това направление."), { status: 400 });
+    if (useVideo && !d.videoUrl) throw Object.assign(new Error("Видеото още не е готово."), { status: 409 });
+    const name = `${d.lineName} · ${d.concept.summary}`;
+    const creativeDoc = { id: d.id, name, hookText: d.hookText, primaryText: d.hookText, headline: d.hookText, tags: d.concept.tags, ...(useVideo ? { videoUrl: d.videoUrl, thumb: d.videoFrom } : { imageUrl: image || d.images[0] }) };
+    await source.apply({ op: "launch", creative: d.id, adset: d.adset, since: addDays(M.today, 1), creativeDoc });
+    if (d.replaces?.id) await source.apply({ op: "status", id: d.replaces.id, level: "ad", value: "PAUSED", since: addDays(M.today, 1) });
+    // Remember the idea in the library – it is never proposed again.
+    await saveCreative({ id: d.id, name, account: d.line, country: d.country, kind: useVideo ? "video" : "image", tags: { ...d.concept.tags, format: useVideo ? "motion" : "static" }, hookText: d.hookText, source: "studio", status: "live", thumb: (useVideo ? d.videoFrom : image) || null, launchedAt: now().toISOString() });
+    Object.assign(d, { status: "live", launchedWith: useVideo ? d.videoUrl : image, launchedAt: now().toISOString() });
+    await store.put("made", d.id, d);
+    await record({ id: uid("l"), rule: "manual", kind: "launch", entity: { id: d.adset, level: "adset", name: d.adsetName, account: d.line }, title: `Пусната нова реклама: ${d.hookText}`, reason: d.replaces ? `Заменя „${d.replaces.name}“ – ${d.reason}.` : `Нова идея: ${d.concept.summary}.` }, "executed", "user");
+    return d;
+  }
+
+  return { settings, model, dashboard, campaigns, creatives, autopilot, market, learning, settingsView, run, approve, reject, act, revert24h, saveSettings, importTablo, saveCreative, check, briefs, generate, approveCreative, launch, saveRadar, studio, make, makeStatus, makeVideo, launchMade };
 }
 
 // Simple in-memory store (browser demo + tests).

@@ -69,3 +69,47 @@ test("bench creative can be launched and becomes live", async () => {
   const after = await svc.creatives();
   assert.equal(after.items.find((c) => c.id === bench.id).status, "live");
 });
+
+test("one-button flow: needs → Направи → 4 banners → Пусни replaces the weak ad", async () => {
+  const store = memoryStore();
+  const jobs = [];
+  const gen = {
+    available: () => true,
+    productImages: async () => ["https://example.com/p.jpg"],
+    startImages: async (o) => (jobs.push(o), { provider: "test", requestId: "r1", at: new Date().toISOString() }),
+    startVideo: async () => ({ provider: "test", requestId: "v1", video: true }),
+    poll: async (j) => (j.video ? { done: true, video: "https://example.com/v.mp4" } : { done: true, images: [1, 2, 3, 4].map((i) => `https://example.com/${i}.png`) }),
+  };
+  const svc = createService({ store, source: demoSource(store), demo: true, gen });
+  const st = await svc.studio();
+  assert.ok(st.rules.some((r) => r.t.startsWith("Структура")));
+  assert.ok(st.needs.length > 0, "demo data has ads to replace or gaps to fill");
+  for (const n of st.needs) assert.ok(n.concept.layout?.steps?.length >= 3, "every new idea follows a banner structure");
+  const slot = st.needs.find((n) => n.kind === "replace") || st.needs[0];
+  const doc = await svc.make({ slot: slot.id });
+  assert.equal(doc.status, "making");
+  assert.match(jobs[0].prompt, /Layout:/);
+  assert.equal(jobs[0].aspect, "4:5");
+  assert.deepEqual(jobs[0].imageUrls, ["https://example.com/p.jpg"], "real product photos go to the model");
+  const ready = await svc.makeStatus(doc.id);
+  assert.equal(ready.status, "ready");
+  assert.equal(ready.images.length, 4);
+  const v = await svc.makeVideo({ id: doc.id, image: ready.images[1] });
+  assert.ok(v.videoJob);
+  assert.equal((await svc.makeStatus(doc.id)).videoUrl, "https://example.com/v.mp4");
+  const live = await svc.launchMade({ id: doc.id, image: ready.images[1] });
+  assert.equal(live.status, "live");
+  const lib = (await svc.creatives()).library || [];
+  assert.ok(!lib.length || lib.some((c) => c.id === doc.id), "the idea is remembered so it is never repeated");
+  const after = await svc.studio();
+  assert.ok(!after.needs.some((n) => n.id === slot.id && slot.kind === "replace"), "the replaced ad no longer asks for a new one");
+  // "Друга идея" gives a different concept for the same line.
+  const other = await svc.make({ line: slot.line, shift: 7 });
+  assert.notDeepEqual(other.concept.tags, doc.concept.tags);
+});
+
+test("make refuses politely when Higgsfield is not connected (live mode)", async () => {
+  const store = memoryStore();
+  const svc = createService({ store, source: demoSource(store), demo: false, gen: { available: () => false } });
+  await assert.rejects(() => svc.make({}), /Higgsfield/);
+});

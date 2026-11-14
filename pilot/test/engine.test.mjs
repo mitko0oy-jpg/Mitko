@@ -166,3 +166,18 @@ test("real-data rules: per-order cost, wholesale, digital, HUF already in EUR", 
   assert.equal(lineForCampaign("Тест | Студ и дъжд | 5€", "bv-bg"), "bv-bg");
   assert.equal(defaultLineFor("Словения"), "bv-si");
 });
+
+test("banner structures: trending formats and competitor winners get a head start", async () => {
+  const { LAYOUTS, creativePriors, adsPrompt } = await import("../public/core/needs.js");
+  assert.ok(Object.keys(LAYOUTS).length >= 8);
+  const pr = creativePriors({ country: "BG", competitors: [{ country: "BG", ads: [{ winner: true, angle: "story" }, { winner: false, angle: "fear" }] }, { country: "SK", ads: [{ winner: true, angle: "offer" }] }] });
+  assert.ok(pr["layout|native"] && pr["angle|story"]);
+  assert.ok(!pr["angle|fear"] && !pr["angle|offer"], "only winners from the same market count");
+  const p = adsPrompt({ concept: { tags: { angle: "pain", persona: "senior", visual: "home", talent: "woman60", layout: "notes" } }, hook: "Ставите отново леки", country: "BG", lineId: "bv-bg", offer: "2+1 gratis" });
+  assert.match(p, /notes app/);
+  assert.match(p, /Bulgarian Cyrillic/);
+  assert.doesNotMatch(p, /[А-я]{4,} language/, "no Bulgarian words where the model expects English");
+  const sk = adsPrompt({ concept: { tags: { angle: "social", layout: "vs" } }, hook: "Любимият гел на България", country: "SK", lineId: "bv-sk", offer: "" });
+  assert.match(sk, /in Slovak/);
+  assert.match(sk, /use Slovakia/);
+});

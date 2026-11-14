@@ -42,7 +42,7 @@ export function tagStats(creatives) {
   const stats = {};
   for (const c of creatives) {
     if (c.result == null) continue;
-    for (const k of CONCEPT_DIMS.concat(["hook"])) {
+    for (const k of CONCEPT_DIMS.concat(["hook", "layout"])) {
       const v = c.tags?.[k];
       if (!v) continue;
       const key = `${c.country || "ALL"}|${k}|${v}`;
@@ -57,16 +57,20 @@ export function tagStats(creatives) {
 }
 
 // Pick briefs: a mix of exploiting winners and exploring untested values.
-export function nextBriefs(stats, country, count, seed = "x", avoid = []) {
+// priors: { "dim|value": {a, b} } – extra evidence, e.g. trending banner layouts or
+// angles that win for competitors; own results (stats) are added on top.
+export function nextBriefs(stats, country, count, seed = "x", avoid = [], priors = {}) {
   const r = rng(`${seed}|${country}`);
   const briefs = [];
   for (let i = 0; i < count; i++) {
     const b = { tags: {}, why: [] };
-    for (const k of ["angle", "persona", "format", "visual", "talent", "hook"]) {
+    for (const k of ["angle", "persona", "format", "visual", "talent", "hook", "layout"]) {
       let best = null, bestDraw = -1;
       for (const v of Object.keys(DIM[k].values)) {
         if (k === "talent" && v === "ai") continue;
-        const s = stats.find((x) => x.country === country && x.dim === k && x.value === v) || { a: 1, b: 1, n: 0 };
+        const own = stats.find((x) => x.country === country && x.dim === k && x.value === v) || { a: 1, b: 1, n: 0 };
+        const pr = priors[`${k}|${v}`];
+        const s = pr ? { ...own, a: own.a + pr.a, b: own.b + pr.b, prior: pr.why } : own;
         // Already used in this batch → lower its chance to keep the batch diverse.
         const used = briefs.filter((x) => x.tags[k] === v).length;
         const draw = betaSample(r, s.a, s.b) * Math.pow(0.55, used);
@@ -76,7 +80,8 @@ export function nextBriefs(stats, country, count, seed = "x", avoid = []) {
         }
       }
       b.tags[k] = best.v;
-      if (best.s.n === 0) b.why.push(`${DIM[k].label}: „${tagLabel(k, best.v)}“ още не е тестван`);
+      if (best.s.prior && best.s.n === 0) b.why.push(`${DIM[k].label}: „${tagLabel(k, best.v)}“ – ${best.s.prior}`);
+      else if (best.s.n === 0) b.why.push(`${DIM[k].label}: „${tagLabel(k, best.v)}“ още не е тестван`);
       else if (best.s.a / (best.s.a + best.s.b) > 0.55) b.why.push(`${DIM[k].label}: „${tagLabel(k, best.v)}“ печели ${Math.round((best.s.a / (best.s.a + best.s.b)) * 100)}%`);
     }
     if (avoid.some((t) => CONCEPT_DIMS.every((k) => t[k] === b.tags[k]))) {
