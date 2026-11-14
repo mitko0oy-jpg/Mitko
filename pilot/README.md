@@ -32,7 +32,7 @@ npm test
 
 | Променлива | Задължителна | За какво |
 |---|---|---|
-| `APP_PASSWORD` | да | парола за вход (поне 10 знака) |
+| `APP_PASSWORD` | да | парола за вход (поне 8 знака) |
 | `META_TOKEN` | да | токен на системен потребител: ads_read, ads_management, business_management, pages_show_list, pages_read_engagement |
 | `META_APP_SECRET` | препоръчва се | `appsecret_proof` и подпис на уебхуците |
 | `SALES_URL`, `SALES_TOKEN` | едното от двете | поръчки от ConvertBuilder във формат v1 |

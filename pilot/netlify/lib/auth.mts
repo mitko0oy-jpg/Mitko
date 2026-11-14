@@ -20,7 +20,7 @@ export async function requireAuth(req: Request) {
 
 export async function login(req: Request, password: string): Promise<string> {
   const expected = env("APP_PASSWORD");
-  if (!expected || expected.length < 10) throw new HttpError(503, "no_password", "Паролата не е настроена в Netlify (APP_PASSWORD, поне 10 знака).");
+  if (!expected || expected.length < 8) throw new HttpError(503, "no_password", "Паролата не е настроена в Netlify (APP_PASSWORD, поне 8 знака).");
   // Simple brute-force brake: 10 failed attempts per 15 minutes.
   const key = `login:${new Date().toISOString().slice(0, 15)}`;
   const tries = ((await pgStore.get("rate", key)) as any)?.n || 0;
