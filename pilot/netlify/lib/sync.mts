@@ -13,12 +13,20 @@ const addDays = (s: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
+// One multi-row statement per 200 rows instead of one query per row.
 async function upsertInsights(rows: any[]) {
-  for (const r of rows) {
+  for (let i = 0; i < rows.length; i += 200) {
+    const chunk = rows.slice(i, i + 200);
+    const vals: unknown[] = [];
+    const tuples = chunk.map((r, j) => {
+      vals.push(r.ad, r.date, r.account, r.adset, r.campaign, JSON.stringify(r));
+      const n = (k: number) => "$" + (j * 6 + k);
+      return `(${n(1)},${n(2)},${n(3)},${n(4)},${n(5)},${n(6)},now())`;
+    });
     await q(
-      `INSERT INTO insights (ad, date, account, adset, campaign, data, synced_at) VALUES ($1,$2,$3,$4,$5,$6,now())
+      `INSERT INTO insights (ad, date, account, adset, campaign, data, synced_at) VALUES ${tuples.join(",")}
        ON CONFLICT (ad, date) DO UPDATE SET data = EXCLUDED.data, adset = EXCLUDED.adset, campaign = EXCLUDED.campaign, synced_at = now()`,
-      [r.ad, r.date, r.account, r.adset, r.campaign, JSON.stringify(r)],
+      vals,
     );
   }
 }
@@ -33,11 +41,15 @@ export async function syncMeta(deadline: number) {
     const accounts = await realAccounts();
     for (const a of accounts) {
       if (Date.now() > deadline) break;
-      await pgStore.put("structure", a.id, await meta.structure(a));
+      const cur: any = (await pgStore.get("backfill", a.id)) || {};
+      // Campaigns, ad sets and ads change rarely – refresh them at most every 50 minutes.
+      if (!cur.structureAt || Date.now() - new Date(cur.structureAt).getTime() > 50 * 60_000) {
+        await pgStore.put("structure", a.id, await meta.structure(a));
+        cur.structureAt = new Date().toISOString();
+      }
       // Today and yesterday every run (attributed numbers keep moving).
       await upsertInsights(await meta.insights(a.id, addDays(today, -1), today));
       // Once a day re-pull the last 7 days; and backfill 60 days in 7-day steps.
-      const cur: any = (await pgStore.get("backfill", a.id)) || {};
       if (cur.dailyOn !== today && Date.now() < deadline) {
         await upsertInsights(await meta.insights(a.id, addDays(today, -8), addDays(today, -2)));
         cur.dailyOn = today;

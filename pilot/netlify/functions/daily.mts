@@ -7,7 +7,7 @@ import { env } from "../lib/http.mts";
 
 export default async () => {
   if (isDemo()) return;
-  const deadline = Date.now() + 24_000;
+  const deadline = Date.now() + 11_000; // the scheduler stops waiting after ~15 s
   const S = await app().settings();
   const out: Record<string, unknown> = {};
   try {

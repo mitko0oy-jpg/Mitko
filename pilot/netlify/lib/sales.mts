@@ -38,17 +38,29 @@ export function decodeV1(j: any): { orders: Order[]; sessions: { site: string; d
 }
 
 export async function store(orders: Order[], sessions: { site: string; date: string; sessions: number }[] = []) {
-  for (const o of orders) {
-    await q(
-      `INSERT INTO orders (site, order_no, date, data, synced_at) VALUES ($1,$2,$3,$4,now())
-       ON CONFLICT (site, order_no) DO UPDATE SET data = EXCLUDED.data, date = EXCLUDED.date, synced_at = now()`,
-      [o.site, o.orderNo, o.date, JSON.stringify(o)],
-    );
+  // Multi-row upserts (one statement per 250 orders) – a 60-day pull has ~1,700 orders.
+  const seen = new Set<string>();
+  const uniq = orders.filter((o) => !seen.has(`${o.site}|${o.orderNo}`) && !!seen.add(`${o.site}|${o.orderNo}`));
+  for (let i = 0; i < uniq.length; i += 250) {
+    const chunk = uniq.slice(i, i + 250);
+    const vals: unknown[] = [];
+    const tuples = chunk.map((o, j) => {
+      vals.push(o.site, o.orderNo, o.date, JSON.stringify(o));
+      const n = (k: number) => "$" + (j * 4 + k);
+      return `(${n(1)},${n(2)},${n(3)},${n(4)},now())`;
+    });
+    await q(`INSERT INTO orders (site, order_no, date, data, synced_at) VALUES ${tuples.join(",")} ON CONFLICT (site, order_no) DO UPDATE SET data = EXCLUDED.data, date = EXCLUDED.date, synced_at = now()`, vals);
   }
-  for (const s of sessions) {
-    await q(`INSERT INTO site_sessions (site, date, sessions) VALUES ($1,$2,$3) ON CONFLICT (site, date) DO UPDATE SET sessions = EXCLUDED.sessions`, [s.site, s.date, s.sessions]);
+  if (sessions.length) {
+    const vals: unknown[] = [];
+    const tuples = sessions.map((x, j) => {
+      vals.push(x.site, x.date, x.sessions);
+      const n = (k: number) => "$" + (j * 3 + k);
+      return `(${n(1)},${n(2)},${n(3)})`;
+    });
+    await q(`INSERT INTO site_sessions (site, date, sessions) VALUES ${tuples.join(",")} ON CONFLICT (site, date) DO UPDATE SET sessions = EXCLUDED.sessions`, vals);
   }
-  return orders.length;
+  return uniq.length;
 }
 
 // Minimal MCP client (JSON-RPC over HTTP, JSON or SSE answers).
