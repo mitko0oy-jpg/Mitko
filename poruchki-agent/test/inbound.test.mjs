@@ -13,7 +13,8 @@ test("totals come from the price list, not from the AI", () => {
   assert.equal(quote(priceList, { items: [{ product_id: "gel-1", quantity: 1 }], delivery: "speedy_address" }).totalText, "21 евро и 80 цента");
   const bad = quote(priceList, { items: [{ product_id: "xxx", quantity: 1 }], delivery: "post" });
   assert.equal(bad.errors.length, 2);
-  assert.match(renderPriceList(priceList), /пакет 2 плюс 1.*22 евро и 90 цента.*подарък: 8 пластира/);
+  assert.match(renderPriceList(priceList), /пакет 2 плюс 1, три броя: 22 евро и 90 цента \[код gel-2p1\]/);
+  assert.match(renderPriceList(priceList), /пакет 3 плюс 2.*подарък: 12 пластира/);
   assert.match(renderPriceList(priceList), /Доставка до адрес със Спиди: 5 евро и 90 цента/);
 });
 
