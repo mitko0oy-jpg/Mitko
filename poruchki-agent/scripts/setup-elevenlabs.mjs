@@ -7,9 +7,7 @@
 //   Inbound agent (has "tools"): also --site https://<site> and TOOLS_SECRET=… in the environment.
 //
 // Prints the agent id and, when a webhook is created, its secret (put it in EL_WEBHOOK_SECRET on Netlify).
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { renderPriceList } from "../lib/inbound.mjs";
+import { loadSpec } from "../lib/prompt.mjs";
 
 const API = "https://api.elevenlabs.io";
 const args = process.argv.slice(2);
@@ -35,13 +33,7 @@ async function api(method, path, body) {
   return text ? JSON.parse(text) : {};
 }
 
-const spec = JSON.parse(await readFile(file, "utf8"));
-let prompt = await readFile(join(dirname(file), spec.prompt_file), "utf8");
-let priceList = null;
-if (spec.price_list_file) {
-  priceList = JSON.parse(await readFile(join(dirname(file), spec.price_list_file), "utf8"));
-  prompt = prompt.replace("[[PRICE_LIST]]", renderPriceList(priceList));
-}
+const { spec, prompt, priceList } = await loadSpec(file);
 
 // Webhook tools (inbound agent): created in the workspace, then attached by id.
 const toolIds = [];

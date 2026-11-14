@@ -20,7 +20,7 @@ const SAMPLE = {
   test: "yes",
   customer_name: "Митко",
   order_number: "1000",
-  order_items: "BeeVenom Care Gel 2+1 броя, и подарък: 8 бр. пластири за стави и мускули",
+  order_items: "BeeVenom Care Gel 2 плюс 1 броя",
   order_total: "24 евро и 40 цента",
   delivery_text: "Доставка до офис на Еконт, Пловдив, офис Тракия",
 };
