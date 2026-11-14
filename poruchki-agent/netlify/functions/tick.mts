@@ -8,7 +8,8 @@ import { sofiaNow } from "../../lib/format.mjs";
 export default async (_req: Request, context: Context) => {
   const deps = realDeps();
   const now = new Date();
-  const site = context?.site?.url || env("URL");
+  // Telegram only accepts https webhooks.
+  const site = (context?.site?.url || env("URL") || "").replace(/^http:/, "https:");
   const telegram = await ensureTelegramWebhook({
     store: deps.store,
     token: env("TELEGRAM_BOT_TOKEN"),
