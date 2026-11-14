@@ -15,7 +15,10 @@ export default {
   async render({ call }) {
     const d = await call("settingsView");
     const S = d.settings;
-    const theme = localStorage.getItem("pilot.theme") || "auto";
+    let theme = "auto";
+    try {
+      theme = localStorage.getItem("pilot.theme") || "auto";
+    } catch {}
     return html`
       <div class="grid g2">
         <section class="card">

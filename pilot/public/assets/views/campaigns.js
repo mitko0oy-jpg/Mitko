@@ -1,7 +1,13 @@
 import { html, icon, eur, eur0, int, pct, x2, dec, toast, ask } from "../ui.js";
 import { cmCell, STAGE_TONE, STAGE_LABEL } from "./common.js";
 
-const open = new Set(JSON.parse(localStorage.getItem("pilot.open") || "[]"));
+const open = new Set((() => {
+  try {
+    return JSON.parse(localStorage.getItem("pilot.open") || "[]");
+  } catch {
+    return [];
+  }
+})());
 const saveOpen = () => {
   try {
     localStorage.setItem("pilot.open", JSON.stringify([...open]));
