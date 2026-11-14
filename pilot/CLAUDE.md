@@ -18,6 +18,12 @@ BeeVenom (гел/крем/пластири с пчелна отрова) + Bio, 
 - Всеки текст минава `compliance.lint` – без медицински твърдения, лични атрибути, „преди/след“; AI хора с етикет (AI Act чл. 50).
 - Тайните само в Netlify env. Без лични данни на клиенти в базата.
 
+## Netlify
+- Проект: `pilot-reklami` (site id `48cad0d2-7c73-46f2-8f0f-98145b887ba3`), отбор `mitko0oy`, адрес https://pilot-reklami.netlify.app.
+- Сайтът е зад вход с Netlify акаунта на отбора (team login) + паролата на приложението (`APP_PASSWORD`). Преди уебхуците (поръчки, Мета) да заработят, защитата трябва да е само за непродукционни деплои.
+- Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска **от папка `pilot/`**. Всеки деплой е 15 кредита – тествай локално.
+- Env: `APP_PASSWORD` е зададена. Предстоят `META_TOKEN`, `META_APP_SECRET`, `SALES_URL`/`SALES_TOKEN` или `SALES_HOOK_SECRET`; по избор `FAL_KEY`, `SERPAPI_KEY`, `META_WEBHOOK_VERIFY`.
+
 ## Тестове
 ```
 cd pilot && npm install && npm test
