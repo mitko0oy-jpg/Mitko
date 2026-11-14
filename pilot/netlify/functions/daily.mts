@@ -7,6 +7,7 @@ import { env } from "../lib/http.mts";
 
 export default async () => {
   if (isDemo()) return;
+  const deadline = Date.now() + 24_000;
   const S = await app().settings();
   const out: Record<string, unknown> = {};
   try {
@@ -17,7 +18,7 @@ export default async () => {
   if (env("META_TOKEN")) {
     const sync: any = (await pgStore.get("meta", "sync")) || {};
     try {
-      out.competitors = await refreshCompetitors(S);
+      out.competitors = await refreshCompetitors(S, deadline);
       await pgStore.put("meta", "sync", { ...sync, adlibError: null });
     } catch (e: any) {
       out.competitors = { error: e.message };

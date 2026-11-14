@@ -7,7 +7,7 @@ import { adLibrary } from "./meta.mts";
 const GDELT_FIPS: Record<string, string> = { BG: "BU", SK: "LO", SI: "SI", HU: "HU" };
 const NEWS: Record<string, string> = { BG: "hl=bg&gl=BG&ceid=BG:bg", SK: "hl=sk&gl=SK&ceid=SK:sk", SI: "hl=sl&gl=SI&ceid=SI:sl", HU: "hl=hu&gl=HU&ceid=HU:hu" };
 
-async function getJson(url: string, ms = 15_000) {
+async function getJson(url: string, ms = 8_000) {
   const r = await fetch(url, { signal: AbortSignal.timeout(ms), headers: { "user-agent": "pilot-ads/0.1 (+internal tool)" } });
   if (!r.ok) throw new Error(`${r.status}`);
   return r.json();
@@ -32,7 +32,7 @@ export async function attention(country: string) {
 }
 
 export async function headlines(country: string) {
-  const r = await fetch(`https://news.google.com/rss?${NEWS[country]}`, { signal: AbortSignal.timeout(12_000) });
+  const r = await fetch(`https://news.google.com/rss?${NEWS[country]}`, { signal: AbortSignal.timeout(7_000) });
   const xml = await r.text();
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 6);
   const tag = (s: string, t: string) => (s.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`))?.[1] || "").replace(/<!\[CDATA\[|\]\]>/g, "").trim();
@@ -52,7 +52,13 @@ export async function trends(country: string, keywords: string[]) {
 // Merge everything into the per-country series the service reads.
 export async function refreshMarket(countries: string[], keywords: Record<string, string[]>) {
   const out: Record<string, string> = {};
-  for (const c of countries) {
+  // All countries in parallel – a scheduled function has about 30 seconds.
+  await Promise.allSettled(countries.map((c) => refreshCountry(c, keywords, out)));
+  return out;
+}
+
+async function refreshCountry(c: string, keywords: Record<string, string[]>, out: Record<string, string>) {
+  {
     const prev: any = (await pgStore.get("market", c)) || { series: [] };
     const byDate: Record<string, any> = Object.fromEntries((prev.series || []).map((x: any) => [x.date, x]));
     try {
@@ -72,28 +78,28 @@ export async function refreshMarket(countries: string[], keywords: Record<string
     const series = Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date)).slice(-120);
     await pgStore.put("market", c, { series, headlines: heads, at: new Date().toISOString() });
   }
-  return out;
 }
 
 // Competitors: tracked pages plus discovery by keywords (pages seen 3+ times).
-export async function refreshCompetitors(settings: any) {
+export async function refreshCompetitors(settings: any, deadline = Date.now() + 20_000) {
   const countries = ["BG", "SK", "SI", "HU"];
   const seen: Record<string, { name: string; country: string; n: number }> = {};
-  for (const c of countries) {
-    for (const kw of (settings.keywords?.[c] || []).slice(0, 3)) {
-      try {
+  await Promise.allSettled(
+    countries.flatMap((c) =>
+      (settings.keywords?.[c] || []).slice(0, 3).map(async (kw: string) => {
         for (const ad of await adLibrary({ terms: kw, countries: [c] })) {
           const s = (seen[ad.page_id] ||= { name: ad.page_name, country: c, n: 0 });
           s.n++;
         }
-      } catch {}
-    }
-  }
+      }),
+    ),
+  );
   const tracked = new Map<string, { pageId: string; name: string; country: string }>();
   for (const t of settings.competitors || []) tracked.set(String(t.pageId), t);
   for (const [id, s] of Object.entries(seen)) if (s.n >= 3 && !tracked.has(id)) tracked.set(id, { pageId: id, name: s.name, country: s.country });
   const ids = [...tracked.keys()];
   for (let i = 0; i < ids.length; i += 10) {
+    if (Date.now() > deadline) break;
     const chunk = ids.slice(i, i + 10);
     let ads: any[] = [];
     try {
