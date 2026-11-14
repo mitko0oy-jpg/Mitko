@@ -16,6 +16,7 @@ export function readConfig() {
     deliveryDays: env("DELIVERY_DAYS", "един до два работни дни"),
     sites: env("SITES", "bg").split(",").map((s) => s.trim()).filter(Boolean),
     inboundAgentId: env("EL_INBOUND_AGENT_ID"),
+    maxCallsPerRun: Number(env("MAX_CALLS_PER_RUN", "1")) || 1,
     ready: Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
   };
 }

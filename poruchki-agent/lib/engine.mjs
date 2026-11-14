@@ -19,7 +19,8 @@ async function save(store, key, rec, opts) {
   return store.setJSON(key, rec, opts);
 }
 
-const MAX_CALLS_PER_RUN = 3;
+// One call per 5-minute run by default: a single PBX extension may carry only one call at a time.
+const MAX_CALLS_PER_RUN = 1;
 // Never call about an order older than this (e.g. after a pause or before setup was finished).
 const MAX_ORDER_AGE_H = 48;
 
@@ -115,7 +116,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
   if (testMode && !config.testPhone) return { ...report, reason: "test mode without TEST_PHONE" };
 
   due.sort((a, b) => String(a.rec.nextAttemptAt).localeCompare(String(b.rec.nextAttemptAt)));
-  for (const { key, rec, etag } of due.slice(0, MAX_CALLS_PER_RUN)) {
+  for (const { key, rec, etag } of due.slice(0, config.maxCallsPerRun || MAX_CALLS_PER_RUN)) {
     // If Mitko already handled the order in ConvertBuilder, do not call.
     if (cb.isStillPending && !(await cb.isStillPending(rec))) {
       await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: "not pending in ConvertBuilder" }] });
