@@ -22,7 +22,8 @@ BeeVenom (гел/крем/пластири с пчелна отрова) + Bio, 
 - Проект: `pilot-reklami` (site id `48cad0d2-7c73-46f2-8f0f-98145b887ba3`), отбор `mitko0oy`, адрес https://pilot-reklami.netlify.app.
 - Сайтът е зад вход с Netlify акаунта на отбора (team login) + паролата на приложението (`APP_PASSWORD`). Преди уебхуците (поръчки, Мета) да заработят, защитата трябва да е само за непродукционни деплои.
 - Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска **от папка `pilot/`**. Всеки деплой е 15 кредита – тествай локално.
-- Env: `APP_PASSWORD` е зададена. Предстоят `META_TOKEN`, `META_APP_SECRET`, `SALES_URL`/`SALES_TOKEN` или `SALES_HOOK_SECRET`; по избор `FAL_KEY`, `SERPAPI_KEY`, `META_WEBHOOK_VERIFY`.
+- Env: зададени са `APP_PASSWORD` и `SALES_MCP_URL` (адресът на MCP сървъра за продажби от проекта `mitko-prodazhbi`, с ключа му – с изричното съгласие на Митко). Предстои `META_TOKEN` (+ `META_APP_SECRET`); по избор `FAL_KEY`, `SERPAPI_KEY`, `META_WEBHOOK_VERIFY`.
+- Поръчките се теглят от `mitko-prodazhbi` (MCP `get_sales`, формат v1) при всяка проверка на 15 мин.; веднъж дневно – последните 60 дни.
 
 ## Тестове
 ```
