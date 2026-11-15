@@ -1,19 +1,21 @@
 # Новият сайт edubel.bg (ConvertBuilder)
 
 Отделен сайт в ConvertBuilder, без връзка със стария edubel.site: старият работи без промени и пази данните и статистиката си.
-Всеки файл тук е **един цял блок код** за елемента **Код / HTML** на ConvertBuilder.
+Всеки `.html` файл тук е **един цял блок** на страница. В ConvertBuilder обаче стои само **един ред** – `load.js`, който зарежда блока (виж „Как се слага една страница“). Заданието за Claude в Chrome: `ZADANIE-CHROME.md` (единственото).
 
 ## Страниците
 
 | Файл | Страница в ConvertBuilder | Адрес |
 |---|---|---|
 | `nachalo.html` | Начало – магазинът | `/` |
-| `literatura.html` | Карти по литература | `/literatura` |
-| `balgarski-ezik.html` | Карти по български език | `/balgarski-ezik` |
+| `literatura.html` | Карти по литература | `/nvo/karti-po-literatura` |
+| `balgarski-ezik.html` | Карти по български език | `/karti-po-b-lgarski` |
 | `komplekt.html` | Комплект литература + език | `/komplekt` |
-| `literaturni-dosieta.html` | Литературни досиета (отделна лендинг страница) | `/literaturni-dosieta` |
-| `prilozhenie.html` | Приложението Еду БЕЛ (отделна лендинг страница) | `/prilozhenie` |
-| `nvo-trenazhor.html` | НВО тренажор по БЕЛ – планове 1, 6 и 12 месеца (отделна лендинг страница) | `/nvo-trenazhor` |
+| `produkti.html` | Всички продукти | `/produkti` |
+| `menu.html` / `dolu.html` | Само менюто (най-горе) / само долната част (най-долу) на страници, направени отделно | `/cheren-petak`, `/karti-po-matematika/predvaritelna-poruchka`, правните |
+| `literaturni-dosieta.html` | Литературни досиета (отделна лендинг страница) | `/igra-literaturni-dosieta` |
+| `prilozhenie.html` | Приложението Еду БЕЛ (отделна лендинг страница) | `/prilozhenie-trenazhor-za-nvo` |
+| `nvo-trenazhor.html` | НВО тренажор по БЕЛ – планове 1, 6 и 12 месеца (отделна лендинг страница) | `/prilozhenie-trenazhor-za-nvo/nvo-trenazhor` |
 | `upsell-90-karti.html` | Ъпсел: 90 интерактивни карти (7,90 €) | стъпка след поръчката |
 | `upsell-probna-matura.html` | Ъпсел: пробна матура PDF (9,90 €) | стъпка след поръчката |
 | `upsell-literatura.html` | Ъпсел: картите по литература след поръчка само на езика (19,90 €) | стъпка след `/poruchka-ezik` и `/poruchka-ezik-2` |
@@ -24,9 +26,13 @@
 
 ## Как се слага една страница
 
-1. Нова страница **без** заглавната лента (LOGO / Home) и без долната част на шаблона – нашият блок носи свое меню и свой долен край.
-2. Елемент **Код / HTML** → постави **целия** файл.
+1. Страница **без** заглавната лента (LOGO / Home) и без долната част на шаблона – нашият блок носи свое меню и свой долен край.
+2. Елемент **Код / HTML** с един ред (`ИМЕ` = името на файла без `.html`):
+   `<script src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@<commit>/landing/edubel-bg/load.js" data-edubel="ИМЕ"></script>`
+   Точните редове за всяка страница са в `ZADANIE-CHROME.md`.
 3. Публикувай и провери на живата страница (в редактора кодът не се вижда).
+
+`load.js` чете `version.txt` (от GitHub, кеш 5 минути) и зарежда блока за този commit от jsDelivr; ако `version.txt` не се зареди, ползва commit-а от собствения си адрес, а ако нищо не се зареди – показва телефона. За страници, направени отделно: `menu` най-горе и `dolu` най-долу – двата блока работят заедно на една страница.
 
 ## Количката и поръчките (картите)
 
@@ -74,7 +80,12 @@
 
 ## Промени
 
-Страниците се правят в `public/magazin/`, `public/dosieta/` и `public/prilozhenie/`, после `node scripts/build-store.mjs` (медията трябва първо да е качена в GitHub). Не редактирай файловете тук на ръка.
+Страниците се правят в `public/magazin/`, `public/dosieta/`, `public/trenazhor/` и `public/prilozhenie/`, после `node scripts/build-store.mjs` (медията трябва първо да е качена в GitHub). Не редактирай генерираните файлове тук на ръка (ъпселите и `blagodarim.html` са копия и се пипат на ръка).
+
+Как излиза нова версия на живо – без нищо в ConvertBuilder:
+1. `node scripts/build-store.mjs`, commit и push;
+2. `node scripts/live-blocks.mjs` – записва текущия commit във `version.txt`;
+3. commit и push на `version.txt` – до 5 минути страниците на edubel.bg са с новата версия.
 
 ## Отзиви
 
