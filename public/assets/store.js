@@ -6,6 +6,7 @@
 // opens that package's checkout page in ConvertBuilder.
 import { PACKAGES, euro } from "/assets/shop-catalog.js";
 import * as CFG from "/assets/store-config.js";
+import { ROOT } from "/assets/eb-root.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -18,8 +19,8 @@ const CHECKOUT = { ...CFG.CHECKOUT, ...(SET.checkout || {}) };
 const DELIVERY_FROM = SET.delivery > 0 ? Math.round(SET.delivery * 100) : CFG.DELIVERY_FROM;
 const { DECKS, CONTACT, COMPANY, MAX_DECKS } = CFG;
 
-const host = document.getElementById("ebl") || document.body;
-const main = $("main");
+const host = ROOT || document.body;
+const main = $("main", host);
 const MEDIA = main?.dataset.media || "/karti-nvo/media/";
 const PAGE = main?.dataset.page || "";
 
@@ -312,7 +313,8 @@ addEventListener("storage", (e) => {
 
 /* ---------- "add" buttons anywhere on the page ---------- */
 // On the store pages the "Поръчай" links of the edubel.site sections (data-pkg) go into the cart too.
-document.addEventListener("click", (e) => {
+// Only the block with the cart listens: a footer-only block on the same page would add twice.
+if (cartDlg) document.addEventListener("click", (e) => {
   const a = e.target.closest("[data-add], a[data-pkg]");
   if (!a || !PKG_CART[a.dataset.add || a.dataset.pkg]) return;
   e.preventDefault();

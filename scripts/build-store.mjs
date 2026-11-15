@@ -222,7 +222,7 @@ for (const page of PAGES) {
      Направен от scripts/build-store.mjs – промените се правят в public/${page.src}/ и после се генерира наново. -->
 <style>${cssFor.get(key)}</style>
 <div id="ebl" data-deck="${deck}">
-<script>document.getElementById("ebl").classList.add("js")</script>
+<script>document.currentScript.parentElement.classList.add("js")</script>
 ${body}
 </div>
 ${settings(page)}

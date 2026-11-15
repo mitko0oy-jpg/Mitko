@@ -42,8 +42,9 @@
   function mount(html) {
     var box = document.createElement("div");
     box.innerHTML = html;
+    // scripts parsed through innerHTML never run: each one is swapped, in order and in its own place,
+    // for a fresh copy, which runs as soon as it is in the page (the markup is all there by then)
     var scripts = Array.prototype.slice.call(box.querySelectorAll("script"));
-    scripts.forEach(function (s) { s.parentNode.removeChild(s); });
     var parent = host.parentNode;
     while (box.firstChild) parent.insertBefore(box.firstChild, host);
     parent.removeChild(host);
@@ -51,7 +52,7 @@
       var s = document.createElement("script");
       for (var i = 0; i < old.attributes.length; i++) s.setAttribute(old.attributes[i].name, old.attributes[i].value);
       s.text = old.text;
-      parent.insertBefore(s, me);
+      old.parentNode.replaceChild(s, old);
     });
   }
 

@@ -2,6 +2,7 @@
 // The same code also runs inside a ConvertBuilder code block (see scripts/build-landing.mjs): then
 // window.EB_LANDING holds the settings and ConvertBuilder's own checkout takes the orders.
 import { PACKAGES, SHIPPING, UPSELL, REGULAR, setRegular, euro, shipPrice } from "/assets/shop-catalog.js";
+import { ROOT } from "/assets/eb-root.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -11,7 +12,7 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 const CB = window.EB_LANDING || null;
-const shell = document.getElementById("ebl");
+const shell = ROOT;
 let noSticky = false;
 if (CB && shell) {
   for (const [k, v] of Object.entries(CB.prices || {})) if (PACKAGES[k] && v > 0) PACKAGES[k].price = Math.round(v * 100);
