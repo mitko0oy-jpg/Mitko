@@ -496,4 +496,21 @@ body[data-deck="lit"]{--muted:#46524A}
 .trust-note{max-width:62ch;margin:clamp(22px,3vw,32px) auto 0;text-align:center;color:var(--muted);font-size:17px}
 @media (max-width:980px){.trust4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.trust4{grid-template-columns:1fr}}
+
+/* Мнения, споделени по телефона (без имена – по желание на хората) */
+.pvoices{display:grid;gap:clamp(12px,1.6vw,18px)}
+.pvoices-big{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pvoices-short{grid-template-columns:repeat(5,minmax(0,1fr));margin-top:clamp(12px,1.6vw,18px)}
+.pv{display:flex;flex-direction:column;gap:14px;margin:0;padding:26px 26px 22px;border-radius:24px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.pv blockquote{margin:0;font:500 19px/1.5 var(--serif);color:var(--ink)}
+.pv figcaption{margin-top:auto}
+.pv-big{padding:30px 30px 24px}
+.pv-big blockquote{font-size:22px}
+@media (max-width:1100px){.pvoices-short{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.pvoices-big{grid-template-columns:1fr}.pvoices-short{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pv figcaption{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;color:var(--muted)}
+.pv figcaption::before{content:"";width:22px;height:3px;border-radius:3px;background:var(--accent)}
+.pv-note{max-width:64ch;margin:clamp(14px,2vw,22px) auto 0;text-align:center;color:var(--muted);font-size:17px}
+.pv-note a{color:var(--accent);font-weight:800}
+@media (max-width:560px){.pvoices-short{grid-template-columns:1fr}.pv,.pv-big{padding:22px 20px 18px}.pv blockquote,.pv-big blockquote{font-size:19px}}
 a[href^="tel:"]{white-space:nowrap}

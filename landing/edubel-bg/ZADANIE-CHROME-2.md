@@ -17,6 +17,7 @@
 - /prilozhenie-trenazhor-za-nvo/nvo-trenazhor ← nvo-trenazhor.html
 - /produkti ← produkti.html (замества сегашната страница „Всички продукти“: остави само един елемент „Код / HTML“ с този код)
 - „Благодарим“ след поръчките на тренажора ← trenazhor-blagodarim.html
+- ъпселът „Карти по литература“ (стъпката след поръчката на езика) ← upsell-literatura.html – смени само нашия блок, елемента „Upsell бутон“ под него не пипай
 Публикувай и спри.
 
 ЕТАП 2 – Едно и също меню и на страниците, направени отделно: /cheren-petak, /karti-po-matematika/predvaritelna-poruchka, /obshti-usloviya, /poveritelnost, /cookies, /dostavka-i-vrashtane.
