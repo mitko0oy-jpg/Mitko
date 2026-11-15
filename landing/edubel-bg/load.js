@@ -1,7 +1,7 @@
 /* Еду БЕЛ · зарежда един блок на edubel.bg в ConvertBuilder.
-   В елемента „Код / HTML“ стоят само два реда:
-     <div data-edubel="nachalo"></div>
-     <script src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@<commit>/landing/edubel-bg/load.js"></script>
+   В елемента „Код / HTML“ стои само един ред (името на блока е в data-edubel):
+     <script src="https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@<commit>/landing/edubel-bg/load.js" data-edubel="nachalo"></script>
+   (Работи и с <div data-edubel="nachalo"></div> точно преди скрипта.)
    Блокът (landing/edubel-bg/<име>.html) се взима от jsDelivr за commit-а, записан в version.txt на клона
    в GitHub – така нова версия излиза без промяна в ConvertBuilder. Ако version.txt не се зареди,
    се ползва commit-а от адреса на този файл. */
@@ -15,9 +15,17 @@
   var own = /@([0-9a-f]{40})\//.exec(me.src || "");
   var fallback = own ? own[1] : null;
 
-  var host = me.previousElementSibling;
-  while (host && !host.hasAttribute("data-edubel")) host = host.previousElementSibling;
-  if (!host) host = document.querySelector("[data-edubel]:not([data-eb-on])");
+  var host;
+  if (me.hasAttribute("data-edubel")) {
+    // one line: the script names the block, and the block goes right before it
+    host = document.createElement("div");
+    host.setAttribute("data-edubel", me.getAttribute("data-edubel"));
+    me.parentNode.insertBefore(host, me);
+  } else {
+    host = me.previousElementSibling;
+    while (host && !host.hasAttribute("data-edubel")) host = host.previousElementSibling;
+    if (!host) host = document.querySelector("div[data-edubel]:not([data-eb-on])");
+  }
   if (!host || host.hasAttribute("data-eb-on")) return;
   host.setAttribute("data-eb-on", "");
   var page = host.getAttribute("data-edubel") || "";
