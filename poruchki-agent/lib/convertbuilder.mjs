@@ -3,12 +3,15 @@
 // CB_SITES env var: JSON [{ "id": "bg", "label": "BeeVenom BG", "domain": "beevenombg.eu", "key": "…" }]
 // The API can read and update orders, but it cannot create them.
 import { normalizePhoneBG, itemsTextBG } from "./format.mjs";
+import { countryOfSite } from "./countries.mjs";
 
 const PAGE = 50;
 
-export function convertBuilder({ sites, env, fetchImpl = fetch }) {
+export function convertBuilder({ sites, env, siteCountries = {}, fetchImpl = fetch }) {
   const all = JSON.parse(env("CB_SITES") || "[]");
-  const active = all.filter((s) => sites.includes(s.id));
+  const active = all
+    .filter((s) => sites.includes(s.id))
+    .map((s) => ({ ...s, country: s.country || countryOfSite(s.id, siteCountries)?.code || "bg" }));
 
   async function cb(site, path, query) {
     const qs = query ? `?${new URLSearchParams(query)}` : "";
@@ -86,8 +89,24 @@ export function normalizeOrder(site, o) {
     phone: ship.phone || bill.phone || "",
     items: (o.items || []).map((it) => ({ name: String(it.name || "").trim(), qty: it.quantity || 1, price: Number(it.total) || 0 })),
     total: Number(o.total) || 0,
-    deliveryText: deliveryText(o),
+    deliveryText: site.country === "sk" ? deliveryTextSK(o) : deliveryText(o),
   };
+}
+
+/**
+ * Slovak delivery line, e.g. "kuriérom GLS na adresu Hlavná 12, Bratislava".
+ * ConvertBuilder labels: "To address gls", "To office gls", "To address sps-sro-slovakia", "SPS(…) до адрес".
+ */
+export function deliveryTextSK(o) {
+  const ship = o.shippingAddress || o.billingAddress || {};
+  const method = String(o.shippingName || "").toLowerCase();
+  const courier = /gls/.test(method) ? "GLS" : /sps/.test(method) ? "SPS" : /packeta|zasielkovn/.test(method) ? "Packeta" : "";
+  const office = /office|офис|výdaj|pick/.test(method);
+  // Only the city is title-cased ("TRNAVA" → "Trnava"); addresses keep names like "GLS ParcelShop".
+  const place = [ship.address, ship.address2, titleCase(ship.city)].map((p) => String(p || "").trim()).filter(Boolean);
+  const where = [...new Set(place)].join(", ");
+  const how = `${courier ? `kuriérom ${courier} ` : ""}${office ? "na výdajné miesto" : "na adresu"}`;
+  return where ? `${how} ${where}` : how;
 }
 
 /**

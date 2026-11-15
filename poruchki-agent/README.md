@@ -7,14 +7,23 @@
 - Netlify проект `mitko-obazhdania` (site id `ed6a6cc4-9068-4e84-a563-d283d598d3f9`), https://mitko-obazhdania.netlify.app
 - Деплой от тази папка: MCP `deploy-site` със site id-то по-горе, командата се пуска в `poruchki-agent/`. Промяна на env променлива влиза в сила чак след нов деплой.
 - `CB_SITES` съдържа само BeeVenom BG. Ключът е копиран от проекта `mitko-prodazhbi`.
-- ElevenLabs (план Starter): изходящ агент `agent_2201m7cgch0jex6tkg81fc95ch2h`, входящ агент `agent_3401m7cgdf60esk8043hz0vwvj68`, webhook за резултатите `37f9d6d5e36244a0bab21494bda7bcf5`. Глас: Elena – Energetic, Friendly, and Clear (`fSxb5mPM1l5zTVVtM3Vb`), избрана от Митко. Друг кандидат: Zori (`Q7y69QlBd8K0CLYUdS1m`), най-близка до демото. Настройки на гласа: stability 0.55, similarity 0.75, optimize_streaming_latency 1 (по-ясен глас), кодеци на линията PCMA, G722, PCMU.
-- Номер на агента: Zadarma София +359 2 437 0192, вътрешен номер 605568-100 (`pbx.zadarma.com`, TCP). В ElevenLabs е `phnum_0401m7cqsxpqf439twk8p463dzxw`, входящите отиват при входящия агент. В Zadarma: CallerID на вътрешния номер = +35924370192, пренасочване „винаги“ към `+35924370192@sip.rtc.elevenlabs.io:5060;transport=tcp`.
-- Входящата линия ще е 0988 88 05 07, пренасочена към +359 2 437 0192, когато никой не вдигне.
+- ElevenLabs (план Starter): изходящ и входящ агент на български, глас Elena. Идентификаторите на агентите, номерата и webhook-а са в env променливите на Netlify и в таблата на ElevenLabs и Zadarma – не ги пиши тук, хранилището е публично.
+- Номерата идват от Zadarma: за всяка държава отделен местен номер на отделен вътрешен номер в централата, с CallerID = този номер и пренасочване към ElevenLabs (SIP).
+
+## Словакия (vcelijed.eu)
+
+Агентът звъни на словаците на словашки, от словашки номер, в словашко време (09:00–20:00, неделя 10:00–18:00). Сценарият е в `agent/beevenom-sk-prompt.md` и `agent/style-sk.md`, настройките – в `agent/beevenom-sk.json`. Обобщенията в Telegram са на български.
+
+За да тръгне:
+1. Митко купува словашки номер в Zadarma и го слага като CallerID на нов вътрешен номер.
+2. Номерът се добавя в ElevenLabs (Phone numbers → SIP trunk) → id-то отива в `EL_PHONE_NUMBER_ID_SK`.
+3. `node scripts/setup-elevenlabs.mjs agent/beevenom-sk.json --voice <словашки глас> --webhook-id <същия webhook>` → `EL_AGENT_ID_SK`.
+4. `SITES=bg,vcelijed`, деплой, после `/test sk` в Telegram.
 
 ## Как работи
 
 1. На всеки 5 минути проверява ConvertBuilder за нови поръчки със статус „pending“ (`lib/convertbuilder.mjs`).
-2. До 5 минути звъни на клиента през ElevenLabs Agents. Звъни само в часовете 09:00–21:00, а в неделя 10:00–19:00 (софийско време).
+2. До 5 минути звъни на клиента през ElevenLabs Agents. Звъни само в часовете 09:00–21:00, а в неделя 10:00–19:00 (местно време на държавата).
 3. Агентът потвърждава продуктите, сумата и доставката. Сценарият е в `agent/beevenom-bg-prompt.md`, а настройките (първо изречение и полетата за резултата) са в `agent/beevenom-bg.json`.
 4. След разговора ElevenLabs праща резултата на `/webhook/elevenlabs`. Митко получава съобщение в Telegram за всичко, което иска внимание.
 5. Ако клиентът не вдигне, агентът опитва пак след 1 час и след 21 часа. След 3 опита пише на Митко.
@@ -55,6 +64,9 @@ ConvertBuilder API не може да създава поръчки, а само
 | `MODE` | начален режим: `off`, `test` или `live`. Митко го сменя от Telegram с `/rezhim test\|live\|off` (записва се в Blobs и важи само за поръчки след командата) |
 | `TEST_PHONE` | номерът на Митко за тестовете |
 | `CALL_HOURS`, `CALL_HOURS_SUNDAY`, `SHOP_NAME`, `DELIVERY_DAYS` | по желание |
+| `EL_AGENT_ID_SK`, `EL_PHONE_NUMBER_ID_SK` | словашкият агент и словашкият номер в ElevenLabs |
+| `CALL_HOURS_SK`, `CALL_HOURS_SUNDAY_SK`, `SHOP_NAME_SK`, `DELIVERY_DAYS_SK` | по желание (словашко време) |
+| `SITE_COUNTRIES` | по желание, напр. `vcelijed:sk`; по подразбиране `bg`→България, `vcelijed`→Словакия |
 
 Данните на клиентите се пазят в Netlify Blobs в региона Франкфурт (`eu-central-1`). Изтриват се 14 дни след последното обаждане.
 

@@ -10,6 +10,7 @@ const HELP = [
   "/pusni – пуска ги отново",
   "/status – какво става в момента",
   "/test – агентът звъни на твоя тестов номер с примерна поръчка",
+  "/test sk – същото, но словашкият агент (от словашкия номер)",
   "/rezhim test – звъни на теб за всяка нова поръчка (тест)",
   "/rezhim live – звъни на клиентите",
   "/rezhim off – не звъни за поръчки",
@@ -23,6 +24,16 @@ const SAMPLE = {
   order_items: "BeeVenom Care Gel 2 плюс 1 броя",
   order_total: "24 евро и 40 цента",
   delivery_text: "Доставка до офис на Еконт, Пловдив, офис Тракия",
+};
+
+const SAMPLE_SK = {
+  order_key: "test",
+  test: "yes",
+  customer_name: "pán Dimitrov",
+  order_number: "1000",
+  order_items: "Včelí jed 2 plus 1 a darček: 8 náplastí s včelím jedom",
+  order_total: "31 eur a 90 centov",
+  delivery_text: "kuriérom GLS na adresu Hlavná 12, Trnava",
 };
 
 /**
@@ -91,9 +102,13 @@ export async function handleTelegram(deps, update, opts = {}) {
   }
   if (["/test", "тест"].includes(cmd)) {
     if (!config.testPhone) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
+    const sk = /^(sk|словакия|slovakia)$/i.test(text.split(/\s+/)[1] || "");
+    const skCfg = config.countries?.sk;
+    if (sk && !skCfg?.ready) return { chatId, reply: "Словашкият агент още не е настроен (липсва агент или словашки номер)." };
     try {
-      await deps.call({ to: config.testPhone, variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays } });
-      return { chatId, reply: `📞 Звъня на ${config.testPhone} с примерна поръчка. След разговора ще ти пиша резултата.` };
+      if (sk) await deps.call({ country: "sk", to: config.testPhone, variables: { ...SAMPLE_SK, shop_name: skCfg.shopName, delivery_days: skCfg.deliveryDays } });
+      else await deps.call({ to: config.testPhone, variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays } });
+      return { chatId, reply: `📞 Звъня на ${config.testPhone} с примерна ${sk ? "словашка " : ""}поръчка. След разговора ще ти пиша резултата.` };
     } catch (err) {
       return { chatId, reply: `⚠️ Не успях да звънна: ${esc(String(err.message).slice(0, 300))}` };
     }

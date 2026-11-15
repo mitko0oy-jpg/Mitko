@@ -1,6 +1,7 @@
 // The calling loop: pick up new orders, call when due, apply results.
 // All I/O comes in through arguments, so this file is testable with fakes.
-import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
+import { inCallingHours, localNow } from "./format.mjs";
+import { countryOfSite, countryByCode } from "./countries.mjs";
 import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN } from "./policy.mjs";
 import { readPostCall } from "./elevenlabs.mjs";
 import { orderKey, getSettings } from "./store.mjs";
@@ -49,9 +50,12 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
   let added = 0;
   for (const o of orders) {
     if (new Date(o.createdAt) < new Date(settings.startedAt)) continue;
-    const phone = normalizePhoneBG(o.phone);
+    const country = countryOfSite(o.site, config.siteCountries || {});
+    if (!country) continue; // no agent and local number for this country
+    const phone = country.normalizePhone(o.phone);
     const rec = {
       site: o.site,
+      country: country.code,
       siteLabel: o.siteLabel,
       orderNo: o.orderNo,
       apiId: o.apiId ?? null,
@@ -60,8 +64,8 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
       firstName: String(o.name || "").trim().split(/\s+/)[0] || "",
       rawPhone: o.phone,
       phone,
-      itemsText: itemsTextBG(o.items),
-      totalText: moneyBG(o.total),
+      itemsText: country.itemsText(o.items),
+      totalText: country.money(o.total),
       deliveryText: o.deliveryText || "",
       state: phone ? "queued" : "needs_mitko",
       attempts: 0,
@@ -113,14 +117,43 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
   }
 
   if (mode === "off") return { ...report, reason: "off" };
-  if (config.ready === false) return { ...report, reason: "ElevenLabs not configured yet" };
   if (settings.paused) return { ...report, reason: "paused" };
-  const hours = sofiaNow(now).weekday === 0 ? config.hoursSunday || config.hours : config.hours;
-  if (!inCallingHours(hours, now)) return { ...report, reason: "outside hours" };
   if (testMode && !config.testPhone) return { ...report, reason: "test mode without TEST_PHONE" };
 
+  // Each country calls through its own agent and local number, in its own time zone.
+  // One call per country per run: a PBX extension carries one call at a time.
+  const codes = new Set(due.map((d) => d.rec.country || "bg"));
+  if (!codes.size) {
+    codes.add("bg");
+    for (const [code, cc] of Object.entries(config.countries || {})) if (cc.ready) codes.add(code);
+  }
+  const status = {};
+  for (const code of codes) {
+    const country = countryByCode(code);
+    const cc = countryCfg(config, code);
+    if (!country || !cc.ready) status[code] = "not configured";
+    else {
+      const hours = localNow(now, country.timeZone).weekday === 0 ? cc.hoursSunday || cc.hours : cc.hours;
+      status[code] = inCallingHours(hours, now, country.timeZone) ? "ok" : "outside hours";
+    }
+  }
+  const states = Object.values(status);
+  if (!states.includes("ok")) {
+    return { ...report, reason: states.includes("outside hours") ? "outside hours" : "ElevenLabs not configured yet" };
+  }
+
+  const perCountry = config.maxCallsPerRun || MAX_CALLS_PER_RUN;
+  const taken = {};
+  const callable = [];
   due.sort((a, b) => String(a.rec.nextAttemptAt).localeCompare(String(b.rec.nextAttemptAt)));
-  for (const { key, rec, etag } of due.slice(0, config.maxCallsPerRun || MAX_CALLS_PER_RUN)) {
+  for (const d of due) {
+    const code = d.rec.country || "bg";
+    if (status[code] !== "ok" || (taken[code] || 0) >= perCountry) continue;
+    taken[code] = (taken[code] || 0) + 1;
+    callable.push({ ...d, country: countryByCode(code), cc: countryCfg(config, code) });
+  }
+
+  for (const { key, rec, etag, country, cc } of callable) {
     // If Mitko already handled the order in ConvertBuilder, do not call.
     if (cb.isStillPending && !(await cb.isStillPending(rec))) {
       await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: "not pending in ConvertBuilder" }] });
@@ -132,17 +165,18 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     if (!modified) continue; // another run took it
     try {
       const { conversationId } = await call({
+        country: country.code,
         to: testMode ? config.testPhone : rec.phone,
         variables: {
           order_key: key,
           test: testMode ? "yes" : "no",
-          shop_name: config.shopName,
-          customer_name: formalNameBG(rec.name) || rec.firstName || rec.name,
+          shop_name: cc.shopName,
+          customer_name: country.formalName(rec.name) || (country.code === "bg" ? rec.firstName : "") || rec.name,
           order_number: String(rec.orderNo),
           order_items: rec.itemsText,
           order_total: rec.totalText,
-          delivery_text: rec.deliveryText || "както е посочено в поръчката",
-          delivery_days: config.deliveryDays,
+          delivery_text: rec.deliveryText || cc.deliveryText,
+          delivery_days: cc.deliveryDays,
         },
       });
       const updated = {
@@ -164,6 +198,25 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     }
   }
   return report;
+}
+
+/**
+ * Settings for one country. Older configs (tests, single-country setups) only
+ * have the Bulgarian fields at the top level, so fall back to those.
+ */
+function countryCfg(config, code) {
+  const fromConfig = config.countries?.[code];
+  if (fromConfig) return fromConfig;
+  if (code !== "bg") return { ready: false };
+  const d = countryByCode("bg").defaults;
+  return {
+    ready: config.ready !== false,
+    hours: config.hours || d.hours,
+    hoursSunday: config.hoursSunday || config.hours || d.hoursSunday,
+    shopName: config.shopName || d.shopName,
+    deliveryDays: config.deliveryDays || d.deliveryDays,
+    deliveryText: d.deliveryText,
+  };
 }
 
 /** Handle one ElevenLabs webhook (already signature-checked). */

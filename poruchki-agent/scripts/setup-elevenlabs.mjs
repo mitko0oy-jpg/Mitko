@@ -101,6 +101,7 @@ const placeholders = spec.tools?.length ? {} : {
   delivery_text: "Доставка до офис на Еконт, Пловдив, офис Тракия",
   order_key: "test",
   test: "yes",
+  ...(spec.placeholders || {}),
 };
 
 const body = {

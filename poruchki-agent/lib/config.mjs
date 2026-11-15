@@ -3,6 +3,7 @@ import { openStore, getSettings } from "./store.mjs";
 import { startCall } from "./elevenlabs.mjs";
 import { sendTelegram } from "./telegram.mjs";
 import { convertBuilder } from "./convertbuilder.mjs";
+import { COUNTRIES, parseSiteCountries } from "./countries.mjs";
 
 const env = (k, d = "") => (globalThis.Netlify?.env.get(k) ?? process.env[k] ?? d);
 
@@ -18,7 +19,25 @@ export function readConfig() {
     inboundAgentId: env("EL_INBOUND_AGENT_ID"),
     maxCallsPerRun: Number(env("MAX_CALLS_PER_RUN", "1")) || 1,
     ready: Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
+    siteCountries: parseSiteCountries(env("SITE_COUNTRIES")),
+    countries: countryConfigs(),
   };
+}
+
+/** Per-country settings: is its agent + local number configured, calling hours, texts. */
+export function countryConfigs() {
+  const out = {};
+  for (const [code, c] of Object.entries(COUNTRIES)) {
+    out[code] = {
+      ready: Boolean(env("ELEVENLABS_API_KEY") && env(c.env.agent) && env(c.env.phone)),
+      hours: env(c.env.hours, c.defaults.hours),
+      hoursSunday: env(c.env.hoursSunday, c.defaults.hoursSunday),
+      shopName: env(c.env.shopName, c.defaults.shopName),
+      deliveryDays: env(c.env.deliveryDays, c.defaults.deliveryDays),
+      deliveryText: c.defaults.deliveryText,
+    };
+  }
+  return out;
 }
 
 /** Messages go to the chat that registered with /start <TELEGRAM_SETUP_CODE> (or TELEGRAM_CHAT_ID). */
@@ -29,12 +48,13 @@ export function telegramNotify(store) {
   };
 }
 
+/** Calls go out through the country's own agent and local number (Bulgarian by default). */
 export function realCall() {
-  return ({ to, variables }) =>
+  return ({ to, variables, country = "bg" }) =>
     startCall({
       apiKey: env("ELEVENLABS_API_KEY"),
-      agentId: env("EL_AGENT_ID"),
-      phoneNumberId: env("EL_PHONE_NUMBER_ID"),
+      agentId: env((COUNTRIES[country] || COUNTRIES.bg).env.agent),
+      phoneNumberId: env((COUNTRIES[country] || COUNTRIES.bg).env.phone),
       provider: env("EL_PHONE_PROVIDER", "sip"),
       to,
       variables,
@@ -46,7 +66,7 @@ export function realDeps() {
   const store = openStore();
   return {
     store,
-    cb: convertBuilder({ sites: config.sites, env }),
+    cb: convertBuilder({ sites: config.sites, env, siteCountries: config.siteCountries }),
     call: realCall(),
     notify: telegramNotify(store),
     config,

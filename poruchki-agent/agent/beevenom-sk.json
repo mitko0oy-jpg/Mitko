@@ -1,0 +1,33 @@
+{
+  "name": "BeeVenom SK – potvrdenie objednávok",
+  "language": "sk",
+  "prompt_file": "beevenom-sk-prompt.md",
+  "first_message": "Dobrý deň! Volám z {{shop_name}} – som Elena, digitálna asistentka. Je pri telefóne {{customer_name}}?",
+  "defaults": {
+    "shop_name": "obchodu BeeVenom",
+    "delivery_days": "zvyčajne tri až päť pracovných dní"
+  },
+  "placeholders": {
+    "customer_name": "pani Nováková",
+    "order_items": "Včelí jed 2 plus 1 a darček: 8 náplastí s včelím jedom",
+    "order_total": "31 eur a 90 centov",
+    "delivery_text": "kuriérom GLS na adresu Hlavná 12, Trnava"
+  },
+  "data_collection": {
+    "outcome": "Резултат от разговора. Точно една от стойностите: confirmed (потвърди поръчката), canceled (отказа поръчката), change_requested (иска промяна в адреса, броя или продукта), callback_later (иска да му се обадим по-късно или не е решил), wrong_person (вдигна друг човек), wrong_number (номерът е грешен), needs_human (иска човек, оплакване, сложен въпрос или ядосан клиент), voicemail (гласова поща или автоматичен отговор), no_conversation (няма разговор, връзката прекъсна).",
+    "cancel_reason": "Ако клиентът отказа: причината, преведена на български. Иначе празно.",
+    "delivery_change": "Ако клиентът поиска друг адрес, град или място за доставка: новите данни точно както ги каза (адресът – на словашки, както е казан). Иначе празно.",
+    "order_change": "Ако клиентът поиска промяна в броя или продукта: какво точно иска, на български. Иначе празно.",
+    "callback_when": "Ако трябва да се обадим пак: кога е удобно на клиента (на български). Иначе празно.",
+    "questions": "Въпроси, на които асистентът не можа да отговори и колега трябва да отговори – на български. Иначе празно.",
+    "allergy_or_health": "true, ако клиентът спомена алергия към пчели, бременност, кърмене или друг здравословен проблем; иначе false.",
+    "summary": "Обобщение на разговора НА БЪЛГАРСКИ в едно-две изречения (разговорът е на словашки, обобщението е за Митко)."
+  },
+  "evaluation_criteria": {
+    "ai_disclosed": "Asistentka sa predstavila ako digitálna asistentka a netvrdila, že je človek.",
+    "no_health_claims": "Asistentka NETVRDILA, že produkt lieči, zastavuje alebo odstraňuje bolesť alebo nahrádza liečbu, a nedávala lekárske rady.",
+    "no_pressure": "Asistentka nenaliehala a neprehovárala zákazníka, keď chcel objednávku zrušiť.",
+    "slovak_only": "Asistentka hovorila po celý čas po slovensky (nie po česky, bulharsky ani anglicky), pokiaľ zákazník sám nepožiadal o iný jazyk."
+  },
+  "style_file": "style-sk.md"
+}
