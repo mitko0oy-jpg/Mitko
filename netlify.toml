@@ -4,10 +4,17 @@
 [functions]
   directory = "netlify/functions"
 
+# The QR code on each math card ("Още задачи и видео") leads to app.edubel.site/m/N: that card in the trainer.
+[[redirects]]
+  from = "/m/:n"
+  to = "/t/?m=:n"
+  status = 302
+
 # Security headers for the static pages. API responses set their own headers in code.
 [[headers]]
   for = "/*"
   [headers.values]
+    Strict-Transport-Security = "max-age=31536000"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
@@ -18,6 +25,13 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+
+# Pictures, animations, sounds and the video of the trainer: kept by the browser for 30 days
+# (a changed file gets a new name), so a child's daily visit does not ask for them again.
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
 
 [[headers]]
   for = "/fonts/*"

@@ -1,8 +1,9 @@
 import type { Config } from "@netlify/functions";
 import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
-import { one, q, tx } from "../lib/db.mts";
-import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
+import { hit, one, q, tx } from "../lib/db.mts";
+import { bad, body, clientIp, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { fingerprint, readMarks } from "../lib/trener.mts";
 
 const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading", "challenge"];
 
@@ -14,8 +15,14 @@ function stable(v: any): string {
 }
 
 // Operator API used by Claude from the command line. Protected by the ADMIN_TOKEN header.
-export default handle(async (req) => {
-  requireAdmin(req);
+export default handle(async (req, ctx) => {
+  try {
+    requireAdmin(req);
+  } catch (e) {
+    // Wrong token: after a few tries from one address, stop answering for an hour (the token itself is 48 random characters).
+    if (!(await hit(`admin-miss:${clientIp(req, ctx)}`, 10, 3600))) throw tooMany();
+    throw e;
+  }
   const parts = sub(req, "/api/admin/");
 
   if (req.method === "GET" && parts[0] === "stats") {
@@ -55,10 +62,30 @@ export default handle(async (req) => {
     return json({ users: rows });
   }
 
+  // НВО тренажор: list the codes of a batch (for printing and for checking which were opened).
+  if (req.method === "GET" && parts[0] === "trener-codes") {
+    const batch = new URL(req.url).searchParams.get("batch") || "";
+    const rows = await q<any>(
+      `SELECT k.code, k.batch, k.note, k.created_at, k.first_used, k.last_used, k.disabled_at, count(d.device)::int AS devices
+         FROM trener_keys k LEFT JOIN trener_devices d ON d.code = k.code
+        WHERE ($1 = '' OR k.batch = $1) GROUP BY k.code ORDER BY k.created_at, k.code`,
+      [batch],
+    );
+    return json({ codes: rows.map((r) => ({ ...r, code: formatCode(r.code) })) });
+  }
+
   if (req.method === "GET" && parts[0] === "export") {
     const modules = await q("SELECT * FROM modules ORDER BY grade, position");
     const items = await q("SELECT module_slug, ext_id, position, data, status, reviewed_at, updated_at FROM items ORDER BY module_slug, position");
     return json({ modules, items });
+  }
+
+  // НВО тренажор: a full copy of the codes and the pupils' grades (to keep somewhere safe).
+  if (req.method === "GET" && parts[0] === "trener-backup") {
+    const keys = await q("SELECT * FROM trener_keys ORDER BY created_at, code");
+    const devices = await q("SELECT code, device, label, created_at, last_seen FROM trener_devices ORDER BY code, created_at");
+    const bank = await one<{ id: string }>("SELECT max(id) AS id FROM trener_bank");
+    return json({ at: new Date().toISOString(), bankId: bank?.id ? Number(bank.id) : null, keys, devices });
   }
 
   if (req.method !== "POST") throw notFound();
@@ -142,6 +169,56 @@ export default handle(async (req) => {
     if (!email || b.confirm !== email) throw bad("confirm", "Повтори имейла в confirm.");
     const r = await q("DELETE FROM users WHERE email = $1 RETURNING id", [email]);
     return json({ ok: true, deleted: r.length });
+  }
+
+  // НВО тренажор: a new version of the question bank (the newest one is served).
+  if (parts[0] === "trener-bank") {
+    const questions = Array.isArray(b.questions) ? b.questions : [];
+    if (questions.length < 10 || !b.passages || typeof b.passages !== "object") throw bad("bank", "Липсват задачите.");
+    // The game „Литературни досиета“ travels with the bank (optional).
+    const dossiers = b.dossiers && typeof b.dossiers === "object" && Array.isArray(b.dossiers.dossiers) ? b.dossiers : null;
+    // Math for НВО (the 50 cards; their practice is in questions/modules), also optional.
+    const math = b.math && typeof b.math === "object" && Array.isArray(b.math.cards) && Array.isArray(b.math.sections) ? b.math : null;
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math })]);
+    return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0, mathCards: math ? math.cards.length : 0 });
+  }
+
+  // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.
+  if (parts[0] === "trener-codes") {
+    const count = Math.max(1, Math.min(2000, Number(b.count) || 1));
+    const batch = str(b.batch, 60);
+    const maxDevices = Math.max(1, Math.min(10, Number(b.maxDevices) || 3));
+    // Access: {months: 12} from the first opening, or {validUntil: "2027-06-30"}; neither = no limit.
+    const months = Number.isInteger(Number(b.months)) && Number(b.months) >= 1 && Number(b.months) <= 60 ? Number(b.months) : null;
+    const validUntil = !months && /^\d{4}-\d{2}-\d{2}$/.test(String(b.validUntil || "")) ? `${b.validUntil}T23:59:59+03:00` : null;
+    const codes: string[] = [];
+    while (codes.length < count) {
+      const c = newCode();
+      const r = await q(
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, kind) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, maxDevices, months, validUntil, b.kind === "renew" && months ? "renew" : "access"],
+      );
+      if (r.length) codes.push(formatCode(c));
+    }
+    return json({ ok: true, batch, codes, months, validUntil });
+  }
+
+  // НВО тренажор: which code a leaked copy of the questions came from (its hidden fingerprint, see lib/trener.mts).
+  if (parts[0] === "trener-trace") {
+    const marks = new Set<string>([...(Array.isArray(b.marks) ? b.marks : []), ...readMarks(str(b.text, 2_000_000))].map((x) => String(x).toLowerCase()));
+    if (!marks.size) return json({ marks: [], codes: [] });
+    const rows = await q<any>("SELECT code, batch, note, first_used, last_used, disabled_at FROM trener_keys");
+    const codes = rows.filter((r) => marks.has(fingerprint(r.code))).map((r) => ({ ...r, code: formatCode(r.code), fingerprint: fingerprint(r.code) }));
+    return json({ marks: [...marks], codes });
+  }
+
+  // Gives an existing account the admin role (for the /kodove/ support page).
+  if (parts[0] === "role") {
+    const email = str(b.email, 200).toLowerCase();
+    if (!["parent", "reviewer", "admin"].includes(b.role)) throw bad("role", "Непозната роля.");
+    const r = await q("UPDATE users SET role = $2 WHERE email = $1 RETURNING email, role", [email, b.role]);
+    if (!r.length) throw notFound("Няма профил с този имейл.");
+    return json({ ok: true, user: r[0] });
   }
 
   if (parts[0] === "codes") {

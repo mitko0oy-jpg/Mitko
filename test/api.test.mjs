@@ -284,3 +284,149 @@ test("lessons and texts: empty template, written lesson, locked text", async () 
   r = await kid(`learn/unit/${unit.slug}/lesson`);
   assert.equal(r.item, null);
 });
+
+test("НВО тренажор: personal code, three devices, merged grades, support page", async () => {
+  const bank = await admin("trener-bank", {
+    passages: { p1: { title: "Текст", text: ["Абзац."] } },
+    questions: [
+      ...Array.from({ length: 12 }, (_, i) => ({ id: `pravopis-${String(i + 1).padStart(2, "0")}`, m: "pravopis", t: "mc", q: "Въпрос?", o: ["а", "б", "в", "г"], a: 0, why: "Защото така казва правилото за правопис." })),
+      { id: "m12-k1", m: "mk-12", t: "mc", h: 1, q: "Кое е вярно?", o: ["96 · 0,8", "96 · 0,2"], a: 0, why: 'Второто <span class="fr"><span>1</span><span>5</span></span> се смята от <b class="x y">новата цена</b>, а не от старата.' },
+    ],
+    modules: [{ id: "pravopis", n: 1, area: "lang", title: "Правопис", desc: "" }, { id: "mk-12", n: 112, area: "math", sec: "pct", title: "Карта 12", desc: "" }],
+    dossiers: { title: "Литературни досиета", dossiers: [{ id: "d01", no: 1, work: "„Творба“" }], message: { fields: 1, groups: [[1]], text: "А" } },
+    math: { title: "Математика", sections: [{ id: "pct", t: "Проценти и пари", c: "#A8641B" }], index: [{ n: 12, area: "pct", title: "Две поредни промени", grades: "6–7" }],
+      cards: [{ n: 12, area: "pct", title: "Две поредни промени", front: [{ tag: "section", cls: "key", html: '<h5>Ключът <span class="badge mem">Наизуст</span></h5><p class="f">умножи по <span class="fr"><span>p</span><span>100</span></span> и после пак</p>' }], back: [] }] },
+  });
+  assert.ok(bank.id > 0);
+  assert.equal(bank.dossiers, 1, "the game is kept with the bank");
+  assert.equal(bank.mathCards, 1, "the math cards are kept with the bank");
+  const { codes } = await admin("trener-codes", { count: 2, batch: `test-${run}` });
+  const [code, other] = codes;
+  const t = client();
+  const dev = (n) => `${n}`.padStart(2, "0").repeat(24);
+
+  let r = await t("trener/open", { code: "AAAAA-BBBBB", device: dev(1) });
+  assert.equal(r.status, 404, "unknown code");
+  r = await t("trener/open", { code: code.toLowerCase().replace("-", ""), device: dev(1), label: "iPhone · Safari" });
+  assert.equal(r.code, code, "code typed in lower case without the dash");
+  assert.equal(r.bank.questions.length, 13);
+  assert.equal(r.bank.dossiers.dossiers[0].id, "d01", "the game reaches the browser");
+  assert.equal(r.bank.math.cards[0].n, 12, "the math cards reach the browser");
+  // The fingerprint goes into the math HTML too, but never inside a tag.
+  const unmark = (x) => x.replace(/\u2060[\u200b\u200c]{32}\u2060/g, "");
+  const mathWhy = r.bank.questions.find((x) => x.id === "m12-k1").why, cardHtml = r.bank.math.cards[0].front[0].html;
+  assert.ok(/\u2060[\u200b\u200c]{32}\u2060/.test(mathWhy) && /\u2060[\u200b\u200c]{32}\u2060/.test(cardHtml), "math text and cards carry the fingerprint");
+  assert.ok(!/<[^>]*\u2060/.test(mathWhy) && !/<[^>]*\u2060/.test(cardHtml), "not inside an HTML tag");
+  assert.ok(unmark(mathWhy).startsWith("Второто <span") && unmark(cardHtml).includes('<span class="fr">'), "the HTML is unchanged apart from the mark");
+  assert.equal(r.devices.length, 1);
+  r = await t("trener/open", { code, device: dev(1), have: bank.id });
+  assert.equal(r.bank, undefined, "the bank is not sent again when the browser has it");
+
+  // Device 1 saves a result, device 2 another one: both are kept.
+  const d1 = Date.now() - 5000, d2 = Date.now() - 1000;
+  r = await t("trener/save", { code, device: dev(1), state: { name: "Ива", hist: [{ m: "pravopis", d: d1, p: 18, n: 20, s: 300, w: [] }], mist: {}, at: d1 } });
+  assert.equal(r.state.hist.length, 1);
+  await t("trener/open", { code, device: dev(2) });
+  r = await t("trener/save", { code, device: dev(2), state: { name: "Ива", hist: [{ m: "glagol", d: d2, p: 11, n: 20, s: 300, w: ["glagol-01"] }], mist: { "glagol-01": { n: 1, ok: 0, d: d2 } }, at: d2 } });
+  assert.deepEqual(r.state.hist.map((h) => h.m), ["pravopis", "glagol"], "results from both devices are merged");
+
+  // Third device fits, the fourth does not.
+  await t("trener/open", { code, device: dev(3) });
+  r = await t("trener/open", { code, device: dev(4) });
+  assert.equal(r.status, 409);
+  assert.equal(r.error, "devices_full");
+  assert.equal(r.devices.length, 3);
+
+  // From device 1, free device 3: device 4 gets in, device 3 is told it was removed.
+  r = await t("trener/open", { code, device: dev(1) });
+  const third = r.devices[2].id;
+  r = await t("trener/forget", { code, device: dev(1), target: third });
+  assert.equal(r.devices.length, 2);
+  r = await t("trener/open", { code, device: dev(4) });
+  assert.equal(r.devices.length, 3);
+  r = await t("trener/save", { code, device: dev(3), state: {} });
+  assert.equal(r.error, "device_removed");
+
+  // A reset on one device clears the older results everywhere.
+  r = await t("trener/save", { code, device: dev(2), state: { name: "Ива", hist: [], mist: {}, resetAt: Date.now(), at: Date.now() } });
+  assert.equal(r.state.hist.length, 0);
+
+  // Support page: only for admins.
+  const owner = client();
+  await owner("auth/register", { name: "Собственик", email: `owner.${run}@example.com`, password: "parola123", consent: true });
+  r = await owner("trener/admin/summary");
+  assert.equal(r.status, 403, "a parent cannot open the support page");
+  await admin("role", { email: `owner.${run}@example.com`, role: "admin" });
+  r = await owner("trener/admin/summary");
+  assert.ok(r.batches.some((b) => b.batch === `test-${run}` && b.total === 2 && b.used === 1));
+  r = await owner(`trener/admin/key?code=${code}`);
+  assert.equal(r.devices.length, 3);
+  r = await owner("trener/admin/key", { code, action: "free" });
+  assert.equal(r.devices.length, 0);
+  r = await owner("trener/admin/key", { code: other, action: "disable" });
+  assert.equal(r.key.disabled, true);
+  r = await t("trener/open", { code: other, device: dev(1) });
+  assert.equal(r.error, "disabled");
+  r = await owner("trener/admin/codes", { count: 3, batch: `stickers-${run}` });
+  assert.equal(r.codes.length, 3);
+  r = await owner(`trener/admin/batch?batch=stickers-${run}&unused=1`);
+  assert.equal(r.codes.length, 3);
+
+  // Time-limited access: 12 months from the first opening; a fixed end date in the past is expired at once.
+  r = await owner("trener/admin/codes", { count: 1, batch: `year-${run}`, months: 12 });
+  const year = r.codes[0];
+  r = await t("trener/open", { code: year, device: dev(7) });
+  const days = (new Date(r.expiresAt) - Date.now()) / 86_400_000;
+  assert.ok(days > 360 && days < 370, "expires about a year after the first opening");
+  r = await owner("trener/admin/codes", { count: 1, batch: `old-${run}`, validUntil: "2026-01-31" });
+  const old = r.codes[0];
+  r = await t("trener/open", { code: old, device: dev(8) });
+  assert.equal(r.error, "expired");
+  r = await owner("trener/admin/key", { code: old, action: "extend", months: 12 });
+  r = await t("trener/open", { code: old, device: dev(8) });
+  assert.ok(r.expiresAt, "opens after the owner extends a code that was never opened");
+
+  // Renewal codes: bought for 1, 6 or 12 months, entered on a device of the family, used once.
+  r = await owner("trener/admin/codes", { count: 2, batch: `renew-${run}`, kind: "renew", months: 6 });
+  const [ren1, ren2] = r.codes;
+  r = await t("trener/open", { code: ren1, device: dev(9) });
+  assert.equal(r.error, "renew_code", "a renewal code does not open the trainer by itself");
+  const before = new Date((await t("trener/open", { code: year, device: dev(7) })).expiresAt);
+  r = await t("trener/renew", { code: year, device: dev(9), renew: ren1 });
+  assert.equal(r.error, "device_removed", "only a registered device can renew");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: ren1 });
+  const added = (new Date(r.expiresAt) - before) / 86_400_000;
+  assert.ok(added > 180 && added < 186, "six months are added to the end date");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: ren1 });
+  assert.equal(r.error, "used", "a renewal code works once");
+  r = await t("trener/renew", { code: year, device: dev(7), renew: other.replace("-", "") });
+  assert.ok(r.status >= 400, "an access code is not a renewal code");
+  r = await owner(`trener/admin/key?code=${ren1}`);
+  assert.equal(r.key.usedFor, year);
+  await t("trener/open", { code, device: dev(1) });
+  r = await t("trener/renew", { code, device: dev(1), renew: ren2 });
+  assert.equal(r.error, "unlimited", "a code without an end date needs no renewal");
+
+  // Passing a code around: a code takes its 3 places plus 3 changes in 30 days, then no more new devices.
+  r = await owner("trener/admin/codes", { count: 1, batch: `swap-${run}` });
+  const swap = r.codes[0];
+  const sw = (n) => `${n}`.padStart(2, "0").repeat(24).replace(/^../, "ab");
+  for (let i = 0; i < 6; i++) {
+    r = await t("trener/open", { code: swap, device: sw(i) });
+    assert.ok(r.devices, `device ${i + 1} gets in`);
+    if (r.devices.length === 3) await t("trener/forget", { code: swap, device: sw(i), target: r.devices[0].id });
+  }
+  r = await t("trener/open", { code: swap, device: sw(6) });
+  assert.equal(r.error, "too_many_devices", "the 7th new device in a month is refused");
+  r = await owner(`trener/admin/key?code=${swap}`);
+  assert.equal(r.key.adds30, 6);
+  r = await owner("trener/admin/key", { code: swap, action: "free" });
+  r = await t("trener/open", { code: swap, device: sw(6) });
+  assert.ok(r.devices, "freeing the devices on the support page starts the count again");
+
+  // Every copy of the questions carries its code's invisible fingerprint; a leaked text leads back to the code.
+  const whyText = r.bank.questions.map((x) => x.why || "").join("\n");
+  assert.ok(/\u2060[\u200b\u200c]{32}\u2060/.test(whyText), "the explanations carry the fingerprint");
+  const trace = await admin("trener-trace", { text: whyText });
+  assert.deepEqual(trace.codes.map((c) => c.code), [swap]);
+});
