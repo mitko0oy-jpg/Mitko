@@ -52,6 +52,18 @@
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
 
+## Подаръкът „200 въпроса“ (Голямото БЕЛ предизвикателство)
+
+Безплатен PDF за Черния петък + онлайн проверка. 6 части (5., 6., 7. клас × литература / език), точки 1–3 според трудността (Знам / Разбирам / Мисля), общо до 400 т., титли по процент: Четец, Книжовник (40%), Летописец (60%), Майстор на словото (75%), Будител (90%).
+
+- Въпросите (не са в git): `private/podarak/parts/part-1..6.json`, бриф за писане – `private/podarak/BRIEF.md`. Във всеки въпрос `o[0]` е верният; буквите се разбъркват равномерно при `content`.
+- `python3 scripts/podarak.py content private/podarak/parts private/podarak/podarak-import.json` → модул `podarak-200` (kind `challenge`, grade 0) за `admin.mjs import`. Учителят го преглежда на `/pregled/`.
+- `python3 scripts/podarak.py pdf <import или export.json> <out.pdf>` → защитен PDF: текстът е превърнат в криви (Ghostscript), AES-256 само с печат, воден знак и бранд на всяка страница; ключът **не е** в PDF. `--key` = учителски екземпляр с отговорите (само за учители), `--draft` = печат „Чернова“, `--for "…"` = ред „Лицензирано за“, `--plain` = без защита за бърз преглед. Нужни: reportlab, pypdf, fonttools, brotli, `gs`.
+- След поправки в базата: `admin.mjs export` → `pdf` от експорта, за да съвпадат PDF и онлайн ключът. **Не пренареждай и не трий въпроси след пускането** – номерата и буквите в отпечатаните PDF-и трябва да останат същите.
+- PDF файлът се слага в `public/podarak/Edu-BEL-200-vaprosa.pdf` преди деплой (`*.pdf` е в `.gitignore`).
+- API `netlify/functions/podarak.mts` (`/api/podarak/*`): `info`, `check` (точки, титла, обяснения, слаби теми с връзка към `/tema/`), `me`, `klas` (код за класа + таен линк на учителя), `klas/<код>` (класиране), `uchitel` (класиране, най-трудните въпроси след поне 3 решили, махане на псевдоним). Без регистрация: детето е анонимен id в браузъра, само псевдоним; учителят – таен линк (в базата е само SHA-256). Първият опит за всяка част влиза в класирането.
+- Страници: `/podarak/` (начало, изтегляне, части, код за клас), `/podarak/proverka/?c=<част>&k=<код>` (QR кодовете водят тук), `/podarak/klas/?k=<код>`, `/podarak/uchitel/#<таен>`, `/podarak/gramota/` (грамота за печат; името остава само в браузъра). Таблици: `challenge_classes`, `challenge_results`.
+
 ## Тестове
 
 ```
