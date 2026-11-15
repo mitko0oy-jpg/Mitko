@@ -7,7 +7,7 @@ The questions are content and never go into this public repository (they live in
        python3 scripts/podarak.py content private/podarak/parts private/podarak/podarak-import.json
   2) Import file (or `admin.mjs export` after the teacher's review) → PDF:
        python3 scripts/podarak.py pdf private/podarak/podarak-import.json private/podarak/Edu-BEL-200-vaprosa.pdf
-     Options: --base https://edubel-app.netlify.app  (where the QR codes point)
+     Options: --base https://app.edubel.site  (where the QR codes point)
               --for "Училище …"                      (a licence line on every page)
               --key                                  (teacher's copy: answers and explanations, not for children)
               --draft                                (a "draft" stamp on every page)
@@ -27,7 +27,7 @@ MODULE = "podarak-200"
 TITLE = "200 въпроса"
 KICKER = "Голямото БЕЛ предизвикателство"
 EDITION = "Подарък от Еду БЕЛ · ноември 2026"
-DEFAULT_BASE = "https://edubel-app.netlify.app"
+DEFAULT_BASE = "https://app.edubel.site"
 
 # The six parts: two per grade. Points: 1 = Знам, 2 = Разбирам, 3 = Мисля.
 PARTS = [
