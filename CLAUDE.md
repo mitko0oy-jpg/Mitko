@@ -21,6 +21,7 @@
 
 - Netlify проект: `edubel-app` (site id `55509ac3-c1b8-48a7-b0f6-6bc120e685c9`), отбор `mitko0oy`. Публичен адрес: `app.edubel.site` (CNAME `app` → `edubel-app.netlify.app` в SuperHosting); `edubel-app.netlify.app` продължава да работи. QR кодовете на стикерите и PDF-ите водят към `https://app.edubel.site/t/?k=КОД`.
 - Деплой: MCP `deploy-site` дава команда `npx -y @netlify/mcp@latest --site-id … --proxy-path …`, която се пуска от корена. Всеки деплой е production и струва 15 кредита (планът е Personal: 1000 кредита на месец, период от 9-о до 8-о число), затова тествай локално и деплойвай рядко. Ориентир: ~0,3 кредита на активно дете на месец в тренажора.
+- **Преди деплой:** няма `main`; работата е в различни `claude/*` клонове. Сравни файловете на сайта с клона, от който деплойваш, за да не изтриеш нещо качено от друг клон. Деплой на 15.11.2026: клон `claude/happy-pasteur-2od7cc` = тренажорът към `b38debf` + „200 въпроса“. Командата качва цялата папка, затова деплойвай от чисто копие (`git archive HEAD | tar -x -C <папка>` + нужните PDF-и), не от папката с `private/`.
 - Env променливи в Netlify: `ADMIN_TOKEN` (таен), `TEST_MODE=1` (показва и непрегледаното съдържание с банер). По желание: `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_FREE_TOTAL`, `AI_PAID_DAILY`, `AI_GLOBAL_DAILY`.
 
 ## Модел на данните
