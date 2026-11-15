@@ -412,14 +412,35 @@ export function createService({ store, source, ai = null, video = null, gen = nu
       mtd: M.mtd,
       regimes: M.countries.map((c) => ({ country: c, flag: COUNTRY[c]?.flag, name: COUNTRY[c]?.name, regime: M.regimes[c].regime, label: M.regimes[c].label, tone: M.regimes[c].tone, posture: POSTURES[M.regimes[c].posture], text: M.regimes[c].text, reasons: M.regimes[c].reasons })),
       diagnosis: M.diagnosis,
-      pendingCount: pending.length,
+      // What the badge counts: things only Mitko can decide (one per campaign / ad), not alerts or ad ideas.
+      pendingCount: new Set(pending.filter((p) => ["budget", "pause", "activate", "swap"].includes(p.kind)).map((p) => p.entity?.id || p.id)).size,
       pending: pending.slice(0, 5),
       alerts,
       bench: benchTotals,
       diversityAvg: divs.length ? Math.round(divs.reduce((a, b) => a + b, 0) / divs.length) : null,
       nextEvents: M.cal.filter((e) => e.inDays <= 10).slice(0, 6),
       lastRun: (await store.get("meta", "lastRun")) || null,
+      todo: await todoOf(M, pending),
     };
+  }
+
+  // "What should I do now" – at most a handful of plain sentences, each with one button.
+  async function todoOf(M, pending) {
+    const out = [];
+    const conn = source.connections ? await source.connections() : {};
+    for (const p of M.proposals.filter((x) => x.status === "proposed" && x.rule === "tracking_guard").slice(0, 1))
+      out.push({ icon: "alert", tone: "bad", text: p.title, sub: "Мета и магазинът не броят еднакво – първо оправи това.", href: "#avtopilot", cta: "Виж" });
+    const money = pending.filter((p) => ["budget", "pause", "activate", "swap"].includes(p.kind));
+    const real = money.filter((p) => !(p.kind === "budget" && p.from != null && Math.abs(p.to - p.from) < 0.01));
+    const camps = new Set(real.filter((p) => p.entity?.level !== "ad").map((p) => p.entity?.id)).size;
+    const ads = new Set(real.filter((p) => p.entity?.level === "ad").map((p) => p.entity?.id)).size;
+    const n = (k, one, many) => (k === 1 ? `1 ${one}` : `${k} ${many}`);
+    if (camps || ads) out.push({ icon: "bolt", tone: "honey", text: camps && ads ? `${n(camps, "кампания", "кампании")} и ${n(ads, "реклама", "реклами")} чакат решение` : camps ? `${n(camps, "кампания чака", "кампании чакат")} решение за бюджет или пауза` : `${n(ads, "реклама губи", "реклами губят")} – спри ги`, sub: "Одобри или откажи с едно натискане.", href: "#avtopilot", cta: "Реши" });
+    const rep = needsOf(M).filter((n) => n.kind === "replace");
+    if (rep.length) out.push({ icon: "sparkles", tone: "violet", text: rep.length === 1 ? "1 реклама продава скъпо – смени я с нова идея" : `${rep.length} реклами продават скъпо – смени ги с нови идеи`, sub: "Кошер е подготвил по една нова идея за всяка.", href: "#studio", cta: "Нови реклами" });
+    if (!demo && !M.S.econ?.costsConfirmedAt) out.push({ icon: "target", tone: "info", text: "Потвърди себестойностите на продуктите", sub: "Без тях маржът е приблизителен. Можеш да ги пренесеш от „Табло Печалба“.", href: "#nastroyki", cta: "Отвори" });
+    if (!demo && conn.video === "missing") out.push({ icon: "image", tone: "info", text: "Свържи Higgsfield, за да рисува банери", sub: "Еднократно – ключ от console.higgsfield.ai.", href: "#studio", cta: "Как" });
+    return out.slice(0, 5);
   }
 
   async function campaigns(rangeKey = "d7") {
@@ -452,7 +473,7 @@ export function createService({ store, source, ai = null, video = null, gen = nu
       const f = lives.length ? lives.sort((a, b) => b.m3.spend - a.m3.spend)[0].fatigue : null;
       return {
         id: c.id, name: c.name, account: c.account, country: c.country, kind: c.kind, tags: c.tags, hookText: c.hookText, script: c.script, status: lives.length ? "live" : c.status, source: c.source,
-        createdAt: c.createdAt, stats: c.stats || null, result: c.result, fatigue: f ? { stage: f.stage, score: f.score, daysLeft: f.daysLeft, text: reasonText(f), flags: f.flags } : null,
+        createdAt: c.createdAt, stats: c.stats || null, spend7: lives.reduce((t, x) => t + (x.m7?.spend || 0), 0), result: c.result, fatigue: f ? { stage: f.stage, score: f.score, daysLeft: f.daysLeft, text: reasonText(f), flags: f.flags } : null,
         compliance: c.hookText || c.script ? lint({ text: c.hookText, script: c.script, talent: c.tags?.talent, format: c.tags?.format, isAiGenerated: c.source === "studio", language: COUNTRY[c.country]?.lang, angle: c.tags?.angle }) : null,
         provider: c.provider, thumb: c.thumb, videoUrl: c.videoUrl, firstFrame: c.firstFrame, translations: c.translations, novelty: c.novelty,
       };
@@ -665,8 +686,13 @@ export function createService({ store, source, ai = null, video = null, gen = nu
     const products = data.products.map((p) => ({ name: String(p.name || ""), keys: String(p.keys || p.name || ""), cost: Number(String(p.cost).replace(",", ".")) || 0 })).filter((p) => p.name);
     const fixed = {};
     for (const [k, v] of Object.entries(data.monthlyCosts || {})) fixed[k] = Number(v) || 0;
-    await saveSettings({ econ: { products, fixedMonthly: fixed } });
+    await saveSettings({ econ: { products, fixedMonthly: fixed, costsConfirmedAt: now().toISOString(), tabloImportedAt: now().toISOString() } });
     return { products: products.length, fixed: Object.keys(fixed).length };
+  }
+
+  async function confirmCosts() {
+    await saveSettings({ econ: { costsConfirmedAt: now().toISOString() } });
+    return { ok: true };
   }
 
   // ---------------------------------------------------------------------------
@@ -871,7 +897,7 @@ export function createService({ store, source, ai = null, video = null, gen = nu
     return d;
   }
 
-  return { settings, model, dashboard, campaigns, creatives, autopilot, market, learning, settingsView, run, approve, reject, act, revert24h, saveSettings, importTablo, saveCreative, check, briefs, generate, approveCreative, launch, saveRadar, studio, make, makeStatus, makeVideo, launchMade };
+  return { settings, model, dashboard, campaigns, creatives, autopilot, market, learning, settingsView, run, approve, reject, act, revert24h, saveSettings, importTablo, confirmCosts, saveCreative, check, briefs, generate, approveCreative, launch, saveRadar, studio, make, makeStatus, makeVideo, launchMade };
 }
 
 // Simple in-memory store (browser demo + tests).

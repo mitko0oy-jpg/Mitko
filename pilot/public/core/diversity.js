@@ -94,13 +94,17 @@ export function verdict(score) {
 // Copy-, crop- or colour-only variants never count as new.
 export function sameConcept(a, b) {
   const x = a.tags || {}, y = b.tags || {};
-  let diff = 0;
-  for (const k of ["angle", "persona", "hook", "format"]) if (x[k] && y[k] && x[k] !== y[k]) diff++;
-  // Talent, setting or banner layout: what changes the first frame Meta compares.
-  if ((x.talent && y.talent && x.talent !== y.talent) || (x.visual && y.visual && x.visual !== y.visual) || (x.layout && y.layout && x.layout !== y.layout)) diff++;
   const ff = phashSim(a.phash, b.phash);
   if (ff != null && ff >= 0.85) return true; // same first frame → Meta's Creative Diversity sees one visual
-  return diff < 3;
+  const both = (k) => x[k] && y[k] && x[k] !== "na" && y[k] !== "na";
+  let diff = 0, known = 0;
+  for (const k of ["angle", "persona", "hook", "format"]) if (both(k)) (known++, x[k] !== y[k] && diff++);
+  // Talent, setting or banner layout: what changes the first frame Meta compares.
+  const fifth = ["talent", "visual", "layout"].filter(both);
+  if (fifth.length) (known++, fifth.some((k) => x[k] !== y[k]) && diff++);
+  // Untagged ads (straight from Meta) cannot be judged by tags – then only text/image similarity decides.
+  if (known < 3) return false;
+  return diff < 3 && diff < known;
 }
 
 // Union-find clustering of creatives into "concepts" (what Andromeda would see).

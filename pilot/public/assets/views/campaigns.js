@@ -14,10 +14,14 @@ const saveOpen = () => {
   } catch {}
 };
 let filter = "all";
+let showIdle = false;
+let more = false;
 
 function metricCells(m, econ) {
-  return html`<td>${eur(m.spend)}</td><td>${int(m.metaPurchases)}</td><td>${dec(m.orders)}</td><td>${eur(m.cpo)}</td><td>${cmCell(m.cmPct, econ)}</td><td>${x2(m.roasMeta)}</td><td>${pct(m.ctr, 2)}</td><td>${eur(m.cpm)}</td><td>${x2(m.freq)}</td>`;
+  const base = html`<td>${eur0(m.spend)}</td><td>${int(Math.round(m.orders || 0))}</td><td>${eur(m.cpo)}</td><td>${cmCell(m.cmPct, econ)}</td>`;
+  return more ? html`${base}<td>${int(m.metaPurchases)}</td><td>${x2(m.roasMeta)}</td><td>${pct(m.ctr, 2)}</td><td>${eur(m.cpm)}</td><td>${x2(m.freq)}</td>` : base;
 }
+const idle = (c) => c.status !== "ACTIVE" && !(c.m?.spend > 0);
 function statusBtn(e) {
   const on = e.status === "ACTIVE";
   return html`<button class="btn xs ${on ? "" : "ghost"}" data-act="toggle" data-id="${e.id}" data-level="${e.level}" data-status="${e.status}" title="${on ? "Пауза" : "Пусни"}">${icon(on ? "pause" : "play")}</button>`;
@@ -26,7 +30,7 @@ function budgetCell(e) {
   if (e.budget == null) return html`<span class="faint">—</span>`;
   return html`<button class="linkish" data-act="budget" data-id="${e.id}" data-level="${e.level}" data-budget="${e.budget}" title="Промени дневния бюджет">${eur0(e.budget)}</button>${e.holder?.sStar ? html`<div class="tiny faint" title="Над тази сума маржът пада под целта (крива на насищане)">таван ~${eur0(e.holder.sStar)}</div>` : ""}`;
 }
-const props = (e) => (e.proposals?.filter((p) => p.status === "proposed").length ? html`<a href="#avtopilot" class="pill info" title="Има предложения на автопилота">${icon("bolt")} ${e.proposals.filter((p) => p.status === "proposed").length}</a>` : "");
+const props = (e) => (e.proposals?.some((p) => p.status === "proposed" && p.kind !== "generate" && p.kind !== "alert") ? html`<a href="#avtopilot" class="pill honey" title="Автопилотът предлага промяна">чака решение</a>` : "");
 
 export default {
   async render({ state, call }) {
@@ -34,9 +38,15 @@ export default {
     const econ = d.econ;
     const accounts = d.accounts.filter((a) => filter === "all" || a.id === filter);
     const rows = [];
+    let hidden = 0;
     for (const a of accounts) {
-      rows.push(html`<tr class="lvl-account"><td>${a.flag} ${a.name} <span class="tiny faint">· макс. ${eur(a.thresholds.maxCpaTarget)}/поръчка · Мета↔магазин ×${x2(a.q)}</span></td><td></td><td></td>${metricCells(a.m, econ)}<td></td></tr>`);
+      const max = a.thresholds.maxCpaTarget;
+      rows.push(html`<tr class="lvl-account"><td>${a.flag} ${a.name} <span class="tiny muted" style="font-weight:400" title="Колко реклама можеш да платиш за една поръчка и пак да остане целевият марж">· ${Number.isFinite(max) && max > 0 ? `до ${eur(max)} реклама на поръчка` : "губи при всяка поръчка – провери цените"}</span></td><td></td><td></td>${metricCells(a.m, econ)}<td></td></tr>`);
       for (const c of a.campaigns) {
+        if (!showIdle && idle(c)) {
+          hidden++;
+          continue;
+        }
         const oc = open.has(c.id);
         rows.push(html`<tr class="lvl-campaign ${c.status !== "ACTIVE" ? "off" : ""}">
           <td class="l"><button class="caret" data-act="open" data-id="${c.id}" aria-label="Разгъни">${icon(oc ? "chevd" : "chev")}</button><span class="name" title="${c.name}">${c.name}</span> ${c.holder?.isTest ? html`<span class="pill violet">тест</span>` : ""}</td>
@@ -46,8 +56,7 @@ export default {
           const os = open.has(s.id);
           rows.push(html`<tr class="${s.status !== "ACTIVE" ? "off" : ""}">
             <td class="l ind1"><button class="caret" data-act="open" data-id="${s.id}">${icon(os ? "chevd" : "chev")}</button><span class="name" title="${s.name}">${s.name}</span>
-              ${s.learning === "learning" ? html`<span class="pill info" title="Мета още учи – без големи промени">учи се</span>` : ""}
-              <span class="pill ${s.diversity.score >= 70 ? "good" : s.diversity.score >= 50 ? "honey" : "warn"}" title="${s.diversity.issues.join(" ")}">разнообразие ${s.diversity.score}</span></td>
+              ${s.learning === "learning" ? html`<span class="pill info" title="Мета още учи – без големи промени">учи се</span>` : ""}</td>
             <td>${statusBtn(s)}</td><td>${budgetCell(s)}</td>${metricCells(s.m, econ)}<td class="l">${props(s)}</td></tr>`);
           if (!os) continue;
           for (const ad of s.ads) {
@@ -65,13 +74,15 @@ export default {
           ${d.accounts.map((a) => html`<button class="chip ${filter === a.id ? "on" : ""}" data-act="filter" data-v="${a.id}">${a.flag} ${a.name}</button>`)}
         </div>
         <span class="grow"></span>
+        <button class="btn sm ghost" data-act="more">${more ? "По-малко колони" : "Повече колони"}</button>
         <button class="btn sm ghost" data-act="expand">Разгъни всичко</button>
       </div>
-      <div class="card pad0"><div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Име</th><th></th><th>Бюджет/ден</th><th>Разход</th><th title="Покупки според Мета">Покупки Мета</th><th title="Оценка на реалните поръчки (Мета × коефициент)">Поръчки</th><th>Цена/поръчка</th><th>Марж %</th><th>ROAS Мета</th><th>CTR</th><th>CPM</th><th>Честота</th><th></th></tr></thead>
+      <div class="card pad0" style="padding:8px"><div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Име</th><th></th><th>Бюджет на ден</th><th>Реклама</th><th title="Реалните поръчки от магазина, разпределени по кампании">Поръчки</th><th>Реклама на поръчка</th><th>Марж</th>${more ? html`<th>Покупки по Мета</th><th>ROAS по Мета</th><th>CTR</th><th>CPM</th><th>Честота</th>` : ""}<th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div></div>
-      <p class="tiny faint">Маржът е изчислен с реалните поръчки от магазина: покупките в Мета се умножават по коефициента „Мета ↔ магазин“, а приходът е без ДДС и с вероятността пратката да бъде платена. Промените на бюджет влизат в сила веднага; Мета препоръчва стъпки до 20% на 2–3 дни.</p>`;
+      ${hidden ? html`<div class="row" style="justify-content:center;margin-top:14px"><button class="btn sm" data-act="idle">Покажи и спрените без разход (${hidden})</button></div>` : showIdle ? html`<div class="row" style="justify-content:center;margin-top:14px"><button class="btn sm" data-act="idle">Скрий спрените</button></div>` : ""}
+      <p class="small muted" style="margin:18px 4px 0">Маржът е с реалните поръчки от магазина, без ДДС и с вероятността пратката да бъде платена. Мета препоръчва промени на бюджета до 20% на 2–3 дни.</p>`;
   },
   mount(page, ctx) {
     page.addEventListener("click", async (e) => {
@@ -84,6 +95,12 @@ export default {
         ctx.refresh();
       } else if (act === "filter") {
         filter = b.dataset.v;
+        ctx.refresh();
+      } else if (act === "idle") {
+        showIdle = !showIdle;
+        ctx.refresh();
+      } else if (act === "more") {
+        more = !more;
         ctx.refresh();
       } else if (act === "expand") {
         page.querySelectorAll('[data-act="open"]').forEach((x) => open.add(x.dataset.id));

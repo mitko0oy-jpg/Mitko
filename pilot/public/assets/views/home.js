@@ -1,108 +1,95 @@
-import { html, icon, eur, eur0, int, pct, x2, delta, profitChart, marginBand, TONE, STATE_LABEL, shortDate, ago } from "../ui.js";
-import { proposalItem, bindDecisions, regimeTone } from "./common.js";
+// Начало: how am I doing, what should I do now, and where the money goes – nothing more.
+import { html, icon, eur, eur0, int, pct, delta, profitChart, marginBand, shortDate } from "../ui.js";
+import { bindDecisions } from "./common.js";
 
-const KIND_TONE = { holiday: "muted", shopping: "honey", gifting: "violet", payday: "good", auction: "warn", deadline: "info" };
+const VERDICT = {
+  good: (e) => html`<b>Над целта от ${e.t}%.</b> Рекламите печелят добре – има място за увеличение.`,
+  ok: (e) => html`<b>В коридора ${e.f}–${e.t}%.</b> Добре е – пази бюджетите такива.`,
+  low: (e) => html`<b>Под минимума от ${e.f}%.</b> Рекламите носят малко печалба – режи губещото.`,
+  loss: () => html`<b>На загуба.</b> Рекламите струват повече, отколкото носят.`,
+  none: () => html`Още няма достатъчно данни за този период.`,
+};
+const toneOf = (v, econ) => (!Number.isFinite(v) ? "" : v >= econ.floor ? "good" : v >= 0 ? "warn" : "bad");
+const plural = (n, one, many) => `${int(n)} ${n === 1 ? one : many}`;
 
 export default {
   async render({ state, call }) {
     const d = await call("dashboard", state.range);
     state.pending = d.pendingCount;
     state.mode = d.mode;
-    const k = d.kpi, p = d.prev;
-    const econ = d.econ;
-    const tone = TONE[d.state];
-    const urgent = d.alerts;
+    const k = d.kpi, p = d.prev, econ = d.econ;
+    const e = { f: Math.round(econ.floor * 100), t: Math.round(econ.target * 100) };
     if (!d.demo && !d.byAccount.length) return html`
-      <section class="card hero" style="max-width:760px">
-        <div class="card-h"><h2>${icon("bolt")} Първи стъпки</h2><span class="pill info">няма свързани акаунти</span></div>
-        <p class="muted" style="margin-top:-4px">Кошерът е готов. Остава да го свържем с рекламните акаунти и с поръчките. Докато чакаш, разгледай всичко с <a href="?demo=1">примерни данни</a>.</p>
-        <ol class="stack" style="gap:10px;padding-left:20px;margin:6px 0 0">
-          <li><b class="strong">Мета:</b> токен на системен потребител (ads_read, ads_management) – въвежда се в Netlify като скрита настройка META_TOKEN. До 15 минути след това акаунтите, кампаниите и рекламите се появяват тук.</li>
-          <li><b class="strong">Поръчки:</b> адрес за продажбите от ConvertBuilder (SALES_URL) или уебхук към /api/hook/orders.</li>
-          <li><b class="strong">Себестойност:</b> Настройки → „От Табло Печалба“ зарежда продуктите и месечните разходи.</li>
-          <li><b class="strong">Режим:</b> първите 2 седмици – „Наблюдение“: само препоръки, нищо не се променя само.</li>
-        </ol>
-        <div class="row" style="margin-top:14px"><a class="btn primary" href="#nastroyki">${icon("gear")} Настройки и връзки</a><a class="btn" href="?demo=1">${icon("eye")} Демо с примерни данни</a></div>
+      <section class="card hero" style="max-width:640px">
+        <h2>Добре дошъл в Кошер</h2>
+        <p class="verdict">Остава да свържем рекламните акаунти и поръчките. Дотогава можеш да разгледаш всичко с примерни данни.</p>
+        <div class="row" style="margin-top:20px"><a class="btn primary" href="#nastroyki">Настройки</a><a class="btn" href="?demo=1">Примерни данни</a></div>
       </section>`;
+
+    const lines = d.byAccount.filter((a) => a.spend > 0 || a.orders > 0).sort((a, b) => b.spend - a.spend);
+    const worst = lines.filter((a) => a.spend > 20 && Number.isFinite(a.cmPct)).sort((a, b) => a.cmPct - b.cmPct)[0];
+    const best = lines.filter((a) => a.spend > 20 && a.orders >= 5 && Number.isFinite(a.cmPct)).sort((a, b) => b.cmPct - a.cmPct)[0];
+    const narrow = typeof window !== "undefined" && window.innerWidth < 600;
+    const events = [];
+    for (const ev of d.nextEvents) {
+      const same = events.find((x) => x.name === ev.name && x.date === ev.date);
+      if (same) same.countries.push(ev.country);
+      else events.push({ ...ev, countries: [ev.country] });
+    }
+
     return html`
-      ${d.paused ? html`<div class="banner bad">${icon("stop")} Автопилотът е спрян. Нищо не се променя само. <a href="#avtopilot">Пусни го</a></div>` : ""}
-      <div class="grid g-hero">
+      ${d.paused ? html`<div class="banner bad">${icon("stop")} Автопилотът е спрян – нищо не се променя само. <a href="#avtopilot">Пусни го</a></div>` : ""}
+      <div class="today">
         <section class="card hero">
-          <div class="row between">
-            <div class="kpi"><div class="k">${icon("target")} Марж след реклама · ${d.rangeLabel}</div></div>
-            <span class="pill ${tone}">${STATE_LABEL[d.state]}</span>
-          </div>
-          <div class="row" style="align-items:flex-end;gap:18px;margin-top:6px">
+          <div class="muted small">Марж след реклама · ${d.rangeLabel}</div>
+          <div class="row" style="align-items:baseline;gap:16px;margin-top:10px">
             <div class="big">${pct(k.cmPct)}</div>
-            <div class="stack" style="gap:2px;padding-bottom:6px">
-              <div class="strong">${eur0(k.cm)} марж</div>
+            <div class="stack" style="gap:2px">
+              <div class="strong" style="font-size:17px">${eur0(k.cm)}</div>
               <div class="small">${delta(k.cmPct, p.cmPct)}</div>
             </div>
           </div>
+          <p class="verdict">${(VERDICT[d.state] || VERDICT.none)(e)}
+            ${worst && worst.cmPct < econ.floor ? html` Най-слабо: <b>${worst.name}</b> (${pct(worst.cmPct)}).` : ""}
+            ${best && best !== worst && best.cmPct >= econ.floor ? html` Най-добре: <b>${best.name}</b> (${pct(best.cmPct)}).` : ""}</p>
           ${marginBand(k.cmPct, econ)}
-          <div class="sep"></div>
-          <div class="grid g3" style="gap:10px">
-            <div class="kpi"><div class="k">Печалба след фиксирани</div><div class="v" style="font-size:20px">${eur0(k.profit)}</div><div class="d small">${delta(k.profit, p.profit)}</div></div>
-            <div class="kpi"><div class="k">От началото на месеца</div><div class="v" style="font-size:20px">${pct(d.mtd.cmPct)}</div><div class="d small muted">${eur0(d.mtd.cm)} марж</div></div>
-            <div class="kpi"><div class="k">MER (нето / реклама)</div><div class="v" style="font-size:20px">${x2(k.mer)}</div><div class="d small">${delta(k.mer, p.mer)}</div></div>
+          <div class="figs">
+            <div><div class="k">Реклама</div><div class="v">${eur0(k.spend)}</div><div class="d">${delta(k.spend, p.spend)}</div></div>
+            <div><div class="k">Поръчки</div><div class="v">${int(k.orders)}</div><div class="d">${delta(k.orders, p.orders)}</div></div>
+            <div><div class="k">Реклама на поръчка</div><div class="v">${eur(k.cpo)}</div><div class="d">${delta(k.cpo, p.cpo, false)}</div></div>
           </div>
         </section>
-        <section class="card">
-          <div class="card-h"><h2>Иска внимание</h2><a class="small" href="#avtopilot">Всички (${d.pendingCount}) →</a></div>
-          ${urgent.length ? html`<div class="list">${urgent.map((x) => proposalItem(x, { compact: false }))}</div>` : html`<div class="empty">${icon("check")}<p>Всичко е под контрол.</p></div>`}
+
+        <section class="card todo">
+          <div class="card-h"><h2>Какво да направиш</h2></div>
+          ${d.todo.length
+            ? html`<div class="list">${d.todo.map((t) => html`<div class="item">
+                <div class="ic ${t.tone}">${icon(t.icon)}</div>
+                <div class="body"><div class="t">${t.text}</div><div class="r">${t.sub}</div></div>
+                <div class="acts"><a class="btn sm ${t.tone === "violet" ? "honey" : ""}" href="${t.href}">${t.cta}</a></div>
+              </div>`)}</div>`
+            : html`<div class="empty">${icon("check")}<p>Всичко е наред.<br>Днес няма нужда да правиш нищо.</p></div>`}
         </section>
       </div>
 
-      <div class="grid g4" style="margin-top:16px">
-        <div class="card kpi"><div class="k">Разход за реклама</div><div class="v">${eur0(k.spend)}</div><div class="d">${delta(k.spend, p.spend)}</div></div>
-        <div class="card kpi"><div class="k">Поръчки (реални)</div><div class="v">${int(k.orders)}</div><div class="d">${delta(k.orders, p.orders)}</div></div>
-        <div class="card kpi"><div class="k">Нетен оборот <span class="faint">(без ДДС, очаквано платени)</span></div><div class="v">${eur0(k.net)}</div><div class="d">${delta(k.net, p.net)}</div></div>
-        <div class="card kpi"><div class="k">Цена на поръчка</div><div class="v">${eur(k.cpo)}</div><div class="d">${delta(k.cpo, p.cpo, false)}</div></div>
-      </div>
-
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Пари по дни</h2>
-          <div class="legend"><span><i style="background:var(--chart-2)"></i>Нетен оборот</span><span><i style="background:var(--chart-1)"></i>Реклама</span><span><i style="background:var(--chart-3);height:3px"></i>Марж %</span><span><i style="background:var(--good);opacity:.25"></i>Коридор ${Math.round(econ.floor * 100)}–${Math.round(econ.target * 100)}%</span></div>
-        </div>
-        ${profitChart(d.series, econ)}
+      <div class="section-t">Направления</div>
+      <section class="card" style="padding-top:8px;padding-bottom:8px">
+        <div class="lines">${lines.length
+          ? lines.map((a) => html`<a class="line" href="#kampanii">
+              <div class="n">${a.flag} ${a.name}</div>
+              <div class="s">${eur0(a.spend)} реклама · ${plural(Math.round(a.orders), "поръчка", "поръчки")} · ${eur0(a.net)} оборот</div>
+              <div class="m"><b class="${toneOf(a.cmPct, econ)}">${pct(a.cmPct)}</b><span>${eur0(a.cm)}</span></div>
+            </a>`)
+          : html`<div class="empty small">Няма разход и поръчки за този период.</div>`}</div>
       </section>
 
-      <div class="grid g2" style="margin-top:16px">
-        <section class="card">
-          <div class="card-h"><h2>Пазарът сега</h2><a class="small" href="#pazar">Подробно →</a></div>
-          <div class="regimes">${d.regimes.map((r) => html`<div class="regime"><div class="c">${r.flag} ${r.name}</div><div class="l"><span class="pill ${regimeTone(r.tone)}">${r.label}</span></div><div class="p">Позиция: <b>${r.posture}</b>${r.reasons?.length ? html` · ${r.reasons[0]}` : ""}</div></div>`)}</div>
-          ${d.diagnosis.length ? html`<div class="sep"></div><div class="stack" style="gap:8px">${d.diagnosis.map((x) => html`<div class="issue warn">${icon("alert")}<div><b>${x.title}:</b> ${x.text}</div></div>`)}</div>` : ""}
-        </section>
-        <section class="card">
-          <div class="card-h"><h2>Креативи</h2><a class="small" href="#kreativi">Към креативите →</a></div>
-          <div class="grid g3" style="gap:10px">
-            <div class="kpi"><div class="k">${icon("flame")} Изгорели</div><div class="v" style="font-size:22px;color:var(--bad)">${d.bench.burning}</div><div class="d small muted">+${d.bench.soon} до 7 дни</div></div>
-            <div class="kpi"><div class="k">Готови резерви</div><div class="v" style="font-size:22px">${d.bench.bench}<span class="faint" style="font-size:15px"> / ${d.bench.needed}</span></div><div class="d small ${d.bench.bench < d.bench.needed ? "down" : "up"}">${d.bench.bench < d.bench.needed ? `липсват ${d.bench.needed - d.bench.bench}` : "достатъчно"}</div></div>
-            <div class="kpi"><div class="k">Разнообразие</div><div class="v" style="font-size:22px">${d.diversityAvg ?? "—"}<span class="faint" style="font-size:15px">/100</span></div><div class="d small muted">средно за адсетите</div></div>
-          </div>
-          <div class="sep"></div>
-          <div class="row"><a class="btn honey sm" href="#studio">${icon("wand")} Нови реклами</a><span class="small muted">Андромеда награждава различни идеи, не варианти на една.</span></div>
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Акаунти</h2><span class="hint">Реални поръчки от магазина, не данните на Мета</span></div>
-        <div class="tbl-wrap"><table class="tbl">
-          <thead><tr><th>Акаунт</th><th>Разход</th><th>Поръчки</th><th>Нетен оборот</th><th>Марж</th><th>Марж %</th><th title="Реални поръчки ÷ покупки в Мета">Мета ↔ магазин</th><th title="Максимална цена на поръчка за целевия марж">Макс. цена/поръчка</th><th title="ROAS в Мета (с ДДС), под който губиш">ROAS на нула</th></tr></thead>
-          <tbody>${d.byAccount.map((a) => html`<tr>
-            <td>${a.flag} <b class="strong">${a.name}</b></td>
-            <td>${eur0(a.spend)}</td><td>${int(a.orders)}</td><td>${eur0(a.net)}</td><td>${eur0(a.cm)}</td>
-            <td><span class="pill ${TONE[a.state]}">${pct(a.cmPct)}</span></td>
-            <td>×${x2(a.q)}</td><td>${eur(a.thresholds.maxCpaTarget)}</td><td>${x2(a.thresholds.beRoasGross)}</td>
-          </tr>`)}</tbody>
-        </table></div>
+      <div class="section-t">Пари по дни</div>
+      <section class="card">
+        <div class="legend" style="margin-bottom:10px"><span><i style="background:var(--chart-2)"></i>Оборот</span><span><i style="background:var(--chart-1)"></i>Реклама</span><span><i style="background:var(--chart-3)"></i>Марж %</span></div>
+        ${narrow ? profitChart(d.series.slice(-14), econ, { width: 360, height: 220, font: 11 }) : profitChart(d.series, econ)}
       </section>
 
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Следващите дни</h2><span class="hint">Празници, пенсии, пазаруване – подготви бюджети и креативи</span></div>
-        ${d.nextEvents.length ? html`<div class="chip-row">${d.nextEvents.map((e) => html`<span class="pill ${KIND_TONE[e.kind] || ""}">${icon("calendar")} ${shortDate(e.date)} · ${e.country} · ${e.name}</span>`)}</div>` : html`<div class="muted small">Нищо специално в следващите 10 дни.</div>`}
-        ${d.lastRun ? html`<p class="tiny faint" style="margin:12px 0 0">Последна проверка на автопилота: ${ago(d.lastRun.at)} · изпълнени ${d.lastRun.ran}</p>` : ""}
-      </section>`;
+      ${events.length ? html`<p class="small muted" style="margin:18px 4px 0">${icon("calendar")} Предстои: ${events.slice(0, 2).map((ev, i) => html`${i ? " · " : ""}<b class="strong">${shortDate(ev.date)}</b> ${ev.name} (${ev.countries.join(", ")})`)}. <a href="#pazar">Пазар →</a></p>` : ""}`;
   },
   mount(page, ctx) {
     bindDecisions(page, ctx);

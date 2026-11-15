@@ -20,9 +20,45 @@ export default {
       theme = localStorage.getItem("pilot.theme") || "auto";
     } catch {}
     return html`
-      <div class="row m-only" style="margin-bottom:14px"><a class="btn sm" href="#pazar">${icon("globe")} Пазар</a><a class="btn sm" href="#obuchenie">${icon("brain")} Обучение</a></div>
-      <div class="grid g2">
+      <section class="card m-only" style="padding:6px 18px;margin-bottom:18px;flex-direction:column">
+        ${[["kreativi", "image", "Креативи"], ["pazar", "globe", "Пазар"], ["obuchenie", "brain", "Обучение"]].map(([h, ic, t]) => html`<a class="line" href="#${h}" style="grid-template-columns:auto 1fr auto;gap:12px"><span class="muted">${icon(ic)}</span><span class="n">${t}</span><span class="faint">${icon("chevron")}</span></a>`)}
+      </section>
+
+      <section class="card hero">
+        <div class="row between" style="align-items:flex-start">
+          <div><h2>Себестойност и разходи</h2>
+            <p class="verdict" style="margin-top:8px">${S.econ.costsConfirmedAt ? html`Потвърдени на <b>${new Date(S.econ.costsConfirmedAt).toLocaleDateString("bg-BG")}</b>${S.econ.tabloImportedAt ? " – пренесени от „Табло Печалба“" : ""}.` : html`Пренеси ги от „Табло Печалба“ – веднъж, за минута. След това всичко е тук.`}</p></div>
+          ${S.econ.costsConfirmedAt ? html`<span class="pill good">${icon("check")} готово</span>` : html`<span class="pill warn">не са потвърдени</span>`}
+        </div>
+        ${S.econ.costsConfirmedAt ? "" : html`<ol class="small" style="margin:14px 0 0;padding-left:20px;line-height:1.8"><li>В „Табло Печалба“ натисни <b>Архив</b> – телефонът запазва файл <span class="mono">tablo-arhiv-….json</span>.</li><li>Тук натисни <b>Качи архива</b> и избери файла.</li></ol>`}
+        <div class="row" style="margin-top:18px">
+          <label class="btn ${S.econ.costsConfirmedAt ? "" : "honey"}" for="tabloFile" style="cursor:pointer">${icon("upload")} Качи архива от „Табло Печалба“</label><input type="file" id="tabloFile" accept=".json,application/json" hidden>
+          ${S.econ.costsConfirmedAt ? "" : html`<button class="btn ghost" data-act="confirmCosts">Цените по-долу са верни</button>`}
+        </div>
+      </section>
+      <div class="grid g2" style="margin-top:18px">
         <section class="card">
+          <div class="card-h"><h2>Продукти</h2></div>
+          <p class="tiny muted" style="margin-top:-6px">Себестойността е <b>за цялата поръчка</b>, както в „Табло Печалба“ (с подаръка и доставката). Носи я най-скъпият разпознат продукт; допълнителните платени артикули добавят % от цената си. Ако доставката не е включена – впиши куриер в „Направления и доставка“.</p>
+          <div class="tbl-wrap"><table class="tbl" id="prods"><thead><tr><th>Продукт</th><th>Ключови думи</th><th>Себест. €</th><th></th></tr></thead><tbody>
+            ${S.econ.products.map((p) => html`<tr><td><input class="input" name="name" value="${p.name}"></td><td><input class="input" name="keys" value="${p.keys}"></td><td><input class="input" name="cost" type="number" step="0.01" style="width:80px" value="${p.cost}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
+          </tbody></table></div>
+          <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addProd">${icon("plus")} Продукт</button><button class="btn primary sm" data-act="saveProds">Запази</button></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Фиксирани разходи на месец</h2><span class="hint">${eur(d.fixedPerDay)} на ден</span></div>
+          <div class="tbl-wrap"><table class="tbl" id="fixed"><thead><tr><th>Разход</th><th>€ / месец</th><th></th></tr></thead><tbody>
+            ${Object.entries(S.econ.fixedMonthly || {}).map(([k, v]) => html`<tr><td><input class="input" name="k" value="${k}"></td><td><input class="input" name="v" type="number" style="width:100px" value="${v}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
+          </tbody></table></div>
+          <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addFixed">${icon("plus")} Разход</button><button class="btn primary sm" data-act="saveFixed">Запази</button></div>
+        </section>
+      </div>
+
+
+      <details class="card" style="margin-top:18px">
+        <summary>${icon("gear")} Още настройки – марж, връзки, направления, конкуренти</summary>
+      <div class="grid g2">
+        <section class="card flat" style="padding:0;margin-top:22px">
           <div class="card-h"><h2>${icon("target")} Марж</h2><span class="hint">Изискването: минимум 25–30%</span></div>
           <div class="grid g2" style="gap:12px">
             <div class="field"><label>Минимум (под него режем)</label><input class="input" id="mFloor" type="number" step="1" value="${Math.round(S.econ.marginFloor * 100)}"></div>
@@ -33,7 +69,7 @@ export default {
           <p class="tiny muted">Маржът = нетен оборот (без ДДС, само платените пратки) − стока − куриер и наложен платеж − върнати пратки − реклама, разделено на нетния оборот.</p>
           <button class="btn primary sm" data-act="saveMargin">Запази</button>
         </section>
-        <section class="card">
+        <section class="card flat" style="padding:0;margin-top:22px">
           <div class="card-h"><h2>${icon("refresh")} Връзки</h2>${isDemo() ? html`<span class="pill honey">демо</span>` : ""}</div>
           <div class="list">${Object.entries(CONN).map(([k, [name, how]]) => {
             const s = d.connections[k] || "missing";
@@ -43,7 +79,7 @@ export default {
         </section>
       </div>
 
-      <section class="card" style="margin-top:16px">
+      <section class="card flat" style="padding:0;margin-top:22px" style="margin-top:16px">
         <div class="card-h"><h2>Направления и доставка</h2><span class="hint">ДДС, куриер и връщания – за реалния марж</span></div>
         <div class="tbl-wrap"><table class="tbl" id="accts"><thead><tr><th>Направление</th><th>Държава</th><th>ДДС %</th><th>Куриер €</th><th>Наложен пл. %</th><th>Връщане €</th><th>Сайтове</th><th>Потвърдени</th><th>Доставени</th><th>Мета↔магазин</th><th>Вкл.</th></tr></thead><tbody>
           ${d.accounts.map((a) => html`<tr data-id="${a.id}">
@@ -61,7 +97,7 @@ export default {
         <button class="btn primary sm" data-act="saveAccts" style="margin-top:10px">Запази</button>
       </section>
 
-      <section class="card" style="margin-top:16px">
+      <section class="card flat" style="padding:0;margin-top:22px" style="margin-top:16px">
         <div class="card-h"><h2>Как се разпределят кампаниите</h2><span class="hint">Един рекламен акаунт може да върти няколко магазина</span></div>
         <p class="tiny muted" style="margin-top:-6px">Всяка кампания отива в първото направление, чиято ключова дума се среща в името ѝ. Ако няма такава – в направлението по подразбиране на акаунта (Словения → BeeVenom SI, Словакия → SK, Унгария → HU, останалите → BeeVenom BG). Поръчките отиват по сайт.</p>
         <div class="tbl-wrap"><table class="tbl" id="lines"><thead><tr><th>Направление</th><th>Държава</th><th>Сайтове</th><th>Ключови думи в името на кампанията</th><th></th></tr></thead><tbody>
@@ -70,38 +106,22 @@ export default {
         <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addLine">${icon("plus")} Направление</button><button class="btn primary sm" data-act="saveLines">Запази</button></div>
       </section>
 
-      <div class="grid g2" style="margin-top:16px">
-        <section class="card">
-          <div class="card-h"><h2>Продукти и себестойност</h2><label class="btn sm" for="tabloFile" style="cursor:pointer">${icon("upload")} От „Табло Печалба“</label><input type="file" id="tabloFile" accept=".json,application/json" hidden></div>
-          <p class="tiny muted" style="margin-top:-6px">Себестойността е <b>за цялата поръчка</b>, както в „Табло Печалба“ (с подаръка и доставката). Носи я най-скъпият разпознат продукт; допълнителните платени артикули добавят % от цената си. Ако доставката не е включена – впиши куриер в „Направления и доставка“.</p>
-          <div class="tbl-wrap"><table class="tbl" id="prods"><thead><tr><th>Продукт</th><th>Ключови думи</th><th>Себест. €</th><th></th></tr></thead><tbody>
-            ${S.econ.products.map((p) => html`<tr><td><input class="input" name="name" value="${p.name}"></td><td><input class="input" name="keys" value="${p.keys}"></td><td><input class="input" name="cost" type="number" step="0.01" style="width:80px" value="${p.cost}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
-          </tbody></table></div>
-          <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addProd">${icon("plus")} Продукт</button><button class="btn primary sm" data-act="saveProds">Запази</button></div>
-        </section>
-        <section class="card">
-          <div class="card-h"><h2>Фиксирани разходи на месец</h2><span class="hint">${eur(d.fixedPerDay)} на ден</span></div>
-          <div class="tbl-wrap"><table class="tbl" id="fixed"><thead><tr><th>Разход</th><th>€ / месец</th><th></th></tr></thead><tbody>
-            ${Object.entries(S.econ.fixedMonthly || {}).map(([k, v]) => html`<tr><td><input class="input" name="k" value="${k}"></td><td><input class="input" name="v" type="number" style="width:100px" value="${v}"></td><td><button class="btn xs ghost" data-act="delRow">${icon("x")}</button></td></tr>`)}
-          </tbody></table></div>
-          <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addFixed">${icon("plus")} Разход</button><button class="btn primary sm" data-act="saveFixed">Запази</button></div>
-        </section>
-      </div>
-
-      <div class="grid g2" style="margin-top:16px">
-        <section class="card">
+      <div class="grid g2" style="margin-top:22px">
+        <section class="card flat" style="padding:0;margin-top:22px">
           <div class="card-h"><h2>${icon("globe")} Ключови думи за търсене</h2><span class="hint">Google Trends + Библиотеката с реклами</span></div>
           ${["BG", "SK", "SI", "HU"].map((c) => html`<div class="field" style="margin-bottom:8px"><label>${c}</label><input class="input" data-kw="${c}" value="${(S.keywords[c] || []).join(", ")}"></div>`)}
           <button class="btn primary sm" data-act="saveKw">Запази</button>
         </section>
-        <section class="card">
+        <section class="card flat" style="padding:0;margin-top:22px">
           <div class="card-h"><h2>${icon("users")} Конкуренти</h2><span class="hint">ID на Facebook страници (по едно на ред: id, име, държава)</span></div>
           <textarea class="input" id="comp" rows="6" placeholder="1234567890, АртроГел, BG">${(S.competitors || []).map((c) => `${c.pageId}, ${c.name}, ${c.country}`).join("\n")}</textarea>
           <div class="row" style="margin-top:10px"><button class="btn primary sm" data-act="saveComp">Запази</button><span class="tiny muted">Нови конкуренти се откриват и сами – по ключовите думи.</span></div>
         </section>
       </div>
 
-      <section class="card" style="margin-top:16px">
+      </details>
+
+      <section class="card" style="margin-top:18px">
         <div class="card-h"><h2>Изглед</h2></div>
         <div class="seg">${[["auto", "Автоматично"], ["light", "Светъл"], ["dark", "Тъмен"]].map(([k, l]) => html`<button data-act="theme" data-v="${k}" class="${theme === k ? "on" : ""}">${l}</button>`)}</div>
       </section>`;
@@ -132,7 +152,15 @@ export default {
       const b = e.target.closest("[data-act]");
       if (!b || b.tagName === "INPUT") return;
       const a = b.dataset.act;
-      if (a === "saveMargin") {
+      if (a === "confirmCosts") {
+        try {
+          await ctx.call("confirmCosts");
+          toast("Благодаря – маржът вече се смята с тези цени");
+          ctx.refresh();
+        } catch (err) {
+          toast(err.message);
+        }
+      } else if (a === "saveMargin") {
         const f = Number(page.querySelector("#mFloor").value) / 100, t = Number(page.querySelector("#mTarget").value) / 100;
         if (t < f) return toast("Целта трябва да е над минимума");
         const mb = page.querySelector("#mBudget").value;
@@ -163,7 +191,7 @@ export default {
         b.closest("tr").remove();
       } else if (a === "saveProds") {
         const products = [...page.querySelectorAll("#prods tbody tr")].map((tr) => ({ name: tr.querySelector('[name="name"]').value.trim(), keys: tr.querySelector('[name="keys"]').value.trim(), cost: Number(tr.querySelector('[name="cost"]').value) || 0 })).filter((p) => p.name);
-        save({ econ: { products } });
+        save({ econ: { products, costsConfirmedAt: new Date().toISOString() } });
       } else if (a === "saveFixed") {
         const fixedMonthly = {};
         page.querySelectorAll("#fixed tbody tr").forEach((tr) => {

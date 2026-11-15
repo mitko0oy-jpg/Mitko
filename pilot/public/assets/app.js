@@ -11,11 +11,11 @@ import learning from "./views/learning.js";
 import settings from "./views/settings.js";
 
 const ROUTES = [
-  { id: "tablo", title: "Табло", icon: "home", view: home, tab: true },
+  { id: "tablo", title: "Начало", icon: "home", view: home, tab: true },
   { id: "kampanii", title: "Кампании", icon: "layers", view: campaigns, tab: true },
-  { id: "kreativi", title: "Креативи", icon: "image", view: creatives, tab: true },
   { id: "studio", title: "Нови реклами", short: "Нови", icon: "sparkles", view: studio, tab: true },
   { id: "avtopilot", title: "Автопилот", icon: "pilot", view: autopilot, tab: true, badge: true },
+  { id: "kreativi", title: "Креативи", icon: "image", view: creatives },
   { id: "pazar", title: "Пазар", icon: "globe", view: market },
   { id: "obuchenie", title: "Обучение", icon: "brain", view: learning },
   { id: "nastroyki", title: "Настройки", icon: "gear", view: settings },
@@ -36,7 +36,9 @@ const ls = {
   },
 };
 
-export const state = { range: ls.get("pilot.range", "d7"), pending: 0, mode: null, sub: {} };
+const RANGES = [["today", "Днес"], ["yesterday", "Вчера"], ["d7", "7 дни"], ["d30", "30 дни"]];
+const savedRange = ls.get("pilot.range", "d7");
+export const state = { range: RANGES.some(([k]) => k === savedRange) ? savedRange : "d7", pending: 0, mode: null, sub: {} };
 const root = document.getElementById("app");
 let current = null;
 let seq = 0;
@@ -52,6 +54,7 @@ function shell() {
       <aside class="side">
         <div class="brand">${logo()}<div><b>Кошер</b><small>всичко за рекламите на едно място</small></div></div>
         <nav class="nav" id="nav"></nav>
+        <nav class="nav sub" id="nav2"></nav>
         <div class="side-foot" id="sideFoot"></div>
       </aside>
       <main class="main">
@@ -64,22 +67,24 @@ function shell() {
 
 function renderNav(active) {
   const badge = (r) => (r.badge && state.pending ? html`<span class="cnt">${state.pending}</span>` : "");
-  document.getElementById("nav").innerHTML = String(html`${ROUTES.map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.title}</span>${badge(r)}</a>`)}`);
-  document.getElementById("tabbar").innerHTML = String(html`${ROUTES.filter((r) => r.tab).map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.short || r.title}</span>${badge(r)}</a>`)}<a href="#nastroyki" class="${["nastroyki", "pazar", "obuchenie"].includes(active) ? "on" : ""}">${icon("gear")}<span>Още</span></a>`);
+  const link = (r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}" ${r.id === active ? 'aria-current="page"' : ""}>${icon(r.icon)}<span>${r.title}</span>${badge(r)}</a>`;
+  document.getElementById("nav").innerHTML = String(html`${ROUTES.filter((r) => r.tab).map(link)}`);
+  document.getElementById("nav2").innerHTML = String(html`${ROUTES.filter((r) => !r.tab).map(link)}`);
+  const more = ROUTES.filter((r) => !r.tab).map((r) => r.id);
+  document.getElementById("tabbar").innerHTML = String(html`${ROUTES.filter((r) => r.tab).map((r) => html`<a href="#${r.id}" class="${r.id === active ? "on" : ""}">${icon(r.icon)}<span>${r.short || r.title}</span>${badge(r)}</a>`)}<a href="#nastroyki" class="${more.includes(active) ? "on" : ""}">${icon("dots")}<span>Още</span></a>`);
   const modeLabel = { observe: "Наблюдение", copilot: "Втори пилот", autopilot: "Автопилот" }[state.mode] || "";
   document.getElementById("sideFoot").innerHTML = String(html`
     <div class="row between"><span>Режим</span><a href="#avtopilot" class="pill ${state.mode === "autopilot" ? "good" : state.mode === "copilot" ? "honey" : "info"}">${modeLabel}</a></div>
-    ${isDemo() ? html`<div class="sep"></div><div class="tiny">Демо данни – нищо не се променя в Мета. <button class="linkish tiny" data-global="reset">Започни отначало</button></div>` : html`<div class="sep"></div><button class="btn ghost sm" data-global="logout">${icon("logout")} Изход</button>`}`);
+    ${isDemo() ? html`<div class="tiny" style="margin-top:10px">Примерни данни – нищо не се променя в Мета. <button class="linkish tiny" data-global="reset">Започни отначало</button></div>` : html`<button class="btn ghost sm" style="margin:8px 0 0 -12px" data-global="logout">${icon("logout")} Изход</button>`}`);
 }
 
 function renderTop(r) {
   const showRange = r.view.range !== false;
-  const ranges = [["today", "Днес"], ["yesterday", "Вчера"], ["d3", "3 дни"], ["d7", "7 дни"], ["d14", "14 дни"], ["d30", "30 дни"]];
   document.getElementById("top").innerHTML = String(html`
     <h1>${r.title}</h1>
-    ${isDemo() ? html`<span class="pill honey" title="Приложението работи с примерни данни">Демо</span>` : ""}
-    ${showRange ? html`<div class="seg" role="group" aria-label="Период">${ranges.map(([k, l]) => html`<button data-global="range" data-v="${k}" class="${state.range === k ? "on" : ""}">${l}</button>`)}</div>` : ""}
-    <button class="btn sm" data-global="run" title="Провери всичко и изпълни разрешените действия">${icon("refresh")} Провери сега</button>`);
+    ${isDemo() ? html`<span class="pill honey" title="Приложението работи с примерни данни">Примерни данни</span>` : ""}
+    ${showRange ? html`<div class="seg" role="group" aria-label="Период">${RANGES.map(([k, l]) => html`<button data-global="range" data-v="${k}" class="${state.range === k ? "on" : ""}">${l}</button>`)}</div>` : ""}
+    <button class="btn sm ghost" data-global="run" title="Вземи най-новите данни от Мета и магазина">${icon("refresh")}<span>Обнови</span></button>`);
 }
 
 export async function go(force = false) {

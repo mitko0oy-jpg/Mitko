@@ -3,6 +3,9 @@ import { STAGE_TONE, STAGE_LABEL } from "./common.js";
 
 let tab = "live";
 let acct = "all";
+let limit = 24;
+// Meta ad names often end with an upload date and a hash – people do not need to read those.
+const cleanName = (n) => String(n || "").replace(/\s+\d{4}-\d{2}-\d{2}-[0-9a-f]{12,}$/i, "").replace(/\s+[0-9a-f]{24,}$/i, "").trim();
 const STATUS_LABEL = { live: "В реклама", bench: "Резерва", draft: "Идея", review: "За преглед", generating: "Генерира се", retired: "Спряна" };
 const STATUS_TONE = { live: "good", bench: "honey", draft: "info", review: "violet", generating: "info", retired: "muted" };
 
@@ -14,16 +17,17 @@ export function tagChips(tags, dims) {
 export function creativeCard(c, dims, { actions = "" } = {}) {
   const f = c.fatigue;
   const s = c.stats;
+  const img = c.thumb && /^https:/.test(c.thumb) ? c.thumb : null;
   return html`<article class="cr">
-    <div class="thumb" style="${thumbStyle(c.id)}">
-      <div class="badges"><span class="pill">${STATUS_LABEL[c.status] || c.status}</span>${f ? html`<span class="pill">${STAGE_LABEL[f.stage]}</span>` : ""}${c.kind === "video" ? html`<span class="pill">видео</span>` : html`<span class="pill">изображение</span>`}</div>
-      <span>„${c.hookText || c.name}“</span>
+    <div class="thumb" style="${img ? `background-image:url('${img.replace(/'/g, "%27")}')` : thumbStyle(c.id)}">
+      <div class="badges">${c.status !== "live" ? html`<span class="pill">${STATUS_LABEL[c.status] || c.status}</span>` : ""}${f && f.stage !== "idle" ? html`<span class="pill">${STAGE_LABEL[f.stage]}</span>` : ""}${c.kind === "video" ? html`<span class="pill">видео</span>` : ""}</div>
+      ${img ? "" : html`<span>„${c.hookText || cleanName(c.name)}“</span>`}
     </div>
     <div class="b">
-      <div class="strong" style="font-size:14px">${c.name}</div>
+      <div class="strong" style="font-size:14px" title="${c.name}">${cleanName(c.name)}</div>
       ${tagChips(c.tags, dims)}
-      ${f && f.stage !== "learning" ? html`<div><div class="row between tiny"><span class="muted">Умора</span><span class="strong">${f.score}/100${f.stage === "burned" ? " · смени я" : f.daysLeft != null ? html` · ~${f.daysLeft} дни живот` : ""}</span></div>${meter(f.score, true)}<div class="tiny muted" style="margin-top:4px">${f.text}</div></div>` : ""}
-      ${s ? html`<div class="stats"><div>Разход<b>${eur0(s.spend)}</b></div><div>Цена/поръчка<b>${eur(s.cpo)}</b></div><div>Марж<b>${pct(s.cmPct)}</b></div><div>CTR<b>${pct(s.ctr, 2)}</b></div><div title="3-сек. гледания ÷ показвания">Кука<b>${c.kind === "video" ? pct(s.hook) : "—"}</b></div><div title="Гледания до край ÷ 3-сек.">Задържане<b>${c.kind === "video" ? pct(s.hold) : "—"}</b></div></div>` : ""}
+      ${f && !["learning", "idle"].includes(f.stage) ? html`<div><div class="row between tiny"><span class="muted">Умора</span><span class="strong">${f.stage === "burned" ? "смени я" : f.daysLeft != null && f.daysLeft <= 2 ? "смени скоро" : f.daysLeft != null ? `още ~${f.daysLeft} дни` : `${f.score}/100`}</span></div>${meter(f.score, true)}</div>` : ""}
+      ${s ? html`<div class="stats"><div>Реклама<b>${eur0(s.spend)}</b></div><div>На поръчка<b>${eur(s.cpo)}</b></div><div>Марж<b>${pct(s.cmPct)}</b></div></div>` : ""}
       ${c.compliance && !c.compliance.ok ? html`<div class="issue block">${icon("shield")} ${c.compliance.issues.find((i) => i.level === "block")?.text}</div>` : ""}
       ${c.novelty ? html`<div class="tiny"><span class="pill ${c.novelty.level === "new" ? "good" : c.novelty.level === "related" ? "info" : "warn"}">${c.novelty.label} · сходство ${c.novelty.score}%</span></div>` : ""}
     </div>
@@ -36,12 +40,15 @@ export default {
   async render({ call }) {
     const d = await call("creatives");
     const items = d.items.filter((c) => acct === "all" || c.account === acct);
-    const live = items.filter((c) => c.status === "live").sort((a, b) => (b.fatigue?.score || 0) - (a.fatigue?.score || 0));
+    // Only ads that actually spend – the rest is noise.
+    const live = items.filter((c) => c.status === "live" && c.spend7 > 0).sort((a, b) => b.spend7 - a.spend7);
     const pipeline = items.filter((c) => ["bench", "draft", "review", "generating"].includes(c.status));
-    const tabs = [["live", `Живи (${live.length})`], ["bench", `Резерви и идеи (${pipeline.length})`], ["andromeda", "Андромеда"], ["works", "Какво работи"], ["map", "Карта на идеите"]];
+    const tabs = [["live", `Въртят се (${live.length})`], ["bench", `Резерви (${pipeline.length})`], ["andromeda", "Разнообразие"], ["works", "Какво работи"], ["map", "Карта на идеите"]];
     let body;
     if (tab === "live") {
-      body = live.length ? html`<div class="cards">${live.map((c) => creativeCard(c, d.dims))}</div>` : html`<div class="card empty">Няма активни реклами.</div>`;
+      body = live.length
+        ? html`<div class="cards">${live.slice(0, limit).map((c) => creativeCard(c, d.dims))}</div>${live.length > limit ? html`<div class="row" style="justify-content:center;margin-top:18px"><button class="btn sm" data-act="moreCr">Покажи още (${live.length - limit})</button></div>` : ""}`
+        : html`<div class="card empty">Няма реклами с разход в последните 7 дни.</div>`;
     } else if (tab === "bench") {
       const adsets = d.adsets;
       body = pipeline.length
@@ -117,6 +124,9 @@ export default {
         location.hash = "#studio";
       } else if (act === "tab") {
         tab = b.dataset.v;
+        ctx.refresh();
+      } else if (act === "moreCr") {
+        limit += 24;
         ctx.refresh();
       } else if (act === "approveCr") {
         await ctx.call("approveCreative", b.dataset.id);

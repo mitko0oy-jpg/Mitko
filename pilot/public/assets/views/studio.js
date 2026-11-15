@@ -15,46 +15,51 @@ export default {
   async render({ call }) {
     const d = await call("studio");
     const off = d.connected === "missing";
+    const reps = d.needs.filter((n) => n.kind === "replace").length;
     return html`
-      <section class="card">
-        <div class="card-h"><h2>${icon("wand")} Нова реклама</h2>${d.connected === "demo" ? html`<span class="pill honey">демо</span>` : off ? html`<span class="pill warn">Higgsfield не е свързан</span>` : html`<span class="pill good">Higgsfield свързан</span>`}</div>
-        <p class="small muted" style="margin-top:-6px">Кошер следи кои реклами не продават евтино и кои изгарят и предлага <b>нова идея</b> на тяхно място – различна от всичко в адсета. Банерите ги рисува ChatGPT (GPT Image 2.5) през Higgsfield: 4 варианта на идеята, ти избираш един и го пускаш.</p>
-        <div class="row">
-          <select class="select" id="mkLine" style="width:auto">${d.lines.map((l) => html`<option value="${l.id}">${l.flag || ""} ${l.name}</option>`)}</select>
-          <button class="btn honey" data-act="make" ${off ? "disabled" : ""}>${icon("sparkles")} Направи нова реклама</button>
-        </div>
-        ${off ? html`<div class="issue warn" style="margin-top:12px">${icon("alert")}<div><b>За да рисува:</b> 1) console.higgsfield.ai → API Keys → създай ключ; 2) зареди баланс (от $5; банер ≈ $0,08); 3) в Netlify → kosher-reklami → Environment variables добави HIGGSFIELD_API_KEY със стойност „ID:SECRET“ (не го пращай в чата).</div></div>` : ""}
+      ${off ? html`<section class="card hero" style="margin-bottom:18px">
+        <h2>Свържи Higgsfield – веднъж</h2>
+        <p class="verdict" style="margin-top:8px">Higgsfield рисува банерите с ChatGPT (GPT Image 2.5). Около 0,08 $ на банер.</p>
+        <ol class="small" style="margin:14px 0 0;padding-left:20px;line-height:1.9">
+          <li>Влез в <b>console.higgsfield.ai</b> → <b>API Keys</b> → създай ключ.</li>
+          <li>Зареди баланс – от 5 $.</li>
+          <li>В Netlify → проект <b>kosher-reklami</b> → <b>Environment variables</b> добави <span class="mono">HIGGSFIELD_API_KEY</span> = <span class="mono">ID:SECRET</span>. Не го пращай в чата.</li>
+        </ol>
+      </section>` : ""}
+
+      <p class="verdict" style="margin:0 4px 18px">${d.needs.length
+        ? html`${reps ? html`<b>${reps === 1 ? "1 реклама продава скъпо." : `${reps} реклами продават скъпо.`}</b> ` : ""}За всяка има готова нова идея – различна от всичко, което върви. Натисни „Направи“, избери банер и го пусни.`
+        : html`<b>Всички реклами продават в рамките на допустимото.</b> Когато някоя поскъпне или изгори, ще се появи тук.`}</p>
+
+      ${d.needs.length ? html`<section class="card">
+        <div class="list">${d.needs.map((n) => html`<div class="item">
+          <div class="ic ${n.kind === "replace" ? "bad" : "honey"}">${icon(n.kind === "replace" ? "refresh" : "plus")}</div>
+          <div class="body">
+            <div class="t">${n.kind === "replace" ? html`Смени „${n.replaces.name}“` : html`Резерва за ${n.lineName}`}</div>
+            <div class="r">${n.lineName} · ${n.reason}</div>
+            <div class="r"><span class="strong" style="font-weight:500">Нова идея:</span> ${n.concept.summary}${n.concept.layout?.trend ? html` <span class="pill violet">актуален формат</span>` : ""}</div>
+          </div>
+          <div class="acts"><button class="btn sm honey" data-act="make" data-slot="${n.id}" ${off ? "disabled" : ""}>${icon("sparkles")} Направи</button></div>
+        </div>`)}</div>
+      </section>` : ""}
+
+      ${d.made.length ? html`<div class="section-t">Направени</div>
+        <div class="mk-grid">${d.made.map((m) => html`<button class="mk-card" data-act="open" data-id="${m.id}">
+          ${pic(m.images?.[0], m.hookText, m.id)}
+          <div class="mk-cap"><span class="pill ${(STATUS[m.status] || [])[1]}">${(STATUS[m.status] || [m.status])[0]}</span><b>${m.hookText}</b><span class="tiny muted">${m.lineName}</span></div>
+        </button>`)}</div>` : ""}
+
+      <div class="section-t">Реклама по желание</div>
+      <section class="card row" style="gap:12px">
+        <span class="grow small muted" style="min-width:200px">Нова идея за избрано направление, различна от всичко в него.</span>
+        <select class="select" id="mkLine" style="width:auto">${d.lines.map((l) => html`<option value="${l.id}">${l.flag || ""} ${l.name}</option>`)}</select>
+        <button class="btn" data-act="make" ${off ? "disabled" : ""}>${icon("sparkles")} Направи</button>
       </section>
 
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>${icon("flame")} Трябват сега</h2><span class="pill info">${d.needs.length}</span></div>
-        ${d.needs.length
-          ? html`<div class="list">${d.needs.map((n) => html`<div class="item">
-              <div class="ic ${n.kind === "replace" ? "bad" : "honey"}">${icon(n.kind === "replace" ? "refresh" : "plus")}</div>
-              <div class="body">
-                <div class="t">${n.kind === "replace" ? html`Замени „${n.replaces.name}“` : html`Резерва за ${n.lineName}`}</div>
-                <div class="r">${n.lineName} · ${n.reason}</div>
-                <div class="r"><b class="strong">Нова идея:</b> ${n.concept.summary}${n.concept.layout?.trend ? html` <span class="pill violet">актуален формат</span>` : ""}</div>
-              </div>
-              <div class="acts"><button class="btn sm honey" data-act="make" data-slot="${n.id}" ${off ? "disabled" : ""}>${icon("sparkles")} Направи</button></div>
-            </div>`)}</div>`
-          : html`<div class="empty">${icon("check")}<p>Всички реклами продават в рамките на допустимото. Когато някоя поскъпне или изгори, ще се появи тук.</p></div>`}
-      </section>
-
-      <details class="card" style="margin-top:16px">
-        <summary class="strong" style="cursor:pointer">${icon("shield")} Правилата, по които се правят рекламите</summary>
+      <details class="card" style="margin-top:18px">
+        <summary>${icon("shield")} Правилата, по които се правят рекламите</summary>
         <ol class="rules">${d.rules.map((r) => html`<li><b>${r.t}.</b> <span class="muted">${r.d}</span></li>`)}</ol>
-      </details>
-
-      <section class="card" style="margin-top:16px">
-        <div class="card-h"><h2>Направени</h2><span class="hint">Последните 24</span></div>
-        ${d.made.length
-          ? html`<div class="mk-grid">${d.made.map((m) => html`<button class="mk-card" data-act="open" data-id="${m.id}">
-              ${pic(m.images?.[0], m.hookText, m.id)}
-              <div class="mk-cap"><span class="pill ${(STATUS[m.status] || [])[1]}">${(STATUS[m.status] || [m.status])[0]}</span><b>${m.hookText}</b><span class="tiny muted">${m.lineName}</span></div>
-            </button>`)}</div>`
-          : html`<div class="empty small">Още няма. Натисни „Направи“.</div>`}
-      </section>`;
+      </details>`;
   },
 
   mount(page, ctx) {

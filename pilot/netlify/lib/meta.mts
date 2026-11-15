@@ -119,7 +119,7 @@ export async function structure(acct: { id: string; currency?: string; country?:
   const [camps, sets, ads] = await Promise.all([
     all(`act_${acct.id}/campaigns`, { fields: "id,name,status,effective_status,objective,daily_budget,lifetime_budget,created_time", limit: 200 }),
     all(`act_${acct.id}/adsets`, { fields: "id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,created_time,learning_stage_info", limit: 300 }),
-    all(`act_${acct.id}/ads`, { fields: "id,name,status,effective_status,adset_id,campaign_id,created_time,creative{id,name,title,body,thumbnail_url,video_id,object_type}", limit: 300 }),
+    all(`act_${acct.id}/ads`, { fields: "id,name,status,effective_status,adset_id,campaign_id,created_time,creative.thumbnail_width(480).thumbnail_height(480){id,name,title,body,thumbnail_url,image_url,video_id,object_type}", limit: 300 }),
   ]);
   const day = (t: string) => String(t || "").slice(0, 10);
   return {
@@ -128,7 +128,7 @@ export async function structure(acct: { id: string; currency?: string; country?:
     ads: ads.map((a) => ({ id: a.id, account: acct.id, campaign: a.campaign_id, adset: a.adset_id, name: a.name, status: st(a), rawStatus: a.effective_status, creative: a.creative?.id ? `cr_${a.creative.id}` : `cr_ad_${a.id}`, created: day(a.created_time) })),
     creatives: ads.filter((a) => a.creative).map((a) => ({
       id: `cr_${a.creative.id}`, metaCreativeId: a.creative.id, name: a.creative.name || a.name, account: acct.id, country: acct.country,
-      kind: a.creative.video_id ? "video" : "image", hookText: a.creative.body || a.creative.title || "", thumb: a.creative.thumbnail_url || null, tags: {}, source: "meta", status: "live", createdAt: day(a.created_time),
+      kind: a.creative.video_id ? "video" : "image", hookText: a.creative.body || a.creative.title || "", thumb: a.creative.image_url || a.creative.thumbnail_url || null, tags: {}, source: "meta", status: "live", createdAt: day(a.created_time),
     })),
   };
 }
