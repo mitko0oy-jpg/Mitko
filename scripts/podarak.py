@@ -115,6 +115,7 @@ def content(parts_dir, out):
             "part": p["part"], "grade": p["grade"], "section": p["section"], "title": part_title(p),
             "from": start, "to": n, "count": len(part_items), "max": sum(it["data"]["pts"] for it in part_items), "minutes": p["minutes"],
         })
+    problems += font_problems(items)
     if problems:
         fail("\n  " + "\n  ".join(problems))
     total = sum(m["max"] for m in meta_parts)
@@ -130,6 +131,24 @@ def content(parts_dir, out):
 
 
 # ---------------------------------------------------------------- fonts
+
+def font_problems(items):
+    """Characters the brand fonts cannot print (they come out blank) and explanations that point at an
+    answer by its place – the letters differ between the competition and the parents' PDF."""
+    from fontTools.ttLib import TTFont
+    brand_fonts()
+    cmaps = {n: set(TTFont(os.path.join(FONT_DIR, f"{n}.ttf")).getBestCmap()) for n in ("Golos", "Golos-Bold", "Literata-Italic")}
+    out = []
+    for it in items:
+        q = it["data"]
+        fields = [(q["q"], "Golos-Bold"), (q["e"], "Golos"), (q.get("qt") or "", "Literata-Italic")] + [(o, "Golos") for o in q["o"]]
+        bad = sorted({ch for text, font in fields for ch in text if ch not in " \n" and ord(ch) not in cmaps[font]})
+        if bad:
+            out.append(f"въпрос {q['n']}: знаци, които шрифтът няма: {' '.join(bad)}")
+        if re.search(r"(последни(ят|я) (отговор|вариант)|първи(ят|я) (отговор|вариант)|вариант [АБВГ]\b|отговор [АБВГ]\b)", q["e"]):
+            out.append(f"въпрос {q['n']}: обяснението сочи отговор по място – буквите се разбъркват")
+    return out
+
 
 FONT_DIR = os.path.join(ROOT, "tmp/podarak-fonts")
 FONTS = {
