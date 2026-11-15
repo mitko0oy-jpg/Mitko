@@ -70,15 +70,19 @@ export async function syncMeta(deadline: number) {
   }
 }
 
+// Bump when decoding of shop orders changes (2 = amounts in HUF etc. converted to EUR).
+const SALES_FORMAT = 2;
+
 export async function syncSales() {
   const sync: any = (await pgStore.get("meta", "sync")) || {};
   if (!sales.salesConfigured()) return { skipped: "no sales source" };
   const today = todayStr();
   try {
-    // Recent days every run; the last 60 days once a day (statuses change for weeks with COD).
-    const full = sync.salesFullOn !== today;
+    // Recent days every run; the last 60 days once a day (statuses change for weeks with COD)
+    // and right after the way orders are read changes (SALES_FORMAT), so old rows are rewritten.
+    const full = sync.salesFullOn !== today || sync.salesFormat !== SALES_FORMAT;
     const r = await sales.pull(addDays(today, full ? -60 : -3), today);
-    await pgStore.put("meta", "sync", { ...sync, salesAt: new Date().toISOString(), salesError: null, salesFullOn: full ? today : sync.salesFullOn });
+    await pgStore.put("meta", "sync", { ...sync, salesAt: new Date().toISOString(), salesError: null, salesFullOn: full ? today : sync.salesFullOn, salesFormat: SALES_FORMAT });
     return r;
   } catch (e: any) {
     await pgStore.put("meta", "sync", { ...sync, salesError: e.message });
