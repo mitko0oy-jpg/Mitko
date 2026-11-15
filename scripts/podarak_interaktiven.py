@@ -229,12 +229,56 @@ def build(src, out, plain):
         c.setFont("Golos-Bold", 11.5)
         c.drawCentredString(x + 31, y - 35, f"{g}. клас")
         x += 70
-    button(50, 150, W - 100, 50, "Започни", "menu", fill=GOLD, color=white, size=16, after="next")
+    button(50, 150, W - 100, 50, "Започни", "upotreba1", fill=GOLD, color=white, size=16, after="next")
     c.setFillColor(MUTED)
     c.setFont("Golos", 10)
     c.drawCentredString(W / 2, 118, "Без интернет · на всеки телефон")
     c.drawCentredString(W / 2, 102, "Подарък от Еду БЕЛ · edubel.site")
     c.showPage()
+
+    # ---------------- instructions for use: right after the cover, before anything else
+    GUIDE = [
+        ("Инструкции за употреба", "ЗА РОДИТЕЛЯ", [
+            "Изпратете файла на телефона или таблета на детето – по Viber, имейл или WhatsApp – и го запазете. Не трябва интернет, приложение или регистрация.",
+            "Отворете го с програма за PDF. Ако бутоните не реагират (някои чатове показват файла само като картинка), отворете го с Adobe Acrobat Reader, „Файлове“ на iPhone или Google Drive.",
+            "Покажете на детето частите за неговия клас: 5. клас – части 1 и 2, 6. клас – части 3 и 4, 7. клас – части 5 и 6. Седмокласниците могат да минат през всички – творбите от 5. и 6. клас също са в НВО.",
+            "По 10 въпроса на ден са достатъчни – около 10 минути. После попитайте детето за грешките: обяснението казва защо и какво да преговори.",
+        ], ("Нататък: как се играе", "upotreba2")),
+        ("Как се играе", "ЗА ДЕТЕТО", [
+            "Избери частта за своя клас и натисни „Започни“.",
+            "Прочети въпроса и докосни отговора, който смяташ за верен.",
+            "Зелено „Вярно!“ – печелиш 1, 2 или 3 точки според звездичките на въпроса. Записвай си ги на лист – файлът не ги брои.",
+            "Червено „Не е вярно“ – прочети защо. После „Опитай пак“ или „Следващ въпрос“.",
+            "„Части“ долу вляво те връща в менюто, а „Пропусни“ долу вдясно прескача въпроса.",
+            "В края на частта събери точките и виж своята титла.",
+        ], ("Към частите", "menu")),
+    ]
+    for k, (title, kicker, items, (btn, dest)) in enumerate(GUIDE, 1):
+        page(f"Инструкции {k} / {len(GUIDE)}")
+        c.bookmarkPage(f"upotreba{k}")
+        c.setFillColor(INK)
+        c.setFont("Literata-Bold", 23)
+        c.drawString(M, H - 92, title)
+        c.setFillColor(GOLD)
+        c.setFont("Golos-Bold", 10)
+        c.drawString(M, H - 112, kicker)
+        tw = W - 2 * M - 38
+        for s_ in (1, 0.94, 0.88, 0.82, 0.76):
+            ps = [P(t(x), 12.5 * s_, "Golos", TEXT) for x in items]
+            if sum(height(x, tw) + 12 * s_ for x in ps) <= H - 126 - 132:
+                break
+        y = H - 126
+        for i, para in enumerate(ps, 1):
+            h = height(para, tw)
+            c.setFillColor(INK)
+            c.circle(M + 12, y - 9, 11, stroke=0, fill=1)
+            c.setFillColor(white)
+            c.setFont("Golos-Bold", 11)
+            c.drawCentredString(M + 12, y - 13, str(i))
+            draw(para, M + 34, y - 1, tw)
+            y -= h + 12 * s_
+        button(M, 62, W - 2 * M, 48, btn, dest, fill=GOLD if dest == "menu" else INK, size=15, after="next")
+        c.showPage()
 
     # ---------------- menu
     page("Части")
@@ -272,6 +316,7 @@ def build(src, out, plain):
         c.setFont("Golos", 10.5)
         c.drawString(M + 6 + lv * 10.5 + 4, y - 8, f"{LEVEL[lv]} – {lv} {'точка' if lv == 1 else 'точки'}")
         y -= 17
+    navlink(W - M, 42, "Инструкции", "upotreba1", before="menu", right=True)
     c.showPage()
 
     # ---------------- parts
