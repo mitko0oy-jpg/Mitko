@@ -167,6 +167,7 @@ def brand_fonts():
             Merger().merge(parts).save(path)
             for p in parts:
                 os.remove(p)
+        add_i_grave(path)
         pdfmetrics.registerFont(RLFont(name, path))
     addMapping("Golos", 0, 0, "Golos")
     addMapping("Golos", 1, 0, "Golos-Bold")
@@ -176,6 +177,46 @@ def brand_fonts():
     addMapping("Literata", 1, 0, "Literata-Bold")
     addMapping("Literata", 0, 1, "Literata-Italic")
     addMapping("Literata", 1, 1, "Literata-Bold")
+
+
+def add_i_grave(path):
+    """Golos Text has no „ѝ“ (U+045D) – it would print as a blank. Build it from the font's own „и“ and
+    combining grave (U+0300), centred over the letter. Nothing to do when the font already has it."""
+    from fontTools.ttLib import TTFont
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.pens.transformPen import TransformPen
+    from fontTools.pens.boundsPen import BoundsPen
+    f = TTFont(path)
+    cmap = f.getBestCmap()
+    if 0x45D in cmap or 0x438 not in cmap or 0x300 not in cmap:
+        return
+    base, mark = cmap[0x438], cmap[0x300]
+    glyf, hmtx = f["glyf"], f["hmtx"]  # load the tables before the glyph order changes
+    vmtx = f["vmtx"] if "vmtx" in f else None
+    gs = f.getGlyphSet()
+
+    def bounds(g):
+        bp = BoundsPen(gs)
+        gs[g].draw(bp)
+        return bp.bounds
+
+    bx0, by0, bx1, by1 = bounds(base)
+    mx0, my0, mx1, my1 = bounds(mark)
+    dx = (bx0 + bx1) / 2 - (mx0 + mx1) / 2
+    dy = max(0, by1 + 40 - my0)  # keep a small gap above the letter
+    pen = TTGlyphPen(None)
+    gs[base].draw(pen)
+    gs[mark].draw(TransformPen(pen, (1, 0, 0, 1, dx, dy)))
+    name = "uni045D"
+    f.setGlyphOrder(f.getGlyphOrder() + [name])
+    glyf[name] = pen.glyph()
+    hmtx[name] = hmtx[base]
+    if vmtx is not None:
+        vmtx[name] = vmtx[base]
+    for t in f["cmap"].tables:
+        if t.isUnicode():
+            t.cmap[0x45D] = name
+    f.save(path)
 
 
 # ---------------------------------------------------------------- pdf
