@@ -12,7 +12,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 const SET = window.EB_LANDING?.store || {};
-const local = location.pathname.startsWith("/magazin/");
+const local = Object.values(CFG.LOCAL).some((p) => location.pathname.startsWith(p.split("#")[0]));
 const LINKS = { ...CFG.LINKS, ...(SET.links || {}), ...(local ? CFG.LOCAL : {}) };
 const CHECKOUT = { ...CFG.CHECKOUT, ...(SET.checkout || {}) };
 const DELIVERY_FROM = SET.delivery > 0 ? Math.round(SET.delivery * 100) : CFG.DELIVERY_FROM;
@@ -80,41 +80,63 @@ function setQty(deck, n) {
   render();
 }
 
-/* ---------- header, menu, cart drawer and footer ---------- */
+/* ---------- header, menu, cart drawer and footer ----------
+   The same header on every page of the site: the logo goes to the home page, the phone is always
+   in sight, the menu names each product plainly. A block can carry only the header
+   (<main data-shell="header">) or only the footer (data-shell="footer") for pages built elsewhere. */
+const SHELL = main?.dataset.shell || "both";
 const NAV = [
-  ["home", "Магазин", "#produkti"],
-  ["lit", "Литература"],
+  ["lit", "Литература", "hit"],
   ["ezik", "Български език"],
   ["duo", "Комплект"],
+  ["dosieta", "Досиета"],
+  ["trenazhor", "Тренажор"],
+  ["shkoli", "За училища"],
 ];
 const href = (key, hash = "") => esc((LINKS[key] || "/") + hash);
-const navItem = ([key, label, hash]) =>
-  `<li><a href="${key === "home" && PAGE === "home" ? hash : href(key, key === "home" ? hash : "")}"${key === PAGE ? ' aria-current="page"' : ""}>${label}</a></li>`;
+const navItem = ([key, label, mark]) =>
+  `<li><a href="${href(key)}"${key === PAGE ? ' aria-current="page"' : ""}>${label}${mark ? '<span class="nav-hit">хит</span>' : ""}</a></li>`;
+const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3.5l1.6 4.2-2.2 1.4a11 11 0 0 0 6.5 6.5l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5C10.6 20 4 13.4 3.5 5.6A1.5 1.5 0 0 1 5 4z"/></svg>';
+const VIBER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-5.2 0-8.6 2.7-8.6 7.6 0 2.8 1.1 4.8 3 6v3.5l3.1-2.6c.8.2 1.6.2 2.5.2 5.2 0 8.6-2.6 8.6-7.1S17.2 2.6 12 2.6z" fill="currentColor"/></svg>';
+const MENU = [
+  ["lit", "Карти по литература", "Най-продавани · 22 творби в 40 карти", "kutiya-literatura.webp"],
+  ["ezik", "Карти по български език", "20 правила + 20 упражнения", "kutiya-ezik.webp"],
+  ["duo", "Комплект: литература + език", "80 карти · безплатна доставка", "kutiya-ezik.webp"],
+  ["dosieta", "Литературни досиета", "книга-игра · 24 досиета", "dosieta/korica-hd.webp"],
+  ["trenazhor", "НВО тренажор", "200 задачи онлайн · 1, 6 или 12 месеца", "trener/m-hi.webp"],
+  ["produkti", "Всички продукти", "всичко на едно място", "trener/i-karti.webp"],
+  ["shkoli", "За учители и училища", "поръчки за клас, библиотека, читалище", "trener/i-chetene.webp"],
+];
 
-host.insertAdjacentHTML(
+if (SHELL !== "footer") host.insertAdjacentHTML(
   "afterbegin",
   `<nav class="nav snav" aria-label="Основна навигация">
   <div class="ann"><div class="ann-in">
     <span>${ICON.truck}Безплатна доставка при 2 тестета</span>
-    <span>${ICON.cash}Плащаш при получаване</span>
+    <span>${ICON.cash}Плащане при получаване</span>
     <span>${ICON.eye}Преглед преди плащане · изпращаме до 1–2 работни дни</span>
   </div></div>
   <div class="container snav-row">
-    <button class="icon-btn menu-btn" type="button" aria-label="Меню" aria-haspopup="dialog">${ICON.menu}</button>
-    <a class="brand" href="${href("home")}" aria-label="Еду БЕЛ – начало">${LOGO}</a>
-    <ul class="nav-links">${NAV.map(navItem).join("")}<li><a href="#vaprosi">Въпроси</a></li></ul>
+    <button class="icon-btn menu-btn" type="button" aria-label="Меню" aria-haspopup="dialog">${ICON.menu}<span class="ib-label">Меню</span></button>
+    <a class="brand" href="${href("home")}" aria-label="Еду БЕЛ – към началната страница">${LOGO}</a>
+    <ul class="nav-links">${NAV.map(navItem).join("")}</ul>
     <div class="nav-cta">
-      <a class="btn btn-primary btn-sm snav-shop" href="${PAGE === "home" ? "#produkti" : href("home", "#produkti")}">Пазарувай</a>
-      <button class="icon-btn cart-btn" type="button" aria-label="Количка" aria-haspopup="dialog">${ICON.bag}<span class="cart-badge" hidden>0</span></button>
+      <a class="snav-phone" href="tel:${CONTACT.tel}" aria-label="Обади се: ${CONTACT.phone}">${PHONE_ICON}<span><small>Поръчки по телефона</small>${CONTACT.phone}</span></a>
+      <button class="icon-btn cart-btn" type="button" aria-label="Количка" aria-haspopup="dialog">${ICON.bag}<span class="cart-badge" hidden>0</span><span class="ib-label">Количка</span></button>
     </div>
   </div>
 </nav>
 <dialog class="smenu" aria-label="Меню">
-  <div class="smenu-head"><a class="brand" href="${href("home")}">${LOGO}</a><button class="icon-btn smenu-x" type="button" aria-label="Затвори">${ICON.close}</button></div>
+  <div class="smenu-head"><a class="brand" href="${href("home")}" aria-label="Към началната страница">${LOGO}</a><button class="icon-btn smenu-x" type="button" aria-label="Затвори менюто">${ICON.close}</button></div>
+  <a class="smenu-home" href="${href("home")}">← Към началната страница</a>
   <ul class="smenu-links">
-    ${["lit", "ezik", "duo"].map((k) => `<li><a href="${href(k)}"><img src="${esc(MEDIA + (k === "duo" ? "kutiya-literatura.webp" : DECKS[k].img))}" alt="" loading="lazy"><span><b>${k === "duo" ? "Комплект: литература + език" : DECKS[k].title}</b><small>${k === "duo" ? "80 карти · безплатна доставка" : DECKS[k].sub}</small></span></a></li>`).join("")}
+    ${MENU.map(([k, t, sub, img]) => `<li><a href="${href(k)}"${k === PAGE ? ' aria-current="page"' : ""}><img src="${esc(MEDIA + img)}" alt="" loading="lazy"><span><b>${t}</b><small>${sub}</small></span></a></li>`).join("")}
   </ul>
-  <ul class="smenu-more"><li><a href="${PAGE === "home" ? "#produkti" : href("home", "#produkti")}">Всички продукти</a></li><li><a href="#vaprosi">Въпроси</a></li><li><a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></li><li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li></ul>
+  <div class="smenu-call">
+    <p>Не сте сигурни какво да изберете? Обадете ни се – ще помогнем.</p>
+    <a class="btn btn-primary" href="tel:${CONTACT.tel}">${PHONE_ICON}${CONTACT.phone}</a>
+    <a class="smenu-mail" href="mailto:${CONTACT.email}">${CONTACT.email}</a>
+  </div>
 </dialog>
 <dialog class="cart" aria-labelledby="cart-title">
   <div class="cart-head"><h2 id="cart-title">Количка <span class="cart-n"></span></h2><button class="icon-btn cart-x" type="button" aria-label="Затвори количката">${ICON.close}</button></div>
@@ -122,7 +144,7 @@ host.insertAdjacentHTML(
   <p class="cart-notice" hidden></p>
   <div class="cart-body">
     <ul class="cart-items"></ul>
-    <div class="cart-empty"><p><b>Количката е празна.</b></p><p>Разгледай картите и избери тестето за детето.</p><a class="btn btn-ghost btn-sm" href="${PAGE === "home" ? "#produkti" : href("home", "#produkti")}">Към магазина</a></div>
+    <div class="cart-empty"><p><b>Количката е празна.</b></p><p>Разгледайте картите и изберете тестето за детето.</p><a class="btn btn-ghost btn-sm" href="${href("produkti")}">Всички продукти</a></div>
     <div class="cart-up"></div>
   </div>
   <div class="cart-foot">
@@ -133,24 +155,33 @@ host.insertAdjacentHTML(
       <div class="tot"><dt>Общо</dt><dd class="s-tot"></dd></div>
     </dl>
     <a class="btn btn-primary cart-go" href="#">Към поръчката ${ICON.arrow}</a>
-    <p class="cart-note">${ICON.cash}Плащаш при получаване, след преглед на пратката</p>
+    <p class="cart-note">${ICON.cash}Плащане при получаване, след преглед на пратката</p>
+    <p class="cart-note">Предпочитате по телефона? <a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></p>
   </div>
 </dialog>`,
 );
 
-host.insertAdjacentHTML(
+// a header-only block keeps room for the fixed header above the page under it
+if (SHELL === "header") host.insertAdjacentHTML("beforeend", '<div class="snav-spacer" aria-hidden="true"></div>');
+
+if (SHELL !== "header") host.insertAdjacentHTML(
   "beforeend",
   `<footer class="sfoot">
   <div class="container">
+    <div class="sf-call">
+      <div><b>Имате въпрос или искате да поръчате по телефона?</b><span>Обадете ни се – ще ви помогнем да изберете.</span></div>
+      <a class="btn btn-primary" href="tel:${CONTACT.tel}">${PHONE_ICON}${CONTACT.phone}</a>
+      <a class="btn btn-ghost sf-viber" href="${esc(CONTACT.viber)}" target="_blank" rel="noopener">${VIBER_ICON}Viber канал</a>
+    </div>
     <div class="sf-top">
       <div class="sf-brand">
-        <a class="brand" href="${href("home")}">${LOGO}</a>
-        <p>Образователни карти по български език и литература за 5., 6. и 7. клас. Създадени от преподавател по БЕЛ и оценител на НВО.</p>
+        <a class="brand" href="${href("home")}" aria-label="Еду БЕЛ – към началната страница">${LOGO}</a>
+        <p>Образователни карти, книга-игра и онлайн тренажор по български език и литература за 5., 6. и 7. клас. Създадени от преподавател по БЕЛ и оценител на НВО.</p>
         <ul class="sf-chips"><li>Еконт</li><li>Спиди</li><li>Наложен платеж</li></ul>
       </div>
-      <div><h4>Магазин</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li><li><a href="${href("dosieta")}">Литературни досиета</a></li><li><a href="${href("trenazhor")}">НВО тренажор</a></li><li><a href="${href("app")}">Приложението Еду БЕЛ</a></li></ul></div>
-      <div><h4>Помощ</h4><ul><li><a href="${href("delivery")}">Доставка и връщане</a></li><li><a href="${href("terms")}">Общи условия</a></li><li><a href="${href("privacy")}">Поверителност</a></li><li><a href="${href("cookies")}">Бисквитки</a></li></ul></div>
-      <div><h4>Контакт</h4><ul><li><a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></li><li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li></ul></div>
+      <div><h4>Продукти</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li><li><a href="${href("dosieta")}">Литературни досиета</a></li><li><a href="${href("trenazhor")}">НВО тренажор</a></li><li><a href="${href("produkti")}">Всички продукти</a></li></ul></div>
+      <div><h4>За кого</h4><ul><li><a href="${href("home")}">За родители и баби и дядовци</a></li><li><a href="${href("shkoli")}">За учители и училища</a></li><li><a href="${href("shkoli")}">За читалища и библиотеки</a></li></ul><h4 class="sf-h2">Помощ</h4><ul><li><a href="${href("delivery")}">Доставка и връщане</a></li><li><a href="${href("terms")}">Общи условия</a></li><li><a href="${href("privacy")}">Поверителност</a></li><li><a href="${href("cookies")}">Бисквитки</a></li></ul></div>
+      <div><h4>Контакт</h4><ul><li><a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></li><li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li><li><a href="${esc(CONTACT.viber)}" target="_blank" rel="noopener">Viber канал на Еду БЕЛ</a></li></ul></div>
     </div>
     <p class="sf-legal">© ${new Date().getFullYear()} ${esc(COMPANY)}</p>
   </div>
@@ -162,11 +193,13 @@ const menuDlg = $("dialog.smenu", host);
 const badge = $(".cart-badge", host);
 
 function openCart() {
+  if (!cartDlg) return;
   render();
   if (menuDlg.open) menuDlg.close();
   if (!cartDlg.open) cartDlg.showModal();
 }
 // Clicks on the dimmed area outside the panel close a dialog.
+if (cartDlg) {
 for (const d of [cartDlg, menuDlg]) {
   d.addEventListener("click", (e) => {
     if (e.target === d) d.close();
@@ -193,8 +226,10 @@ cartDlg.addEventListener("click", (e) => {
   }
   if (e.target.closest(".cart-empty a")) cartDlg.close();
 });
+}
 
 function render() {
+  if (!cartDlg) return;
   const n = count();
   badge.hidden = !n;
   badge.textContent = n;

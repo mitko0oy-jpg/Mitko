@@ -7,7 +7,7 @@ export const TRN = {
     m6: { title: "6 месеца", months: 6, price: 2990 },
     m12: { title: "1 година", months: 12, price: 3990 },
   },
-  checkout: { m1: "/poruchka-trenazhor-1", m6: "/poruchka-trenazhor-6", m12: "/poruchka-trenazhor-12" },
+  checkout: { m1: "/prilozhenie-trenazhor-za-nvo/poruchka-trenazhor-1", m6: "/prilozhenie-trenazhor-za-nvo/poruchka-trenazhor-6", m12: "/prilozhenie-trenazhor-za-nvo/poruchka-trenazhor-12" },
   // the trainer itself: opens with the personal code
   app: "https://app.edubel.site/t/",
   store: "/",

@@ -30,6 +30,10 @@ const PAGES = [
   { src: "magazin/literatura", out: "literatura.html", name: "Карти по литература", url: LINKS.lit },
   { src: "magazin/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език", url: LINKS.ezik },
   { src: "magazin/komplekt", out: "komplekt.html", name: "Комплект: литература + език", url: LINKS.duo },
+  { src: "magazin/produkti", out: "produkti.html", name: "Всички продукти", url: LINKS.produkti },
+  // only the shared header, or only the footer, for pages built elsewhere (Черен петък, legal pages)
+  { src: "magazin/menu", out: "menu.html", name: "Само менюто (горе)", url: "най-горе на страници, направени отделно" },
+  { src: "magazin/dolu", out: "dolu.html", name: "Само долната част", url: "най-долу на страници, направени отделно" },
   { src: "dosieta", out: "literaturni-dosieta.html", name: "Литературни досиета", url: LINKS.dosieta, kind: "dos" },
   { src: "prilozhenie", out: "prilozhenie.html", name: "Приложението Еду БЕЛ", url: LINKS.app, kind: "app" },
   { src: "trenazhor", out: "nvo-trenazhor.html", name: "НВО тренажор по БЕЛ", url: LINKS.trenazhor, kind: "trn" },

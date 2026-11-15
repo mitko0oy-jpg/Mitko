@@ -1,8 +1,7 @@
 /* „Литературни досиета“ landing: the detective palette of the book (deep teal, paper, gold) on top of shop.css. */
 body[data-deck="dos"]{
-  --nav-h:76px;
   --bg:#F5EFE3; --bg-2:#EBE2D0; --surface:#FFFBF3; --surface-2:#F8F1E3;
-  --ink:#10262A; --muted:#55615D; --line:rgba(16,38,42,.13);
+  --ink:#10262A; --muted:#47524E; --line:rgba(16,38,42,.13);
   --accent:#0F6B66; --accent-2:#D7A94B; --accent-ink:#FFFFFF; --accent-soft:rgba(15,107,102,.1);
   --gold:#E6C474; --night:#0C2124;
   --glass:rgba(255,251,243,.78);

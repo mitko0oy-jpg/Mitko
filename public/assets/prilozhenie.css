@@ -1,8 +1,7 @@
 /* Landing of the Еду БЕЛ app: light, airy, with phone mock-ups built in HTML. On top of shop.css + store.css. */
 body[data-deck="app"]{
-  --nav-h:76px;
   --bg:#F7F4EF; --bg-2:#EEE9F6; --surface:#FFFFFF; --surface-2:#FBF9FE;
-  --ink:#1B1F3B; --muted:#5D5F74; --line:rgba(27,31,59,.11);
+  --ink:#1B1F3B; --muted:#4E5066; --line:rgba(27,31,59,.11);
   --accent:#E0561D; --accent-2:#F39340; --accent-ink:#fff; --accent-soft:#FBE3D3;
   --indigo:#5146D9; --indigo-soft:#ECEAFD; --mint:#1F9D74; --mint-soft:#E1F5EC;
 }

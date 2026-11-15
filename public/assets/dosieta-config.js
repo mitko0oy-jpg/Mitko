@@ -15,10 +15,10 @@ export const DOS = {
   },
   // the checkout page in ConvertBuilder for each package and binding
   checkout: {
-    "dos-1:spirala": "/poruchka-dosieta-spirala",
-    "dos-1:telche": "/poruchka-dosieta",
-    "dos-lit:spirala": "/poruchka-dosieta-karti-spirala",
-    "dos-lit:telche": "/poruchka-dosieta-karti",
+    "dos-1:spirala": "/igra-literaturni-dosieta/poruchka-dosieta-spirala",
+    "dos-1:telche": "/igra-literaturni-dosieta/poruchka-dosieta",
+    "dos-lit:spirala": "/igra-literaturni-dosieta/poruchka-dosieta-karti-spirala",
+    "dos-lit:telche": "/igra-literaturni-dosieta/poruchka-dosieta-karti",
   },
   // delivery with the book alone, from this price to an office
   delivery: 450,

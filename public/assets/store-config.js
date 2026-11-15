@@ -1,40 +1,54 @@
-// The new card store (edubel.bg on ConvertBuilder): pages, checkouts and what the cart shows.
+// The card store (edubel.bg on ConvertBuilder): pages, checkouts and what the cart shows.
 // Prices are not here: they come from shop-catalog.js (PACKAGES, REGULAR), the same as on edubel.site.
 // Inside a ConvertBuilder block, window.EB_LANDING.store can override any of these settings.
 
-// The pages of the store on the live site. Locally (/magazin/…) store.js uses LOCAL instead.
+// The pages on the live site (the funnel addresses ConvertBuilder gave them).
+// Locally (/magazin/…, /dosieta/, …) store.js uses LOCAL instead.
 export const LINKS = {
   home: "/",
-  lit: "/literatura",
-  ezik: "/balgarski-ezik",
+  lit: "/nvo/karti-po-literatura",
+  ezik: "/karti-po-b-lgarski",
   duo: "/komplekt",
+  produkti: "/produkti",
+  // teachers, schools and читалища: a section of the home page
+  shkoli: "/#uchilishta",
   // the separate landings
-  dosieta: "/literaturni-dosieta",
-  app: "/prilozhenie",
-  trenazhor: "/nvo-trenazhor",
-  // legal pages: ConvertBuilder pages with the same text as on edubel.site
+  dosieta: "/igra-literaturni-dosieta",
+  app: "/prilozhenie-trenazhor-za-nvo",
+  trenazhor: "/prilozhenie-trenazhor-za-nvo/nvo-trenazhor",
+  matematika: "/karti-po-matematika/predvaritelna-poruchka",
+  // legal pages
   terms: "/obshti-usloviya",
   privacy: "/poveritelnost",
   cookies: "/cookies",
   delivery: "/dostavka-i-vrashtane",
 };
-export const LOCAL = { home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/", dosieta: "/dosieta/", app: "/prilozhenie/", trenazhor: "/trenazhor/" };
+export const LOCAL = {
+  home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/",
+  produkti: "/magazin/produkti/", shkoli: "/magazin/#uchilishta",
+  dosieta: "/dosieta/", app: "/prilozhenie/", trenazhor: "/trenazhor/",
+};
 
 // The checkout page in ConvertBuilder for each package. The cart holds at most two decks,
 // so every cart is one of these five packages.
 export const CHECKOUT = {
-  "lit-1": "/poruchka-literatura",
-  "lit-2": "/poruchka-literatura-2",
-  "ezik-1": "/poruchka-ezik",
-  "ezik-2": "/poruchka-ezik-2",
-  duo: "/poruchka-komplekt",
+  "lit-1": "/nvo/poruchka-literatura",
+  "lit-2": "/nvo/poruchka-literatura-2",
+  "ezik-1": "/karti-po-b-lgarski/poruchka-ezik",
+  "ezik-2": "/karti-po-b-lgarski/poruchka-ezik-2",
+  duo: "/komplekt/poruchka-komplekt",
 };
 
 // Delivery with one deck (euro cents), as in the ConvertBuilder checkout: from this price to an office.
 // Two decks ship free.
 export const DELIVERY_FROM = 450;
 
-export const CONTACT = { phone: "0893 42 52 92", tel: "+359893425292", email: "edubel@mail.bg" };
+export const CONTACT = {
+  phone: "0893 42 52 92",
+  tel: "+359893425292",
+  email: "edubel@mail.bg",
+  viber: "https://invite.viber.com/?g2=AQAHAw6O7C9zc1dx8TZ9cIE8Z6G8lUWFiYkgY2OK8dH77VvsL%2B13ZY66S7ACf7Pz",
+};
 export const COMPANY = "Ангелова ЕДУ БЕЛ ЕООД · ЕИК 208473142";
 
 // The two decks: what the cart, the product cards and the menu show.
