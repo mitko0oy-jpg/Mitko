@@ -38,7 +38,7 @@ ConvertBuilder API не може да създава поръчки, а само
 
 ## Telegram
 
-Командите са `/stop`, `/pusni`, `/status`, `/test` и `/rezhim test|live|off`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
+Командите са `/stop`, `/pusni`, `/status`, `/test` (или `/test 0888123456` за друг телефон) и `/rezhim test|live|off`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
 
 ## Променливи в Netlify (отделен проект)
 

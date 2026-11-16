@@ -1,6 +1,7 @@
 // Telegram commands from Mitko: стоп / пусни / статус / тест.
 import { getSettings, saveSettings } from "./store.mjs";
 import { labelFor } from "./policy.mjs";
+import { normalizePhoneBG } from "./format.mjs";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -10,6 +11,7 @@ const HELP = [
   "/pusni – пуска ги отново",
   "/status – какво става в момента",
   "/test – агентът звъни на твоя тестов номер с примерна поръчка",
+  "/test 0888123456 – същото, но на друг телефон",
   "/rezhim test – звъни на теб за всяка нова поръчка (тест)",
   "/rezhim live – звъни на клиентите",
   "/rezhim off – не звъни за поръчки",
@@ -90,10 +92,14 @@ export async function handleTelegram(deps, update, opts = {}) {
     return { chatId, reply: lines.join("\n") };
   }
   if (["/test", "тест"].includes(cmd)) {
-    if (!config.testPhone) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
+    // "/test" calls TEST_PHONE; "/test 0888 123 456" calls another Bulgarian phone.
+    const other = text.split(/\s+/).slice(1).join("");
+    const to = other ? normalizePhoneBG(other) : config.testPhone;
+    if (other && !to) return { chatId, reply: `Не разпознах номера „${esc(other)}“. Напиши го така: /test 0888123456` };
+    if (!to) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
     try {
-      await deps.call({ to: config.testPhone, variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays } });
-      return { chatId, reply: `📞 Звъня на ${config.testPhone} с примерна поръчка. След разговора ще ти пиша резултата.` };
+      await deps.call({ to, variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays } });
+      return { chatId, reply: `📞 Звъня на ${to} с примерна поръчка. След разговора ще ти пиша резултата.` };
     } catch (err) {
       return { chatId, reply: `⚠️ Не успях да звънна: ${esc(String(err.message).slice(0, 300))}` };
     }

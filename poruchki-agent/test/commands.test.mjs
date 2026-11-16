@@ -45,6 +45,18 @@ test("stop, resume, status and test call", async () => {
   assert.match((await handleTelegram(d, upd(1, "здрасти"), {})).reply, /Команди/);
 });
 
+test("/test with another phone calls that phone", async () => {
+  const d = deps();
+  await handleTelegram(d, upd(1, "/start abc"), { setupCode: "abc" });
+  const t = await handleTelegram(d, upd(1, "/test 0888 12 34 56"), {});
+  assert.match(t.reply, /Звъня на \+359888123456/);
+  assert.equal(d.calls[0].to, "+359888123456");
+  assert.equal(d.calls[0].variables.order_key, "test");
+  const bad = await handleTelegram(d, upd(1, "/test 123"), {});
+  assert.match(bad.reply, /Не разпознах/);
+  assert.equal(d.calls.length, 1, "no call to an unrecognised number");
+});
+
 test("telegram webhook is registered once", async () => {
   const { ensureTelegramWebhook } = await import("../lib/telegram.mjs");
   const store = memoryStore();
