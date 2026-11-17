@@ -98,6 +98,20 @@ const fullDate = (iso) => new Date(iso).toLocaleString("bg-BG", { timeZone: "Eur
 const PIN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`;
 const THUMB = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M17 3v11M7 14l3.5 7c1.4 0 2.5-1.1 2.5-2.5V15h5.3a2 2 0 0 0 2-2.3l-1.2-8A2 2 0 0 0 17.1 3H7v11z"/><path d="M3 3h4v11H3z"/></svg>`;
 /** Like Middleware: ! for a risky client, how many orders from this phone, 👎 with the nekorekten.com reports on hover. */
+/** Like Middleware's "!": how many parcels the client did not pick up (and where), and how many they took. */
+function riskPop(o) {
+  const ret = o.returned_before || 0;
+  const got = o.delivered_before || 0;
+  const all = ret + got;
+  const shops = (o.ret_shops || []).filter(Boolean);
+  const where = !shops.length ? "" : shops.length === 1 && shops[0] === o.shop_label ? " в този магазин" : ` в ${shops.map(esc).join(", ")}`;
+  return [
+    ret ? `<span class="rl"><b>Този клиент има ${ret} ${ret === 1 ? "непотърсена пратка" : "непотърсени пратки"}${where}.</b></span>` : "",
+    all ? `<span class="rl">Общо взети пратки: <b>${got} от ${all} (${Math.round((got / all) * 100)}%)</b></span>` : "",
+    o.nek_count ? `<span class="rl">${o.nek_count} ${o.nek_count === 1 ? "сигнал" : "сигнала"} в nekorekten.com</span>` : "",
+  ].join("");
+}
+
 function clientCell(o) {
   const risky = o.nek_count || o.returned_before;
   const why = [o.nek_count && `${o.nek_count} сигнала в nekorekten.com`, o.returned_before && `върнал ${o.returned_before} пратки`].filter(Boolean).join(", ");
@@ -108,7 +122,7 @@ function clientCell(o) {
           .join("")}<span class="nf">${o.nek_count > (o.nek_reports || []).length ? `Още ${o.nek_count - (o.nek_reports || []).length}. ` : ""}Натисни, за да видиш всички · nekorekten.com</span></span></a>`
     : "";
   return `<div class="cg">
-    <span class="risk">${risky ? `<span class="ci bad" title="${esc(why)}">!</span>` : ""}</span>
+    <span class="risk">${risky ? `<span class="tipwrap" tabindex="0" aria-label="${esc(why)}"><span class="ci bad">!</span><span class="nekpop" role="tooltip">${riskPop(o)}</span></span>` : ""}</span>
     <span class="cside">${
       o.other_orders && o.phone
         ? `<a class="pill n more" href="/poruchki/?tab=&q=${encodeURIComponent(String(o.phone).replace(/\D/g, "").slice(-9))}" title="Още ${o.other_orders} поръчки от този телефон – натисни, за да ги видиш">${o.other_orders + 1}</a>`
@@ -401,10 +415,10 @@ function showTip(a) {
 }
 const hideTip = () => (nekTip.hidden = true);
 document.addEventListener("mouseover", (e) => {
-  const a = e.target.closest?.(".nekwrap");
+  const a = e.target.closest?.(".nekwrap, .tipwrap");
   a ? showTip(a) : hideTip();
 });
-document.addEventListener("focusin", (e) => (e.target.closest?.(".nekwrap") ? showTip(e.target.closest(".nekwrap")) : hideTip()));
+document.addEventListener("focusin", (e) => (e.target.closest?.(".nekwrap, .tipwrap") ? showTip(e.target.closest(".nekwrap, .tipwrap")) : hideTip()));
 addEventListener("scroll", hideTip, { passive: true });
 
 function openMore(o, btn) {

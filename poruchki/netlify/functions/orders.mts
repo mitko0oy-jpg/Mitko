@@ -71,7 +71,7 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
   if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
-  if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.company_id = s.company_id AND pc2.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9) AND pc2.count > 0)");
+  if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.company_id = s.company_id AND pc2.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9) AND pc2.count > 0)");
   if (u.get("sent") === "today" && !skip.sent) parts.push(SENT_TODAY);
   const product = str(u.get("product"), 200);
   if (product && !skip.product) add("EXISTS (SELECT 1 FROM jsonb_array_elements(o.items) i WHERE i->>'name' = ?)", product);
@@ -112,13 +112,16 @@ async function list(u: URLSearchParams) {
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
+              h.got AS delivered_before, h.ret_shops,
               pc.count AS nek_count, CASE WHEN pc.count > 0 THEN pc.reports END AS nek_reports
          FROM orders o JOIN shops s ON s.id = o.shop
-         LEFT JOIN phone_checks pc ON pc.company_id = s.company_id AND pc.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9)
+         LEFT JOIN phone_checks pc ON pc.company_id = s.company_id AND pc.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
          LEFT JOIN LATERAL (
-           SELECT count(*)::int AS n, count(*) FILTER (WHERE x.stage = 'returned')::int AS ret
-             FROM orders x
-            WHERE o.phone <> '' AND x.id <> o.id AND x.shop IN (SELECT id FROM shops WHERE company_id = s.company_id)
+           SELECT count(*)::int AS n, count(*) FILTER (WHERE x.stage = 'returned')::int AS ret,
+                  count(*) FILTER (WHERE x.stage = 'delivered')::int AS got,
+                  array_remove(array_agg(DISTINCT CASE WHEN x.stage = 'returned' THEN xs.label END), NULL) AS ret_shops
+             FROM orders x JOIN shops xs ON xs.id = x.shop
+            WHERE o.phone <> '' AND x.id <> o.id AND xs.company_id = s.company_id
               AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
          ) h ON true
         WHERE ${w.sql}

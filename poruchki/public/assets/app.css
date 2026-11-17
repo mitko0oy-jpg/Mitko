@@ -718,3 +718,6 @@ dialog.modal > .mh, dialog.modal > .mf { flex: none; }
   .pline .pq { grid-column: 2; grid-row: 2; }
   .pimg { width: 40px; height: 40px; }
 }
+.nektip .rl { display: block; }
+.nektip .rl b { font-weight: 700; }
+.tipwrap { display: inline-grid; place-items: center; outline-offset: 2px; }

@@ -806,6 +806,17 @@ test("couriers page: Speedy sender objects for the dropdown, sender settings sav
   assert.equal(saved.data.defaults.econt.sms, false);
 });
 
+test("the ! like Middleware: parcels not picked up and how many the client took, from every shop", async () => {
+  // Order 5 (0888100005) was sent and came back. The same client orders again, typed with spaces.
+  const made = await api("/api/orders", { shop: "bg", name: "Клиент Пет", phone: "0888 100 005", city: "София", delivery: { courier: "econt", type: "office", officeId: "1234", officeName: "София Осогово" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  const o = (await api("/api/orders?tab=&q=100005")).data.orders.find((x) => x.id === made.data.id);
+  // (the shop added in the shops test pulls the same orders: there it came back too)
+  assert.equal(o.returned_before, o.ret_shops.length);
+  assert.ok(o.ret_shops.includes("Тест BG"));
+  assert.equal(o.delivered_before, 0);
+});
+
 test("order panel like Middleware: products with SKU, weight and picture; what the courier really charged", async () => {
   const r = await api("/api/settings/track", {});
   assert.equal(r.status, 200, JSON.stringify(r.data));
