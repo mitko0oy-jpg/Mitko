@@ -29,44 +29,54 @@
       <aside class="side" id="side" aria-label="Филтри">
         <div class="side-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg> Филтри</h2><button class="iconbtn" id="closeSide" aria-label="Скрий филтрите">✕</button></div>
         <div class="side-top">
-          <button class="btn primary" id="clear">Изчисти филтрите</button>
+          <button class="btn primary" id="clear" title="Изчисти всички филтри"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>Изчисти</button>
           <button class="btn" id="starBtn" title="Запазени филтри" aria-label="Запазени филтри" aria-expanded="false">☆</button>
         </div>
         <div class="starmenu" id="starMenu" hidden></div>
-        <label class="fld">Сортиране
-          <select id="sort">
-            <option value="">По подразбиране (най-новите)</option>
-            <option value="old">Най-старите първо</option>
-            <option value="sum_desc">Най-голяма сума</option>
-            <option value="sum_asc">Най-малка сума</option>
-            <option value="sent">Последно изпратени</option>
-            <option value="courier">Последна промяна при куриера</option>
-            <option value="parcel_asc">Най-стара промяна при куриера</option>
-            <option value="stage_asc">Статус (нови първо)</option>
-            <option value="stage_desc">Статус (приключени първо)</option>
-            <option value="shop_asc">Магазин (А → Я)</option>
-            <option value="shop_desc">Магазин (Я → А)</option>
-            <option value="cour_asc">Куриер (А → Я)</option>
-            <option value="cour_desc">Куриер (Я → А)</option>
-            <option value="note_desc">С бележка първо</option>
-            <option value="note_asc">Без бележка първо</option>
-          </select>
-        </label>
-        <label class="fld">Магазин<select id="shop"><option value="">Всички магазини</option></select></label>
-        <label class="fld">Продукти<select id="product"><option value="">Всички продукти</option></select></label>
-        <label class="fld">Куриер<select id="courier"><option value="">Всички</option><option value="speedy">Спиди</option><option value="econt">Еконт</option><option value="other">Други</option></select></label>
-        <label class="tgl"><input type="checkbox" id="sentToday"><span class="sw" aria-hidden="true"></span><span class="t">Изпратени днес</span><span class="n" id="nSent"></span></label>
-        <div>
+        <div class="grp">
+          <label class="fld">Подреди
+            <select id="sort">
+              <option value="">Най-новите първо</option>
+              <option value="old">Най-старите първо</option>
+              <option value="sum_desc">Най-голяма сума</option>
+              <option value="sum_asc">Най-малка сума</option>
+              <option value="sent">Последно изпратени</option>
+              <option value="courier">Последна промяна при куриера</option>
+              <option value="parcel_asc">Най-стара промяна при куриера</option>
+              <option value="stage_asc">Статус (нови първо)</option>
+              <option value="stage_desc">Статус (приключени първо)</option>
+              <option value="shop_asc">Магазин (А → Я)</option>
+              <option value="shop_desc">Магазин (Я → А)</option>
+              <option value="cour_asc">Куриер (А → Я)</option>
+              <option value="cour_desc">Куриер (Я → А)</option>
+              <option value="note_desc">С бележка първо</option>
+              <option value="note_asc">Без бележка първо</option>
+            </select>
+          </label>
+        </div>
+        <div class="grp">
+          <h3>Филтрирай</h3>
+          <label class="fld">Магазин<select id="shop"><option value="">Всички магазини</option></select></label>
+          <label class="fld">Продукт<select id="product"><option value="">Всички продукти</option></select></label>
+          <label class="fld">Куриер<select id="courier"><option value="">Всички</option><option value="speedy">Спиди</option><option value="econt">Еконт</option><option value="other">Други</option></select></label>
+          <label class="fld">Потвърждение<select id="confirmed"><option value="">Всички</option><option value="no">Непотвърдени</option><option value="ai">🤖 Потвърдени от AI</option><option value="us">✓ Потвърдени от нас</option></select></label>
+          <label class="fld">Пазар<select id="region"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select></label>
+        </div>
+        <div class="grp">
+          <h3>Бързо</h3>
+          <div class="tgllist">
+            <label class="tgl"><input type="checkbox" id="sentToday"><span class="sw" aria-hidden="true"></span><span class="t">Изпратени днес</span><span class="n" id="nSent"></span></label>
+            <label class="tgl"><input type="checkbox" id="nowaybill"><span class="sw" aria-hidden="true"></span><span class="t">Без товарителница</span></label>
+            <label class="tgl" title="Клиенти със сигнали в nekorekten.com"><input type="checkbox" id="nek"><span class="sw" aria-hidden="true"></span><span class="t">Със сигнали в nekorekten</span></label>
+          </div>
+        </div>
+        <div class="grp">
           <h3>Статус</h3>
           <div class="tgllist" id="stages"></div>
         </div>
-        <label class="tgl"><input type="checkbox" id="nowaybill"><span class="sw" aria-hidden="true"></span><span class="t">Само без товарителница</span></label>
-        <label class="tgl" title="Клиенти със сигнали в nekorekten.com"><input type="checkbox" id="nek"><span class="sw" aria-hidden="true"></span><span class="t">Със сигнали (nekorekten)</span></label>
-        <label class="fld">Потвърждение<select id="confirmed"><option value="">Всички</option><option value="no">Непотвърдени</option><option value="ai">🤖 Потвърдени от AI</option><option value="us">✓ Потвърдени от нас</option></select></label>
-        <label class="fld">Пазар<select id="region"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select></label>
-        <div>
+        <div class="grp">
           <h3>Поръчани</h3>
-          <div class="dates"><input type="date" id="from" aria-label="От"><input type="date" id="to" aria-label="До"></div>
+          <div class="dates"><label class="fld">От<input type="date" id="from"></label><label class="fld">До<input type="date" id="to"></label></div>
         </div>
       </aside>
 
