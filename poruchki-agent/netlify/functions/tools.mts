@@ -14,7 +14,7 @@ export default async (req: Request, context: Context) => {
   const deps = realDeps();
   try {
     if (context.params.name === "find-order") {
-      return Response.json(await findOrders(deps.cb, body.phone || body.caller_phone));
+      return Response.json(await findOrders(deps.cb, body.phone || body.caller_phone, deps.mw));
     }
     if (context.params.name === "quote-order") {
       const q = quote(priceList, body);

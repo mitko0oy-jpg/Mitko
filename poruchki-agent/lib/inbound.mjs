@@ -47,23 +47,27 @@ const STATUS_BG = {
  * Recent orders of a phone number, newest first, in words the agent can read out.
  * @param {{searchByPhone: (phone: string) => Promise<any[]>}} cb
  */
-export async function findOrders(cb, rawPhone) {
+export async function findOrders(cb, rawPhone, mw = null) {
   const phone = normalizePhoneBG(rawPhone);
   if (!phone) return { found: 0, message: "Не мога да разпозная телефонния номер. Попитай клиента за номера, с който е поръчал." };
   const orders = await cb.searchByPhone(phone);
   if (!orders.length) return { found: 0, message: "Няма поръчка с този телефонен номер през последните 45 дни. Попитай дали е поръчал от друг номер." };
-  return {
-    found: orders.length,
-    orders: orders.slice(0, 3).map((o) => ({
+  const out = [];
+  for (const o of orders.slice(0, 3)) {
+    // Middleware knows the real courier status; ConvertBuilder only knows "pending/shipped".
+    const m = mw?.enabled ? await mw.lookup(o.site, o.orderNo).catch(() => null) : null;
+    out.push({
       order_number: String(o.orderNo),
       date: o.dateText,
       products: o.itemsText,
       total: moneyBG(o.total),
-      status: STATUS_BG[o.status] || o.status,
-      courier: o.courier || "",
+      status: m?.statusText || STATUS_BG[o.status] || o.status,
+      courier: m?.carrier || o.courier || "",
+      courier_status: m?.waybillStatus || "",
       tracking_number: o.trackingNo || "",
-    })),
-  };
+    });
+  }
+  return { found: orders.length, orders: out };
 }
 
 /**

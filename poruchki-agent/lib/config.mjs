@@ -3,6 +3,7 @@ import { openStore, getSettings } from "./store.mjs";
 import { startCall } from "./elevenlabs.mjs";
 import { sendTelegram } from "./telegram.mjs";
 import { convertBuilder } from "./convertbuilder.mjs";
+import { middleware } from "./middleware.mjs";
 
 const env = (k, d = "") => (globalThis.Netlify?.env.get(k) ?? process.env[k] ?? d);
 
@@ -44,9 +45,13 @@ export function realCall() {
 export function realDeps() {
   const config = readConfig();
   const store = openStore();
+  const shop = convertBuilder({ sites: config.sites, env });
+  const mw = middleware({ env });
   return {
     store,
-    cb: convertBuilder({ sites: config.sites, env }),
+    mw,
+    // Call only if the order is still pending in ConvertBuilder AND nobody confirmed or shipped it in Middleware.
+    cb: { ...shop, isStillPending: async (rec) => (await shop.isStillPending(rec)) && (await mw.stillOpen(rec)) },
     call: realCall(),
     notify: telegramNotify(store),
     config,

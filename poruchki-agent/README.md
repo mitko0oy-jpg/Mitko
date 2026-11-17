@@ -36,6 +36,14 @@ ConvertBuilder API не може да създава поръчки, а само
 
 Ценоразписът е чернова, докато Митко не го потвърди. Доставката е 4,50 € до офис на Спиди или Еконт и 5,90 € до адрес със Спиди.
 
+## Middleware
+
+`lib/middleware.mjs` чете от публичния API на Middleware (`api.middleware.bg/v1`, ключ `MW_TOKEN`, `MW_TENANT`, магазини `MW_STORES`). Номерът на поръчката в магазина е `label` в Middleware.
+- Преди обаждане: ако екипът вече е потвърдил поръчката (`is_confirmed`) или тя не е `pending`, агентът не звъни.
+- „Къде ми е пратката“: статусът и куриерът идват от Middleware.
+
+Публичният ключ само чете. Създаването на поръчки и отбелязването „потвърдена“ не са в документацията (`api.middleware.bg/docs/public`). За тях трябва достъп от Middleware.
+
 ## Telegram
 
 Командите са `/stop`, `/pusni`, `/status`, `/test` и `/rezhim test|live|off`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
@@ -52,6 +60,7 @@ ConvertBuilder API не може да създава поръчки, а само
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_SETUP_CODE` | бот от @BotFather; другите две са произволни дълги низове |
 | `TOOLS_SECRET` | тайната част от адреса на инструментите |
 | `EL_INBOUND_AGENT_ID` | id на входящия агент (за известията след разговор) |
+| `MW_TOKEN`, `MW_TENANT`, `MW_STORES` | достъп до Middleware (само четене) и id на магазина BeeVenom |
 | `MODE` | начален режим: `off`, `test` или `live`. Митко го сменя от Telegram с `/rezhim test\|live\|off` (записва се в Blobs и важи само за поръчки след командата) |
 | `TEST_PHONE` | номерът на Митко за тестовете |
 | `CALL_HOURS`, `CALL_HOURS_SUNDAY`, `SHOP_NAME`, `DELIVERY_DAYS` | по желание |
