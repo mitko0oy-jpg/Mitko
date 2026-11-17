@@ -12,6 +12,8 @@
 //   ... node scripts/admin.mjs trener-backup [private/backups/trener-YYYY-MM-DD.json]   (codes + grades, keep it safe)
 //   ... node scripts/admin.mjs trener-trace <leaked-text-file>   (which code a copied text came from)
 //   ... node scripts/admin.mjs reports [all] | report <id> [seen|fixed]   (signals about problems from the app)
+//   ... node scripts/admin.mjs plans [plans.json | '[{"id":"full-nvo","title":"Пълен до НВО","tier":"full","until":"2027-06-30","price":59}]'] | payments
+//   ... node scripts/admin.mjs trial ['{"open":true,"months":1}' | '{"open":true,"days":1}' | '{"open":false}']
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
@@ -56,6 +58,9 @@ else if (cmd === "trener-backup") {
 else if (cmd === "delete-user") out = await call("POST", "delete-user", { email: a, confirm: a });
 else if (cmd === "users") out = await call("GET", `users?q=${encodeURIComponent(a || "")}`);
 else if (cmd === "reports") out = await call("GET", `reports${a === "all" ? "?all=1" : ""}`);
+else if (cmd === "plans") out = a ? await call("POST", "plans", { plans: JSON.parse(await readFile(a, "utf8").catch(() => a)) }) : await call("GET", "plans");
+else if (cmd === "payments") out = await call("GET", "payments");
+else if (cmd === "trial") out = a ? await call("POST", "trial", JSON.parse(a)) : await call("GET", "trial");
 else if (cmd === "report") out = await call("POST", "report", { id: Number(a), status: b || "fixed" });
 else if (["stats", "comments", "export"].includes(cmd)) out = await call("GET", cmd);
 else {

@@ -319,7 +319,7 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   assert.ok(!/<[^>]*\u2060/.test(mathWhy) && !/<[^>]*\u2060/.test(cardHtml), "not inside an HTML tag");
   assert.ok(unmark(mathWhy).startsWith("Второто <span") && unmark(cardHtml).includes('<span class="fr">'), "the HTML is unchanged apart from the mark");
   assert.equal(r.devices.length, 1);
-  r = await t("trener/open", { code, device: dev(1), have: bank.id });
+  r = await t("trener/open", { code, device: dev(1), have: r.bankId });
   assert.equal(r.bank, undefined, "the bank is not sent again when the browser has it");
 
   // Device 1 saves a result, device 2 another one: both are kept.
@@ -372,7 +372,7 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   r = await owner(`trener/admin/batch?batch=stickers-${run}&unused=1`);
   assert.equal(r.codes.length, 3);
 
-  // Time-limited access: 12 months from the first opening; a fixed end date in the past is expired at once.
+  // Time-limited access: 12 months from the first opening; a fixed end date in the past opens at the free level Старт.
   r = await owner("trener/admin/codes", { count: 1, batch: `year-${run}`, months: 12 });
   const year = r.codes[0];
   r = await t("trener/open", { code: year, device: dev(7) });
@@ -381,10 +381,12 @@ test("НВО тренажор: personal code, three devices, merged grades, supp
   r = await owner("trener/admin/codes", { count: 1, batch: `old-${run}`, validUntil: "2026-01-31" });
   const old = r.codes[0];
   r = await t("trener/open", { code: old, device: dev(8) });
-  assert.equal(r.error, "expired");
+  assert.equal(r.access.tier, "start", "an ended term is not locked: the code is at Старт");
+  assert.equal(r.access.expired, true);
   r = await owner("trener/admin/key", { code: old, action: "extend", months: 12 });
   r = await t("trener/open", { code: old, device: dev(8) });
-  assert.ok(r.expiresAt, "opens after the owner extends a code that was never opened");
+  assert.ok(new Date(r.expiresAt) > new Date(Date.now() + 360 * 86400e3), "extended by the owner");
+  assert.equal(r.access.tier, "full", "and full again");
 
   // Renewal codes: bought for 1, 6 or 12 months, entered on a device of the family, used once.
   r = await owner("trener/admin/codes", { count: 2, batch: `renew-${run}`, kind: "renew", months: 6 });
@@ -453,4 +455,106 @@ test("signals about problems: errors and task reports, counted, nobody identifie
   await send({ kind: "error", message: msg, page: "/t/", ref: "module:m1:q1", version: "test" });
   r = await admin("reports");
   assert.equal(r.reports.find((x) => x.message === msg)?.count, 1, "if it happens again after the fix, it is a new line");
+});
+
+test("levels of access, the free trial and paying (practice payment and a signed Stripe webhook)", async () => {
+  const { createHmac } = await import("node:crypto");
+  const t = client();
+  const dev = (n) => `${n}`.padStart(2, "0").repeat(24).replace(/^../, "cd");
+  const open = async (code, n = 1) => t("trener/open", { code, device: dev(n) });
+  // A bank with all kinds of modules, so the levels can be seen.
+  const mods = ["chetene:read", "pravopis:lang", "glagol:lang", "lit1:lit", "lit2:lit", "karti1:cards", "mk-4:math", "mk-12:math"].map((x) => ({ id: x.split(":")[0], area: x.split(":")[1], title: x, desc: "" }));
+  const questions = [];
+  for (const m of mods) for (let i = 0; i < 3; i++) questions.push({ id: `${m.id}-${i}`, m: m.id, t: "mc", q: `Въпрос ${i}`, o: ["а", "б"], a: 0, why: "Обяснение, което е достатъчно дълго за водния знак." });
+  const cards = [4, 12].map((n) => ({ n, title: `Карта ${n}`, sec: "num", front: [{ html: "<p>лице на картата, достатъчно дълго за знака</p>" }], back: [] }));
+  await admin("trener-bank", { passages: {}, questions, modules: mods, dossiers: { title: "Д", dossiers: [{ id: "d01", no: 1 }] }, math: { title: "М", sections: [{ id: "num", t: "Числа" }], index: cards.map((c) => ({ n: c.n, title: c.title, sec: "num" })), cards } });
+
+  // Старт: one module of each NVO part and the first math cards; the rest comes only as titles.
+  let r = await admin("trener-codes", { count: 1, batch: `start-${run}`, tier: "start" });
+  r = await open(r.codes[0]);
+  assert.equal(r.access.tier, "start");
+  assert.deepEqual(r.bank.modules.map((m) => m.id).sort(), ["chetene", "lit1", "mk-4", "pravopis"]);
+  assert.ok(!r.bank.questions.some((q) => ["glagol", "lit2", "karti1", "mk-12"].includes(q.m)), "locked tasks never reach the browser");
+  assert.deepEqual(r.bank.locked.modules.map((m) => m.id).sort(), ["glagol", "karti1", "lit2", "mk-12"]);
+  assert.deepEqual(r.bank.locked.math, [12]);
+  assert.equal(r.bank.locked.mock, true);
+  assert.equal(r.bank.dossiers, null);
+
+  // Стандарт математика: only math.
+  r = await admin("trener-codes", { count: 1, batch: `std-${run}`, tier: "std", subject: "math", months: 1 });
+  const stdCode = r.codes[0];
+  r = await open(stdCode);
+  assert.equal(r.access.tier, "std");
+  assert.ok(r.bank.modules.every((m) => m.area === "math") && r.bank.modules.length === 2);
+  // A cached bank is per level: the same level sends nothing new.
+  const again = await t("trener/open", { code: stdCode, device: dev(1), have: r.bankId });
+  assert.equal(again.bank, undefined);
+
+  // A term that ended: not locked, back to Старт with the grades.
+  r = await admin("trener-codes", { count: 1, batch: `old-${run}`, validUntil: "2020-01-31" });
+  const oldCode = r.codes[0];
+  r = await open(oldCode);
+  assert.equal(r.status, 200);
+  assert.equal(r.access.tier, "start");
+  assert.equal(r.access.expired, true);
+
+  // The free trial: a full code at once (the launch setting: 1 month).
+  await admin("trial", { open: true, months: 1, daily: 1000 });
+  r = await t("pay/trial", {});
+  assert.match(r.code, /^[A-Z0-9]{5}-[A-Z0-9]{5}$/);
+  assert.match(r.link, /\/t\/\?k=/);
+  const trialOpen = await open(r.code, 3);
+  assert.equal(trialOpen.access.tier, "full");
+  assert.ok(new Date(trialOpen.expiresAt) > new Date(Date.now() + 27 * 86400e3));
+  r = await admin("trial", { open: false });
+  r = await t("pay/trial", {});
+  assert.equal(r.error, "trial_closed");
+  await admin("trial", { open: true, months: 1, daily: 1000 });
+
+  // Plans and paying (practice payment: PAY_FAKE=1 on the local server).
+  await admin("plans", { plans: [{ id: `full-${run}`, title: "Пълен – 1 месец", tier: "full", months: 1, price: 9 }, { id: `std-${run}`, title: "Стандарт БЕЛ – 1 месец", tier: "std", subject: "bel", months: 1, price: 6 }] });
+  r = await t(`pay/plans?k=${oldCode}`);
+  assert.equal(r.code.expired, true);
+  assert.ok(r.plans.some((p) => p.id === `full-${run}`) && r.payments);
+  r = await t("pay/checkout", { plan: `full-${run}` });
+  assert.equal(r.error, "agree", "the parent agrees to the terms first");
+  r = await t("pay/checkout", { plan: `full-${run}`, code: oldCode, agree: true });
+  const session = new URL(r.url).searchParams.get("fake");
+  assert.ok(session);
+  r = await t(`pay/status?s=${session}`);
+  assert.equal(r.status, "open");
+  await t("pay/fake-pay", { session });
+  r = await t(`pay/status?s=${session}`);
+  assert.equal(r.status, "paid");
+  assert.equal(r.renewed, true);
+  r = await open(oldCode);
+  assert.equal(r.access.tier, "full", "the expired code is full again");
+  assert.ok(new Date(r.expiresAt) > new Date(Date.now() + 27 * 86400e3));
+  // A lower level while a higher one runs is refused.
+  r = await t("pay/checkout", { plan: `std-${run}`, code: oldCode, agree: true });
+  assert.equal(r.error, "lower");
+  // Two subjects bought one by one make Пълен.
+  r = await t("pay/checkout", { plan: `std-${run}`, code: stdCode, agree: true });
+  await t("pay/fake-pay", { session: new URL(r.url).searchParams.get("fake") });
+  r = await open(stdCode);
+  assert.equal(r.access.tier, "full");
+
+  // A new code bought with a card, confirmed by a webhook signed like Stripe's; an unsigned one is refused.
+  r = await t("pay/checkout", { plan: `std-${run}`, agree: true });
+  const s2 = new URL(r.url).searchParams.get("fake");
+  const payload = JSON.stringify({ type: "checkout.session.completed", data: { object: { id: s2, payment_status: "paid", customer_details: { email: "parent@example.com" } } } });
+  const hook = (sig) => fetch(`${BASE}/api/pay/webhook`, { method: "POST", headers: { "content-type": "application/json", "stripe-signature": sig }, body: payload });
+  assert.equal((await hook("t=1,v1=00")).status, 400, "an unsigned webhook is refused");
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = createHmac("sha256", "whsec_local_test_secret").update(`${ts}.${payload}`).digest("hex");
+  assert.equal((await hook(`t=${ts},v1=${sig}`)).status, 200);
+  assert.equal((await hook(`t=${ts},v1=${sig}`)).status, 200, "the same event twice is harmless");
+  r = await t(`pay/status?s=${s2}`);
+  assert.equal(r.status, "paid");
+  assert.equal(r.renewed, false);
+  r = await open(r.code);
+  assert.equal(r.access.tier, "std");
+  assert.equal(r.access.subject, "bel");
+  const pays = await admin("payments");
+  assert.equal(pays.payments.find((p) => p.session === s2).email, "parent@example.com");
 });

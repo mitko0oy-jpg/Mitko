@@ -1,0 +1,31 @@
+/* /dostap/ – the parent's page: trial, levels, plans, paying. Uses the platform look from app.css. */
+.eyebrow{display:block;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.code{display:block;font-family:var(--serif);font-size:30px;letter-spacing:.06em;color:var(--ink);margin:2px 0 6px;font-variant-numeric:tabular-nums}
+.codebox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;background:var(--ok-soft);border-radius:14px;padding:16px;margin:12px 0}
+.codebox .row{margin-top:10px}
+.cb-qr svg{display:block;width:150px;height:150px;border-radius:8px}
+@media (max-width:520px){.codebox{grid-template-columns:1fr}.cb-qr{justify-self:center}}
+.trial{border:2px solid var(--gold)}
+.codenow .code{font-size:26px}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.lvtbl{width:100%;border-collapse:collapse;font-size:14.5px;table-layout:fixed}
+.lvtbl th:first-child{width:34%}
+.lvtbl th,.lvtbl td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere;hyphens:auto}
+.lvtbl thead th{font-family:var(--serif);font-size:17px;color:var(--ink);border-bottom:2px solid var(--ink)}
+.lvtbl tbody th{font-weight:600;color:var(--text)}
+.lvtbl tr.price td{font-weight:700;color:var(--ink)}
+.plans{display:grid;gap:10px}
+.plan{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;background:var(--field)}
+.plan:has(input:checked){border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft)}
+.plan input{width:20px;height:20px;accent-color:var(--gold)}
+.pl-body{display:grid;gap:2px}
+.pl-tier{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--l1)}
+.plan.full .pl-tier{color:var(--l2)}
+.pl-term{font-size:14.5px;color:var(--muted)}
+.pl-price{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink);white-space:nowrap}
+.agree{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;margin-top:6px}
+.agree input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--gold)}
+.err{color:var(--bad);font-weight:600;min-height:1em;margin:0}
+.dfoot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.dfoot p{margin:4px 0}
+@media (max-width:520px){.lvtbl{font-size:12.5px}.lvtbl th,.lvtbl td{padding:7px 4px}.lvtbl thead th{font-size:14px}}

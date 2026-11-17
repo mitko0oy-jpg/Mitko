@@ -62,6 +62,9 @@ const isNvo = (m) => !!AREAS[m.area];
 // Math (bank.math): the 50 cards „Математика за НВО, 5.–7. клас“; each written card has a practice module "mk-N" (area "math").
 const isMath = (m) => !!m && m.area === "math";
 let BANK = null, MODULES = [], MOD = {}, Q = {};
+// Levels of access (on the site): what this code does not open yet comes only as titles (BANK.locked), never the tasks.
+const LOCK = () => (BANK && BANK.locked) || null;
+const lockedWhere = () => (LOCK() && LOCK().tier === "std" && LOCK().subject === "math" ? "в „Стандарт“ с БЕЛ и в „Пълен“" : LOCK() && LOCK().tier === "std" ? "в „Стандарт“ с математика и в „Пълен“" : "в „Стандарт“ и „Пълен“");
 function setBank(b) {
   BANK = b;
   MODULES = (b.modules || []).slice();
@@ -113,7 +116,7 @@ let SUBJ = ls.get(K_SUBJ) === "math" ? "math" : "bel";
 // A card's QR code leads to /m/N -> /t/?m=N: open that card (after the code, if the device has none yet).
 let GOTO = Number(new URLSearchParams(location.search).get("m")) || 0;
 if (GOTO) SUBJ = "math";
-const hasMath = () => !!(BANK && BANK.math && Array.isArray(BANK.math.cards) && BANK.math.cards.length);
+const hasMath = () => !!(BANK && BANK.math && ((Array.isArray(BANK.math.cards) && BANK.math.cards.length) || (LOCK() && LOCK().math.length)));
 const mathOn = () => SUBJ === "math" && hasMath();
 const qMath = (q) => isMath(MOD[q.m]);
 
@@ -532,16 +535,17 @@ function home(scrollTo) {
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
         <div class="hero-art"><button class="hero-say" data-act="hello" aria-label="Чуй Ерчо">${avatarPic("hero-m", true)}</button><p class="bubble" aria-live="polite">${esc(tip)}</p></div>
-        <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
+        <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : LOCK() && LOCK().mock ? `<button class="btn gold big" data-act="parentShow"><span>🔓</span> Още задачи – покажи на родител</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
       </section>
       <div class="facts">${M ? `<span>${BANK.math.cards.length} ${pl(BANK.math.cards.length, "карта", "карти")}</span><span>${BANK.questions.filter(qMath).length} задачи</span><span>Решен пример и капани</span><span>Оценки 2–6</span>`
-        : `<span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span><span>Пробна матура</span>`}</div>
+        : `<span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span>${LOCK() && LOCK().mock ? "" : "<span>Пробна матура</span>"}`}</div>
     </header>`;
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
+  if (ONLINE) h += Online.levelBanner();
   if (M) h += mathBoard();
-  else h += forecastPanel(f, mist) + Game.card() + modulesSection();
+  else h += forecastPanel(f, mist) + Game.card() + modulesSection() + soonSection();
   h += badgesSection();
   h += gradebook();
   if (ONLINE) h += Online.accessSection();
@@ -595,7 +599,7 @@ function forecastPanel(f, mist) {
     h += `</ol></div>`;
   }
   h += `<div class="fc-actions">
-      <button class="tool" data-act="mock">${pic("i-mock", "tool-i")}<span class="tool-t"><b>Пробна матура</b><span>25 задачи, ${MOCK_MIN} минути, оценка накрая – като на изпита</span></span></button>
+      ${LOCK() && LOCK().mock ? `<button class="tool locked" data-act="parentShow">${pic("i-mock", "tool-i")}<span class="tool-t"><b>🔒 Пробна матура</b><span>25 задачи, ${MOCK_MIN} минути, оценка накрая – ${lockedWhere()}</span></span></button>` : `<button class="tool" data-act="mock">${pic("i-mock", "tool-i")}<span class="tool-t"><b>Пробна матура</b><span>25 задачи, ${MOCK_MIN} минути, оценка накрая – като на изпита</span></span></button>`}
       <button class="tool alt" data-act="mist" ${mist ? "" : "disabled"}>${pic("i-mist", "tool-i")}<span class="tool-t"><b>Улики за преразглеждане${mist ? ` · ${mist}` : ""}</b><span>${mist ? "Задачите, в които си сгрешил. Реши ги вярно 2 пъти и изчезват." : "Тук ще се събират задачите, в които сгрешиш. Грешката е улика."}</span></span></button>
     </div></section>`;
   return h;
@@ -614,9 +618,10 @@ function spark(m) {
 function modulesSection() {
   let h = `<section class="parts" id="modules"><h2 class="sec-t">Модули</h2>`;
   for (const k in ALL_AREAS) {
-    if (!MODULES.some((x) => x.area === k)) continue;
+    const lk = ((LOCK() && LOCK().modules) || []).filter((x) => x.area === k);
+    if (!MODULES.some((x) => x.area === k) && !lk.length) continue;
     const ms = MODULES.filter((x) => x.area === k), got = ms.reduce((s, m) => s + starsOf(m.id), 0);
-    h += `<div class="part" style="--c:${ALL_AREAS[k].c}"><div class="part-hd"><h3>${ALL_AREAS[k].t}</h3><span class="part-s">${AREAS[k] ? "като " : ""}${ALL_AREAS[k].nvo}</span><span class="part-st" aria-label="${got} от ${ms.length * 3} звезди">★ ${got}/${ms.length * 3}</span></div><div class="mods">`;
+    h += `<div class="part" style="--c:${ALL_AREAS[k].c}"><div class="part-hd"><h3>${ALL_AREAS[k].t}</h3><span class="part-s">${AREAS[k] ? "като " : ""}${ALL_AREAS[k].nvo}</span>${ms.length ? `<span class="part-st" aria-label="${got} от ${ms.length * 3} звезди">★ ${got}/${ms.length * 3}</span>` : ""}</div><div class="mods">`;
     for (const m of ms) {
       const n = ofMod(m.id).length, last = lastOf(m.id), best = bestOf(m.id), cnt = attemptsOf(m.id).length;
       const g = last ? gradeOf(pct(last.p, last.n)) : null;
@@ -630,9 +635,19 @@ function modulesSection() {
         <div class="zone" id="zone-${m.id}" hidden></div>
       </article>`;
     }
+    for (const m of lk) {
+      h += `<article class="mod locked" id="mod-${m.id}"><span class="mod-art">${pic(modImg(m))}</span>
+        <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc || "")}</p><div class="meta"><span>${m.n} ${k === "cards" ? "карти" : "задачи"}</span><span class="lockt">🔒 ${lockedWhere()}</span></div></div>
+        <div class="side nog"><button class="btn sm line" data-act="parentShow">Покажи на родител</button></div></article>`;
+    }
     h += `</div></div>`;
   }
   return h + `</section>`;
+}
+// What is coming: visible, but not open yet (and not sold before it is ready).
+const SOON = [["🎧", "Аудио уроци", "Ерчо разказва творбите – за слушане по пътя и преди сън."], ["🎭", "Говорещи герои", "Героите от творбите оживяват и ти казват нещо."], ["🤖", "AI помощник за задача 25", "Подсказва как да подредиш мислите си, без да пише вместо теб."]];
+function soonSection() {
+  return `<section class="soon-sec" aria-labelledby="soonT"><h2 class="sec-t" id="soonT">Скоро в тренажора</h2><div class="soon-list">${SOON.map(([e, t, d]) => `<div class="soon-i"><span class="soon-e" aria-hidden="true">${e}</span><span><b>${t}</b><small>${d}</small></span><span class="soon-tag">Скоро</span></div>`).join("")}</div></section>`;
 }
 
 // Avatar: Erčo by default, or any hero the child has unlocked in the game.
@@ -811,6 +826,7 @@ function mathBoard() {
       <div class="mtiles">`;
     for (const e of list) {
       const c = mCard(e.n), mod = c && mMod(c.n), last = mod && lastOf(mod.id);
+      if (!c && LOCK() && LOCK().math.includes(e.n)) { h += `<button class="mtile locked" id="mt-${e.n}" data-act="parentShow"><span class="no">${e.n}</span><b>${esc(shortT(e.title))}</b><small>🔒 ${lockedWhere()}</small></button>`; continue; }
       if (!c) { h += `<div class="mtile soon" id="mt-${e.n}"><span class="no">${e.n}</span><b>${esc(shortT(e.title))}</b><small>скоро</small></div>`; continue; }
       h += `<button class="mtile ${last ? "played" : ""}" id="mt-${e.n}" data-act="mcard" data-n="${c.n}"><span class="no">${c.n}</span><b>${esc(c.title)}</b>
         <small>${c.grades ? `${esc([...c.grades].join(", "))} клас` : ""}${c.stars ? ` · на НВО ${"★".repeat(c.stars)}` : ""}</small>${mod ? starRow(starsOf(mod.id), "sm") : `<small class="ro">за четене</small>`}</button>`;
@@ -1222,7 +1238,7 @@ const ACT = {
   "go-badges": () => document.getElementById("badges")?.scrollIntoView({ behavior: "smooth", block: "start" }),
   avatar: (b) => { const y = scrollY; S.avatar = b.dataset.a; save(); if (ONLINE) Online.soon(); FX.pop(); home(); document.querySelector("#badges .avpick")?.setAttribute("open", ""); scrollTo(0, y); },
   start: (b) => startModule(b.dataset.m),
-  mock: () => startMock(),
+  mock: () => (LOCK() && LOCK().mock ? Online.parentShow() : startMock()),
   mist: () => startMistakes(mistIds(mathOn())),
   mistThese: () => startMistakes(lastWrong),
   histToggle: () => { histAll = !histAll; home("book"); },
@@ -1344,6 +1360,8 @@ const Online = (() => {
   let code = "", device = "", devices = [], maxDevices = 3, idleDays = 60, expiresAt = null, timer = 0, busy = false, stay = false;
   const o = { offline: false, flash: "" };
   let onExpired = false;
+  // The level this code gives now (from the server): {tier: start|std|full, name, subject, expired}.
+  let access = null;
 
   const norm = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   const fmt = (c) => { c = norm(c); return c.length === 10 ? `${c.slice(0, 5)}-${c.slice(5)}` : c; };
@@ -1410,7 +1428,8 @@ const Online = (() => {
         <div class="row"><input id="codeIn" class="field code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX" maxlength="14">
         <button class="btn gold">Отвори</button></div></form>
       ${err ? `<p class="err" role="alert">${esc(err)}</p>` : ""}
-      <p class="small muted">Кодът е от 10 букви и цифри. Не е нужно да пишеш тирето и главните букви.</p>`);
+      <p class="small muted">Кодът е от 10 букви и цифри. Не е нужно да пишеш тирето и главните букви.</p>
+      <p class="small">Нямаш код? Покажи на родител страницата <a href="/dostap/">app.edubel.site/dostap</a> – там има безплатна проба.</p>`);
     const f = document.getElementById("codeForm"), inp = document.getElementById("codeIn");
     inp.focus();
     f.addEventListener("submit", (e) => {
@@ -1497,6 +1516,7 @@ const Online = (() => {
       maxDevices = r.maxDevices;
       idleDays = r.idleDays;
       expiresAt = r.expiresAt || null;
+      access = r.access || null;
       setBank(bank.data);
       S = normState(r.state);
       saveLocal();
@@ -1593,9 +1613,44 @@ const Online = (() => {
   });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") syncNow(true); });
 
+  // The level of the code: a short line on the board, and a box with a QR code for the parent (no prices for the child).
+  function levelBanner() {
+    const a = access;
+    if (!a || a.tier === "full") return `<div id="parentBox"></div>`;
+    const what = a.tier === "std" ? `Твоето ниво е „Стандарт“ – ${a.subject === "math" ? "математика" : "БЕЛ"}.`
+      : a.expired ? `Пълният достъп свърши${expiresAt ? ` на ${fmtDate(expiresAt)}` : ""}. Сега си на „Старт“ – безплатната част. Оценките ти са запазени.`
+      : "Ти си на „Старт“ – безплатната част на тренажора.";
+    return `<section class="lvlbar ${a.tier}"><p>${esc(what)} Заключеното е с 🔒 – отключва го родител.</p><button class="btn sm line" data-act="parentShow">Покажи на родител</button></section><div id="parentBox"></div>`;
+  }
+  async function parentShow() {
+    let box = document.getElementById("parentBox");
+    if (!box) { home(); box = document.getElementById("parentBox"); }
+    if (!box) return;
+    const url = `${location.origin}/dostap/?k=${fmt(code)}`;
+    box.innerHTML = `<section class="parentbox" aria-labelledby="pbT"><h3 id="pbT">Покажи на родител</h3>
+      <p>Нека родителят сканира кода с телефона си. Там ще види как да удължи достъпа или да отключи целия тренажор. Бележникът и оценките ти остават.</p>
+      <div class="pb-qr" id="pbQr"></div>
+      <div class="linkbox"><pre class="preview" id="pv-parent">${esc(url)}</pre><button class="btn line sm" data-act="copyParent">Копирай линка</button></div>
+      <p class="small muted" id="cp-parent" role="status"></p><button class="link" data-act="parentHide">Затвори</button></section>`;
+    box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    try {
+      const { default: qrcode } = await import("/assets/vendor/qrcode.js");
+      const qr = qrcode(0, "M");
+      qr.addData(url);
+      qr.make();
+      const n = qr.getModuleCount(), m = 2;
+      let d = "";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+      const el = document.getElementById("pbQr");
+      if (el) el.innerHTML = `<svg viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" role="img" aria-label="QR код за родителя"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+    } catch (e) {}
+  }
+
   function accessSection() {
+    const level = access ? `Ниво <b>„${esc(access.name)}“${access.subject ? ` (${access.subject === "math" ? "математика" : "БЕЛ"})` : ""}</b>. ` : "";
     return `<section class="access" id="access"><h3>Твоят достъп</h3>
-      <p class="small muted">Код <b class="num">${esc(fmt(code))}</b>.${expiresAt ? ` Достъпът е до <b>${fmtDate(expiresAt)}</b>` : ""} Работи на до ${maxDevices} устройства. Устройство, което не е ползвано ${idleDays} дни, освобождава мястото си само.</p>
+      <p class="small muted">${level}Код <b class="num">${esc(fmt(code))}</b>.${expiresAt && !(access && access.expired) ? ` Достъпът е до <b>${fmtDate(expiresAt)}</b>.` : ""} Работи на до ${maxDevices} устройства. Устройство, което не е ползвано ${idleDays} дни, освобождава мястото си само.</p>
+      ${expiresAt || (access && access.tier !== "full") ? `<p><button class="btn sm line" data-act="parentShow">Удължи или отключи – покажи на родител</button></p>` : ""}
       <ul class="devlist">${devices.map((d) => `<li><span><b>${esc(d.label)}</b>${d.me ? ` <i class="me">това устройство</i>` : ""}<small>отворено за последно на ${fmtDate(d.lastSeen)}</small></span>
         ${d.me ? "" : `<button class="link" data-act="devForgetAsk" data-id="${esc(d.id)}">Премахни</button>`}<div class="zone" id="dz-${esc(d.id)}" hidden></div></li>`).join("")}</ul>
       ${expiresAt ? `<div class="renewbox"><p class="small muted">Имаш код за удължаване? Въведи го тук – достъпът се удължава, а бележникът и оценките остават.</p>${renewForm("")}</div>` : ""}
@@ -1604,6 +1659,14 @@ const Online = (() => {
   }
 
   const ACTS = {
+    parentShow: () => parentShow(),
+    parentHide: () => { const b = document.getElementById("parentBox"); if (b) b.innerHTML = ""; },
+    copyParent: async () => {
+      const t = document.getElementById("pv-parent")?.textContent || "", out = document.getElementById("cp-parent");
+      let ok = false;
+      try { await navigator.clipboard.writeText(t); ok = true; } catch (e) {}
+      if (out) out.textContent = ok ? "Линкът е копиран." : "Копирай линка ръчно.";
+    },
     copyLink: async () => {
       const pre = document.getElementById("pv-link"), out = document.getElementById("cp-link");
       let ok = false;
@@ -1642,7 +1705,7 @@ const Online = (() => {
   }
 
   return Object.assign(o, {
-    boot, changed, accessSection,
+    boot, changed, accessSection, levelBanner, parentShow,
     syncNow: () => syncNow(),
     soon: () => soon(),
     act: (b, e) => { const f = ACTS[b.dataset.act]; if (f) f(b, e); },
@@ -1696,7 +1759,13 @@ const Game = (() => {
   }
 
   function card() {
-    if (!BANK.dossiers) return "";
+    if (!BANK.dossiers) {
+      const n = LOCK() ? LOCK().dossiers : 0;
+      return n ? `<section class="game locked" aria-labelledby="gameT" style="--bg:url('${img("g-banner")}')"><div class="game-in">
+        <span class="eyebrow">Игра · ${n} досиета · ${n} героя</span><h2 id="gameT">🔒 Литературни досиета</h2>
+        <p>Разследвай творбите като детектив и събери героите. Играта е ${lockedWhere()}.</p>
+        <button class="btn gold" data-act="parentShow">Покажи на родител</button></div>${pic(mascot("detective"), "game-m")}</section>` : "";
+    }
     const n = solvedCount(), all = D().dossiers.length, r = rank();
     const got = D().dossiers.filter((d) => solved(d.id)).slice(-5);
     // A short silent loop behind the card (the still picture stays if the device asks for less motion or to save data).

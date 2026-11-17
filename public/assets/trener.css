@@ -716,3 +716,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .mcard td{padding:6px 0;border-top:1px dotted var(--line);vertical-align:baseline;color:var(--ink)}
 .mcard td:first-child{width:28px;font-weight:800;color:var(--ct)}
 .mcard td:last-child{text-align:right;white-space:nowrap;font-weight:800;color:var(--ct)}
+
+/* Levels of access: what is locked (🔒, opened by a parent), what is coming („Скоро“), the box with a QR code for the parent */
+.lvlbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;background:var(--paper);border-radius:18px;padding:12px 14px;box-shadow:inset 0 0 0 2px var(--gold),0 1px 0 var(--edge)}
+.lvlbar p{margin:0;flex:1 1 240px;font-weight:600;color:var(--ink);font-size:15px}
+.parentbox{background:var(--paper);border-radius:20px;padding:16px;display:grid;gap:10px;box-shadow:inset 0 0 0 2px var(--violet),0 10px 24px -18px rgba(76,47,214,.4)}
+.parentbox h3{margin:0}
+.pb-qr{justify-self:center;width:min(220px,70vw);aspect-ratio:1;background:#fff;border-radius:14px;padding:6px}
+.pb-qr svg{display:block;width:100%;height:100%}
+.mod.locked{opacity:.78}
+.mod.locked .mod-art img{filter:grayscale(.85)}
+.lockt{color:var(--muted);font-weight:700}
+.tool.locked{opacity:.85}
+.tool.locked .tool-i{filter:grayscale(.85)}
+.mtile.locked{opacity:.7;filter:grayscale(.6)}
+.game.locked{filter:saturate(.6)}
+.soon-sec{display:grid;gap:10px}
+.soon-list{display:grid;gap:8px}
+.soon-i{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--paper);border-radius:16px;padding:12px 14px;box-shadow:0 1px 0 var(--edge);opacity:.92}
+.soon-e{font-size:26px;text-align:center}
+.soon-i b{display:block;color:var(--ink)}
+.soon-i small{display:block;color:var(--muted);font-size:13.5px}
+.soon-tag{font:800 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#2B1C00;background:linear-gradient(180deg,#FFD866,#FFB81C);border-radius:99px;padding:6px 9px}

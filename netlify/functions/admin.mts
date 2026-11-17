@@ -3,6 +3,7 @@ import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
 import { hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { getSetting, savePlans, setSetting } from "../lib/pay.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
 
@@ -39,6 +40,20 @@ export default handle(async (req, ctx) => {
     const events = await q("SELECT name, count(*)::int AS n FROM events WHERE at > now() - interval '7 days' GROUP BY name ORDER BY n DESC");
     const ai = await one("SELECT COALESCE(sum(count), 0)::int AS messages FROM ai_usage WHERE day > current_date - 7");
     return json({ counts, events, aiLast7Days: ai });
+  }
+
+  // Paying with a card (netlify/lib/pay.mts): what is sold, what was paid, the free trial.
+  if (req.method === "GET" && parts[0] === "plans") return json({ plans: await q("SELECT * FROM trener_plans ORDER BY sort, id") });
+  if (req.method === "POST" && parts[0] === "plans") return json({ plans: await savePlans((await body(req)).plans) });
+  if (req.method === "GET" && parts[0] === "payments") return json({ payments: await q("SELECT * FROM trener_payments ORDER BY created_at DESC LIMIT 200") });
+  if (req.method === "GET" && parts[0] === "trial") return json({ trial: await getSetting("trial") });
+  // The free trial: {"open": true, "months": 1} for the launch, later {"open": true, "days": 1}; "daily" = codes a day at most.
+  if (req.method === "POST" && parts[0] === "trial") {
+    const t = await body(req);
+    const months = Number.isInteger(t.months) && t.months > 0 && t.months <= 3 ? t.months : null;
+    const days = !months && Number.isInteger(t.days) && t.days > 0 && t.days <= 31 ? t.days : null;
+    if (t.open !== false && !months && !days) throw bad("trial", "Дай months (1–3) или days (1–31).");
+    return json({ trial: await setSetting("trial", { open: t.open !== false, months, days, daily: Math.max(1, Math.min(5000, Number(t.daily) || 300)) }) });
   }
 
   // Signals about problems from the app (netlify/lib/reports.mts): ?all=1 also lists the fixed ones.
@@ -201,16 +216,20 @@ export default handle(async (req, ctx) => {
     // Access: {months: 12} from the first opening, or {validUntil: "2027-06-30"}; neither = no limit.
     const months = Number.isInteger(Number(b.months)) && Number(b.months) >= 1 && Number(b.months) <= 60 ? Number(b.months) : null;
     const validUntil = !months && /^\d{4}-\d{2}-\d{2}$/.test(String(b.validUntil || "")) ? `${b.validUntil}T23:59:59+03:00` : null;
+    const days = !months && !validUntil && Number.isInteger(Number(b.days)) && Number(b.days) >= 1 && Number(b.days) <= 90 ? Number(b.days) : null;
+    // Level: "full" (default, as all codes so far), "std" with subject "bel" or "math", or "start".
+    const tier = ["start", "std", "full"].includes(b.tier) ? b.tier : "full";
+    const subject = tier === "std" ? (b.subject === "math" ? "math" : "bel") : null;
     const codes: string[] = [];
     while (codes.length < count) {
       const c = newCode();
       const r = await q(
-        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, kind) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (code) DO NOTHING RETURNING code",
-        [c, batch, maxDevices, months, validUntil, b.kind === "renew" && months ? "renew" : "access"],
+        "INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, days, kind, tier, subject) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (code) DO NOTHING RETURNING code",
+        [c, batch, maxDevices, months, validUntil, days, b.kind === "renew" && months ? "renew" : "access", tier, subject],
       );
       if (r.length) codes.push(formatCode(c));
     }
-    return json({ ok: true, batch, codes, months, validUntil });
+    return json({ ok: true, batch, codes, months, validUntil, days, tier, subject });
   }
 
   // НВО тренажор: which code a leaked copy of the questions came from (its hidden fingerprint, see lib/trener.mts).

@@ -4,7 +4,7 @@ import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { listReports, setReport } from "../lib/reports.mts";
-import { cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, validDevice, watermark } from "../lib/trener.mts";
+import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
 // the code is the key, each code works on up to max_devices browsers, and the grades are kept with the code.
@@ -23,9 +23,9 @@ const SWAP_DAYS = 30, SWAP_EXTRA = 3;
 
 const bgDate = (d: string | Date) => new Intl.DateTimeFormat("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "numeric", year: "numeric" }).format(new Date(d));
 
-// Access runs for `months` from the first opening, or until the batch's fixed `valid_until`.
-const START_EXPIRY = `expires_at = COALESCE(expires_at, CASE WHEN valid_until IS NOT NULL THEN valid_until
-  WHEN months IS NOT NULL THEN now() + make_interval(months => months) END)`;
+// Access runs for `months` (or `days`, the free trial) from the first opening, or until the batch's fixed `valid_until`.
+export const START_EXPIRY = `expires_at = COALESCE(expires_at, CASE WHEN valid_until IS NOT NULL THEN valid_until
+  WHEN months IS NOT NULL THEN now() + make_interval(months => months) WHEN days IS NOT NULL THEN now() + make_interval(days => days) END)`;
 
 // Validity for a new batch: {months: 12} or {validUntil: "2027-06-30"}; neither means no limit.
 function termOf(b: any) {
@@ -53,7 +53,7 @@ async function findKey(req: Request, ctx: any, code: string, forUpdate?: (text: 
   }
   if (key.kind === "renew") throw new HttpError(400, "renew_code", "Това е код за удължаване. Отвори тренажора със своя код и въведи този в „Твоят достъп“.");
   if (key.disabled_at) throw new HttpError(403, "disabled", "Този код е спрян. Свържи се с Еду БЕЛ.");
-  if (key.expires_at && new Date(key.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(key.expires_at)}`);
+  // A code whose term ended still opens – at the free level Старт, with all its grades (see accessOf).
   return key;
 }
 
@@ -102,9 +102,7 @@ export default handle(async (req, ctx) => {
         await t("UPDATE trener_keys SET state = $2 WHERE code = $1", [code, JSON.stringify(state)]);
       }
       const [dates] = await t(`UPDATE trener_keys SET first_used = COALESCE(first_used, now()), last_used = now(), ${START_EXPIRY} WHERE code = $1 RETURNING expires_at`, [code]);
-      // A batch with a fixed end date can be opened for the first time after that date.
-      if (dates.expires_at && new Date(dates.expires_at) < new Date()) throw new HttpError(403, "expired", `Достъпът до тренажора изтече на ${bgDate(dates.expires_at)}`);
-      return { full: false, swaps: false, key, state: cleanState(state), isNew, expiresAt: dates.expires_at };
+      return { full: false, swaps: false, key: { ...key, expires_at: dates.expires_at }, state: cleanState(state), isNew, expiresAt: dates.expires_at };
     });
     if (res.swaps) {
       await event("trener_device_swaps", { batch: res.key.batch });
@@ -126,15 +124,19 @@ export default handle(async (req, ctx) => {
     if (res.isNew) await event("trener_device_added", { batch: res.key.batch });
     const bank = await latestBank();
     if (!bank) throw new HttpError(503, "not_ready", "Тренажорът още се подготвя. Опитай пак след малко.");
+    // The level decides which tasks reach the browser; the cached copy is kept per bank and level.
+    const acc = accessOf(res.key);
+    const bankKey = `${bank.id}.${acc.tier}${acc.subject ? "-" + acc.subject : ""}`;
     return json({
       code: formatCode(code),
       maxDevices: res.key.max_devices,
       idleDays: DEVICE_IDLE_DAYS,
       expiresAt: res.expiresAt,
+      access: { tier: acc.tier, name: TIER_NAME[acc.tier], subject: acc.subject, expired: acc.expired, paid: acc.paidTier },
       devices: await devicesOf(code, dev),
       state: res.state,
-      bankId: bank.id,
-      bank: Number(b.have) === bank.id ? undefined : watermark(bank.data, code),
+      bankId: bankKey,
+      bank: String(b.have) === bankKey ? undefined : watermark(tierBank(bank.data, acc.tier, acc.subject), code),
     });
   }
 
@@ -306,6 +308,9 @@ function keyView(k: any) {
     months: k.months,
     validUntil: k.valid_until,
     expiresAt: k.expires_at,
+    tier: k.tier,
+    subject: k.subject,
+    days: k.days,
     expired: !!k.expires_at && new Date(k.expires_at) < new Date(),
     kind: k.kind,
     usedFor: k.used_for ? formatCode(k.used_for) : null,

@@ -16,6 +16,9 @@ process.env.NETLIFY_DB_URL = await db.start();
 await db.applyMigrations(path.join(root, "netlify/database/migrations"));
 process.env.ADMIN_TOKEN ||= "local-admin-token-local-admin-token-0000";
 process.env.TEST_MODE ||= "1";
+// Paying locally: a practice payment instead of Stripe, and a known webhook secret for the tests (never in production).
+process.env.PAY_FAKE ||= "1";
+process.env.STRIPE_WEBHOOK_SECRET ||= "whsec_local_test_secret";
 globalThis.Netlify = { env: { get: (k) => process.env[k] } };
 
 const fnDir = path.join(root, "netlify/functions");

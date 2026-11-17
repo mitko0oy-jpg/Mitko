@@ -133,3 +133,51 @@ export function mergeState(a: any, b: any) {
 
 // "iPhone · Safari", "Android · Chrome" – just enough for the family to recognise its devices.
 export const cleanLabel = (v: unknown) => (typeof v === "string" ? v.replace(/[^\p{L}\p{N} .·()/,+-]/gu, "").trim().slice(0, 60) : "") || "Устройство";
+
+/* ---------- levels of access ---------- */
+// Старт: one module from each NVO part, the first math cards (1–8, five of them with practice), no mock exam and no game.
+// Стандарт: one subject. Пълен: everything. What is locked does not reach the browser – only its title, for the board.
+export const TIERS = ["start", "std", "full"] as const;
+export const TIER_NAME: Record<string, string> = { start: "Старт", std: "Стандарт", full: "Пълен" };
+export const TIER_RANK: Record<string, number> = { start: 0, std: 1, full: 2 };
+const START_MODULES = new Set(["chetene", "pravopis", "lit1"]);
+const START_MATH = 8;
+
+// The level a code gives now: after its term it falls back to Старт (never locked, the grades stay).
+export function accessOf(key: any) {
+  const expired = !!(key.expires_at && new Date(key.expires_at) < new Date());
+  const tier = expired ? "start" : TIERS.includes(key.tier) ? key.tier : "full";
+  const subject = tier === "std" ? (key.subject === "math" ? "math" : "bel") : null;
+  return { tier, subject, expired, paidTier: key.tier || "full" };
+}
+
+export function tierBank(data: any, tier: string, subject: string | null) {
+  if (tier === "full") return data;
+  const isMath = (m: any) => m.area === "math";
+  const mathOk = (n: number) => (tier === "start" ? n <= START_MATH : subject === "math");
+  const modOk = (m: any) => (tier === "start" ? (isMath(m) ? mathOk(Number(String(m.id).slice(3))) : START_MODULES.has(m.id)) : subject === "math" ? isMath(m) : !isMath(m));
+  const modules = (data.modules || []).filter(modOk);
+  const ok = new Set(modules.map((m: any) => m.id));
+  const questions = (data.questions || []).filter((q: any) => ok.has(q.m));
+  const used = new Set(questions.map((q: any) => q.p).filter(Boolean));
+  const passages = Object.fromEntries(Object.entries(data.passages || {}).filter(([k]) => used.has(k)));
+  const math = data.math ? { ...data.math, cards: (data.math.cards || []).filter((c: any) => mathOk(c.n)) } : data.math;
+  const game = tier === "std" && subject === "bel";
+  const count = (id: string) => (data.questions || []).filter((q: any) => q.m === id).length;
+  return {
+    ...data,
+    modules,
+    questions,
+    passages,
+    math,
+    dossiers: game ? data.dossiers : null,
+    locked: {
+      tier,
+      subject,
+      modules: (data.modules || []).filter((m: any) => !modOk(m)).map((m: any) => ({ id: m.id, title: m.title, area: m.area, sec: m.sec, desc: m.desc, n: count(m.id) })),
+      math: data.math ? (data.math.cards || []).filter((c: any) => !mathOk(c.n)).map((c: any) => c.n) : [],
+      dossiers: !game && data.dossiers ? (data.dossiers.dossiers || []).length : 0,
+      mock: !(tier === "std" && subject === "bel"),
+    },
+  };
+}
