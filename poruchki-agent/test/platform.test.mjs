@@ -234,3 +234,18 @@ test("phone order goes into the platform, Telegram says its number", async () =>
   assert.equal(body.delivery.courier, "econt");
   assert.match(msgs[0], /T1001/);
 });
+
+test("a shop added later: only its orders after that moment are called", async () => {
+  const { deps, orders, order } = setup();
+  deps.config.sites = ["bg"];
+  await syncOrders(deps, T0);
+  orders.push(order(1738));
+  assert.equal(await syncOrders(deps, min(2)), 1);
+  // 4 Max is added at minute 10; its order from minute 5 is skipped, the one from minute 12 is called.
+  deps.config.sites = ["bg", "max4"];
+  orders.push(order(77, { site: "max4", createdAt: min(5).toISOString() }));
+  assert.equal(await syncOrders(deps, min(10)), 0);
+  orders.push(order(78, { site: "max4", createdAt: min(12).toISOString() }));
+  orders.push(order(1739, { createdAt: min(9).toISOString() }));
+  assert.equal(await syncOrders(deps, min(13)), 2, "bg keeps its start; max4 starts at minute 10");
+});

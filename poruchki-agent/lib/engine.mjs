@@ -52,9 +52,20 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
   if (!settings.startedAt) {
     // First run: remember the moment, so we never call orders placed before the agent existed.
     settings.startedAt = now.toISOString();
+    settings.siteSince = Object.fromEntries((config.sites || []).map((site) => [site, settings.startedAt]));
     await store.setJSON("meta/settings", settings);
     return 0;
   }
+  // A shop added to SITES later is called only for orders placed after that (older ones may be confirmed elsewhere).
+  settings.siteSince ||= {};
+  let fresh = false;
+  for (const site of config.sites || []) {
+    if (settings.siteSince[site]) continue;
+    const { blobs } = await store.list({ prefix: `seen/${site}/` });
+    settings.siteSince[site] = blobs?.length ? settings.startedAt : now.toISOString();
+    fresh = true;
+  }
+  if (fresh) await store.setJSON("meta/settings", settings);
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
   const since = new Date(Math.max(new Date(settings.startedAt).getTime(), weekAgo.getTime())).toISOString();
   const orders = await cb.fetchNewOrders({ since });
@@ -62,6 +73,7 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
   for (const o of orders) {
     // Orders someone sent for "AI потвърждение" are called even if they are older.
     if (!o.requested && new Date(o.createdAt) < new Date(settings.startedAt)) continue;
+    if (!o.requested && settings.siteSince[o.site] && new Date(o.createdAt) < new Date(settings.siteSince[o.site])) continue;
     const phone = normalizePhoneBG(o.phone);
     const rec = {
       site: o.site,
