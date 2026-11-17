@@ -1,7 +1,7 @@
 // Econt can list every waybill we sent (ShipmentService.getMyAWB). For orders where neither the shop
 // nor Middleware gave us the waybill number, we find it by the receiver's phone and the COD amount.
 import { addDays, sofiaDay } from "./dates.mts";
-import { q } from "./db.mts";
+import { getSetting, q, setSetting } from "./db.mts";
 import type { Creds } from "./couriers.mts";
 import { env } from "./http.mts";
 
@@ -24,7 +24,7 @@ export async function econtWaybills(creds: Creds, fromDay: string, toDay: string
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Basic " + Buffer.from(`${creds.user}:${creds.pass}`).toString("base64") },
       body: JSON.stringify({ dateFrom: fromDay, dateTo: toDay, page, side: "sender" }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(Math.max(1000, Math.min(9000, deadline - Date.now()))),
     });
     if (!res.ok) throw new Error(`Еконт (списък пратки): HTTP ${res.status}`);
     const d: any = await res.json();
@@ -63,21 +63,27 @@ export function pickMatches(awbs: Awb[], orders: Candidate[]): { orderId: number
   return out;
 }
 
-export async function matchEcont(creds: Creds | undefined, deadline: number) {
+// Orders that were sent with Econt but have no waybill number from the shop or Middleware.
+const CANDIDATES = `
+  FROM orders o JOIN shops s ON s.id = o.shop
+ WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND o.ordered_at > now() - interval '20 days'
+   AND o.delivery->>'courier' = 'econt'
+   AND (o.cb_shipped OR o.cb_status IN ('shipped', 'completed') OR o.mw_status IN ('shipped', 'completed', 'returned', 'redirected'))`;
+
+export async function matchEcont(creds: Creds | undefined, deadline: number, force = false) {
   if (!creds) return { matched: 0 };
+  // The waybill list is slow to fetch: at most every 6 hours, and only when something is missing.
+  const last = await getSetting<{ at: number }>("econt_match");
+  if (!force && last && Date.now() - last.at < 6 * 3600000) return { matched: 0, skipped: true };
+  await setSetting("econt_match", { at: Date.now() });
+  const rows = await q<any>(`SELECT o.id, o.phone, o.total_eur::float AS total, extract(epoch FROM o.ordered_at) * 1000 AS at ${CANDIDATES}`);
+  if (!rows.length) return { matched: 0, candidates: 0 };
   const today = sofiaDay(new Date());
   const awbs = await econtWaybills(creds, addDays(today, -21), today, deadline);
   if (!awbs.length) return { matched: 0, waybills: 0 };
   const known = new Set((await q<any>("SELECT tracking_no FROM orders WHERE tracking_no = ANY($1)", [awbs.map((a) => a.number)])).map((r) => r.tracking_no));
-  const fresh = awbs.filter((a) => !known.has(a.number));
-  if (!fresh.length) return { matched: 0, waybills: awbs.length };
-  const rows = await q<any>(
-    `SELECT o.id, o.phone, o.total_eur::float AS total, extract(epoch FROM o.ordered_at) * 1000 AS at
-       FROM orders o JOIN shops s ON s.id = o.shop
-      WHERE o.tracking_no IS NULL AND s.region = 'bg' AND o.ordered_at > now() - interval '40 days'`,
-  );
   const matches = pickMatches(
-    fresh,
+    awbs.filter((a) => !known.has(a.number)),
     rows.map((r) => ({ id: Number(r.id), phone: phoneKey(r.phone), total: Number(r.total), at: Number(r.at) })),
   );
   let matched = 0;
@@ -85,5 +91,5 @@ export async function matchEcont(creds: Creds | undefined, deadline: number) {
     const r = await q("UPDATE orders SET tracking_no = $2, courier = 'econt', tracking_source = 'econt_match' WHERE id = $1 AND tracking_no IS NULL RETURNING id", [m.orderId, m.number]);
     matched += r.length;
   }
-  return { matched, waybills: awbs.length };
+  return { matched, waybills: awbs.length, candidates: rows.length };
 }

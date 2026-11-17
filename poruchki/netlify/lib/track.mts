@@ -74,18 +74,14 @@ async function apply(id: number, trackingNo: string, st: ParcelState | { error: 
   return r.length > 0;
 }
 
+// Requests per call: Speedy takes 10 parcels per request (speedyTrack splits), Econt more.
+const BATCH: Record<CourierId, number> = { speedy: 20, econt: 40 };
+
 export async function runTracking(opts: { deadline: number; limit?: number; orderIds?: number[]; job?: string }) {
   const creds = await loadCreds();
   const couriers = (Object.keys(creds) as CourierId[]).filter((c) => creds[c]);
   const result = { checked: 0, changed: 0, matched: 0, couriers, errors: {} as Record<string, string> };
   if (!couriers.length) return result;
-  if (!opts.orderIds?.length && creds.econt) {
-    try {
-      result.matched = (await matchEcont(creds.econt, opts.deadline - 10000)).matched;
-    } catch (e: any) {
-      result.errors.match = e.message;
-    }
-  }
   const rows = opts.orderIds?.length
     ? await q<any>("SELECT id, courier, tracking_no, ordered_at FROM orders WHERE id = ANY($1) AND tracking_no IS NOT NULL AND courier = ANY($2)", [opts.orderIds, couriers])
     : await q<any>(
@@ -94,13 +90,18 @@ export async function runTracking(opts: { deadline: number; limit?: number; orde
             AND ordered_at > now() - interval '90 days'
             AND (tracked_at IS NULL OR tracked_at < now() - interval '80 minutes')
           ORDER BY tracked_at NULLS FIRST, ordered_at DESC LIMIT $2`,
-        [couriers, opts.limit || 200],
+        [couriers, opts.limit || 400],
       );
-  for (const id of couriers) {
-    const mine = rows.filter((r) => r.courier === id);
-    for (let i = 0; i < mine.length; i += 50) {
-      if (Date.now() > opts.deadline) break;
-      const part = mine.slice(i, i + 50);
+  // The couriers take turns, so a slow one cannot use up all the time.
+  const queues = new Map(couriers.map((id) => [id, rows.filter((r) => r.courier === id)]));
+  const failed = new Set<CourierId>();
+  for (let progress = true; progress && Date.now() < opts.deadline; ) {
+    progress = false;
+    for (const id of couriers) {
+      const queue = queues.get(id)!;
+      if (failed.has(id) || !queue.length || Date.now() > opts.deadline) continue;
+      progress = true;
+      const part = queue.splice(0, BATCH[id]);
       try {
         const states = await COURIERS[id].track(creds[id]!, part.map((r) => String(r.tracking_no)));
         for (const r of part) {
@@ -112,9 +113,17 @@ export async function runTracking(opts: { deadline: number; limit?: number; orde
         await markCreds(id, true, null);
       } catch (e: any) {
         result.errors[id] = e.message;
+        failed.add(id);
         if (e instanceof CourierError && e.auth) await markCreds(id, false, e.message);
-        break;
       }
+    }
+  }
+  // Finding Econt waybills by phone is slow: only with time to spare (and matchEcont itself runs at most every few hours).
+  if (!opts.orderIds?.length && creds.econt && opts.deadline - Date.now() > 5000) {
+    try {
+      result.matched = (await matchEcont(creds.econt, opts.deadline)).matched;
+    } catch (e: any) {
+      result.errors.match = e.message;
     }
   }
   await logJob(opts.job || "track", Object.keys(result.errors).length === 0, result);
