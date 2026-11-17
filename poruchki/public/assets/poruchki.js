@@ -140,18 +140,16 @@ function renderTable(d) {
   const allOn = rows.every((o) => selected.has(o.id));
   $("table").innerHTML = `<thead><tr>
       <th><input type="checkbox" id="selAll" aria-label="Избери всички" ${allOn ? "checked" : ""}></th>
-      <th>№</th><th>Статус</th><th>Магазин</th><th>Клиент</th><th>Доставка</th><th>Куриер</th><th class="money">Сума</th><th>Поръчана</th><th>Бележка</th><th></th>
+      <th>№ / магазин</th><th>Статус</th><th>Клиент</th><th>Доставка / пратка</th><th class="money">Сума</th><th class="c-when">Поръчана</th><th>Бележка</th><th></th>
     </tr></thead><tbody>
     ${rows
       .map(
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
-        <td class="no"><a href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a></td>
+        <td class="no"><a href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a><div class="sub shopname">${esc(o.shop_label)}</div></td>
         <td class="c-badge"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</td>
-        <td class="c-shop">${esc(o.shop_label)}</td>
         <td class="c-client">${esc(o.customer_name || "–")} ${clientBadges(o)}<div class="sub">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${o.city ? ` · ${esc(o.city)}` : ""}</div></td>
-        <td class="c-deliv">${deliveryCell(o)}</td>
-        <td class="c-cour">${courierCell(o)}</td>
+        <td class="c-deliv">${deliveryCell(o)}${courierCell(o)}</td>
         <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}${o.currency !== "EUR" ? `<div class="sub">${eur(o.total_eur)}</div>` : o.shipping ? `<div class="sub">${money(o.sub_total, o.currency)} + доставка</div>` : ""}</td>
         <td class="c-when">${since(o.ordered_at)}<div class="sub">${new Date(o.ordered_at).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></td>
         <td class="c-note"><button class="notebtn${o.note ? " clamp" : ""}" data-act="note" data-id="${o.id}" title="${o.note ? esc(o.note) : "Бележка"}">${o.note ? esc(o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>

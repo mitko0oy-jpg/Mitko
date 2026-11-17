@@ -92,6 +92,45 @@ export function ago(iso) {
 }
 
 // ---- top bar ----
+const THEMES = [
+  ["auto", "Тема: като на устройството", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>`],
+  ["light", "Тема: светла", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`],
+  ["dark", "Тема: тъмна", `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`],
+];
+
+function savedTheme() {
+  try {
+    const t = localStorage.getItem("theme");
+    return t === "light" || t === "dark" ? t : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+/** Light → dark → like the device: one button, remembered on this device. */
+function themeButton(btn) {
+  const draw = () => {
+    const [, label, icon] = THEMES.find(([k]) => k === savedTheme());
+    btn.innerHTML = icon;
+    btn.title = `${label} (смени)`;
+    btn.setAttribute("aria-label", `${label}. Смени темата`);
+  };
+  btn.onclick = () => {
+    const i = THEMES.findIndex(([k]) => k === savedTheme());
+    const next = THEMES[(i + 1) % THEMES.length][0];
+    try {
+      if (next === "auto") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", next);
+    } catch {
+      /* private mode: only for this page */
+    }
+    if (next === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", next);
+    draw();
+  };
+  draw();
+}
+
 export async function shell(active) {
   const me = await api("/api/auth/me");
   if (!me.user) {
@@ -109,9 +148,10 @@ export async function shell(active) {
   top.innerHTML = `<div class="in">
     <a class="brand" href="/">Поръчки</a>
     <nav class="nav">${links.map(([h, t, k]) => `<a href="${h}" class="${k === active ? "on" : ""}">${t}</a>`).join("")}</nav>
-    <span class="who"><span class="nm">${esc(me.user.name || me.user.email)}</span> <button class="btn link" id="logout">Изход</button></span>
+    <span class="who"><button class="themebtn" id="themeBtn" type="button"></button><span class="nm">${esc(me.user.name || me.user.email)}</span> <button class="btn link" id="logout">Изход</button></span>
   </div>`;
   document.body.prepend(top);
+  themeButton(top.querySelector("#themeBtn"));
   top.querySelector("#logout").onclick = async () => {
     await api("/api/auth/logout", { method: "POST", body: {} });
     location.href = "/vhod/";

@@ -82,6 +82,10 @@ h2 { font-size: 16px; }
 .nav a:hover { text-decoration: none; color: var(--text); }
 .top .who { margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; }
 .top .who button { margin-left: 6px; }
+.top .who { display: flex; align-items: center; gap: 4px; }
+.themebtn { border: 1px solid var(--line); background: var(--surface); color: var(--text-2); border-radius: 999px; width: 34px; height: 32px; display: inline-grid; place-items: center; cursor: pointer; margin: 0 6px 0 0 !important; }
+.themebtn:hover { color: var(--text); border-color: var(--accent); }
+.themebtn svg { width: 17px; height: 17px; }
 
 main { max-width: 1120px; margin: 0 auto; padding: 16px 16px 64px; }
 .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
@@ -221,7 +225,8 @@ body.wide .top .in, body.wide main { max-width: 1600px; }
 .stlist button.on { border-color: var(--accent); background: var(--accent-soft); }
 .stlist .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .filters-toggle { display: none; }
-@media (max-width: 900px) {
+@media (max-width: 1299px) {
+  /* Laptops and phones: the filters open with a button, the orders get the whole width. */
   .work { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; max-height: none; display: none; }
   .side.open { display: grid; }
@@ -271,16 +276,14 @@ body.wide .top .in, body.wide main { max-width: 1600px; }
   .otbl, .otbl tbody { display: block; }
   .otbl thead { display: none; }
   .otbl tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px 10px; padding: 12px 2px; border-bottom: 1px solid var(--line);
-    grid-template-areas: "chk no badge" "chk shop money" "chk client client" "chk deliv deliv" "chk cour cour" "acts acts acts"; }
+    grid-template-areas: "chk no badge" "chk client money" "chk deliv deliv" "acts acts acts"; }
   .otbl td { display: block; padding: 0; border: 0; min-width: 0; }
   .otbl td.c-check { grid-area: chk; }
   .otbl td.no { grid-area: no; }
   .otbl td.c-badge { grid-area: badge; text-align: right; }
-  .otbl td.c-shop { grid-area: shop; color: var(--muted); font-size: 13px; }
   .otbl td.money { grid-area: money; }
   .otbl td.c-client { grid-area: client; }
   .otbl td.c-deliv { grid-area: deliv; }
-  .otbl td.c-cour { grid-area: cour; }
   .otbl td.c-when { display: none; }
   .otbl td.acts { grid-area: acts; text-align: left; margin-top: 6px; }
   .otbl tr:hover td { background: none; }
@@ -324,9 +327,15 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
   .otbl td.c-client, .otbl td.c-when { white-space: nowrap; }
   .otbl td.c-badge { min-width: 110px; max-width: 150px; }
   .otbl td.c-badge .conf { white-space: normal; }
-  .otbl td.c-shop { max-width: 110px; }
-  .otbl td.c-deliv { min-width: 140px; max-width: 190px; }
-  .otbl td.c-cour { max-width: 160px; }
+  .otbl td.no { white-space: nowrap; }
+}
+@media (min-width: 761px) and (max-width: 1099px) {
+  /* Tablets: the buttons go in two rows instead of pushing the table off the screen. */
+  .otbl td.acts { white-space: normal; width: 118px; min-width: 118px; text-align: left; }
+  .otbl td.acts > * { margin: 0 0 4px; }
+  .otbl .c-when { display: none; }
+  .otbl td.c-deliv { min-width: 150px; max-width: 210px; }
+  .otbl td.c-deliv .cour { margin-top: 4px; }
   .otbl td.c-note { min-width: 130px; max-width: 180px; }
   .otbl td.c-client a { white-space: nowrap; }
 }
@@ -345,3 +354,9 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
 .steps li.on::before { background: var(--bar); }
 
 [hidden] { display: none !important; }
+@media (max-width: 760px) {
+  /* Phones: the search gets its own full row above the buttons. */
+  .head-tools { flex-wrap: wrap; justify-content: flex-start; }
+  .head-tools input[type="search"] { flex: 1 1 100%; order: -1; max-width: none; width: 100%; }
+  .head-tools .btn { white-space: nowrap; }
+}
