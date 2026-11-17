@@ -1,5 +1,5 @@
 // Asking Speedy and Econt where each parcel is.
-import { COURIERS, CourierError, isCourier, type CourierId, type Creds, type ParcelState } from "./couriers.mts";
+import { COURIERS, CourierError, econtCosts, isCourier, speedyCosts, type CourierId, type Creds, type ParcelState } from "./couriers.mts";
 import { getSetting, logJob, q, setSetting } from "./db.mts";
 import { cKey, companyId, ENV_COMPANY, inCompany, companiesWithShops, withCompany } from "./tenant.mts";
 import { env } from "./http.mts";
@@ -73,6 +73,7 @@ async function apply(id: number, trackingNo: string, st: ParcelState | { error: 
     [id, trackingNo, st.status, st.text.slice(0, 300), st.at, st.final, JSON.stringify(st.events), st.deliveredAt],
   );
   if (!r.length) await q("UPDATE orders SET tracked_at = now(), track_error = NULL WHERE id = $1 AND tracking_no = $2", [id, trackingNo]);
+  if (st.cost !== undefined) await q("UPDATE orders SET courier_cost = $3, courier_cost_at = now() WHERE id = $1 AND tracking_no = $2", [id, trackingNo, st.cost]);
   return r.length > 0;
 }
 
@@ -82,7 +83,7 @@ const BATCH: Record<CourierId, number> = { speedy: 20, econt: 40 };
 export async function runTracking(opts: { deadline: number; limit?: number; orderIds?: number[]; job?: string }) {
   const creds = await loadCreds();
   const couriers = (Object.keys(creds) as CourierId[]).filter((c) => creds[c]);
-  const result = { checked: 0, changed: 0, matched: 0, found: 0, couriers, errors: {} as Record<string, string> };
+  const result = { checked: 0, changed: 0, matched: 0, found: 0, costs: 0, couriers, errors: {} as Record<string, string> };
   if (!couriers.length) return result;
   // Waybills Middleware made for Speedy orders: found by the order number.
   if (!opts.orderIds?.length && creds.speedy && opts.deadline - Date.now() > 6000) {
@@ -128,6 +129,14 @@ export async function runTracking(opts: { deadline: number; limit?: number; orde
       }
     }
   }
+  // What the courier really charged, for the parcels that do not have it yet (a few per run, newest first).
+  if (!opts.orderIds?.length && opts.deadline - Date.now() > 4000) {
+    try {
+      result.costs = await fillCosts(creds, couriers, opts.deadline - 2000);
+    } catch (e: any) {
+      result.errors.costs = e.message;
+    }
+  }
   // Finding Econt waybills by phone is slow: only with time to spare (and matchEcont itself runs at most every few hours).
   if (!opts.orderIds?.length && creds.econt && opts.deadline - Date.now() > 5000) {
     try {
@@ -141,6 +150,30 @@ export async function runTracking(opts: { deadline: number; limit?: number; orde
 }
 
 /** The hourly job: every company with its own courier accounts, sharing the time. */
+const COSTS = { speedy: speedyCosts, econt: econtCosts } as const;
+
+async function fillCosts(creds: Partial<Record<CourierId, Creds>>, couriers: CourierId[], deadline: number) {
+  let filled = 0;
+  for (const id of couriers) {
+    if (Date.now() > deadline) break;
+    const rows = await q<any>(
+      `SELECT id, tracking_no FROM orders
+        WHERE tracking_no IS NOT NULL AND courier = $1 AND courier_cost_at IS NULL AND ${inCompany()}
+          AND ordered_at > now() - interval '120 days'
+        ORDER BY ordered_at DESC LIMIT 40`,
+      [id],
+    );
+    if (!rows.length) continue;
+    const costs = await COSTS[id](creds[id]!, rows.map((r) => String(r.tracking_no)));
+    for (const r of rows) {
+      const cost = costs.get(String(r.tracking_no)) ?? null;
+      await q("UPDATE orders SET courier_cost = coalesce($3, courier_cost), courier_cost_at = now() WHERE id = $1 AND tracking_no = $2", [r.id, r.tracking_no, cost]);
+      if (cost !== null) filled++;
+    }
+  }
+  return filled;
+}
+
 export async function runTrackingAll(opts: { deadline: number; job?: string }) {
   const out: Record<string, unknown> = {};
   const list = await companiesWithShops(q);

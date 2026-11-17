@@ -13,6 +13,7 @@ export type ParcelState = {
   final: boolean; // nothing more to wait for
   deliveredAt: string | null;
   events: ParcelEvent[];
+  cost?: number; // what the courier charged, when it says
 };
 
 type Fetch = typeof fetch;
@@ -98,6 +99,48 @@ export async function speedyTrack(creds: Creds, ids: string[]): Promise<Map<stri
   return out;
 }
 
+const money = (v: unknown) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
+
+/** What Speedy charged for each shipment (only the account's own shipments have it). */
+export async function speedyCosts(creds: Creds, ids: string[]): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>();
+  const ask = async (part: string[]): Promise<any[]> => {
+    try {
+      const data = await speedy("/shipment/info", creds, { shipmentIds: part });
+      return Array.isArray(data?.shipments) ? data.shipments : [];
+    } catch (e) {
+      // A shipment of another account can fail the whole request: then one by one.
+      if ((e instanceof CourierError && e.auth) || part.length === 1) {
+        if (part.length === 1 && !(e instanceof CourierError && e.auth)) return [];
+        throw e;
+      }
+      return (await Promise.all(part.map((id) => ask([id])))).flat();
+    }
+  };
+  for (const part of chunks(ids, 10)) {
+    const list = await ask(part);
+    for (const id of part) {
+      const sh = list.find((x) => String(x?.id) === id || (Array.isArray(x?.parcels) && x.parcels.some((p: any) => String(p?.id) === id)));
+      out.set(id, sh && !sh.error ? money(sh.price?.total ?? sh.price?.amount) : null);
+    }
+  }
+  return out;
+}
+
+/** What Econt charged for each shipment. */
+export async function econtCosts(creds: Creds, numbers: string[]): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>();
+  for (const part of chunks(numbers, 20)) {
+    const data = await econt("/Shipments/ShipmentService.getShipmentStatuses.json", creds, { shipmentNumbers: part });
+    const list: any[] = Array.isArray(data?.shipmentStatuses) ? data.shipmentStatuses : [];
+    part.forEach((num, i) => {
+      const r = list.find((x) => String(x?.status?.shipmentNumber) === num) || list[i];
+      out.set(num, r?.status ? money(r.status.totalPrice) : null);
+    });
+  }
+  return out;
+}
+
 export async function speedyCheck(creds: Creds) {
   await speedy("/location/office", creds, { countryId: 100, name: "СОФИЯ", limit: 1 });
 }
@@ -143,7 +186,12 @@ export function econtState(st: any): ParcelState {
   const types = raw.map((e) => String(e?.destinationType || ""));
   const lastType = types[types.length - 1] || "";
   const last = events[events.length - 1];
-  const base = { text: bgRaw || last?.text || "Приета от куриера", at: last?.at || toIso(st?.deliveryTime) || toIso(st?.sendTime), events: events.slice(-30) };
+  const base = {
+    text: bgRaw || last?.text || "Приета от куриера",
+    at: last?.at || toIso(st?.deliveryTime) || toIso(st?.sendTime),
+    events: events.slice(-30),
+    ...(money(st?.totalPrice) !== null ? { cost: money(st?.totalPrice)! } : {}),
+  };
   const next: any[] = Array.isArray(st?.nextShipments) ? st.nextShipments : [];
   if (/отказ|refus/.test(`${bg} ${en}`)) return { ...base, status: "refused", final: true, deliveredAt: null };
   const returned = en.startsWith("return") || bg.startsWith("върнат") || types.includes("return") || next.some((x) => /^return$|връщ|върн/i.test(String(x?.reason || "")));

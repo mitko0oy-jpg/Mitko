@@ -36,7 +36,11 @@ function order(id, daysAgo, status, extra = {}) {
 }
 orders.push(order(1, 0, "pending"));
 orders.push(order(2, 1, "shipped", { fulfillment: { courier: "Econt", trackingNo: "1051600000002" } }));
-orders.push(order(3, 2, "completed", { fulfillment: { courier: "Econt", trackingNo: "1051600000003" } }));
+orders.push(order(3, 2, "completed", {
+  fulfillment: { courier: "Econt", trackingNo: "1051600000003" },
+  items: [{ name: "BeeVenom Care Gel", quantity: 1, total: 20, sku: "BV-GEL", weight: 0.25, images: ["https://cdn.example.com/gel.jpg"], variation: [{ name: "Размер", value: "50 мл" }] }],
+  discountCode: "ESEN10",
+}));
 orders.push(order(4, 2, "canceled"));
 orders.push(order(5, 2, "canceled", { fulfillment: { courier: "Econt", trackingNo: "1051600000005" } })); // sent, then came back
 for (let i = 6; i < 60; i++) orders.push(order(i, 1 + (i % 2), "completed")); // > one page of 50
@@ -93,6 +97,10 @@ const courier = createServer((req, res) => {
     sent.push({ path: u.pathname, body: b });
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
+      case "/speedy/shipment/info":
+        return json({ shipments: (b.shipmentIds || []).map((id) => ({ id, price: { amount: 3.17, vat: 0.63, total: 3.8, currency: "EUR" } })) });
+      case "/econt/Shipments/ShipmentService.getShipmentStatuses.json":
+        return json({ shipmentStatuses: (b.shipmentNumbers || []).map((n) => ({ status: { shipmentNumber: n, shortDeliveryStatus: "Доставена", shortDeliveryStatusEn: "Delivered", trackingEvents: [], totalPrice: 3.24, currency: "EUR" } })) });
       case "/speedy/client/contract":
         return json({ clients: [{ clientId: 100000000001, clientName: "БИ ВЕНОМ ЕООД", objectName: "Склад", address: { fullAddressString: "Пловдив, ул. Тест 1" } }] });
       case "/speedy/calculate":
@@ -796,4 +804,18 @@ test("couriers page: Speedy sender objects for the dropdown, sender settings sav
   assert.equal(saved.data.defaults.econt.senderOfficeCode, "1152");
   assert.equal(saved.data.defaults.econt.weight, 0.7);
   assert.equal(saved.data.defaults.econt.sms, false);
+});
+
+test("order panel like Middleware: products with SKU, weight and picture; what the courier really charged", async () => {
+  const r = await api("/api/settings/track", {});
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const list = (await api("/api/orders?tab=&q=5003")).data.orders;
+  const d = (await api(`/api/orders/${list[0].id}`)).data;
+  assert.equal(d.courier_cost, 3.24, "Econt's price from the shipment status");
+  assert.equal(d.discount_code, "ESEN10");
+  assert.deepEqual(d.lines[0], { name: "BeeVenom Care Gel", qty: 1, total: 20, price: 20, sku: "BV-GEL", image: "https://cdn.example.com/gel.jpg", weight: 0.25, variant: "Размер: 50 мл", url: null });
+  // A Speedy parcel made elsewhere (Middleware): its price is asked with shipment/info.
+  const sp = (await api("/api/orders?tab=&q=62000000001")).data.orders[0];
+  if (sp) assert.equal((await api(`/api/orders/${sp.id}`)).data.courier_cost, 3.8);
+  assert.ok(sent.some((x) => x.path === "/speedy/shipment/info"));
 });

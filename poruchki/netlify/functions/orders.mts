@@ -228,6 +228,26 @@ async function detail(id: number) {
     `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
     [id],
   );
+  // The products with what the shop knows about them (picture, SKU, weight, variant), like Middleware's panel.
+  const rawItems: any[] = Array.isArray(raw.items) ? raw.items : [];
+  const catalog = await q<any>("SELECT title, sku, image FROM products WHERE shop = $1", [o.shop]);
+  const lines = (Array.isArray(o.items) ? o.items : []).map((it: any) => {
+    const r = rawItems.find((x) => (it.sku && x?.sku === it.sku) || x?.name === it.name) || {};
+    const p = catalog.find((c) => (it.sku && c.sku === it.sku) || c.title === it.name) || catalog.find((c) => it.name && String(it.name).startsWith(c.title));
+    const variant = Array.isArray(r.variation) ? r.variation.map((v: any) => [v?.name, v?.value].filter(Boolean).join(": ")).filter(Boolean).join(", ") : "";
+    const qty = Number(it.qty) || 1;
+    return {
+      name: String(it.name || ""),
+      qty,
+      total: Number(it.total) || 0,
+      price: Math.round(((Number(it.total) || 0) / qty) * 100) / 100,
+      sku: String(it.sku || r.sku || p?.sku || ""),
+      image: (Array.isArray(r.images) && typeof r.images[0] === "string" ? r.images[0] : null) || p?.image || null,
+      weight: Number(r.weight) > 0 ? Number(r.weight) : null,
+      variant,
+      url: typeof r.url === "string" ? r.url : null,
+    };
+  });
   return {
     ...rest,
     id: Number(o.id),
@@ -245,6 +265,8 @@ async function detail(id: number) {
     discount_code: raw.discountCode || null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     nekorekten: nek,
+    lines,
+    courier_cost: o.courier_cost == null ? null : Number(o.courier_cost),
   };
 }
 

@@ -2,6 +2,7 @@ import { api, CMARK, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE
 import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openWaybill } from "./waybill.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
+import { panelHtml } from "./order-panel.js";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ["q", "shop", "region", "courier", "from", "to", "confirmed", "sort", "product"];
@@ -250,6 +251,47 @@ function head() {
   }).join("");
 }
 
+// Rows opened like in Middleware (a click on the row), with their details.
+const opened = new Set();
+const details = new Map();
+const xrow = (id) =>
+  `<tr class="xrow" data-x="${id}"><td colspan="${COLS.length + 2}">${details.has(id) ? panelHtml(details.get(id)) : `<div class="muted small" style="padding:12px">Зареждам…</div>`}</td></tr>`;
+
+async function toggleRow(tr) {
+  const id = Number(tr.dataset.id);
+  const next = tr.nextElementSibling;
+  if (opened.has(id)) {
+    opened.delete(id);
+    tr.classList.remove("open");
+    if (next?.classList.contains("xrow")) next.remove();
+    return;
+  }
+  opened.add(id);
+  tr.classList.add("open");
+  tr.insertAdjacentHTML("afterend", xrow(id));
+  if (details.has(id)) bindPanel(id);
+  else await refreshPanel(id);
+}
+async function refreshPanel(id) {
+  const find = () => $("table").querySelector(`tr.xrow[data-x="${id}"]`);
+  try {
+    details.set(id, await api(`/api/orders/${id}`));
+  } catch (e) {
+    details.delete(id);
+    const x = find();
+    if (x) x.querySelector("td").innerHTML = `<div class="err small" style="padding:12px">${esc(e.message)}</div>`;
+    return;
+  }
+  const x = find();
+  if (!opened.has(id) || !x) return;
+  x.outerHTML = xrow(id);
+  bindPanel(id);
+}
+function bindPanel(id) {
+  const x = $("table").querySelector(`tr.xrow[data-x="${id}"]`);
+  x?.querySelectorAll("[data-act]").forEach((b) => (b.onclick = (e) => act(b.dataset.act, Number(b.dataset.id), e.currentTarget)));
+}
+
 function renderTable(d) {
   rows = d.orders;
   $("table").className = `otbl ${[...hidden].map((k) => `off-${k}`).join(" ")}`;
@@ -276,7 +318,7 @@ function renderTable(d) {
         <td class="c-when">${since(o.ordered_at)}<div class="sub">${fullDate(o.ordered_at)}</div></td>
         <td class="c-note"><button class="notebtn${o.note ? " clamp" : ""}" data-act="note" data-id="${o.id}" title="${o.note ? esc(o.note) : "Бележка"}">${o.note ? esc(o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>
         <td class="acts"><div class="actsin">${actions(o)}</div></td>
-      </tr>`,
+      </tr>${opened.has(o.id) ? xrow(o.id) : ""}`,
       )
       .join("")}
     </tbody>`;
@@ -304,6 +346,14 @@ function renderTable(d) {
       }),
   );
   $("table").querySelectorAll("[data-act]").forEach((b) => (b.onclick = (e) => act(b.dataset.act, Number(b.dataset.id), e.currentTarget)));
+  for (const r of rows) if (opened.has(r.id)) $("table").querySelector(`tr[data-id="${r.id}"]`)?.classList.add("open");
+  // A click on the row (not on a link, button or box) opens its details under it.
+  $("table").querySelector("tbody").onclick = (e) => {
+    if (e.target.closest("a, button, input, select, label, .nekwrap, .xrow")) return;
+    if (getSelection()?.toString()) return; // selecting text to copy
+    const tr = e.target.closest("tr[data-id]");
+    if (tr) toggleRow(tr);
+  };
 }
 
 function renderBulk() {
@@ -415,7 +465,10 @@ async function load(keepScroll = false) {
     const d = await api(`/api/orders?${new URLSearchParams(p)}`);
     $("count").textContent = `${num(d.total)} за ${eur(d.sum)}`;
     renderSide(d.facets);
+    details.clear(); // fresh details for the opened rows (a waybill may have been made)
+    for (const id of [...opened]) if (!d.orders.some((o) => o.id === id)) opened.delete(id);
     renderTable(d);
+    for (const id of opened) refreshPanel(id);
     renderBulk();
     const pages = Math.max(1, Math.ceil(d.total / d.perPage));
     $("pager").innerHTML = `<button class="btn sm" id="prev" ${state.page <= 1 ? "disabled" : ""}>←</button>

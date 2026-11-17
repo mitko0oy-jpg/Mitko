@@ -57,7 +57,9 @@ export async function seedDemo() {
           status: fate === "canceled" ? "canceled" : fate === "new" ? "pending" : fate === "delivered" && s.region === "abroad" ? "completed" : "shipped",
           customerName: pick(NAMES),
           shippingAddress: { name: "", phone: "0888" + String(100000 + Math.floor(rnd() * 899999)), city: pick(CITIES), address: courier === "econt" ? "До офис econt[8501]: Айтос Автогара" : courier === "speedy" ? "До офис speedy[414]: ПЛОВДИВ - ВЕЛЕШКИ ул. Авксентий Велешки 31" : "ул. Демо 1" },
-          items: [{ name, quantity: qty, total: Math.round(price * qty * 100) / 100 }],
+          items: [{ name, quantity: qty, total: Math.round(price * qty * 100) / 100, sku: `SKU-${String(name).length}${Math.round(price)}`, weight: 0.35, variation: qty > 1 ? [{ name: "Брой", value: "2" }] : [] }],
+          customerEmail: rnd() < 0.5 ? "klient@example.com" : "",
+          ...(rnd() < 0.15 ? { discountCode: "ESEN10" } : {}),
           subTotal: price * qty,
           shippingAmount: shipping,
           total: Math.round((price * qty + shipping) * 100) / 100,
@@ -81,6 +83,8 @@ export async function seedDemo() {
     }
   }
   await q("INSERT INTO users (email, password_hash, name, role, company_id, is_owner) VALUES ('demo@local', $1, 'Демо', 'admin', 1, true) ON CONFLICT (email) DO NOTHING", [await hashPassword("demo-demo-demo")]);
+  // What the couriers charged (Middleware shows it in brackets next to the delivery price).
+  await q("UPDATE orders SET courier_cost = CASE WHEN courier = 'econt' THEN 3.24 ELSE 3.80 END, courier_cost_at = now() WHERE tracking_no IS NOT NULL");
   await q("INSERT INTO job_log (job, ok, info) VALUES ('sync', true, '{\"demo\": true}'), ('track', true, '{\"demo\": true}')");
   // nekorekten.com marks on a few returned customers (invented reports).
   await q(

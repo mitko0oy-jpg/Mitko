@@ -448,9 +448,10 @@ export async function createFor(id: number, input: any, userId: number | null) {
   await q(
     `UPDATE orders SET tracking_no = $2, courier = $3, tracking_source = 'own', tracking_url = NULL, waybill = $4,
             parcel_status = 'prepared', parcel_text = 'Товарителницата е създадена', parcel_at = now(), parcel_final = false,
-            parcel_events = $5, tracked_at = NULL, track_error = NULL, delivered_at = NULL
+            parcel_events = $5, tracked_at = NULL, track_error = NULL, delivered_at = NULL,
+            courier_cost = $6, courier_cost_at = CASE WHEN $6::numeric IS NULL THEN NULL ELSE now() END
       WHERE id = $1`,
-    [id, made.number, d.courier, JSON.stringify(waybill), JSON.stringify([{ at: waybill.at, text: "Товарителницата е създадена" }])],
+    [id, made.number, d.courier, JSON.stringify(waybill), JSON.stringify([{ at: waybill.at, text: "Товарителницата е създадена" }]), Number.isFinite(made.price) ? made.price : null],
   );
   await log(id, d.courier, "create", true, made.number, { price: made.price, cod: d.cod, type: d.type, officeId: d.officeId }, userId);
   const where = d.type === "address" ? `до адрес ${d.city}` : `до ${d.type === "automat" ? "автомат" : "офис"} № ${d.officeId}${d.officeName ? ` ${d.officeName}` : ""}`;
