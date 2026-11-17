@@ -224,6 +224,8 @@ export function normalize(o: any): Normalized {
       qty: Number(it.quantity) || 1,
       total: n(it.total),
       ...(it.sku ? { sku: s(it.sku, 60) } : {}),
+      // PDFs and other digital products are not packed or sent.
+      ...(it.shippingRequired === false || it.type === "digital" ? { digital: true } : {}),
     })),
     sub_total: n(o.subTotal),
     shipping: n(o.shippingAmount),
@@ -234,6 +236,7 @@ export function normalize(o: any): Normalized {
     courier: trackingNo ? courierOf(courierText) || courierText.toLowerCase() || delivery.courier || null : null,
     tracking_no: trackingNo,
     tracking_url: s(f.trackingUrl || f.tracking_url, 400) || null,
-    cb_shipped: Boolean(trackingNo || courierText || o.shipped === true || o.shippedAt || o.fulfilled === true),
+    // The courier name alone is only what the client chose at checkout: sent = a waybill number or an explicit mark.
+    cb_shipped: Boolean(trackingNo || o.shipped === true || o.shippedAt || o.fulfilled === true),
   };
 }

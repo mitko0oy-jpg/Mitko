@@ -74,9 +74,10 @@ export function panelHtml(o) {
   </section>`;
 
   const lines = o.lines || [];
-  const known = lines.filter((l) => l.weight);
+  const physical = lines.filter((l) => !l.digital);
+  const known = physical.filter((l) => l.weight);
   const total = known.reduce((n, l) => n + kg(l.weight) * l.qty, 0);
-  const contents = lines.filter((l) => l.total > 0).map((l) => l.name).join(", ");
+  const contents = (physical.some((l) => l.total > 0) ? physical : lines).filter((l) => l.total > 0).map((l) => l.name).join(", ");
   const products = `<section class="pcard wide"><h3>Продукти</h3>
     <div class="plines">${lines
       .map(
@@ -84,6 +85,7 @@ export function panelHtml(o) {
         <span class="pimg">${l.image ? `<img src="${esc(l.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : BOX}</span>
         <span class="pname"><b>${l.url ? `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>` : esc(l.name)}</b>
           ${l.variant ? `<span class="sub">${esc(l.variant)}</span>` : ""}
+          ${l.digital ? `<span class="dig">дигитален – не се изпраща</span>` : ""}
           <span class="sub">${l.sku ? `SKU: ${esc(l.sku)}` : ""}${l.weight ? `${l.sku ? " · " : ""}${weightText(kg(l.weight))}` : ""}</span></span>
         <span class="pq">${l.qty} × ${money(l.price, cur)}</span>
         <span class="pt">${l.total ? money(l.total, cur) : `<span class="gift">подарък</span>`}</span>
@@ -91,7 +93,7 @@ export function panelHtml(o) {
       )
       .join("")}</div>
     <div class="pfoot">
-      ${row("Общо тегло", known.length ? `${weightText(total)}${known.length < lines.length ? ` <span class="muted small">(без ${lines.length - known.length} без тегло)</span>` : ""}` : `<span class="muted">не е въведено в магазина</span>`)}
+      ${row("Общо тегло", known.length ? `${weightText(total)}${known.length < physical.length ? ` <span class="muted small">(${physical.length - known.length} без тегло)</span>` : ""}` : `<span class="muted">не е въведено в магазина</span>`)}
       ${row("Описание на пратката", esc(contents.slice(0, 100)))}
     </div>
     <div class="popen"><a href="/poruchka/?id=${o.id}">Отвори поръчката →</a></div>

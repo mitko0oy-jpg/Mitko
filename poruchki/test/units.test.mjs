@@ -55,6 +55,25 @@ test("normalize a ConvertBuilder order", () => {
   assert.equal(normalize({ id: 1, created: 1794480000, status: "pending" }).cb_shipped, false);
 });
 
+test("the courier chosen at checkout is not a sent parcel; digital products are marked", () => {
+  // EduBel order 7845 as ConvertBuilder gives it: Speedy chosen, no waybill yet, a book and PDFs.
+  const n = normalize({
+    id: 2738, invoiceNo: 7845, created: 1794480000, status: "pending",
+    fulfillment: { courier: "dpd-courier", trackingNo: null, trackingUrl: null },
+    shippingName: "Офис на СПИДИ",
+    items: [
+      { name: "Български език", quantity: 1, total: 27.9, shippingRequired: true, type: "physical" },
+      { name: "PDF Писмено изпитване", quantity: 1, total: 0, shippingRequired: false, type: "digital" },
+      { name: "Пробна матура за НВО - дигитален формат", quantity: 1, total: 9.9, shippingRequired: false, type: "digital" },
+    ],
+  });
+  assert.equal(n.cb_shipped, false);
+  assert.equal(n.tracking_no, null);
+  assert.equal(n.items[0].digital, undefined);
+  assert.equal(n.items[1].digital, true);
+  assert.equal(n.items[2].digital, true);
+});
+
 test("Speedy operation codes", () => {
   const op = (code, h) => ({ operationCode: code, dateTime: `2026-11-1${h}T10:00:00+02:00`, description: `op ${code}` });
   assert.equal(speedyState([op(1, 0), op(-14, 2)]).status, "delivered");

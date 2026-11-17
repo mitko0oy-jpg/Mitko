@@ -105,7 +105,9 @@ export function draftFor(o: OrderRow, def: Defaults): Draft {
   const type: Draft["type"] = d.type === "office" || d.type === "automat" ? d.type : "address";
   const isOfficeText = (s: string) => /^\s*До офис/i.test(s || "");
   const address = [o.address, o.address2].filter((s) => s && !isOfficeText(s)).join(", ");
-  const products = (o.items || []).filter((i: any) => Number(i.total) > 0).map((i: any) => String(i.name));
+  // What goes in the parcel: paid items, without digital products (PDFs are not sent).
+  const paid = (o.items || []).filter((i: any) => Number(i.total) > 0);
+  const products = (paid.some((i: any) => !i.digital) ? paid.filter((i: any) => !i.digital) : paid).map((i: any) => String(i.name));
   return {
     courier,
     type,

@@ -875,3 +875,4 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 a, .otbl .cname2, .otbl .ph a, .otbl .where, .otbl a.ono:hover, .pcard a, .linkbtn:hover { color: var(--link); }
 .otbl .cname2 { font-weight: 600; }
 .btn.primary, .roundbtn, .actsin .iconbtn.primary, .iconbtn.primary { box-shadow: 0 1px 2px rgb(61 134 223 / 0.35); }
+.pname .dig { font-size: 11px; font-weight: 600; color: #7c5cd6; }

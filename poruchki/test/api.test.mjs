@@ -824,7 +824,7 @@ test("order panel like Middleware: products with SKU, weight and picture; what t
   const d = (await api(`/api/orders/${list[0].id}`)).data;
   assert.equal(d.courier_cost, 3.24, "Econt's price from the shipment status");
   assert.equal(d.discount_code, "ESEN10");
-  assert.deepEqual(d.lines[0], { name: "BeeVenom Care Gel", qty: 1, total: 20, price: 20, sku: "BV-GEL", image: "https://cdn.example.com/gel.jpg", weight: 0.25, variant: "Размер: 50 мл", url: null });
+  assert.deepEqual(d.lines[0], { name: "BeeVenom Care Gel", qty: 1, total: 20, price: 20, sku: "BV-GEL", image: "https://cdn.example.com/gel.jpg", weight: 0.25, variant: "Размер: 50 мл", url: null, digital: false });
   // A Speedy parcel made elsewhere (Middleware): its price is asked with shipment/info.
   const sp = (await api("/api/orders?tab=&q=62000000001")).data.orders[0];
   if (sp) assert.equal((await api(`/api/orders/${sp.id}`)).data.courier_cost, 3.8);

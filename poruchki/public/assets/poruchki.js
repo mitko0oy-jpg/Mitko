@@ -70,7 +70,7 @@ function confirmCell(o) {
   return "";
 }
 
-const canShip = (o) => !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
+const canShip = (o) => !o.digital_only && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 // "ekont" (as Middleware writes it) is Econt.
 const COURIER_ALIAS = { ekont: "econt", spidi: "speedy", "dpd-courier": "speedy", dpd: "speedy" };
 function courierOf(o) {

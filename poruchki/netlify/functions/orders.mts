@@ -166,9 +166,12 @@ async function list(u: URLSearchParams) {
       shipping: Number(r.shipping),
       waybill: r.waybill && r.waybill.number === r.tracking_no ? { price: r.waybill.price, at: r.waybill.at } : null,
       tracking_link: trackingUrl(r.courier, r.tracking_no),
-      items_qty: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0),
+      // Only digital products (PDFs): nothing to send.
+      digital_only: (r.items || []).length > 0 && (r.items || []).every((i: any) => i.digital),
+      // Things to pack: no digital products, no free gifts.
+      items_qty: (r.items || []).filter((i: any) => !i.digital && (i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name))).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0),
       nek_reports: Array.isArray(r.nek_reports) ? r.nek_reports.slice(0, 3).map((x: any) => ({ text: String(x.text || "").slice(0, 240), date: x.date || null })) : null,
-      items: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).map((i: any) => `${i.qty > 1 ? i.qty + " × " : ""}${i.name}`),
+      items: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).map((i: any) => `${i.qty > 1 ? i.qty + " × " : ""}${i.name}${i.digital ? " (дигитален)" : ""}`),
     })),
   };
 }
@@ -249,6 +252,7 @@ async function detail(id: number) {
       weight: Number(r.weight) > 0 ? Number(r.weight) : null,
       variant,
       url: typeof r.url === "string" ? r.url : null,
+      digital: Boolean(it.digital || r.shippingRequired === false || r.type === "digital"),
     };
   });
   return {
