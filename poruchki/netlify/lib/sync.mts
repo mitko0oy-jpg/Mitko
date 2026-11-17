@@ -8,6 +8,7 @@ import { getRates, refreshRates, type Rates } from "./fx.mts";
 import { pullMiddleware } from "./mw.mts";
 import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
+import { runNekChecks } from "./nekorekten.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
 
@@ -100,7 +101,10 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   // 4) Middleware, while it still makes the waybills.
   const mw = Date.now() < deadline - 2000 ? await pullMiddleware(deadline - 1000) : { enabled: true, skipped: true };
 
-  const info = { ...c, shops: shops.length, errors, mw, products };
+  // 5) nekorekten.com for the new Bulgarian phones (a few per run).
+  const nekorekten = Date.now() < deadline - 2000 ? await runNekChecks(deadline - 1000).catch((e) => ({ error: e.message })) : { skipped: "time" };
+
+  const info = { ...c, shops: shops.length, errors, mw, products, nekorekten };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

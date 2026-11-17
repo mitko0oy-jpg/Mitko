@@ -82,6 +82,14 @@ export async function seedDemo() {
   }
   await q("INSERT INTO users (email, password_hash, name, role) VALUES ('demo@local', $1, 'Демо', 'admin') ON CONFLICT (email) DO NOTHING", [await hashPassword("demo-demo-demo")]);
   await q("INSERT INTO job_log (job, ok, info) VALUES ('sync', true, '{\"demo\": true}'), ('track', true, '{\"demo\": true}')");
+  // nekorekten.com marks on a few returned customers (invented reports).
+  await q(
+    `INSERT INTO phone_checks (phone_key, phone, count, reports)
+     SELECT DISTINCT right(regexp_replace(phone, '\\D', '', 'g'), 9), phone, 2,
+            '[{"id":1,"text":"Не взе пратката от офиса (измислен пример)","date":"2026-10-01T10:15:00+03:00","name":"","city":"София"},{"id":2,"text":"Отказа на място (измислен пример)","date":"2026-09-12T12:00:00+03:00","name":"","city":""}]'::jsonb
+       FROM orders WHERE stage = 'returned' AND phone <> '' LIMIT 6
+     ON CONFLICT DO NOTHING`,
+  );
   return `demo: ${SHOPS.length} shops, ${total} orders, login demo@local / demo-demo-demo`;
 }
 

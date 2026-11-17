@@ -69,6 +69,7 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
   if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
+  if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9) AND pc2.count > 0)");
   if (u.get("sent") === "today" && !skip.sent) parts.push(SENT_TODAY);
   const product = str(u.get("product"), 200);
   if (product && !skip.product) add("EXISTS (SELECT 1 FROM jsonb_array_elements(o.items) i WHERE i->>'name' = ?)", product);
@@ -108,8 +109,10 @@ async function list(u: URLSearchParams) {
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
-              o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before
+              o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
+              pc.count AS nek_count
          FROM orders o JOIN shops s ON s.id = o.shop
+         LEFT JOIN phone_checks pc ON pc.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9)
          LEFT JOIN LATERAL (
            SELECT count(*)::int AS n, count(*) FILTER (WHERE x.stage = 'returned')::int AS ret
              FROM orders x
@@ -212,6 +215,10 @@ async function detail(id: number) {
   if (!o) throw notFound("Няма такава поръчка.");
   const raw = o.raw || {};
   const { raw: _r, ...rest } = o;
+  const nek = await one<any>(
+    "SELECT checked_at, count, reports, error FROM phone_checks WHERE phone_key = right(regexp_replace($1, '\\D', '', 'g'), 9)",
+    [o.phone || ""],
+  );
   const events = await q<any>(
     `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
     [id],
@@ -232,6 +239,7 @@ async function detail(id: number) {
     extra_fields: Array.isArray(raw.additionalFields) ? raw.additionalFields.map((f: any) => ({ field: String(f.field || ""), value: String(f.value || "") })) : [],
     discount_code: raw.discountCode || null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    nekorekten: nek,
   };
 }
 

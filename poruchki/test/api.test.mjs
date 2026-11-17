@@ -111,6 +111,18 @@ const courier = createServer((req, res) => {
         sent.push({ path: "sms", body: Object.fromEntries(form) });
         return json({ count: 1, list: [{ id: "77", points: 0.054, number: form.get("to"), status: "QUEUE", parts: 1 }] });
       }
+      case "/nek/api/v1/api-keys/current/usage":
+        if (req.headers["api-key"] !== "nek-key-12345") return res.writeHead(401, { "content-type": "application/json" }).end('{"message":"bad key"}');
+        return json({ items: { plan: { name: "Безплатен" }, apiRequests: { used: 1, limit: 10, period: "minute" }, searchRequests: { used: 2, limit: 30, period: "day" } } });
+      case "/nek/api/v1/reports":
+        if (req.headers["api-key"] !== "nek-key-12345") return res.writeHead(401).end("{}");
+        if (req.method === "POST") return json({ message: "Сигналът е изпратен успешно.", details: { id: 555 } });
+        if (u.searchParams.get("phone") === "359888100004")
+          return json({ items: [
+            { id: 1, firstName: "К***", lastName: "4", phone: "+359888100004", text: "Не взе пратката", city: { name: "София" }, createDate: "2026-10-01T10:15:00+03:00" },
+            { id: 2, text: "Отказа на място", createDate: "2026-09-01T10:15:00+03:00" },
+          ], count: 2 });
+        return json({ items: [], count: 0 });
       case "/econt/Shipments/LabelService.deleteLabels.json":
         return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });
       default:
@@ -146,6 +158,7 @@ test.before(async () => {
       ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
       AGENT_TOKEN: "agent-token-agent-token-agent-token-0000",
       SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
+      NEKOREKTEN_URL: `http://127.0.0.1:${COURIER_PORT}/nek`, NEKOREKTEN_KEY: "",
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
         { id: "bg", label: "Тест BG", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key" },
@@ -579,4 +592,43 @@ test("bell counts and the Excel export", async () => {
   assert.equal(lines.length - 1, (await api("/api/orders?tab=")).data.total);
   assert.match(lines[1], /;0888 \d{3} \d{3};/); // phones stay text in Excel
   assert.equal((await fetch(`${B}/api/orders/export`)).status, 401);
+});
+
+test("nekorekten.com: key in settings, new phones checked in the sync, marks, report", async () => {
+  assert.equal((await api("/api/nekorekten/settings")).data.configured, false);
+  assert.equal((await api("/api/nekorekten/check", { orderId: 1 })).status, 400); // no key yet
+  assert.equal((await api("/api/nekorekten/settings", { key: "bad" })).status, 400);
+  const wrong = (await api("/api/nekorekten/settings", { key: "wrong-key-000", auto: true })).data;
+  assert.match(wrong.usage.error, /ключът не е приет/);
+  const ok = (await api("/api/nekorekten/settings", { key: "nek-key-12345", auto: true })).data;
+  assert.equal(ok.configured, true);
+  assert.equal(ok.usage.plan, "Безплатен");
+  assert.equal(ok.usage.perDay, 30);
+
+  const sync = await api("/api/settings/sync", {});
+  assert.equal(sync.status, 200);
+  const o = (await api("/api/orders?tab=&q=5004")).data.orders[0];
+  assert.equal(o.nek_count, 2);
+  const flagged = (await api("/api/orders?tab=&nek=1")).data;
+  assert.ok(flagged.orders.every((x) => x.nek_count > 0) && flagged.total >= 1);
+  const d = (await api(`/api/orders/${o.id}`)).data;
+  assert.equal(d.nekorekten.count, 2);
+  assert.equal(d.nekorekten.reports[0].text, "Не взе пратката");
+  assert.equal(d.nekorekten.reports[0].city, "София");
+
+  // A clean phone checked by hand.
+  const clean = (await api("/api/orders?tab=&q=5001")).data.orders[0];
+  const c = (await api("/api/nekorekten/check", { orderId: clean.id })).data;
+  assert.equal(c.check.count, 0);
+
+  // Report: text required; goes out with the phone and the name, and is kept in the history.
+  assert.equal((await api("/api/nekorekten/report", { orderId: o.id, text: "кратко" })).status, 400);
+  const r = (await api("/api/nekorekten/report", { orderId: o.id, text: "Не взе пратката от офиса, поръчка 5004" })).data;
+  assert.match(r.message, /успешно/);
+  const posted = sent.filter((x) => x.path === "/nek/api/v1/reports" && x.body.text).at(-1).body;
+  assert.equal(posted.phone, "359888100004");
+  assert.equal(posted.firstName, "Клиент");
+  assert.equal(posted.lastName, "4");
+  const after = (await api(`/api/orders/${o.id}`)).data;
+  assert.ok(after.events.some((e) => e.kind === "nekorekten"));
 });

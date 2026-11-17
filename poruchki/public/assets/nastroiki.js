@@ -227,6 +227,35 @@ $("smsTest").onclick = () =>
   });
 api("/api/sms/settings?check=1").then(renderSms).catch((e) => say(e.message, false));
 
+// ---- nekorekten.com ----
+function renderNek(d) {
+  const u = d.usage;
+  $("nekState").innerHTML = !d.configured
+    ? `<span class="err">не е свързан</span>`
+    : u?.error
+      ? `<span class="err">${esc(u.error)}</span>`
+      : `<span class="ok">свързан</span>${u ? ` · план: ${esc(u.plan || "–")}${u.perDay ? ` · проверки днес: ${num(u.usedToday)} от ${num(u.perDay)}` : ""}` : ""}${d.source === "env" ? ` · <span class="muted">ключът е в настройките на Netlify</span>` : ""}`;
+  const f = $("nekForm");
+  f.auto.checked = !!d.auto;
+  for (const el of f.elements) el.disabled = !isAdmin;
+  $("nekRemove").hidden = d.source !== "app";
+}
+$("nekForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  await busy($("nekSave"), "Записвам…", async () => {
+    renderNek(await api("/api/nekorekten/settings", { method: "POST", body: { key: f.key.value, auto: f.auto.checked } }));
+    f.key.value = "";
+    say("nekorekten.com е записан.");
+  });
+};
+$("nekRemove").onclick = async () => {
+  if (!confirm("Да махна ли ключа за nekorekten.com?")) return;
+  renderNek(await api("/api/nekorekten/settings", { method: "POST", body: { removeKey: true } }));
+  say("Ключът е махнат.");
+};
+api("/api/nekorekten/settings?check=1").then(renderNek).catch((e) => say(e.message, false));
+
 $("autoWaybill").onchange = async (e) => {
   try {
     await api("/api/waybills/settings", { method: "POST", body: { automation: { autoWaybill: e.target.checked } } });

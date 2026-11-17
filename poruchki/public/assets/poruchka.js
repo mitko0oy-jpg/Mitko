@@ -33,6 +33,21 @@ const CB_STATUS = { pending: "нова", shipped: "изпратена", complete
 await shell("poruchki");
 if (document.referrer.includes("/poruchki/")) $("back").href = document.referrer;
 
+/** Reports from nekorekten.com for this phone (their terms: always say where they come from). */
+function nekCard(o) {
+  const n = o.nekorekten;
+  const bad = ["returned", "canceled"].includes(o.stage) || o.parcel_status === "refused";
+  const head = `<div class="row spread"><h2>Сигнали от <a href="https://nekorekten.com" target="_blank" rel="noopener">nekorekten.com</a></h2>
+    <div class="row">${o.phone ? `<button class="btn sm" id="nekCheck">${n ? "Провери пак" : "Провери"}</button>` : ""}${o.phone && bad ? `<button class="btn sm danger" id="nekReport">Подай сигнал</button>` : ""}</div></div>`;
+  if (!n) return `<section class="card">${head}<p class="muted small">Телефонът още не е проверен. Новите поръчки от България се проверяват сами, щом в Настройки има ключ за nekorekten.com.</p></section>`;
+  const list = (n.reports || [])
+    .map((r) => `<li>${esc(r.text || "–")}<div class="muted small">${r.date ? when(r.date) : ""}${r.name ? ` · ${esc(r.name)}` : ""}${r.city ? ` · ${esc(r.city)}` : ""}</div></li>`)
+    .join("");
+  return `<section class="card${n.count ? " nekcard" : ""}">${head}
+    ${n.error ? `<p class="err small">${esc(n.error)}</p>` : n.count ? `<p><b>${n.count} сигнала</b> за този телефон.</p><ul class="timeline">${list}</ul>` : `<p class="ok small">Няма сигнали за този телефон.</p>`}
+    <p class="muted small">Проверено ${when(n.checked_at)} · източник: nekorekten.com</p></section>`;
+}
+
 function render(o) {
   const d = o.delivery || {};
   const deliveryText = [
@@ -100,9 +115,36 @@ function render(o) {
         ? `<section class="card"><h2>Бележки от магазина</h2><ul class="timeline">${o.shop_notes.map((n) => `<li>${esc(n.text)}${n.at ? `<div class="muted small">${when(n.at)}</div>` : ""}</li>`).join("")}</ul></section>`
         : ""
     }
+    ${nekCard(o)}
     <section class="card" id="historyCard"></section>
   </div>`;
   mountProducts($("productsCard"), o, (fresh) => render(fresh));
+  if ($("nekCheck"))
+    $("nekCheck").onclick = async () => {
+      $("nekCheck").disabled = true;
+      try {
+        await api("/api/nekorekten/check", { method: "POST", body: { orderId: id } });
+        render(await api(`/api/orders/${id}`));
+      } catch (e) {
+        alert(e.message);
+        $("nekCheck").disabled = false;
+      }
+    };
+  if ($("nekReport"))
+    $("nekReport").onclick = async () => {
+      const text = prompt(
+        "Сигнал към nekorekten.com за този клиент.\nОпиши само фактите – например „Не взе пратката от офиса, поръчка № " + o.order_no + ", " + new Date(o.ordered_at).toLocaleDateString("bg-BG") + "“.\nСигналът е публичен в nekorekten.com.",
+      );
+      if (!text || !text.trim()) return;
+      if (!confirm(`Да изпратя ли сигнала за ${o.customer_name || "клиента"} (${o.phone}) към nekorekten.com?`)) return;
+      try {
+        const r = await api("/api/nekorekten/report", { method: "POST", body: { orderId: id, text } });
+        alert(r.message || "Сигналът е изпратен.");
+        render(await api(`/api/orders/${id}`));
+      } catch (e) {
+        alert(e.message);
+      }
+    };
   renderHistory($("historyCard"), o);
   const reloadNow = async () => render(await api(`/api/orders/${id}`));
   const post = async (action, body = {}) => {

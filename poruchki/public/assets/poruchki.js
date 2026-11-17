@@ -29,6 +29,7 @@ if (qs().get("product")) $("product").innerHTML += `<option>${esc(qs().get("prod
 for (const f of FIELDS) $(f).value = qs().get(f) || "";
 $("nowaybill").checked = qs().get("nowaybill") === "1";
 $("sentToday").checked = qs().get("sent") === "today";
+$("nek").checked = qs().get("nek") === "1";
 
 const ICON = {
   more: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>`,
@@ -49,6 +50,7 @@ function params() {
   p.stage = [...state.stages].join(",");
   p.nowaybill = $("nowaybill").checked ? "1" : "";
   p.sent = $("sentToday").checked ? "today" : "";
+  p.nek = $("nek").checked ? "1" : "";
   p.page = state.page > 1 ? String(state.page) : "";
   p.per = state.per === 100 ? "100" : "";
   p.archived = state.tab === "archived" ? "1" : "";
@@ -210,7 +212,7 @@ function renderTable(d) {
         <td class="c-no"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a><div class="pills">${o.paid ? `<span class="pill pay" title="Платена">$</span>` : `<span class="pill cod" title="Наложен платеж">$</span>`}<span class="pill n" title="${o.other_orders ? `Още ${o.other_orders} поръчки от този телефон` : "Първа поръчка от този телефон"}">${(o.other_orders || 0) + 1}</span>${o.source === "phone" ? `<span class="pill" title="Поръчка по телефона">☎</span>` : o.source === "manual" ? `<span class="pill" title="Въведена ръчно">✎</span>` : ""}</div></td>
         <td class="c-badge"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
-        <td class="c-client"><div class="cl">${o.returned_before ? `<span class="warn" title="Върнал е ${o.returned_before} пратки">!</span>` : ""}<a class="cname2" href="/poruchka/?id=${o.id}">${esc(o.customer_name || "–")}</a></div><div class="ph">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${badPhone(o) ? `<span class="bad" title="Телефонът не прилича на български номер">✕</span>` : ""}</div></td>
+        <td class="c-client"><div class="cl">${o.returned_before ? `<span class="warn" title="Върнал е ${o.returned_before} пратки">!</span>` : ""}<a class="cname2" href="/poruchka/?id=${o.id}">${esc(o.customer_name || "–")}</a></div><div class="ph">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${badPhone(o) ? `<span class="bad" title="Телефонът не прилича на български номер">✕</span>` : ""}${o.nek_count ? `<span class="nekb" title="${o.nek_count} сигнала в nekorekten.com – виж поръчката">⚠ ${o.nek_count}</span>` : ""}</div></td>
         <td class="c-cour">${courierCell(o)}</td>
         <td class="c-cstat">${parcelCell(o)}</td>
         <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}<div class="sub">${o.currency !== "EUR" ? eur(o.total_eur) : money(o.sub_total, o.currency)}</div></td>
@@ -369,7 +371,7 @@ $("newOrder").onclick = async () => {
   const r = await openOrderForm({ mode: "new", shops: shopList });
   if (r?.id) location.href = `/poruchka/?id=${r.id}`;
 };
-for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "confirmed", "sort", "product"]) $(f).onchange = () => ((state.page = 1), load());
+for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "nek", "confirmed", "sort", "product"]) $(f).onchange = () => ((state.page = 1), load());
 $("sentToday").onchange = () => {
   // Sent today can be on its way or already at the office: look in every tab.
   if ($("sentToday").checked) state.tab = "";
@@ -380,6 +382,7 @@ $("clear").onclick = () => {
   for (const f of FIELDS) $(f).value = "";
   $("nowaybill").checked = false;
   $("sentToday").checked = false;
+  $("nek").checked = false;
   state.stages.clear();
   state.tab = "active";
   state.page = 1;

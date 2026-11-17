@@ -84,6 +84,23 @@
       <p class="muted small">В текстовете може: {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}.</p>
     </section>
 
+    <section class="card stack" id="nekCard">
+      <h2 id="nekorekten">nekorekten.com</h2>
+      <p class="muted small">Проверява телефона на всяка нова поръчка от България в <a href="https://nekorekten.com" target="_blank" rel="noopener">nekorekten.com</a> (сигнали за некоректни клиенти). Клиентите със сигнали получават червен знак в поръчките, а в поръчката се виждат самите сигнали. От върната или отказана поръчка може да подадеш сигнал.</p>
+      <ol class="small" style="margin:0;padding-left:20px">
+        <li>Влез в nekorekten.com → Профил → API ключове → нов ключ.</li>
+        <li>За IP адрес на ключа сложи <b>*</b> (платформата няма постоянен адрес).</li>
+        <li>Копирай ключа и го постави тук. Не го праща по чат или имейл.</li>
+      </ol>
+      <div id="nekState" class="small"></div>
+      <form id="nekForm" class="form" style="max-width:520px">
+        <label>API ключ от nekorekten.com<input name="key" type="password" autocomplete="off" placeholder="постави нов ключ"></label>
+        <label class="chk"><input type="checkbox" name="auto"> Проверявай новите поръчки сами</label>
+        <div class="row"><button class="btn primary" id="nekSave">Запиши</button><button type="button" class="btn sm" id="nekRemove">Махни ключа</button></div>
+      </form>
+      <p class="muted small">Условие на nekorekten.com: в политиката за поверителност на сайтовете, в частта „С кого споделяме вашите данни“, добави: „Доставчици на услуги като Nekorekten.com, които защитават търговци и клиенти от некоректни практики, измами и други.“</p>
+    </section>
+
     <section class="card stack" id="usersCard" hidden>
       <h2 id="potrebiteli">Хора с достъп</h2>
       <div id="users"></div>
