@@ -125,9 +125,9 @@ const courier = createServer((req, res) => {
         return json({ items: [], count: 0 });
       case "/econt/Nomenclatures/NomenclaturesService.getOffices.json":
         return json({ offices: [
-          { code: "1234", name: "София Осогово", address: { fullAddress: "гр. София, ул. Осогово 2" }, isAPS: false },
-          { code: "5678", name: "София Център", address: { fullAddress: "гр. София, бул. Витоша 1" }, isAPS: false },
-          { code: "9012", name: "Пловдив Тракия", address: { fullAddress: "гр. Пловдив, ж.к. Тракия" }, isAPS: false },
+          { code: "1234", name: "София Осогово", address: { fullAddress: "гр. София, ул. Осогово 2", city: { name: "София" } }, isAPS: false },
+          { code: "5678", name: "София Център", address: { fullAddress: "гр. София, бул. Витоша 1", city: { name: "София" } }, isAPS: false },
+          { code: "9012", name: "Пловдив Тракия", address: { fullAddress: "гр. Пловдив, ул. София 3", city: { name: "Пловдив" } }, isAPS: false },
         ] });
       case "/econt/Shipments/LabelService.deleteLabels.json":
         return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });

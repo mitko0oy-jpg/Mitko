@@ -249,14 +249,14 @@ export async function speedyCancel(creds: Creds, shipmentId: string) {
   await speedy("/shipment/cancel", creds, { shipmentId, comment: "Анулирана от платформата Поръчки" });
 }
 
-export async function speedyOffices(creds: Creds, query: string) {
+export async function speedyOffices(creds: Creds, query: string, limit = 30) {
   const name = query.trim().toUpperCase();
   if (/^\d+$/.test(name)) {
     const d = await speedy(`/location/office/${name}`, creds, {}).catch(() => null);
     return d?.office ? [{ id: String(d.office.id), name: d.office.name, address: d.office.address?.fullAddressString || "", automat: d.office.type === "APT" }] : [];
   }
-  const d = await speedy("/location/office", creds, { countryId: 100, name, limit: 30 });
-  return (d?.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, address: o.address?.fullAddressString || "", automat: o.type === "APT" }));
+  const d = await speedy("/location/office", creds, { countryId: 100, name, limit });
+  return (d?.offices || []).map((o: any) => ({ id: String(o.id), name: o.name, address: o.address?.fullAddressString || "", city: String(o.address?.siteName || ""), automat: o.type === "APT" }));
 }
 
 // ---------------- Econt ----------------
@@ -338,21 +338,36 @@ export async function econtPdfUrl(creds: Creds, number: string): Promise<string 
   return d?.shipmentStatuses?.[0]?.status?.pdfURL || null;
 }
 
-export async function econtOffices(creds: Creds, query: string) {
-  let cached = await getSetting<{ at: number; list: any[] }>("econt_offices");
-  if (!cached || Date.now() - cached.at > 24 * 3600000) {
+async function econtAll(creds: Creds) {
+  let cached = await getSetting<{ at: number; list: any[]; v?: number }>("econt_offices");
+  if (!cached || cached.v !== 2 || Date.now() - cached.at > 24 * 3600000) {
     const d = await econt("/Nomenclatures/NomenclaturesService.getOffices.json", creds, { countryCode: "BGR" });
     const list = (d?.offices || []).map((o: any) => ({
       id: String(o.code),
       name: String(o.name || ""),
       address: String(o.address?.fullAddress || [o.address?.city?.name, o.address?.street, o.address?.num].filter(Boolean).join(" ") || ""),
       automat: Boolean(o.isAPS),
+      city: String(o.address?.city?.name || ""),
     }));
-    cached = { at: Date.now(), list };
+    cached = { at: Date.now(), list, v: 2 };
     await setSetting("econt_offices", cached);
   }
+  return cached.list;
+}
+
+export async function econtOffices(creds: Creds, query: string, limit = 30) {
+  const list = await econtAll(creds);
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  return cached.list.filter((o) => (/^\d+$/.test(query.trim()) ? o.id === query.trim() : words.every((w) => `${o.name} ${o.address}`.toLowerCase().includes(w)))).slice(0, 30);
+  return list.filter((o) => (/^\d+$/.test(query.trim()) ? o.id === query.trim() : words.every((w) => `${o.name} ${o.address}`.toLowerCase().includes(w)))).slice(0, limit);
+}
+
+/** Every office of one town (the courier's own town field, not just the word anywhere in the address). */
+async function cityOffices(courier: "speedy" | "econt", creds: Creds, city: string) {
+  const same = (x: string) => norm(x).replace(/^(гр|с)\s+/, "") === city;
+  if (courier === "econt") return (await econtAll(creds)).filter((o) => same(o.city || ""));
+  const list = await speedyOffices(creds, city, 500);
+  const inTown = list.filter((o: any) => same(o.city || "") || norm(o.name).startsWith(`${city} `) || norm(o.name) === city);
+  return inTown.length ? inTown : list;
 }
 
 // ---------------- what the API calls ----------------
@@ -515,7 +530,7 @@ export async function searchOffices(courier: string, city: string, text: string)
   const c = norm(city).replace(/^(гр|с)\s+/, "");
   if (c.length < 2) return { list: [], words: [] as string[] };
   const creds = await credsFor(courier);
-  const list: any[] = courier === "speedy" ? await speedyOffices(creds, c) : await econtOffices(creds, c);
+  const list: any[] = await cityOffices(courier, creds, c);
   const words = norm(text).split(" ").filter((w) => w.length >= 3 && !STOP.has(w) && !c.split(" ").includes(w));
   const scored = list
     .map((o) => {
