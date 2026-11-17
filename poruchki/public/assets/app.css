@@ -570,3 +570,18 @@ body.focus main { padding-top: 8px; }
   .otbl th.c-cstat button, .otbl th.c-cstat { white-space: normal; }
   .otbl th.c-cstat button { text-align: left; line-height: 1.25; max-width: 84px; }
 }
+
+/* OrderDesk brand */
+.brand { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+.brand svg { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 4px 14px rgb(91 33 182 / 0.35); }
+.b2 { background: linear-gradient(90deg, #3b82f6, #7c3aed); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .b2 { background-image: linear-gradient(90deg, #7fb0ff, #b79cff); } }
+:root[data-theme="dark"] .b2 { background-image: linear-gradient(90deg, #7fb0ff, #b79cff); }
+.login { min-height: 100vh; background: radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, #3b82f6 18%, transparent), transparent 60%), radial-gradient(900px 500px at 110% 110%, color-mix(in srgb, #7c3aed 16%, transparent), transparent 60%); max-width: none; }
+.logincard { width: min(420px, 100%); padding: 28px; border-radius: 20px; box-shadow: 0 24px 60px rgb(0 0 0 / 0.12); }
+.loginbrand { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.loginbrand img { border-radius: 14px; box-shadow: 0 8px 22px rgb(91 33 182 / 0.35); }
+.loginbrand h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+.loginbrand p { margin: 2px 0 0; }
+.logincard .btn.primary { background: linear-gradient(90deg, #3b82f6, #7c3aed); border: 0; color: #fff; box-shadow: 0 8px 20px rgb(91 33 182 / 0.3); }
+.logincard .btn.primary:hover { filter: brightness(1.08); }

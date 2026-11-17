@@ -3,16 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вход – Поръчки</title>
+  <title>Вход – OrderDesk</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/app.css">
   <script src="/assets/theme.js"></script>
 </head>
 <body>
-  <main class="center">
-    <section class="card" style="width:min(400px,100%)">
-      <h1 style="margin-bottom:4px">Поръчки</h1>
+  <main class="center login">
+    <section class="card logincard">
+      <div class="loginbrand">
+        <img src="/assets/icon.svg" alt="" width="56" height="56">
+        <div><h1>Order<span class="b2">Desk</span></h1><p class="muted small">Поръчки, товарителници и обаждания на едно място</p></div>
+      </div>
       <p class="muted small" id="lead">Влез с имейла и паролата си.</p>
       <form class="form" id="login">
         <label>Имейл<input type="email" name="email" autocomplete="username" required></label>
