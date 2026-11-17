@@ -6,6 +6,7 @@ import { cbSites, listOrders, PAGE, type Site } from "./cb.mts";
 import { q, logJob } from "./db.mts";
 import { getRates, refreshRates, type Rates } from "./fx.mts";
 import { pullMiddleware } from "./mw.mts";
+import { syncAllProducts } from "./products.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
 
@@ -88,10 +89,14 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     }
   }
 
-  // 3) Middleware, while it still makes the waybills.
+  // 3) Products of the shops, once a day (to add to orders).
+  let products: Record<string, unknown> = {};
+  if (Date.now() < deadline - 5000) products = await syncAllProducts(deadline - 3000).catch((e) => ({ error: e.message }));
+
+  // 4) Middleware, while it still makes the waybills.
   const mw = Date.now() < deadline - 2000 ? await pullMiddleware(deadline - 1000) : { enabled: true, skipped: true };
 
-  const info = { ...c, shops: shops.length, errors, mw };
+  const info = { ...c, shops: shops.length, errors, mw, products };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

@@ -65,6 +65,23 @@
       </form>
     </section>
 
+    <section class="card stack" id="smsCard">
+      <h2>SMS</h2>
+      <p class="muted small">SMS-ите се пращат през <a href="https://www.smsapi.bg/" target="_blank" rel="noopener">SMSAPI</a> (~0,05 € за SMS, без договор). Там: регистрация → OAuth токени → нов токен с право „SMS“ → постави го тук. Името на подателя (до 11 латински букви, напр. BeeVenom) се одобрява от SMSAPI.</p>
+      <div id="smsState" class="small"></div>
+      <form id="smsForm" class="grid2">
+        <div class="form">
+          <label>Токен от SMSAPI<input name="token" type="password" autocomplete="off" placeholder="постави нов токен"></label>
+          <label>Име на подателя<input name="sender" maxlength="11" placeholder="напр. BeeVenom"></label>
+          <label class="chk"><input type="checkbox" name="latin"> По подразбиране на латиница (по-евтино)</label>
+          <div class="row"><button class="btn primary" id="smsSave">Запиши</button></div>
+          <div class="row small"><input type="tel" id="smsTestPhone" placeholder="твоят телефон" style="flex:1"><button type="button" class="btn sm" id="smsTest">Пробен SMS</button></div>
+        </div>
+        <div class="form" id="smsTemplates"></div>
+      </form>
+      <p class="muted small">В текстовете може: {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}.</p>
+    </section>
+
     <section class="card stack" id="usersCard" hidden>
       <h2>Хора с достъп</h2>
       <div id="users"></div>

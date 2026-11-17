@@ -56,6 +56,13 @@ const shop = createServer((req, res) => {
     const all = orders.filter((o) => o.created >= min && o.created <= max);
     return res.end(JSON.stringify({ totalCount: all.length, limit, skip, items: all.slice(skip, skip + limit) }));
   }
+  if (u.pathname === "/api/site/products") {
+    const items = [
+      { id: 900, title: "Спрей с пчелна отрова", variants: [{ price: 12.9, sku: "SP1" }] },
+      { id: 901, title: "Крем", variants: [{ options: [{ name: "Брой", value: "3+2" }], price: 39.9, onSale: true, salePrice: 29.9 }] },
+    ];
+    return res.end(JSON.stringify({ totalCount: items.length, limit: 50, skip: 0, items }));
+  }
   const m = /^\/api\/site\/orders\/(\d+)$/.exec(u.pathname);
   if (m) return res.end(JSON.stringify(orders.find((o) => o.id === Number(m[1]))));
   if (u.pathname === "/api/site/webhooks" && req.method === "POST") {
@@ -77,7 +84,12 @@ const courier = createServer((req, res) => {
   if (req.method === "GET" && u.pathname === "/econt/pdf/1") return res.writeHead(200, { "content-type": "application/pdf" }).end(FAKE_PDF);
   let raw = "";
   req.on("data", (c) => (raw += c)).on("end", () => {
-    const b = raw ? JSON.parse(raw) : {};
+    let b = {};
+    try {
+      b = raw ? JSON.parse(raw) : {};
+    } catch {
+      b = {};
+    }
     sent.push({ path: u.pathname, body: b });
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
@@ -94,6 +106,11 @@ const courier = createServer((req, res) => {
       case "/econt/Shipments/LabelService.createLabel.json":
         if (b.mode === "calculate") return json({ label: { totalPrice: 3.8, currency: "EUR" } });
         return json({ label: { shipmentNumber: "1051600009999", pdfURL: `http://127.0.0.1:${COURIER_PORT}/econt/pdf/1`, totalPrice: 3.8, currency: "EUR" } });
+      case "/sms/sms.do": {
+        const form = new URLSearchParams(raw);
+        sent.push({ path: "sms", body: Object.fromEntries(form) });
+        return json({ count: 1, list: [{ id: "77", points: 0.054, number: form.get("to"), status: "QUEUE", parts: 1 }] });
+      }
       case "/econt/Shipments/LabelService.deleteLabels.json":
         return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });
       default:
@@ -127,6 +144,7 @@ test.before(async () => {
       SPEEDY_USER: "su", SPEEDY_PASS: "sp", ECONT_USER: "eu", ECONT_PASS: "ep",
       SPEEDY_API_URL: `http://127.0.0.1:${COURIER_PORT}/speedy`,
       ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
+      SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
         { id: "bg", label: "Тест BG", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key" },
@@ -312,4 +330,51 @@ test("waybill checks: bad phone, mixed label print, unknown order", async () => 
   assert.equal(bad.status, 400);
   assert.match(bad.data.message, /телефона/);
   assert.equal((await api("/api/waybills/draft?order=999999")).status, 404);
+});
+
+test("correct an order: shipping and an added product; a re-sync keeps it; reset brings the shop back", async () => {
+  const o = (await api("/api/orders?q=5060")).data.orders[0];
+  const products = await api("/api/products?shop=bg&q=спрей");
+  assert.equal(products.status, 200);
+  const spray = products.data.products.find((p) => p.name === "Спрей с пчелна отрова");
+  assert.equal(spray.price, 12.9);
+  const all = (await api("/api/products?shop=bg&q=")).data.products.map((p) => `${p.name} ${p.price}`);
+  assert.ok(all.includes("Крем – 3+2 29.9"), all.join(", "));
+
+  const r = await api(`/api/orders/${o.id}/edit`, { items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }, { name: spray.name, qty: 1, price: spray.price }], shipping: 0 });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.total, 32.9);
+  assert.equal(r.data.order.total, 32.9);
+  assert.equal(r.data.order.cb_total, 24.5);
+  assert.match(r.data.order.events.at(-1).text, /добавен „Спрей с пчелна отрова“.*доставка 4,50 € → 0,00 €.*общо 24,50 € → 32,90 €/);
+
+  // The next pull from the shop does not undo the correction.
+  await api("/api/settings/sync", {});
+  const again = await api(`/api/orders/${o.id}`);
+  assert.equal(again.data.total, 32.9);
+  assert.equal(again.data.items.length, 2);
+  // The waybill window takes the corrected amount for cash on delivery.
+  assert.equal((await api(`/api/waybills/draft?order=${o.id}`)).data.draft.cod, 32.9);
+
+  const back = await api(`/api/orders/${o.id}/reset`, {});
+  assert.equal(back.data.order.total, 24.5);
+  assert.equal(back.data.order.edit, null);
+  assert.match(back.data.order.events.at(-1).text, /Върнати са сумите от магазина/);
+});
+
+test("SMS: templates filled for the order, sent through SMSAPI, kept in the history", async () => {
+  const o = (await api("/api/orders?q=5060")).data.orders[0];
+  const d = await api(`/api/sms/draft?order=${o.id}`);
+  assert.equal(d.status, 200);
+  assert.equal(d.data.configured, true);
+  assert.match(d.data.filled.confirm, /Поръчка № 5060 от Тест за 24,50 €/);
+  const s = await api("/api/sms/send", { orderId: o.id, text: d.data.filled.confirm, latin: true });
+  assert.equal(s.status, 200, JSON.stringify(s.data));
+  const msg = sent.filter((x) => x.path === "sms").pop().body;
+  assert.equal(msg.to, "359888100060");
+  assert.match(msg.message, /^Zdraveyte, Klient! Porachka No 5060/);
+  assert.equal(msg.format, "json");
+  const ev = (await api(`/api/orders/${o.id}`)).data.events.at(-1);
+  assert.equal(ev.kind, "sms");
+  assert.match(ev.text, /^SMS до 0888100060: Zdraveyte/);
 });

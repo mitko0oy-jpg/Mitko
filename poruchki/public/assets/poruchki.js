@@ -1,5 +1,6 @@
 import { ago, api, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
 import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openWaybill } from "./waybill.js";
+import { openSms } from "./sms.js";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ["q", "shop", "region", "courier", "from", "to"];
@@ -26,6 +27,7 @@ $("nowaybill").checked = qs().get("nowaybill") === "1";
 const ICON = {
   print: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/></svg>`,
   info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`,
+  sms: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.7A8 8 0 1 1 21 12z"/></svg>`,
   cancel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>`,
 };
 
@@ -63,6 +65,7 @@ function actions(o) {
   if (canShip(o)) out.push(`<button class="btn primary sm" data-act="ship" data-id="${o.id}">Товарителница</button>`);
   if (o.tracking_no && (c === "speedy" || c === "econt")) out.push(`<button class="iconbtn" title="Печат на етикета" aria-label="Печат на етикета" data-act="print" data-id="${o.id}">${ICON.print}</button>`);
   if (o.tracking_source === "own" && ["shipped", "new"].includes(o.stage)) out.push(`<button class="iconbtn" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
+  if (o.phone) out.push(`<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>`);
   out.push(`<a class="iconbtn" title="Подробности" aria-label="Подробности" href="/poruchka/?id=${o.id}">${ICON.info}</a>`);
   return out.join(" ");
 }
@@ -109,7 +112,7 @@ function renderTable(d) {
         <td class="c-client">${esc(o.customer_name || "–")}<div class="sub">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${o.city ? ` · ${esc(o.city)}` : ""}</div></td>
         <td class="c-deliv">${deliveryCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
-        <td class="money">${money(o.total, o.currency)}${o.currency !== "EUR" ? `<div class="sub">${eur(o.total_eur)}</div>` : o.shipping ? `<div class="sub">${money(o.sub_total, o.currency)} + доставка</div>` : ""}</td>
+        <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}${o.currency !== "EUR" ? `<div class="sub">${eur(o.total_eur)}</div>` : o.shipping ? `<div class="sub">${money(o.sub_total, o.currency)} + доставка</div>` : ""}</td>
         <td class="c-when">${ago(o.ordered_at)}<div class="sub">${new Date(o.ordered_at).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></td>
         <td class="acts">${actions(o)}</td>
       </tr>`,
@@ -159,6 +162,7 @@ async function act(what, id) {
     if (what === "ship") {
       if (await openWaybill(id)) load(true);
     } else if (what === "print") openLabels([id]);
+    else if (what === "sms") await openSms(id);
     else if (what === "cancel" && (await cancelWaybill(id, o?.tracking_no))) load(true);
   } catch (e) {
     alert(e.message);

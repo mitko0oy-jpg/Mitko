@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
+import { body } from "../lib/http.mts";
 import { cbSite, getOrder } from "../lib/cb.mts";
 import { trackingUrl } from "../lib/couriers.mts";
 import { isDay } from "../lib/dates.mts";
@@ -8,6 +9,7 @@ import { getRates } from "../lib/fx.mts";
 import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { STAGES, upsertOrders } from "../lib/orders.mts";
 import { runTracking } from "../lib/track.mts";
+import { editOrder, resetOrder } from "../lib/edit.mts";
 
 const ACTIVE = "o.stage IN ('new', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
@@ -68,7 +70,7 @@ async function list(u: URLSearchParams) {
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
-              o.delivery, o.shipping_name, o.items, o.waybill
+              o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit
          FROM orders o JOIN shops s ON s.id = o.shop
         WHERE ${w.sql}
         ORDER BY o.ordered_at DESC, o.id DESC
@@ -115,8 +117,16 @@ async function detail(id: number) {
   if (!o) throw notFound("Няма такава поръчка.");
   const raw = o.raw || {};
   const { raw: _r, ...rest } = o;
+  const events = await q<any>(
+    `SELECT e.kind, e.text, e.at, u.name AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
+    [id],
+  );
   return {
     ...rest,
+    id: Number(o.id),
+    events,
+    cb_total: o.cb_total == null ? null : Number(o.cb_total),
+    cb_shipping: o.cb_shipping == null ? null : Number(o.cb_shipping),
     total: Number(o.total),
     sub_total: Number(o.sub_total),
     shipping: Number(o.shipping),
@@ -138,6 +148,18 @@ export default handle(async (req) => {
   const id = Number(idStr);
   if (!Number.isSafeInteger(id) || id <= 0) throw notFound();
   if (req.method === "GET" && !action) return json(await detail(id));
+
+  // Correct products, quantities, prices, shipping or discount (kept here; the shop's API cannot change them).
+  if (req.method === "POST" && action === "edit") {
+    const user = await requireUser(req);
+    const r = await editOrder(id, await body(req), user.id);
+    return json({ ...r, order: await detail(id) });
+  }
+  if (req.method === "POST" && action === "reset") {
+    const user = await requireUser(req);
+    const r = await resetOrder(id, user.id);
+    return json({ ...r, order: await detail(id) });
+  }
 
   // Re-read this order from the shop and ask the courier again.
   if (req.method === "POST" && action === "refresh") {

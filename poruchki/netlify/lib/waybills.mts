@@ -8,6 +8,7 @@ import type { Creds } from "./couriers.mts";
 import { getSetting, one, q, setSetting } from "./db.mts";
 import { env, HttpError } from "./http.mts";
 import { loadCreds } from "./track.mts";
+import { addEvent } from "./edit.mts";
 
 type Fetch = typeof fetch;
 let fetchImpl: Fetch = (...a) => fetch(...a);
@@ -418,6 +419,8 @@ export async function createFor(id: number, input: any, userId: number | null) {
     [id, made.number, d.courier, JSON.stringify(waybill), JSON.stringify([{ at: waybill.at, text: "Товарителницата е създадена" }])],
   );
   await log(id, d.courier, "create", true, made.number, { price: made.price, cod: d.cod, type: d.type, officeId: d.officeId }, userId);
+  const where = d.type === "address" ? `до адрес ${d.city}` : `до ${d.type === "automat" ? "автомат" : "офис"} № ${d.officeId}${d.officeName ? ` ${d.officeName}` : ""}`;
+  await addEvent(id, "waybill", `Създадена товарителница ${d.courier === "speedy" ? "Спиди" : "Еконт"} № ${made.number} ${where}, наложен платеж ${d.cod.toFixed(2).replace(".", ",")} €`, {}, userId);
   return { number: made.number, courier: d.courier, price: made.price, currency: made.currency };
 }
 
@@ -442,6 +445,7 @@ export async function cancelFor(id: number, userId: number | null) {
     [id],
   );
   await log(id, w.courier, "cancel", true, w.number, {}, userId);
+  await addEvent(id, "waybill_cancel", `Анулирана товарителница № ${w.number}`, {}, userId);
   return { canceled: w.number };
 }
 

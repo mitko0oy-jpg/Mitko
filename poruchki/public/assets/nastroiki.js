@@ -189,3 +189,38 @@ $("ship").onsubmit = async (e) => {
   });
 };
 loadShip().catch((e) => say(e.message, false));
+
+// ---- SMS ----
+function renderSms(d) {
+  const acc = d.account;
+  $("smsState").innerHTML = !d.configured
+    ? `<span class="err">не е свързан</span>`
+    : acc?.error
+      ? `<span class="err">${esc(acc.error)}</span>`
+      : `<span class="ok">свързан</span>${acc ? ` · остатък в SMSAPI: ${num(acc.points)}` : ""}${d.sender ? ` · подател: ${esc(d.sender)}` : ` · <span class="muted">без име на подател (ще е „Test“, докато SMSAPI не одобри име)</span>`}`;
+  const f = $("smsForm");
+  f.sender.value = d.sender || "";
+  f.latin.checked = !!d.latin;
+  $("smsTemplates").innerHTML = Object.entries(d.templates)
+    .map(([k, t]) => `<label>${esc(t.label)}<textarea name="tpl_${k}" rows="3" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)">${esc(t.text)}</textarea></label>`)
+    .join("");
+  for (const el of f.elements) el.disabled = !isAdmin;
+  $("smsTest").disabled = !isAdmin || !d.configured;
+}
+$("smsForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const templates = {};
+  for (const el of f.elements) if (el.name?.startsWith("tpl_")) templates[el.name.slice(4)] = el.value;
+  await busy($("smsSave"), "Записвам…", async () => {
+    renderSms(await api("/api/sms/settings", { method: "POST", body: { token: f.token.value, sender: f.sender.value, latin: f.latin.checked, templates } }));
+    f.token.value = "";
+    say("SMS настройките са записани.");
+  });
+};
+$("smsTest").onclick = () =>
+  busy($("smsTest"), "Пращам…", async () => {
+    const r = await api("/api/sms/test", { method: "POST", body: { phone: $("smsTestPhone").value } });
+    say(`Пробният SMS е изпратен (${r.parts} SMS).`);
+  });
+api("/api/sms/settings?check=1").then(renderSms).catch((e) => say(e.message, false));

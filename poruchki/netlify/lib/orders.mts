@@ -10,8 +10,12 @@ const COLS = [
   "shop", "cb_id", "order_no", "ordered_at", "day", "cb_status", "customer_name", "phone", "email", "country", "city", "zip",
   "address", "address2", "shipping_name", "delivery", "items", "currency", "sub_total", "shipping", "discount", "total", "fx",
   "total_eur", "paid", "payment_method", "courier", "tracking_no", "tracking_url", "tracking_source", "cb_shipped", "raw",
+  "cb_items", "cb_sub_total", "cb_shipping", "cb_discount", "cb_total",
 ];
+const OURS = "orders.edit IS NOT NULL";
 
+// The shop's own amounts and products always go to cb_*; the shown ones follow the shop only while
+// the order has no correction of ours (orders.edit).
 // The courier's data for a parcel – forgotten when the shop starts showing a different waybill.
 const KEEP_OWN = "orders.tracking_source = 'own' OR EXCLUDED.tracking_no IS NULL";
 const NEW_WAYBILL = "(orders.tracking_source IS DISTINCT FROM 'own' AND EXCLUDED.tracking_no IS NOT NULL AND EXCLUDED.tracking_no IS DISTINCT FROM orders.tracking_no)";
@@ -22,10 +26,16 @@ ON CONFLICT (shop, cb_id) DO UPDATE SET
   order_no = EXCLUDED.order_no, ordered_at = EXCLUDED.ordered_at, day = EXCLUDED.day, cb_status = EXCLUDED.cb_status,
   customer_name = EXCLUDED.customer_name, phone = EXCLUDED.phone, email = EXCLUDED.email, country = EXCLUDED.country,
   city = EXCLUDED.city, zip = EXCLUDED.zip, address = EXCLUDED.address, address2 = EXCLUDED.address2,
-  shipping_name = EXCLUDED.shipping_name, delivery = EXCLUDED.delivery, items = EXCLUDED.items, currency = EXCLUDED.currency,
-  sub_total = EXCLUDED.sub_total, shipping = EXCLUDED.shipping, discount = EXCLUDED.discount, total = EXCLUDED.total,
+  shipping_name = EXCLUDED.shipping_name, delivery = EXCLUDED.delivery, currency = EXCLUDED.currency,
+  cb_items = EXCLUDED.cb_items, cb_sub_total = EXCLUDED.cb_sub_total, cb_shipping = EXCLUDED.cb_shipping,
+  cb_discount = EXCLUDED.cb_discount, cb_total = EXCLUDED.cb_total,
+  items = CASE WHEN ${OURS} THEN orders.items ELSE EXCLUDED.items END,
+  sub_total = CASE WHEN ${OURS} THEN orders.sub_total ELSE EXCLUDED.sub_total END,
+  shipping = CASE WHEN ${OURS} THEN orders.shipping ELSE EXCLUDED.shipping END,
+  discount = CASE WHEN ${OURS} THEN orders.discount ELSE EXCLUDED.discount END,
+  total = CASE WHEN ${OURS} THEN orders.total ELSE EXCLUDED.total END,
   fx = CASE WHEN ${SAME_CURRENCY} THEN orders.fx ELSE EXCLUDED.fx END,
-  total_eur = round(EXCLUDED.total / CASE WHEN ${SAME_CURRENCY} THEN orders.fx ELSE EXCLUDED.fx END, 2),
+  total_eur = round(CASE WHEN ${OURS} THEN orders.total ELSE EXCLUDED.total END / CASE WHEN ${SAME_CURRENCY} THEN orders.fx ELSE EXCLUDED.fx END, 2),
   paid = EXCLUDED.paid, payment_method = EXCLUDED.payment_method, cb_shipped = EXCLUDED.cb_shipped, raw = EXCLUDED.raw,
   synced_at = now(),
   courier = CASE WHEN ${KEEP_OWN} THEN orders.courier ELSE EXCLUDED.courier END,
@@ -59,6 +69,7 @@ export async function upsertOrders(shop: { id: string; currency: string }, raws:
         n.country, n.city, n.zip, n.address, n.address2, n.shipping_name, JSON.stringify(n.delivery), JSON.stringify(n.items),
         shop.currency, n.sub_total, n.shipping, n.discount, n.total, fx, Math.round((n.total / fx) * 100) / 100, n.paid,
         n.payment_method, n.courier, n.tracking_no, n.tracking_url, n.tracking_no ? "cb" : null, n.cb_shipped, JSON.stringify(raw),
+        JSON.stringify(n.items), n.sub_total, n.shipping, n.discount, n.total,
       );
       const b = j * COLS.length;
       return `(${COLS.map((_, k) => `$${b + k + 1}`).join(", ")})`;

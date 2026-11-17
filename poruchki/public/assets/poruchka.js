@@ -1,5 +1,7 @@
 import { api, COURIER, esc, eur, money, ONE, qs, shell, when } from "./app.js";
 import { cancelWaybill, openLabels, openWaybill } from "./waybill.js";
+import { mountProducts, renderHistory } from "./order-edit.js";
+import { openSms } from "./sms.js";
 
 const $ = (id) => document.getElementById(id);
 const id = Number(qs().get("id"));
@@ -25,6 +27,7 @@ function render(o) {
     <div class="row spread">
       <div><h1>Поръчка № ${esc(o.order_no)}</h1><div class="muted small">${esc(o.shop_label)} · ${when(o.ordered_at)}</div></div>
       <div class="row"><span class="badge ${o.stage}" style="font-size:14px">${stage}</span>
+        <button class="btn" id="smsBtn">SMS</button>
         <button class="btn" id="refresh">Провери пак</button></div>
     </div>
     <div class="grid2">
@@ -35,7 +38,7 @@ function render(o) {
           <dt>Телефон</dt><dd>${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : "–"}</dd>
           ${o.email ? `<dt>Имейл</dt><dd>${esc(o.email)}</dd>` : ""}
           <dt>Доставка</dt><dd>${esc(deliveryText || o.shipping_name || "–")}</dd>
-          <dt>Адрес</dt><dd>${esc([o.city, o.address, o.address2].filter(Boolean).join(", ") || "–")}</dd>
+          <dt>Адрес</dt><dd>${esc([o.city, o.address, o.address2].filter((x) => x && !/^\s*До офис/i.test(x)).join(", ") || "–")}</dd>
           ${o.extra_fields.map((f) => `<dt>${esc(f.field)}</dt><dd>${esc(f.value)}</dd>`).join("")}
         </dl>
       </section>
@@ -60,22 +63,19 @@ function render(o) {
         }
       </section>
     </div>
-    <section class="card">
-      <h2>Продукти</h2>
-      <div class="scroll"><table class="tbl"><thead><tr><th>Продукт</th><th class="r">Брой</th><th class="r">Сума</th></tr></thead><tbody>
-        ${o.items.map((i) => `<tr><td>${esc(i.name)}</td><td class="r">${i.qty}</td><td class="r">${money(i.total, o.currency)}</td></tr>`).join("")}
-        <tr><td class="muted">Доставка</td><td></td><td class="r">${money(o.shipping, o.currency)}</td></tr>
-        ${o.discount ? `<tr><td class="muted">Отстъпка${o.discount_code ? ` (${esc(o.discount_code)})` : ""}</td><td></td><td class="r">−${money(o.discount, o.currency)}</td></tr>` : ""}
-        <tr><td><b>Общо</b></td><td></td><td class="r"><b>${money(o.total, o.currency)}</b>${o.currency !== "EUR" ? `<div class="muted small">${eur(o.total_eur)}</div>` : ""}</td></tr>
-      </tbody></table></div>
-      <p class="muted small">Плащане: ${esc(o.payment_method || "–")}${o.paid ? " · платена" : ""}</p>
-    </section>
+    <section class="card" id="productsCard"></section>
     ${
       o.shop_notes.length
         ? `<section class="card"><h2>Бележки от магазина</h2><ul class="timeline">${o.shop_notes.map((n) => `<li>${esc(n.text)}${n.at ? `<div class="muted small">${when(n.at)}</div>` : ""}</li>`).join("")}</ul></section>`
         : ""
     }
+    <section class="card" id="historyCard"></section>
   </div>`;
+  mountProducts($("productsCard"), o, (fresh) => render(fresh));
+  renderHistory($("historyCard"), o);
+  $("smsBtn").onclick = async () => {
+    if (await openSms(id)) render(await api(`/api/orders/${id}`));
+  };
   const courier = o.courier || o.delivery?.courier;
   const canShip = !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
   $("wbActs").innerHTML = [
