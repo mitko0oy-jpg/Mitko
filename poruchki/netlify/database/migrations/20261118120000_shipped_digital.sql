@@ -2,7 +2,7 @@
 --    the courier the client chose at checkout (EduBel writes "dpd-courier" into every new order).
 UPDATE orders SET cb_shipped = (
     coalesce(raw->'fulfillment'->>'trackingNo', raw->'fulfillment'->>'tracking_no', raw->'fulfillment'->>'trackingNumber', '') <> ''
-    OR raw->>'shipped' = 'true' OR coalesce(raw->>'shippedAt', '') <> '' OR raw->>'fulfilled' = 'true')
+    OR coalesce(raw->>'shipped', '') = 'true' OR coalesce(raw->>'shippedAt', '') <> '' OR coalesce(raw->>'fulfilled', '') = 'true')
  WHERE raw ? 'id';
 
 -- 2) Digital products (PDFs, online tests) are marked, so they are not counted as things to pack.
