@@ -10,6 +10,7 @@
 - ElevenLabs (план Starter): изходящ агент `agent_2201m7cgch0jex6tkg81fc95ch2h`, входящ агент `agent_3401m7cgdf60esk8043hz0vwvj68`, webhook за резултатите `37f9d6d5e36244a0bab21494bda7bcf5`. Глас: Elena – Energetic, Friendly, and Clear (`fSxb5mPM1l5zTVVtM3Vb`), избрана от Митко. Друг кандидат: Zori (`Q7y69QlBd8K0CLYUdS1m`), най-близка до демото. Настройки на гласа: stability 0.55, similarity 0.75, optimize_streaming_latency 1 (по-ясен глас), кодеци на линията PCMA, G722, PCMU.
 - Номер на агента: Zadarma София +359 2 437 0192, вътрешен номер 605568-100 (`pbx.zadarma.com`, TCP). В ElevenLabs е `phnum_0401m7cqsxpqf439twk8p463dzxw`, входящите отиват при входящия агент. В Zadarma: CallerID на вътрешния номер = +35924370192, пренасочване „винаги“ към `+35924370192@sip.rtc.elevenlabs.io:5060;transport=tcp`.
 - Входящата линия ще е 0988 88 05 07, пренасочена към +359 2 437 0192, когато никой не вдигне.
+- Унгария (само ръчен тест засега, не е вързан към автоматичните обаждания): агент `agent_3701m7n7k5ate54a8564r2swg65g` от `agent/beevenom-hu.json`, глас Mária (`WNxHBFUm0NC5fojx98kr`, добавен в библиотеката от споделените гласове). Първи тест (17.11): клиентът затвори след 4 секунди – вероятно заради българския номер; за Унгария трябва унгарски номер.
 
 ## Как работи
 

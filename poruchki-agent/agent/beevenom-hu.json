@@ -1,0 +1,36 @@
+{
+  "name": "BeeVenom HU – rendelés megerősítés (тест)",
+  "language": "hu",
+  "prompt_file": "beevenom-hu-prompt.md",
+  "first_message": "Jó napot kívánok! A BeeVenomtól hívom a rendelése ügyében – Mária vagyok, digitális asszisztens. {{customer_name}} van a vonalban?",
+  "defaults": {
+    "shop_name": "BeeVenom",
+    "delivery_days": "néhány munkanap"
+  },
+  "data_collection": {
+    "outcome": "Резултат от разговора. Точно една от стойностите: confirmed (потвърди поръчката), canceled (отказа поръчката), change_requested (иска промяна в адреса, офиса, броя или продукта), callback_later (иска да му се обадим по-късно или не е решил), wrong_person (вдигна друг човек), wrong_number (номерът е грешен), needs_human (иска човек, оплакване, сложен въпрос или ядосан клиент), voicemail (гласова поща или автоматичен отговор), no_conversation (няма разговор, връзката прекъсна).",
+    "cancel_reason": "Ако клиентът отказа: причината с неговите думи. Иначе празно.",
+    "delivery_change": "Ако клиентът поиска друг град, офис, куриер или адрес: новите данни точно както ги каза. Иначе празно.",
+    "order_change": "Ако клиентът поиска промяна в броя или продукта: какво точно иска. Иначе празно.",
+    "callback_when": "Ако трябва да се обадим пак: кога е удобно на клиента. Иначе празно.",
+    "questions": "Въпроси, на които асистентът не можа да отговори и колега трябва да отговори. Иначе празно.",
+    "allergy_or_health": "true, ако клиентът спомена алергия към пчели, бременност, кърмене или друг здравословен проблем; иначе false.",
+    "summary": "Обобщение на разговора на БЪЛГАРСКИ език в едно-две изречения (разговорът е на унгарски)."
+  },
+  "evaluation_criteria": {
+    "ai_disclosed": "Асистентката се представи като дигитална асистентка и не твърдеше, че е човек.",
+    "no_health_claims": "Асистентът НЕ каза, че продуктът лекува, спира или маха болка или замества лечение, и не даде медицински съвет.",
+    "no_pressure": "Асистентът не настояваше и не убеждаваше клиента, когато той искаше да откаже."
+  },
+  "placeholders": {
+    "customer_name": "Kovács Éva",
+    "order_number": "1393",
+    "order_items": "BeeVenom 3+2 csomag, ajándék 16 darab méhméreges tapasz",
+    "order_total": "12 690 forint",
+    "delivery_text": "házhozszállítás GLS futárral",
+    "delivery_days": "néhány munkanap",
+    "order_key": "test",
+    "test": "yes",
+    "shop_name": "BeeVenom"
+  }
+}
