@@ -428,7 +428,7 @@ a.badge:hover { text-decoration: none; filter: brightness(1.1); }
 .head-tools .searchbox { flex: 1 1 auto; }
 .vtab { display: none; }
 @media (min-width: 1300px) {
-  .work { grid-template-columns: 232px minmax(0, 1fr); gap: 12px; }
+  .work { grid-template-columns: 222px minmax(0, 1fr); gap: 12px; }
   .work.folded { grid-template-columns: 30px minmax(0, 1fr); }
   .work.folded .side { display: none; }
   .work.folded .vtab { display: block; }
@@ -502,7 +502,71 @@ body.focus main { padding-top: 8px; }
 }
 .tgl .t { min-width: 0; }
 .side .tgl { gap: 8px; grid-template-columns: 34px minmax(0, 1fr) auto; }
-.nekb { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--bad); color: var(--surface); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.nekb-old { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--bad); color: var(--surface); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .nekcard { border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); }
 .otbl .cname2 { display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .otbl td.c-cstat .cour { overflow-wrap: anywhere; }
+
+/* symmetric rows like Middleware: everything centred in the row, fixed button slots */
+@media (min-width: 761px) {
+  .otbl td { vertical-align: middle; }
+  .otbl th { vertical-align: middle; }
+  .otbl td.c-check, .otbl th.c-check { width: 36px; }
+  .otbl td.c-no { width: 70px; }
+  .otbl td.c-badge { width: 130px; min-width: 0; }
+  .otbl td.money { width: 86px; }
+  .otbl td.c-when { width: 150px; }
+  .otbl td.acts { width: 150px; }
+}
+.st { display: flex; align-items: center; gap: 6px; }
+.ci { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; cursor: help; }
+.ci.us { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.ci.ai { background: color-mix(in srgb, #6d28d9 16%, transparent); }
+.ci.call { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.ci.no { border: 1px dashed var(--muted); color: var(--muted); }
+.actsin .iconbtn.off { opacity: 0.28; cursor: default; }
+.otbl .cname.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+/* client cell like Middleware */
+.cg { display: grid; grid-template-columns: 20px 24px minmax(0, 1fr); gap: 2px 6px; align-items: center; }
+.cg .risk { display: grid; place-items: center; }
+.cg .cside { display: grid; gap: 4px; justify-items: center; }
+.cg .cmain { display: grid; min-width: 0; }
+.ci.bad { background: none; border: 1.5px solid var(--bad); color: var(--bad); font-weight: 800; }
+.nekwrap { position: relative; color: var(--bad); display: inline-grid; place-items: center; }
+.nekwrap svg { width: 16px; height: 16px; }
+.nekpop { display: none; }
+.nektip { width: 340px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 12px 32px rgb(0 0 0 / 0.25); color: var(--text); font-size: 14px; line-height: 1.45; white-space: normal; text-align: left; }
+.nektip { position: fixed; z-index: 60; display: grid; gap: 10px; left: 0; top: 0; pointer-events: none; }
+.nektip .nr { display: grid; gap: 4px; }
+.nektip .nr b { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.nektip .nf { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.clamp3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.otbl td.c-client { overflow: visible; }
+.clogo { width: 22px; height: 22px; flex: none; }
+@media (min-width: 761px) {
+  .otbl td.c-client { min-width: 220px; }
+  .cg .cmain { max-width: 200px; }
+}
+@media (min-width: 761px) {
+  .otbl td, .otbl th { padding-left: 5px; padding-right: 5px; }
+  .otbl td.c-client { min-width: 196px; }
+  .cg .cmain { max-width: 168px; }
+  .otbl .cname2 { max-width: 168px; }
+  .otbl td.c-badge { width: 116px; }
+  .otbl td.c-when { width: 136px; }
+  .otbl td.money { width: 78px; }
+  .otbl td.c-cstat { max-width: 150px; }
+  .otbl td.c-note { min-width: 70px; max-width: 140px; }
+  .otbl td.acts { width: 146px; }
+}
+@media (min-width: 761px) {
+  .actsin { gap: 4px; }
+  .actsin .iconbtn { width: 30px; height: 30px; }
+  .otbl td.acts { width: 136px; }
+  .otbl .st .badge { white-space: normal; max-width: 92px; text-align: center; line-height: 1.2; }
+}
+@media (min-width: 761px) {
+  .otbl th.c-cstat button, .otbl th.c-cstat { white-space: normal; }
+  .otbl th.c-cstat button { text-align: left; line-height: 1.25; max-width: 84px; }
+}

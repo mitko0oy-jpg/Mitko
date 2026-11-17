@@ -110,7 +110,7 @@ async function list(u: URLSearchParams) {
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
-              pc.count AS nek_count
+              pc.count AS nek_count, CASE WHEN pc.count > 0 THEN pc.reports END AS nek_reports
          FROM orders o JOIN shops s ON s.id = o.shop
          LEFT JOIN phone_checks pc ON pc.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9)
          LEFT JOIN LATERAL (
@@ -160,6 +160,8 @@ async function list(u: URLSearchParams) {
       shipping: Number(r.shipping),
       waybill: r.waybill && r.waybill.number === r.tracking_no ? { price: r.waybill.price, at: r.waybill.at } : null,
       tracking_link: trackingUrl(r.courier, r.tracking_no),
+      items_qty: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0),
+      nek_reports: Array.isArray(r.nek_reports) ? r.nek_reports.slice(0, 3).map((x: any) => ({ text: String(x.text || "").slice(0, 240), date: x.date || null })) : null,
       items: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).map((i: any) => `${i.qty > 1 ? i.qty + " × " : ""}${i.name}`),
     })),
   };

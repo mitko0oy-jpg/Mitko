@@ -39,11 +39,11 @@ function nekCard(o) {
   const bad = ["returned", "canceled"].includes(o.stage) || o.parcel_status === "refused";
   const head = `<div class="row spread"><h2>Сигнали от <a href="https://nekorekten.com" target="_blank" rel="noopener">nekorekten.com</a></h2>
     <div class="row">${o.phone ? `<button class="btn sm" id="nekCheck">${n ? "Провери пак" : "Провери"}</button>` : ""}${o.phone && bad ? `<button class="btn sm danger" id="nekReport">Подай сигнал</button>` : ""}</div></div>`;
-  if (!n) return `<section class="card">${head}<p class="muted small">Телефонът още не е проверен. Новите поръчки от България се проверяват сами, щом в Настройки има ключ за nekorekten.com.</p></section>`;
+  if (!n) return `<section class="card" id="nek">${head}<p class="muted small">Телефонът още не е проверен. Новите поръчки от България се проверяват сами, щом в Настройки има ключ за nekorekten.com.</p></section>`;
   const list = (n.reports || [])
     .map((r) => `<li>${esc(r.text || "–")}<div class="muted small">${r.date ? when(r.date) : ""}${r.name ? ` · ${esc(r.name)}` : ""}${r.city ? ` · ${esc(r.city)}` : ""}</div></li>`)
     .join("");
-  return `<section class="card${n.count ? " nekcard" : ""}">${head}
+  return `<section class="card${n.count ? " nekcard" : ""}" id="nek">${head}
     ${n.error ? `<p class="err small">${esc(n.error)}</p>` : n.count ? `<p><b>${n.count} сигнала</b> за този телефон.</p><ul class="timeline">${list}</ul>` : `<p class="ok small">Няма сигнали за този телефон.</p>`}
     <p class="muted small">Проверено ${when(n.checked_at)} · източник: nekorekten.com</p></section>`;
 }

@@ -60,17 +60,18 @@ function params() {
 
 const AI = "AI агент";
 const CALL = { requested: "чака AI обаждане", calling: "AI звъни…", no_conversation: "не вдига", voicemail: "не вдига", gave_up: "не вдига (3 опита)", canceled: "отказа по телефона", change_requested: "иска промяна", needs_human: "иска човек", callback_later: "да се обадим пак", wrong_person: "друг човек", wrong_number: "грешен номер" };
+/** One small sign right of the status: who confirmed, or what the AI call did. */
 function confirmCell(o) {
-  if (o.confirmed_at) return o.confirmed_by === AI ? `<div class="conf ai" title="Потвърдена от AI агента">🤖 AI потвърдена</div>` : `<div class="conf us" title="${esc(o.confirmed_by || "")}">✓ Потвърдена</div>`;
-  const c = o.call && CALL[o.call.state] ? `☎ ${CALL[o.call.state]}${o.call.attempts > 1 && !["gave_up"].includes(o.call.state) ? ` (${o.call.attempts})` : ""}` : "";
-  if (o.stage !== "new") return c ? `<div class="conf no">${c}</div>` : "";
-  // Quick confirm by hand or by the AI agent, right under the status.
-  const ai = o.phone && !["requested", "calling"].includes(o.call?.state) ? `<button class="mini ai" data-act="ai" data-id="${o.id}" title="AI потвърждение – агентът да звънне">🤖 AI</button>` : "";
-  return `${c ? `<div class="conf no">${c}</div>` : ""}<div class="minis"><button class="mini" data-act="confirm" data-id="${o.id}" title="Потвърди поръчката" aria-label="Потвърди поръчката">✓</button>${ai}</div>`;
+  if (o.confirmed_at)
+    return o.confirmed_by === AI ? `<span class="ci ai" title="Потвърдена от AI агента">🤖</span>` : `<span class="ci us" title="Потвърдена${o.confirmed_by ? ` от ${esc(o.confirmed_by)}` : ""}">✓</span>`;
+  const st = o.call?.state;
+  if (st && CALL[st]) return `<span class="ci call" title="☎ ${esc(CALL[st])}${o.call.attempts > 1 && st !== "gave_up" ? ` (${o.call.attempts})` : ""}">☎</span>`;
+  return "";
 }
 
 const canShip = (o) => !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
-const courierOf = (o) => o.courier || o.delivery?.courier || "";
+// "ekont" (as Middleware writes it) is Econt.
+const courierOf = (o) => ({ ekont: "econt", spidi: "speedy" })[String(o.courier || o.delivery?.courier || "").toLowerCase()] || String(o.courier || o.delivery?.courier || "").toLowerCase();
 const canCancel = (o) => o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage);
 // A Bulgarian mobile or landline number: +359 / 0 and 8–9 digits.
 const badPhone = (o) => o.region === "bg" && o.phone && !/^(?:\+?359|0)?[2-9]\d{7,8}$/.test(String(o.phone).replace(/[\s\-()/.]/g, ""));
@@ -84,15 +85,42 @@ function since(iso) {
   const d = Math.floor(h / 24);
   return d < 30 ? `преди ${d} д${h % 24 ? ` ${h % 24} ч` : ""}` : `преди ${d} д`;
 }
-const fullDate = (iso) => new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }).replace(" г.", "");
+const fullDate = (iso) => new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(" г.", "");
 
 const PIN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`;
+const THUMB = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M17 3v11M7 14l3.5 7c1.4 0 2.5-1.1 2.5-2.5V15h5.3a2 2 0 0 0 2-2.3l-1.2-8A2 2 0 0 0 17.1 3H7v11z"/><path d="M3 3h4v11H3z"/></svg>`;
+/** Like Middleware: ! for a risky client, how many orders from this phone, 👎 with the nekorekten.com reports on hover. */
+function clientCell(o) {
+  const risky = o.nek_count || o.returned_before;
+  const why = [o.nek_count && `${o.nek_count} сигнала в nekorekten.com`, o.returned_before && `върнал ${o.returned_before} пратки`].filter(Boolean).join(", ");
+  const pop = o.nek_count
+    ? `<a class="nekwrap" href="/poruchka/?id=${o.id}#nek" aria-label="${o.nek_count} сигнала в nekorekten.com">${THUMB}
+        <span class="nekpop" role="tooltip">${(o.nek_reports || [])
+          .map((r, i) => `<span class="nr"><b><span class="ci bad">!</span> Сигнал ${i + 1}:</b><span class="clamp3">${esc(r.text)}</span></span>`)
+          .join("")}<span class="nf">${o.nek_count > (o.nek_reports || []).length ? `Още ${o.nek_count - (o.nek_reports || []).length}. ` : ""}Натисни, за да видиш всички · nekorekten.com</span></span></a>`
+    : "";
+  return `<div class="cg">
+    <span class="risk">${risky ? `<span class="ci bad" title="${esc(why)}">!</span>` : ""}</span>
+    <span class="cside"><span class="pill n" title="${o.other_orders ? `Още ${o.other_orders} поръчки от този телефон` : "Първа поръчка от този телефон"}">${(o.other_orders || 0) + 1}</span>${pop}</span>
+    <span class="cmain"><a class="cname2" href="/poruchka/?id=${o.id}">${esc(o.customer_name || "–")}</a>
+      <span class="ph">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${badPhone(o) ? `<span class="bad" title="Телефонът не прилича на български номер">✕</span>` : ""}</span></span>
+  </div>`;
+}
+
+// Courier marks (drawn here): Speedy – a red parcel cube, Econt – a blue E.
+const CMARK = {
+  speedy: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8L12 12 3.5 7.3z" fill="#f04a3e"/><path d="M3.5 7.3L12 12v9.5l-8.5-4.8z" fill="#d42a20"/><path d="M20.5 7.3L12 12v9.5l8.5-4.8z" fill="#a8180f"/><path d="M7.6 4.9l8.6 4.8" stroke="#fff" stroke-width="1.3" opacity=".85"/></svg>`,
+  econt: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#1f3c88"/><path d="M8 6.5h8.2v2.6H11v1.7h4.4v2.5H11v1.8h5.3v2.6H8z" fill="#fff"/></svg>`,
+};
+
 function courierCell(o) {
   const d = o.delivery || {};
   const c = courierOf(o);
   const where = d.type === "office" ? "До офис" : d.type === "automat" ? "До автомат" : d.type === "address" ? "До адрес" : "";
   const place = [where, d.officeName, d.type === "address" ? o.city : ""].filter(Boolean).join(" – ");
-  return `<div class="cname"><span class="cmark ${esc(c)}" aria-hidden="true">${esc((c || "?").slice(0, 1).toUpperCase())}</span>${esc(COURIER[c] || c || "–")}</div>${where ? `<div class="where" title="${esc(place)}">${PIN}${esc(where)}</div>` : ""}`;
+  const mark = CMARK[c] || `<span class="cmark ${esc(c)}" aria-hidden="true">${esc(c.slice(0, 1).toUpperCase())}</span>`;
+  const name = c ? `<div class="cname">${mark}${esc(COURIER[c] || c)}</div>` : `<div class="cname muted">не е избран</div>`;
+  return `${name}${where ? `<div class="where" title="${esc(place)}">${PIN}${esc(where)}</div>` : ""}`;
 }
 
 function parcelCell(o) {
@@ -105,10 +133,10 @@ function parcelCell(o) {
 
 function actions(o) {
   const out = [`<a class="iconbtn" title="Подробности" aria-label="Подробности" href="/poruchka/?id=${o.id}">${ICON.info}</a>`];
-  out.push(o.phone ? `<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>` : `<span class="iconbtn ghost"></span>`);
+  out.push(o.phone ? `<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>` : `<span class="iconbtn off" aria-hidden="true">${ICON.sms}</span>`);
   if (canShip(o)) out.push(`<button class="iconbtn primary" title="Създай товарителница" aria-label="Създай товарителница" data-act="ship" data-id="${o.id}">${ICON.ship}</button>`);
   else if (canCancel(o)) out.push(`<button class="iconbtn danger" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
-  else out.push(`<span class="iconbtn ghost"></span>`);
+  else out.push(`<span class="iconbtn off" title="${o.tracking_no ? "Има товарителница" : o.region !== "bg" ? "Чужбина – изпраща фулфилмънт фирмата" : "Не може да се изпрати"}" aria-hidden="true">${ICON.ship}</span>`);
   out.push(`<button class="iconbtn" title="Още" aria-label="Още действия" aria-haspopup="menu" data-act="more" data-id="${o.id}">${ICON.more}</button>`);
   return out.join("");
 }
@@ -209,10 +237,10 @@ function renderTable(d) {
       .map(
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
-        <td class="c-no"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a><div class="pills">${o.paid ? `<span class="pill pay" title="Платена">$</span>` : `<span class="pill cod" title="Наложен платеж">$</span>`}<span class="pill n" title="${o.other_orders ? `Още ${o.other_orders} поръчки от този телефон` : "Първа поръчка от този телефон"}">${(o.other_orders || 0) + 1}</span>${o.source === "phone" ? `<span class="pill" title="Поръчка по телефона">☎</span>` : o.source === "manual" ? `<span class="pill" title="Въведена ръчно">✎</span>` : ""}</div></td>
-        <td class="c-badge"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</td>
+        <td class="c-no"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a><div class="pills">${o.paid ? `<span class="pill pay" title="Платена">$</span>` : `<span class="pill cod" title="Наложен платеж">$</span>`}<span class="pill n" title="${o.items_qty || 0} бр. в поръчката: ${esc((o.items || []).join(", "))}">${o.items_qty || 0}</span>${o.source === "phone" ? `<span class="pill" title="Поръчка по телефона">☎</span>` : o.source === "manual" ? `<span class="pill" title="Въведена ръчно">✎</span>` : ""}</div></td>
+        <td class="c-badge"><div class="st"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</div></td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
-        <td class="c-client"><div class="cl">${o.returned_before ? `<span class="warn" title="Върнал е ${o.returned_before} пратки">!</span>` : ""}<a class="cname2" href="/poruchka/?id=${o.id}">${esc(o.customer_name || "–")}</a></div><div class="ph">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${badPhone(o) ? `<span class="bad" title="Телефонът не прилича на български номер">✕</span>` : ""}${o.nek_count ? `<span class="nekb" title="${o.nek_count} сигнала в nekorekten.com – виж поръчката">⚠ ${o.nek_count}</span>` : ""}</div></td>
+        <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
         <td class="c-cstat">${parcelCell(o)}</td>
         <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}<div class="sub">${o.currency !== "EUR" ? eur(o.total_eur) : money(o.sub_total, o.currency)}</div></td>
@@ -277,6 +305,28 @@ document.body.append(rowMenu);
 document.addEventListener("click", (e) => !rowMenu.contains(e.target) && !e.target.closest("[data-act=more]") && (rowMenu.hidden = true));
 document.addEventListener("keydown", (e) => e.key === "Escape" && (rowMenu.hidden = true));
 addEventListener("scroll", () => (rowMenu.hidden = true), { passive: true });
+
+// The nekorekten.com reports of a client, on hover or focus of 👎 (floats above the table, never cut off).
+const nekTip = document.createElement("div");
+nekTip.className = "nektip";
+nekTip.hidden = true;
+document.body.append(nekTip);
+function showTip(a) {
+  nekTip.innerHTML = a.querySelector(".nekpop")?.innerHTML || "";
+  nekTip.hidden = false;
+  const r = a.getBoundingClientRect();
+  const w = nekTip.offsetWidth;
+  const h = nekTip.offsetHeight;
+  nekTip.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.left - 10))}px`;
+  nekTip.style.top = `${r.bottom + 8 + h > innerHeight ? Math.max(8, r.top - h - 8) : r.bottom + 8}px`;
+}
+const hideTip = () => (nekTip.hidden = true);
+document.addEventListener("mouseover", (e) => {
+  const a = e.target.closest?.(".nekwrap");
+  a ? showTip(a) : hideTip();
+});
+document.addEventListener("focusin", (e) => (e.target.closest?.(".nekwrap") ? showTip(e.target.closest(".nekwrap")) : hideTip()));
+addEventListener("scroll", hideTip, { passive: true });
 
 function openMore(o, btn) {
   rowMenu.innerHTML = moreMenu(o);
