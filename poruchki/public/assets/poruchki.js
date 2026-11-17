@@ -4,7 +4,7 @@ import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
 
 const $ = (id) => document.getElementById(id);
-const FIELDS = ["q", "shop", "region", "courier", "from", "to", "confirmed"];
+const FIELDS = ["q", "shop", "region", "courier", "from", "to", "confirmed", "sort", "product"];
 const state = {
   tab: qs().has("tab") ? qs().get("tab") : qs().get("stage") ? "" : "active",
   stages: new Set((qs().get("stage") || "").split(",").filter(Boolean)),
@@ -24,8 +24,11 @@ try {
 } catch {
   /* optional */
 }
+// The product filter's options come with each list; keep the chosen one until they arrive.
+if (qs().get("product")) $("product").innerHTML += `<option>${esc(qs().get("product"))}</option>`;
 for (const f of FIELDS) $(f).value = qs().get(f) || "";
 $("nowaybill").checked = qs().get("nowaybill") === "1";
+$("sentToday").checked = qs().get("sent") === "today";
 
 const ICON = {
   ship: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></svg>`,
@@ -44,6 +47,7 @@ function params() {
   p.tab = state.tab;
   p.stage = [...state.stages].join(",");
   p.nowaybill = $("nowaybill").checked ? "1" : "";
+  p.sent = $("sentToday").checked ? "today" : "";
   p.page = state.page > 1 ? String(state.page) : "";
   p.per = state.per === 100 ? "100" : "";
   p.archived = state.tab === "archived" ? "1" : "";
@@ -117,18 +121,30 @@ function renderSide(f) {
   $("nDone").textContent = num(total - active);
   $("nAll").textContent = num(total);
   for (const b of $("tabs").querySelectorAll("button")) b.classList.toggle("on", !state.stages.size && b.dataset.tab === state.tab);
-  $("stages").innerHTML = STAGE_ORDER.filter((k) => k !== "archived" || f.stages[k])
-    .map((k) => `<button data-stage="${k}" class="${state.stages.has(k) ? "on" : ""}"><span class="badge ${k}">${STAGES[k].label}</span><span class="n">${num(f.stages[k] || 0)}</span></button>`)
-    .join("");
-  $("stages").querySelectorAll("button").forEach(
-    (b) =>
-      (b.onclick = () => {
-        state.stages.has(b.dataset.stage) ? state.stages.delete(b.dataset.stage) : state.stages.add(b.dataset.stage);
+  $("stages").innerHTML =
+    STAGE_ORDER.filter((k) => k !== "archived" || f.stages[k])
+      .map(
+        (k) => `<label class="tgl"><input type="checkbox" data-stage="${k}" ${state.stages.has(k) ? "checked" : ""}><span class="sw" aria-hidden="true"></span><span class="badge ${k}">${STAGES[k].label}</span><span class="n">${num(f.stages[k] || 0)}</span></label>`,
+      )
+      .join("") +
+    `<a class="tgl" href="/nezavarsheni/" title="Написали са телефона си, но не са поръчали"><span class="sw go" aria-hidden="true">→</span><span class="badge abandoned">Незавършени</span><span class="n">${num(f.abandoned || 0)}</span></a>`;
+  $("stages").querySelectorAll("input[data-stage]").forEach(
+    (c) =>
+      (c.onchange = () => {
+        c.checked ? state.stages.add(c.dataset.stage) : state.stages.delete(c.dataset.stage);
         state.tab = "";
         state.page = 1;
         load();
       }),
   );
+  $("nSent").textContent = num(f.sentToday || 0);
+  const chosen = $("product").value;
+  const names = (f.products || []).map((p) => p.name);
+  $("product").innerHTML =
+    `<option value="">Всички продукти</option>` +
+    (chosen && !names.includes(chosen) ? `<option>${esc(chosen)}</option>` : "") +
+    (f.products || []).map((p) => `<option value="${esc(p.name)}">${esc(p.name)} (${num(p.n)})</option>`).join("");
+  $("product").value = chosen;
 }
 
 function renderTable(d) {
@@ -264,16 +280,59 @@ $("newOrder").onclick = async () => {
   const r = await openOrderForm({ mode: "new", shops: shopList });
   if (r?.id) location.href = `/poruchka/?id=${r.id}`;
 };
-for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "confirmed"]) $(f).onchange = () => ((state.page = 1), load());
+for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "confirmed", "sort", "product"]) $(f).onchange = () => ((state.page = 1), load());
+$("sentToday").onchange = () => {
+  // Sent today can be on its way or already at the office: look in every tab.
+  if ($("sentToday").checked) state.tab = "";
+  state.page = 1;
+  load();
+};
 $("clear").onclick = () => {
   for (const f of FIELDS) $(f).value = "";
   $("nowaybill").checked = false;
+  $("sentToday").checked = false;
   state.stages.clear();
   state.tab = "active";
   state.page = 1;
   load();
 };
 $("filtersBtn").onclick = () => $("side").classList.toggle("open");
+$("closeSide").onclick = () => $("side").classList.remove("open");
+
+// ☆ Saved filters: the current filters under a name, for this user on every device.
+async function starMenu(open) {
+  const m = $("starMenu");
+  m.hidden = !open;
+  $("starBtn").setAttribute("aria-expanded", String(open));
+  if (!open) return;
+  m.innerHTML = `<p class="muted small">Зареждам…</p>`;
+  try {
+    const { saved } = await api("/api/orders/saved");
+    m.innerHTML =
+      (saved.length
+        ? saved.map((x) => `<div class="star"><a href="/poruchki/?${esc(x.query)}">${esc(x.name)}</a><button class="btn link sm" data-del="${esc(x.name)}" aria-label="Изтрий ${esc(x.name)}">✕</button></div>`).join("")
+        : `<p class="muted small">Още няма запазени филтри.</p>`) + `<button class="btn sm" id="starSave">☆ Запази текущите филтри</button>`;
+    $("starSave").onclick = async () => {
+      const name = prompt("Име на филтъра (например „Спиди без товарителница“):");
+      if (!name || !name.trim()) return;
+      const query = new URLSearchParams(location.search);
+      query.delete("page");
+      await api("/api/orders/saved", { method: "POST", body: { name: name.trim(), query: query.toString() } });
+      starMenu(true);
+    };
+    m.querySelectorAll("[data-del]").forEach(
+      (b) =>
+        (b.onclick = async () => {
+          if (!confirm(`Да изтрия ли „${b.dataset.del}“?`)) return;
+          await api("/api/orders/saved", { method: "POST", body: { name: b.dataset.del, delete: true } });
+          starMenu(true);
+        }),
+    );
+  } catch (e) {
+    m.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+  }
+}
+$("starBtn").onclick = () => starMenu($("starMenu").hidden);
 $("refresh").onclick = async () => {
   const b = $("refresh");
   b.disabled = true;

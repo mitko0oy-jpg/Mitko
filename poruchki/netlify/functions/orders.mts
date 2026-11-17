@@ -4,7 +4,8 @@ import { body } from "../lib/http.mts";
 import { cbSite, getOrder } from "../lib/cb.mts";
 import { trackingUrl } from "../lib/couriers.mts";
 import { isDay } from "../lib/dates.mts";
-import { one, q } from "../lib/db.mts";
+import { getSetting, one, q, setSetting } from "../lib/db.mts";
+import { countOpenLeads } from "../lib/leads.mts";
 import { getRates } from "../lib/fx.mts";
 import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { STAGES, upsertOrders } from "../lib/orders.mts";
@@ -15,8 +16,23 @@ import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editC
 const ACTIVE = "o.stage IN ('new', 'prepared', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 
-/** WHERE for the list; the stage/tab part is left out for the counts next to each status. */
-function filters(u: URLSearchParams, withStage: boolean) {
+// "Изпратени днес": the waybill appeared today (Sofia time); sent_at is kept by a trigger.
+const SENT_TODAY = "o.sent_at >= (date_trunc('day', now() AT TIME ZONE 'Europe/Sofia') AT TIME ZONE 'Europe/Sofia')";
+
+const SORTS: Record<string, string> = {
+  new: "o.ordered_at DESC, o.id DESC",
+  old: "o.ordered_at ASC, o.id ASC",
+  sum_desc: "o.total_eur DESC NULLS LAST, o.ordered_at DESC",
+  sum_asc: "o.total_eur ASC NULLS LAST, o.ordered_at DESC",
+  sent: "o.sent_at DESC NULLS LAST, o.ordered_at DESC",
+  courier: "o.parcel_at DESC NULLS LAST, o.ordered_at DESC",
+};
+
+/**
+ * WHERE for the list. The stage/tab part is left out for the counts next to each status,
+ * the product for the product list, and "sent today" for its own count.
+ */
+function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boolean; sent?: boolean } = {}) {
   const params: unknown[] = [];
   const parts = ["s.active"];
   const add = (sql: string, v: unknown) => {
@@ -44,6 +60,9 @@ function filters(u: URLSearchParams, withStage: boolean) {
   if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
   if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
+  if (u.get("sent") === "today" && !skip.sent) parts.push(SENT_TODAY);
+  const product = str(u.get("product"), 200);
+  if (product && !skip.product) add("EXISTS (SELECT 1 FROM jsonb_array_elements(o.items) i WHERE i->>'name' = ?)", product);
   const conf = u.get("confirmed");
   if (conf === "no") parts.push("o.confirmed_at IS NULL");
   if (conf === "ai") parts.push("o.confirmed_by = 'AI агент'");
@@ -71,7 +90,10 @@ async function list(u: URLSearchParams) {
   const page = Math.max(1, Math.min(1000, Number(u.get("page")) || 1));
   const w = filters(u, true);
   const all = filters(u, false);
-  const [rows, count, facets] = await Promise.all([
+  const noProduct = filters(u, false, { product: true });
+  const noSent = filters(u, false, { sent: true });
+  const order = SORTS[String(u.get("sort"))] || SORTS.new;
+  const [rows, count, facets, products, sent, abandoned] = await Promise.all([
     q<any>(
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
@@ -85,7 +107,7 @@ async function list(u: URLSearchParams) {
             WHERE o.phone <> '' AND x.id <> o.id AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
          ) h ON true
         WHERE ${w.sql}
-        ORDER BY o.ordered_at DESC, o.id DESC
+        ORDER BY ${order}
         LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
       w.params,
     ),
@@ -95,6 +117,16 @@ async function list(u: URLSearchParams) {
          FROM orders o JOIN shops s ON s.id = o.shop WHERE ${all.sql} GROUP BY o.stage`,
       all.params,
     ),
+    // Products sold in the last 6 months (paid lines only), for the product filter.
+    q<any>(
+      `SELECT i->>'name' AS name, count(DISTINCT o.id)::int AS n
+         FROM orders o JOIN shops s ON s.id = o.shop, jsonb_array_elements(o.items) i
+        WHERE ${noProduct.sql} AND o.ordered_at > now() - interval '180 days' AND coalesce((i->>'total')::numeric, 0) > 0
+        GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 150`,
+      noProduct.params,
+    ),
+    one<any>(`SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop WHERE ${noSent.sql} AND ${SENT_TODAY}`, noSent.params),
+    countOpenLeads(str(u.get("shop"), 20)).catch(() => 0),
   ]);
   const stages: Record<string, number> = {};
   let refused = 0;
@@ -107,7 +139,7 @@ async function list(u: URLSearchParams) {
     perPage,
     total: count?.n || 0,
     sum: Math.round((count?.sum || 0) * 100) / 100,
-    facets: { stages, refused },
+    facets: { stages, refused, products, sentToday: sent?.n || 0, abandoned },
     orders: rows.map((r) => ({
       ...r,
       id: Number(r.id),
@@ -157,6 +189,24 @@ export default handle(async (req) => {
   const [idStr, action] = sub(req, "/api/orders");
   const u = new URL(req.url).searchParams;
   if (req.method === "GET" && !idStr) return json(await list(u));
+  // Saved filters (☆), per user.
+  if (idStr === "saved") {
+    const user = await requireUser(req);
+    const key = `saved_filters:${user.id}`;
+    let saved: { name: string; query: string }[] = (await getSetting(key)) || [];
+    if (req.method === "POST") {
+      const b = await body(req);
+      const name = str(b.name, 60);
+      if (!name) throw bad("name", "Дай име на филтъра.");
+      saved = saved.filter((x) => x.name !== name);
+      if (!b.delete) {
+        const query = str(b.query, 1000).replace(/^\?/, "");
+        saved = [...saved, { name, query }].slice(-20);
+      }
+      await setSetting(key, saved);
+    }
+    return json({ saved });
+  }
   // A new order made by hand.
   if (req.method === "POST" && !idStr) {
     const user = await requireUser(req);

@@ -23,32 +23,37 @@
 
     <div class="work">
       <aside class="side" id="side" aria-label="Филтри">
+        <div class="side-head"><h2>Филтри</h2><button class="iconbtn" id="closeSide" aria-label="Затвори филтрите">✕</button></div>
+        <div class="side-top">
+          <button class="btn primary" id="clear">Изчисти филтрите</button>
+          <button class="btn" id="starBtn" title="Запазени филтри" aria-label="Запазени филтри" aria-expanded="false">☆</button>
+        </div>
+        <div class="starmenu" id="starMenu" hidden></div>
+        <label class="fld">Сортиране
+          <select id="sort">
+            <option value="">По подразбиране (най-новите)</option>
+            <option value="old">Най-старите първо</option>
+            <option value="sum_desc">Най-голяма сума</option>
+            <option value="sum_asc">Най-малка сума</option>
+            <option value="sent">Последно изпратени</option>
+            <option value="courier">Последна промяна при куриера</option>
+          </select>
+        </label>
+        <label class="fld">Магазин<select id="shop"><option value="">Всички магазини</option></select></label>
+        <label class="fld">Продукти<select id="product"><option value="">Всички продукти</option></select></label>
+        <label class="fld">Куриер<select id="courier"><option value="">Всички</option><option value="speedy">Спиди</option><option value="econt">Еконт</option><option value="other">Други</option></select></label>
+        <label class="tgl"><input type="checkbox" id="sentToday"><span class="sw" aria-hidden="true"></span><span class="t">Изпратени днес</span><span class="n" id="nSent"></span></label>
         <div>
           <h3>Статус</h3>
-          <div class="stlist" id="stages"></div>
+          <div class="tgllist" id="stages"></div>
         </div>
-        <label class="chk"><input type="checkbox" id="nowaybill"> Само без товарителница</label>
-        <div>
-          <h3>Потвърждение</h3>
-          <select id="confirmed" aria-label="Потвърждение"><option value="">Всички</option><option value="no">Непотвърдени</option><option value="ai">🤖 Потвърдени от AI</option><option value="us">✓ Потвърдени от нас</option></select>
-        </div>
-        <div>
-          <h3>Магазин</h3>
-          <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
-        </div>
-        <div>
-          <h3>Пазар</h3>
-          <select id="region" aria-label="Пазар"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select>
-        </div>
-        <div>
-          <h3>Куриер</h3>
-          <select id="courier" aria-label="Куриер"><option value="">Всички</option><option value="speedy">Спиди</option><option value="econt">Еконт</option><option value="other">Други</option></select>
-        </div>
+        <label class="tgl"><input type="checkbox" id="nowaybill"><span class="sw" aria-hidden="true"></span><span class="t">Само без товарителница</span></label>
+        <label class="fld">Потвърждение<select id="confirmed"><option value="">Всички</option><option value="no">Непотвърдени</option><option value="ai">🤖 Потвърдени от AI</option><option value="us">✓ Потвърдени от нас</option></select></label>
+        <label class="fld">Пазар<select id="region"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select></label>
         <div>
           <h3>Поръчани</h3>
           <div class="dates"><input type="date" id="from" aria-label="От"><input type="date" id="to" aria-label="До"></div>
         </div>
-        <button class="btn" id="clear">Изчисти филтрите</button>
       </aside>
 
       <section class="card" style="padding:8px 12px 12px">

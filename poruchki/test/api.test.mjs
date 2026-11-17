@@ -538,3 +538,29 @@ test("unfinished orders: taken only from the shops' sites, merged per visit, mat
   // Not for visitors.
   assert.equal((await fetch(`${B}/api/leads`)).status, 401);
 });
+
+test("filters like Middleware: sorting, product, sent today, saved filters", async () => {
+  const newest = (await api("/api/orders?tab=")).data;
+  const oldest = (await api("/api/orders?tab=&sort=old")).data;
+  assert.equal(oldest.total, newest.total);
+  assert.ok(new Date(oldest.orders[0].ordered_at) <= new Date(oldest.orders.at(-1).ordered_at));
+  assert.ok(new Date(newest.orders[0].ordered_at) >= new Date(newest.orders.at(-1).ordered_at));
+  const gel = newest.facets.products.find((p) => p.name === "BeeVenom Care Gel");
+  assert.ok(gel && gel.n > 0, JSON.stringify(newest.facets.products));
+  const byProduct = (await api(`/api/orders?tab=&product=${encodeURIComponent("BeeVenom Care Gel")}`)).data;
+  assert.equal(byProduct.total, gel.n);
+  assert.equal((await api(`/api/orders?tab=&product=${encodeURIComponent("Няма такъв")}`)).data.total, 0);
+  // Sent today: every order whose waybill appeared today, and only those.
+  const sent = (await api("/api/orders?tab=&sent=today")).data;
+  assert.equal(sent.total, newest.facets.sentToday);
+  assert.ok(sent.total >= 1);
+  assert.ok(sent.orders.every((o) => o.tracking_no));
+  assert.equal(typeof newest.facets.abandoned, "number");
+  // ☆ saved filters
+  assert.deepEqual((await api("/api/orders/saved")).data.saved, []);
+  await api("/api/orders/saved", { name: "Спиди без товарителница", query: "?courier=speedy&nowaybill=1" });
+  const saved = (await api("/api/orders/saved")).data.saved;
+  assert.deepEqual(saved, [{ name: "Спиди без товарителница", query: "courier=speedy&nowaybill=1" }]);
+  await api("/api/orders/saved", { name: "Спиди без товарителница", delete: true });
+  assert.deepEqual((await api("/api/orders/saved")).data.saved, []);
+});

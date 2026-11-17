@@ -111,4 +111,14 @@ export async function setLead(id: number, action: string, orderId?: number) {
   return null;
 }
 
+/** Unfinished orders not ordered yet (for the count in the orders filters). */
+export async function countOpenLeads(shop = "") {
+  const r = await one<{ n: number }>(
+    `SELECT count(*)::int AS n FROM leads l ${MATCH}
+      WHERE ${TABS.open} AND l.last_at > now() - interval '30 days'${shop ? " AND l.shop = $1" : ""}`,
+    shop ? [shop] : [],
+  );
+  return r?.n || 0;
+}
+
 export const purgeLeads = () => q("DELETE FROM leads WHERE last_at < now() - interval '30 days'");
