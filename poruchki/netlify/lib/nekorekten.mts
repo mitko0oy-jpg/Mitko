@@ -128,7 +128,7 @@ export async function sendReport(key: string, r: { phone: string; name: string; 
 export async function runNekChecks(deadline: number) {
   const s = await nekSettings();
   if (!s.key || !s.auto) return { skipped: !s.key ? "no key" : "off" };
-  let left = 5;
+  let left = 4; // the free plan allows 5 requests a minute: the usage check + 4 searches
   try {
     const u = await nekUsage(s.key);
     // Keep 3 searches a day for the "Провери" button.

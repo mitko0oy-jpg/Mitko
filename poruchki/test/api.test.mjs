@@ -621,8 +621,8 @@ test("nekorekten.com: key in settings, new phones checked in the sync, marks, re
   assert.equal(ok.usage.plan, "Безплатен");
   assert.equal(ok.usage.perDay, 30);
 
-  const sync = await api("/api/settings/sync", {});
-  assert.equal(sync.status, 200);
+  // 4 phones per run (the free plan allows 5 requests a minute): two runs.
+  for (let i = 0; i < 2; i++) assert.equal((await api("/api/settings/sync", {})).status, 200);
   const o = (await api("/api/orders?tab=&q=5004")).data.orders[0];
   assert.equal(o.nek_count, 2);
   const flagged = (await api("/api/orders?tab=&nek=1")).data;
