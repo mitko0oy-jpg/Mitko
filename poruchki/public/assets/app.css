@@ -500,4 +500,5 @@ body.focus main { padding-top: 8px; }
   .tabletools { display: none; }
   .searchbox { max-width: none; flex: 1 1 100%; order: -1; }
 }
-.tgl .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tgl .t { min-width: 0; }
+.side .tgl { gap: 8px; grid-template-columns: 34px minmax(0, 1fr) auto; }
