@@ -109,7 +109,7 @@ export async function submitOrder(deps, body, now = new Date()) {
   let made = null;
   if (platform?.enabled) {
     try {
-      made = await platform.createPhoneOrder(phoneOrderBody({ name, phone, delivery: rec.delivery, items: rec.items, note: rec.note, ref }));
+      made = await platform.createPhoneOrder(phoneOrderBody({ name, phone, delivery: rec.delivery, items: rec.items, note: rec.note, ref, officeId: body.office_id }));
     } catch (err) {
       console.error("platform phone order failed", err.message);
     }

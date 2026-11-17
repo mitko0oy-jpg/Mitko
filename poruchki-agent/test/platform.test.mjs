@@ -262,3 +262,18 @@ test("an order known before the platform link gets its platform id", async () =>
   await runDueCalls(deps, min(4));
   assert.deepEqual(sent[0], ["calling", 2634, 1]);
 });
+
+test("phone order with the office the agent found keeps its code", () => {
+  const b = phoneOrderBody({ name: "А Б", phone: "0888123456", delivery: { type: "econt_office", city: "София", place: "ул. Осогово 30", price: 4.5 }, items: [], ref: "T-3", officeId: "1152" });
+  assert.equal(b.delivery.officeId, "1152");
+  const c = phoneOrderBody({ name: "А Б", phone: "0888123456", delivery: { type: "econt_office", city: "София", place: "x", price: 4.5 }, items: [], ref: "T-4", officeId: "abc" });
+  assert.equal(c.delivery.officeId, undefined);
+});
+
+test("platform client: offices of a town", async () => {
+  let url = "";
+  const p = platform({ env: env({ PLATFORM_URL: "https://p.example", PLATFORM_TOKEN: "t" }), fetchImpl: async (u) => ((url = u), Response.json({ offices: [{ id: "1152", name: "София Стамболийски", address: "ул. Осогово 30" }] })) });
+  const list = await p.offices("econt", "София", "Осогово");
+  assert.equal(list[0].id, "1152");
+  assert.match(url, /offices\?courier=econt&city=%D0%A1/);
+});

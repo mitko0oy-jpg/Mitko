@@ -55,6 +55,11 @@ export function platform({ env, fetchImpl = fetch }) {
     /** One call's result; the platform writes the comment, confirms, corrects and makes the waybill. */
     report: (rec, body) => (rec.platformId ? call(`orders/${rec.platformId}/result`, body) : null),
     createPhoneOrder: (body) => call("orders", body),
+    /** Offices of a town, best matches for the words first. */
+    async offices(courier, city, query = "") {
+      const d = await call(`offices?courier=${encodeURIComponent(courier)}&city=${encodeURIComponent(city)}&q=${encodeURIComponent(query)}`);
+      return d.offices || [];
+    },
   };
 }
 
@@ -90,7 +95,7 @@ export function reportBody(rec, next, call, outcome) {
 }
 
 /** An order taken by phone, in the platform's words. */
-export function phoneOrderBody({ name, phone, delivery, items, note, ref }) {
+export function phoneOrderBody({ name, phone, delivery, items, note, ref, officeId }) {
   const courier = String(delivery.type || "").startsWith("econt") ? "econt" : "speedy";
   const type = String(delivery.type || "").endsWith("address") ? "address" : "office";
   return {
@@ -99,7 +104,7 @@ export function phoneOrderBody({ name, phone, delivery, items, note, ref }) {
     phone: normalizePhoneBG(phone) || phone,
     city: delivery.city,
     address: type === "address" ? delivery.place : "",
-    delivery: { courier, type, ...(type === "office" ? { officeName: `${delivery.city}, ${delivery.place}` } : {}) },
+    delivery: { courier, type, ...(type === "office" ? { officeName: `${delivery.city}, ${delivery.place}`, ...(/^\d{1,8}$/.test(String(officeId || "")) ? { officeId: String(officeId) } : {}) } : {}) },
     items: items.map((i) => ({ name: i.cb || i.name, qty: i.qty, price: round(i.sum / (i.qty || 1)) })),
     shipping: delivery.price,
     note: [`Поръчка по телефона (${ref})`, note].filter(Boolean).join(". "),

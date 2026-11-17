@@ -56,6 +56,33 @@
       ]
     },
     {
+      "name": "find_office",
+      "path": "find-office",
+      "description": "Търси офисите на Еконт или Спиди в града по думите на клиента (улица, квартал, име на офиса). Използвай при доставка до офис, преди да запишеш поръчката: кажи на клиента 1–3 най-подходящи офиса и потвърди кой е.",
+      "properties": {
+        "courier": {
+          "type": "string",
+          "description": "Куриерът: econt или speedy.",
+          "enum": [
+            "econt",
+            "speedy"
+          ]
+        },
+        "city": {
+          "type": "string",
+          "description": "Градът или селото."
+        },
+        "query": {
+          "type": "string",
+          "description": "Какво каза клиентът за офиса: улица, квартал, име или забележителност. Празно, ако не знае."
+        }
+      },
+      "required": [
+        "courier",
+        "city"
+      ]
+    },
+    {
       "name": "submit_order",
       "path": "submit-order",
       "description": "Записва нова поръчка по телефона и я праща на екипа. Използвай само след като клиентът е потвърдил продуктите, името, телефона и доставката.",
@@ -80,7 +107,7 @@
         },
         "office_or_address": {
           "type": "string",
-          "description": "Кой офис на куриера (име или улица), или пълен адрес при доставка до адрес."
+          "description": "Името и адресът на офиса, който клиентът потвърди, или пълният адрес при доставка до адрес."
         },
         "note": {
           "type": "string",
@@ -89,6 +116,10 @@
         "conversation_id": {
           "type": "string",
           "dynamic_variable": "system__conversation_id"
+        },
+        "office_id": {
+          "type": "string",
+          "description": "Кодът (id) на офиса, който клиентът потвърди от find_office. Празно при доставка до адрес."
         }
       },
       "required": [
