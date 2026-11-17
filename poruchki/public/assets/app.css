@@ -867,3 +867,11 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .side .tgl .badge { padding: 4px 4px; }
 @media (min-width: 761px) { .otbl td.c-client { min-width: 176px; } }
 .side .tgl .badge { letter-spacing: -0.015em; }
+
+/* Middleware's softer blue for names, phones and links; buttons a touch deeper in the same hue (white text stays readable) */
+:root { --link: #5494de; --accent: #3d86df; --accent-soft: #e9f2fd; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --link: #7fb2ef; --accent: #6ea8f0; --accent-soft: #172538; } }
+:root[data-theme="dark"] { --link: #7fb2ef; --accent: #6ea8f0; --accent-soft: #172538; }
+a, .otbl .cname2, .otbl .ph a, .otbl .where, .otbl a.ono:hover, .pcard a, .linkbtn:hover { color: var(--link); }
+.otbl .cname2 { font-weight: 600; }
+.btn.primary, .roundbtn, .actsin .iconbtn.primary, .iconbtn.primary { box-shadow: 0 1px 2px rgb(61 134 223 / 0.35); }
