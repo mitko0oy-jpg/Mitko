@@ -82,6 +82,7 @@ export type Draft = {
   courier: "speedy" | "econt";
   type: "office" | "automat" | "address";
   officeId: string; // Speedy office id or Econt office code
+  guessed?: boolean; // office found by its name, the person checks it
   officeName: string;
   city: string;
   zip: string;
@@ -99,7 +100,8 @@ export type OrderRow = Record<string, any>;
 export function draftFor(o: OrderRow, def: Defaults): Draft {
   const d = o.delivery || {};
   const courier: "speedy" | "econt" = d.courier === "econt" || d.courier === "speedy" ? d.courier : courierOf(o.shipping_name) === "econt" ? "econt" : "speedy";
-  const type: Draft["type"] = d.type === "office" || d.type === "automat" ? (d.officeId ? d.type : "address") : "address";
+  // Office stays office even without its code: the dialog asks for the office (sending it to an address instead would be wrong).
+  const type: Draft["type"] = d.type === "office" || d.type === "automat" ? d.type : "address";
   const isOfficeText = (s: string) => /^\s*До офис/i.test(s || "");
   const address = [o.address, o.address2].filter((s) => s && !isOfficeText(s)).join(", ");
   const products = (o.items || []).filter((i: any) => Number(i.total) > 0).map((i: any) => String(i.name));
@@ -371,7 +373,13 @@ async function credsFor(courier: "speedy" | "econt"): Promise<Creds> {
 export async function draftForOrder(id: number) {
   const o = await loadOrder(id);
   const def = await getDefaults();
-  return { order: o, draft: draftFor(o, def), defaults: def };
+  const draft = draftFor(o, def);
+  // Only the office's name is known (an order taken by phone, an old shop form): try to find it, the person confirms.
+  if (draft.type !== "address" && !draft.officeId && (draft.officeName || o.address)) {
+    const m = await matchOffice(draft.courier, draft.city, draft.officeName || String(o.address || "")).catch(() => null);
+    if (m) Object.assign(draft, { officeId: m.id, officeName: m.name, guessed: true });
+  }
+  return { order: o, draft, defaults: def };
 }
 
 export async function priceFor(id: number, input: any) {
@@ -496,6 +504,43 @@ export async function labelsFor(ids: number[]): Promise<Uint8Array> {
     return pdf;
   }
   throw fail("Етикет можем да отпечатаме само за Спиди и Еконт.");
+}
+
+const STOP = new Set(["офис", "офиса", "на", "до", "еконт", "econt", "спиди", "speedy", "ул", "бул", "гр", "град", "кв", "жк", "№", "и", "в", "с", "автомат", "офисът"]);
+const norm = (t: string) => String(t || "").toLowerCase().replace(/[„“"'.,()]/g, " ").replace(/\s+/g, " ").trim();
+
+/** Offices of a city, best match for the words first (score = how many of the words they contain). */
+export async function searchOffices(courier: string, city: string, text: string) {
+  if (courier !== "speedy" && courier !== "econt") throw fail("Непознат куриер.");
+  const c = norm(city).replace(/^(гр|с)\s+/, "");
+  if (c.length < 2) return { list: [], words: [] as string[] };
+  const creds = await credsFor(courier);
+  const list: any[] = courier === "speedy" ? await speedyOffices(creds, c) : await econtOffices(creds, c);
+  const words = norm(text).split(" ").filter((w) => w.length >= 3 && !STOP.has(w) && !c.split(" ").includes(w));
+  const scored = list
+    .map((o) => {
+      const hay = norm(`${o.name} ${o.address}`);
+      return { ...o, score: words.filter((w) => hay.includes(w) || (w.length > 5 && hay.includes(w.slice(0, -2)))).length };
+    })
+    .sort((a, b) => b.score - a.score);
+  return { list: scored, words };
+}
+
+/**
+ * The courier office a customer named in words ("София, офис на Еконт на ул. Осогово"): the offices of the city,
+ * scored by the other words. Only a clear winner is returned – otherwise a person picks it.
+ */
+export async function matchOffice(courier: string, city: string, text: string): Promise<{ id: string; name: string; address: string } | null> {
+  if (courier !== "speedy" && courier !== "econt") return null;
+  if (/^\d{1,6}$/.test(String(text || "").trim())) {
+    const creds = await credsFor(courier);
+    const byId = courier === "speedy" ? await speedyOffices(creds, String(text).trim()) : await econtOffices(creds, String(text).trim());
+    if (byId.length === 1) return byId[0];
+  }
+  const { list, words } = await searchOffices(courier, city, text);
+  if (!list.length) return null;
+  if (list[0].score > 0 && (list.length === 1 || list[0].score > list[1].score)) return list[0];
+  return list.length === 1 && !words.length ? list[0] : null;
 }
 
 export async function officesFor(courier: string, query: string) {

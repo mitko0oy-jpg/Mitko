@@ -6,7 +6,7 @@ import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { addNote, createOrder } from "../lib/manage.mts";
 import { catalog } from "../lib/products.mts";
 import { getAutomation } from "../lib/agent.mts";
-import { createFor } from "../lib/waybills.mts";
+import { createFor, matchOffice, searchOffices } from "../lib/waybills.mts";
 
 const idOf = (v: unknown) => {
   const n = Number(v);
@@ -32,6 +32,11 @@ export default handle(async (req) => {
     }
     if (what === "by-phone") return json({ orders: await ordersByPhone(str(u.get("phone"), 40), Number(u.get("days")) || 45) });
     if (what === "products") return json({ products: await catalog(str(u.get("shop"), 20), str(u.get("q"), 60)) });
+    // Courier offices of a city for the agent to read to the customer (best matches for the words first).
+    if (what === "offices") {
+      const { list } = await searchOffices(str(u.get("courier"), 10), str(u.get("city"), 60), str(u.get("q"), 120));
+      return json({ offices: list.slice(0, 8).map((o: any) => ({ id: o.id, name: o.name, address: o.address, automat: !!o.automat, match: o.score })) });
+    }
     throw notFound();
   }
 
@@ -40,10 +45,21 @@ export default handle(async (req) => {
 
   // An order taken over the phone: confirmed already; the waybill follows when the delivery is complete.
   if (what === "orders" && !idStr) {
-    const r = await createOrder({ ...b, confirmed: true }, { source: "phone", userId: null, who: AI, by: AI });
+    // An office said in words: find its code, so the waybill can go out on its own.
+    const d = b.delivery && typeof b.delivery === "object" ? { ...b.delivery } : {};
+    let officeNote = "";
+    if ((d.type === "office" || d.type === "automat") && !/^\d{1,8}$/.test(String(d.officeId || ""))) {
+      const said = String(d.officeName || b.address || "");
+      const m = await matchOffice(String(d.courier || ""), String(b.city || ""), said).catch(() => null);
+      if (m) Object.assign(d, { officeId: m.id, officeName: m.name });
+      else officeNote = `⚠ Избери офиса: AI записа „${said.slice(0, 150)}“, но не го намерих точно в офисите на ${d.courier === "econt" ? "Еконт" : "Спиди"}.`;
+    }
+    const r = await createOrder({ ...b, delivery: d, confirmed: true }, { source: "phone", userId: null, who: AI, by: AI });
+    if (officeNote) await addNote(r.id, officeNote, null, AI);
     const auto = await getAutomation();
     let waybill = null;
-    if (auto.autoWaybill && b.autoWaybill !== false) {
+    const complete = d.type === "address" ? Boolean(b.city && b.address) : /^\d{1,8}$/.test(String(d.officeId || ""));
+    if (auto.autoWaybill && b.autoWaybill !== false && complete) {
       try {
         waybill = await createFor(r.id, undefined, null);
       } catch (e: any) {

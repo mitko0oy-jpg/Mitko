@@ -123,6 +123,12 @@ const courier = createServer((req, res) => {
             { id: 2, text: "Отказа на място", createDate: "2026-09-01T10:15:00+03:00" },
           ], count: 2 });
         return json({ items: [], count: 0 });
+      case "/econt/Nomenclatures/NomenclaturesService.getOffices.json":
+        return json({ offices: [
+          { code: "1234", name: "София Осогово", address: { fullAddress: "гр. София, ул. Осогово 2" }, isAPS: false },
+          { code: "5678", name: "София Център", address: { fullAddress: "гр. София, бул. Витоша 1" }, isAPS: false },
+          { code: "9012", name: "Пловдив Тракия", address: { fullAddress: "гр. Пловдив, ж.к. Тракия" }, isAPS: false },
+        ] });
       case "/econt/Shipments/LabelService.deleteLabels.json":
         return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });
       default:
@@ -631,4 +637,34 @@ test("nekorekten.com: key in settings, new phones checked in the sync, marks, re
   assert.equal(posted.lastName, "4");
   const after = (await api(`/api/orders/${o.id}`)).data;
   assert.ok(after.events.some((e) => e.kind === "nekorekten"));
+});
+
+test("phone order: an office said in words is found by city and street; an unknown one waits for a person", async () => {
+  const agent = (p, body) =>
+    fetch(`${B}/api/agent/${p}`, {
+      method: body ? "POST" : "GET",
+      headers: { authorization: "Bearer agent-token-agent-token-agent-token-0000", ...(body ? { "content-type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(async (r) => ({ status: r.status, data: await r.json() }));
+  const offices = (await agent(`offices?courier=econt&city=${encodeURIComponent("София")}&q=${encodeURIComponent("до офиса на Осогово")}`)).data.offices;
+  assert.equal(offices[0].id, "1234");
+  assert.equal(offices.length, 2); // only Sofia
+
+  const base = { shop: "bg", name: "Димитър Димитров", phone: "0899876063", city: "София", items: [{ name: "Гел", qty: 1, price: 15.9 }], shipping: 4.5 };
+  const ok = await agent("orders", { ...base, delivery: { courier: "econt", type: "office", officeName: "София, Офис на Еконт, ул. Осогово" } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  const o = (await api(`/api/orders/${ok.data.id}`)).data;
+  assert.equal(o.delivery.officeId, "1234");
+  assert.ok(ok.data.waybill, "the waybill goes out on its own");
+
+  const unknown = await agent("orders", { ...base, delivery: { courier: "econt", type: "office", officeName: "при моста" } });
+  assert.equal(unknown.status, 200);
+  assert.equal(unknown.data.waybill, null);
+  const u = (await api(`/api/orders/${unknown.data.id}`)).data;
+  assert.match(u.note, /Избери офиса/);
+  assert.ok(!u.events.some((e) => /не се създаде автоматично/.test(e.text)));
+  // The waybill window keeps it an office and asks for one.
+  const draft = (await api(`/api/waybills/draft?order=${unknown.data.id}`)).data.draft;
+  assert.equal(draft.type, "office");
+  assert.equal(draft.officeId, "");
 });

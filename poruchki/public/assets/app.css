@@ -625,3 +625,4 @@ body.focus main { padding-top: 8px; }
 .i4.n { background: #161616; border-color: #161616; color: #fff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .i4.n { background: #000; border-color: #5a5a5a; } }
 :root[data-theme="dark"] .i4.n { background: #000; border-color: #5a5a5a; }
+.modal .warn { color: var(--warn); }

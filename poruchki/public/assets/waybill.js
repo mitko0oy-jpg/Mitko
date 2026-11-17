@@ -68,7 +68,7 @@ export async function openWaybill(orderId) {
           </div>
           ${
             office
-              ? `<div class="office"><div>${draft.officeId ? `<b>№ ${esc(draft.officeId)}</b> ${esc(draft.officeName)}` : `<span class="err">Избери ${draft.type === "automat" ? "автомат" : "офис"}</span>`}</div>
+              ? `<div class="office"><div>${draft.officeId ? `<b>№ ${esc(draft.officeId)}</b> ${esc(draft.officeName)}${draft.guessed ? `<div class="warn small">Намерен по името от поръчката – провери дали е верният.</div>` : ""}` : `<span class="err">Избери ${draft.type === "automat" ? "автомат" : "офис"}</span>`}</div>
                    <button type="button" class="btn sm" data-find>Смени</button></div>
                  <div id="finder" hidden><input type="search" id="officeQ" placeholder="Град или име на офиса"><div class="results" id="officeList"></div></div>`
               : `<div class="grid2"><label>Град<input type="text" name="city" value="${esc(draft.city)}" required></label>
@@ -198,6 +198,7 @@ export async function openWaybill(orderId) {
             readForm();
             draft.officeId = b.dataset.id;
             draft.officeName = b.dataset.name;
+            delete draft.guessed;
             render();
           }),
         );
