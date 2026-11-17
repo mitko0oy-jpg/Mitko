@@ -249,3 +249,16 @@ test("a shop added later: only its orders after that moment are called", async (
   orders.push(order(1739, { createdAt: min(9).toISOString() }));
   assert.equal(await syncOrders(deps, min(13)), 2, "bg keeps its start; max4 starts at minute 10");
 });
+
+test("an order known before the platform link gets its platform id", async () => {
+  const { deps, store, orders, order, sent } = setup();
+  await syncOrders(deps, T0);
+  orders.push(order(1734, { platformId: undefined, id: undefined }));
+  await syncOrders(deps, min(2));
+  assert.equal((await store.get("order/bg/1734", { type: "json" })).platformId, null);
+  orders[0] = order(1734); // now it comes from the platform
+  assert.equal(await syncOrders(deps, min(3)), 0);
+  assert.equal((await store.get("order/bg/1734", { type: "json" })).platformId, 2634);
+  await runDueCalls(deps, min(4));
+  assert.deepEqual(sent[0], ["calling", 2634, 1]);
+});

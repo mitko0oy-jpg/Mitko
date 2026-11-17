@@ -101,7 +101,16 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
       history: [{ at: now.toISOString(), event: "new" }],
     };
     const { modified } = await store.setJSON(seenKey(o.site, o.orderNo, o.requested ? o.requestedAt : null), { at: now.toISOString() }, { onlyIfNew: true });
-    if (!modified) continue;
+    if (!modified) {
+      // Orders the agent already knew before the platform link: remember their platform id, so their calls are reported too.
+      if (o.platformId) {
+        const known = await store.getWithMetadata(orderKey(o.site, o.orderNo), { type: "json" });
+        if (known?.data && !known.data.platformId) {
+          await store.setJSON(orderKey(o.site, o.orderNo), { ...known.data, platformId: o.platformId, items: o.items || [], shipping: o.shipping ?? null }, { onlyIfMatch: known.etag });
+        }
+      }
+      continue;
+    }
     await save(store, orderKey(o.site, o.orderNo), rec);
     added++;
     if (!phone && (settings.mode || config.mode) !== "off") await notify(buildMessage(rec, labelFor("bad_phone"), null, { testMode: (settings.mode || config.mode) === "test" }));
