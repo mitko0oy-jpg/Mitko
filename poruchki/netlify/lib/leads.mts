@@ -1,7 +1,7 @@
 // Unfinished orders ("Незавършени"): a customer filled in the shop's order form but did not send it.
 // The shop pages load /c.js, which posts the typed fields to /api/collect. An order with the same
 // phone that comes later marks the lead as ordered (computed when listing, nothing to keep in sync).
-import { cbSites } from "./cb.mts";
+import { allSites } from "./cb.mts";
 import { one, q } from "./db.mts";
 import { inCompany } from "./tenant.mts";
 
@@ -9,7 +9,7 @@ const clean = (v: unknown, max: number) =>
   typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "";
 
 /** The shop whose site sent the request (from its Origin), or null for anything else. */
-export function shopForOrigin(origin: string | null): string | null {
+export async function shopForOrigin(origin: string | null): Promise<string | null> {
   if (!origin) return null;
   let host = "";
   try {
@@ -17,7 +17,7 @@ export function shopForOrigin(origin: string | null): string | null {
   } catch {
     return null;
   }
-  const site = cbSites().find((s) => s.domain.toLowerCase().replace(/^www\./, "") === host);
+  const site = (await allSites()).find((s) => s.domain.toLowerCase().replace(/^www\./, "") === host);
   return site ? site.id : null;
 }
 

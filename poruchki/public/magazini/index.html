@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Магазини – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="wide">
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row">
+        <h1>Магазини</h1>
+        <button class="roundbtn" id="addShop" title="Добави магазин" aria-label="Добави магазин">+</button>
+        <span class="muted small" id="count"></span>
+      </div>
+      <div class="head-tools">
+        <label class="searchbox"><input type="search" id="q" placeholder="Търсене по име или сайт" aria-label="Търсене"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></label>
+      </div>
+    </div>
+    <section class="card" style="padding:8px 12px 12px">
+      <div class="tabs" id="tabs" role="tablist">
+        <button data-tab="on" class="on">Инсталирани магазини<span class="n" id="nOn"></span></button>
+        <button data-tab="off">Спрени магазини<span class="n" id="nOff"></span></button>
+      </div>
+      <div class="scroll"><table class="otbl shopsTbl" id="table"></table></div>
+    </section>
+  </main>
+  <dialog class="modal" id="dlg"></dialog>
+  <script type="module" src="/assets/magazini.js"></script>
+</body>
+</html>

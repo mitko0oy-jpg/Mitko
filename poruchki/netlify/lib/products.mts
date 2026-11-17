@@ -1,6 +1,6 @@
 // Products of each shop, to add to an order: from ConvertBuilder (GET /products), plus what was
 // actually sold lately (names and prices exactly as in the orders) so the list is never empty.
-import { cb, cbSites, PAGE, type Site } from "./cb.mts";
+import { allSites, cb, PAGE, type Site } from "./cb.mts";
 import { q } from "./db.mts";
 import { inCompany } from "./tenant.mts";
 
@@ -55,7 +55,7 @@ export async function syncAllProducts(deadline: number) {
   const done: Record<string, number | string> = {};
   const fresh = new Set((await q<any>("SELECT DISTINCT shop FROM products WHERE synced_at > now() - interval '20 hours'")).map((r) => r.shop));
   const active = new Set((await q<any>("SELECT id FROM shops WHERE active")).map((r) => r.id));
-  for (const site of cbSites()) {
+  for (const site of await allSites()) {
     if (Date.now() > deadline || fresh.has(site.id) || !active.has(site.id)) continue;
     try {
       done[site.id] = await syncProducts(site, deadline);

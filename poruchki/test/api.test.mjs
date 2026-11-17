@@ -93,6 +93,8 @@ const courier = createServer((req, res) => {
     sent.push({ path: u.pathname, body: b });
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
+      case "/speedy/client/contract":
+        return json({ clients: [{ clientId: 100000000001, clientName: "БИ ВЕНОМ ЕООД", objectName: "Склад", address: { fullAddressString: "Пловдив, ул. Тест 1" } }] });
       case "/speedy/calculate":
         return json({ calculations: [{ serviceId: 505, price: { total: 3.24, currency: "EUR" } }] });
       case "/speedy/shipment":
@@ -710,7 +712,88 @@ test("companies: another company sees none of our orders, shops, people or setti
   // A new order needs one of their own shops.
   assert.equal((await as("/api/orders", { shop: "bg", name: "X Y", phone: "0888000000", city: "София", delivery: { courier: "speedy", type: "office", officeId: "1" }, items: [{ name: "a", qty: 1, price: 1 }] })).status, 400);
 
+  // Shops: theirs only; ours cannot be touched.
+  assert.equal((await as("/api/shops")).data.shops.length, 0);
+  assert.equal((await as("/api/shops/bg", { active: false })).status, 404);
+  assert.equal((await as("/api/shops/bg/sync", {})).status, 404);
+
   // Switched off: Ivan cannot work any more.
   await api(`/api/companies/${other.id}`, { archived: true });
   assert.equal((await as("/api/orders?tab=")).status, 401);
+});
+
+test("shops like Middleware: add a ConvertBuilder shop with its key, change it, switch it off", async () => {
+  const list = (await api("/api/shops")).data.shops;
+  const bg = list.find((s) => s.id === "bg");
+  assert.equal(bg.source, "netlify");
+  assert.ok(bg.orders > 0);
+  // A wrong key is refused before anything is saved.
+  const wrong = await api("/api/shops", { label: "Нов магазин", domain: `localhost:${SHOP_PORT}`, key: "not-the-right-key" });
+  assert.equal(wrong.status, 400);
+  assert.match(wrong.data.message, /не прие ключа/);
+  assert.equal((await api("/api/shops", { label: "Дубъл", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key-test" })).status, 400, "the same site twice");
+  // The right key: saved encrypted, the orders come in at once.
+  const ok = await api("/api/shops", { label: "Нов магазин", domain: `http://localhost:${SHOP_PORT}/`, key: "test-key", currency: "eur" });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  const added = ok.data.shops.find((s) => s.id === ok.data.id);
+  assert.equal(added.domain, `localhost:${SHOP_PORT}`);
+  assert.equal(added.source, "app");
+  assert.equal(added.currency, "EUR");
+  assert.ok(added.orders > 0, "orders pulled right after adding");
+  assert.ok(!JSON.stringify(ok.data).includes("test-key"), "the key never goes back to the browser");
+  // Change, sync, switch off.
+  const ch = await api(`/api/shops/${added.id}`, { label: "Преименуван", note: "тест", active: false });
+  const after = ch.data.shops.find((s) => s.id === added.id);
+  assert.equal(after.label, "Преименуван");
+  assert.equal(after.note, "тест");
+  assert.equal(after.active, false);
+  assert.equal((await api(`/api/shops/${added.id}`, { key: "short" })).status, 400);
+  assert.equal((await api(`/api/shops/${added.id}`, { active: true })).status, 200);
+  assert.equal((await api(`/api/shops/${added.id}/sync`, {})).status, 200);
+  assert.equal((await api("/api/shops/nope", { active: false })).status, 404);
+});
+
+test("people like Middleware: add with a role, change, new password ends their sessions, remove", async () => {
+  const add = await api("/api/settings/users", { name: "Мария", email: "maria@example.com", password: "maria-password-1", role: "admin" });
+  assert.equal(add.status, 200, JSON.stringify(add.data));
+  const maria = add.data.users.find((u) => u.email === "maria@example.com");
+  assert.equal(maria.role, "admin");
+  assert.equal(maria.last_login, null);
+  // She logs in, then gets a new password: her session ends.
+  let ck = "";
+  const as = async (p, body) => {
+    const r = await fetch(B + p, { method: body ? "POST" : "GET", headers: { ...(body ? { "content-type": "application/json" } : {}), cookie: ck }, body: body ? JSON.stringify(body) : undefined });
+    const set = r.headers.get("set-cookie");
+    if (set) ck = set.split(";")[0];
+    return { status: r.status, data: await r.json().catch(() => null) };
+  };
+  assert.equal((await as("/api/auth/login", { email: "maria@example.com", password: "maria-password-1" })).status, 200);
+  assert.equal((await as("/api/orders?tab=")).status, 200);
+  const list = (await api("/api/settings")).data.users;
+  assert.ok(list.find((u) => u.email === "maria@example.com").last_login, "last login shown");
+  const ch = await api("/api/settings/users/change", { id: Number(maria.id), name: "Мария Иванова", role: "staff", password: "maria-password-2" });
+  assert.equal(ch.status, 200, JSON.stringify(ch.data));
+  const after = ch.data.users.find((u) => u.email === "maria@example.com");
+  assert.equal(after.name, "Мария Иванова");
+  assert.equal(after.role, "staff");
+  assert.equal((await as("/api/orders?tab=")).status, 401, "old session ended");
+  assert.equal((await api("/api/settings/users/change", { id: Number(maria.id), password: "short" })).status, 400);
+  // The owner stays owner; a staff member cannot change people.
+  const owner = ch.data.users.find((u) => u.owner);
+  assert.equal((await api("/api/settings/users/change", { id: Number(owner.id), role: "staff" })).status, 400);
+  assert.equal((await api("/api/settings/users/delete", { id: Number(owner.id) })).status, 400);
+  assert.equal((await as("/api/auth/login", { email: "maria@example.com", password: "maria-password-2" })).status, 200);
+  assert.equal((await as("/api/settings/users", { name: "X", email: "x@example.com", password: "x-password-123" })).status, 400, "staff cannot add people");
+  assert.equal((await api("/api/settings/users/delete", { id: Number(maria.id) })).status, 200);
+});
+
+test("couriers page: Speedy sender objects for the dropdown, sender settings saved", async () => {
+  const r = await api("/api/waybills/clients?courier=speedy");
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.deepEqual(r.data.clients, [{ id: "100000000001", name: "БИ ВЕНОМ ЕООД – Склад", address: "Пловдив, ул. Тест 1" }]);
+  assert.deepEqual((await api("/api/waybills/clients?courier=econt")).data.clients, []);
+  const saved = await api("/api/waybills/settings", { econt: { senderOfficeCode: "1152", weight: "0.7", sms: false } });
+  assert.equal(saved.data.defaults.econt.senderOfficeCode, "1152");
+  assert.equal(saved.data.defaults.econt.weight, 0.7);
+  assert.equal(saved.data.defaults.econt.sms, false);
 });

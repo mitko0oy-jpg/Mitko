@@ -2,7 +2,9 @@
 // Base: https://<shop domain>/api/site, header "Authorization: Bearer <key>".
 // The key is per shop: Website Settings → Applications → API Key.
 // CB_SITES env: JSON [{ "id": "bg", "label": "BeeVenom BG", "domain": "beevenombg.eu", "key": "…" }]
+import { q } from "./db.mts";
 import { env } from "./http.mts";
+import { unseal } from "./secret.mts";
 
 export type Site = { id: string; label: string; domain: string; key: string };
 
@@ -19,6 +21,24 @@ export function cbSites(): Site[] {
 }
 
 export const cbSite = (id: string) => cbSites().find((s) => s.id === id) || null;
+
+/** Every shop with an API key: the ones in CB_SITES (company 1) and the ones added in the app (key kept encrypted). */
+export async function allSites(): Promise<(Site & { company: number })[]> {
+  const fromEnv = cbSites().map((s) => ({ ...s, company: 1 }));
+  const rows = await q<any>("SELECT id, label, domain, api_key_sealed, company_id FROM shops WHERE api_key_sealed IS NOT NULL");
+  const known = new Set(fromEnv.map((s) => s.id));
+  const fromApp = rows.flatMap((r) => {
+    if (known.has(r.id)) return [];
+    try {
+      return [{ id: String(r.id), label: String(r.label), domain: String(r.domain), key: unseal<string>(r.api_key_sealed), company: Number(r.company_id) }];
+    } catch {
+      return [];
+    }
+  });
+  return [...fromEnv, ...fromApp];
+}
+
+export const siteFor = async (id: string) => (await allSites()).find((s) => s.id === id) || null;
 
 type Fetch = typeof fetch;
 let fetchImpl: Fetch = (...a) => fetch(...a);

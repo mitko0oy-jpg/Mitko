@@ -1,7 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { body } from "../lib/http.mts";
-import { cbSite, getOrder } from "../lib/cb.mts";
+import { getOrder, siteFor } from "../lib/cb.mts";
 import { trackingUrl } from "../lib/couriers.mts";
 import { isDay } from "../lib/dates.mts";
 import { getSetting, one, q, setSetting } from "../lib/db.mts";
@@ -324,7 +324,7 @@ export default handle(async (req) => {
       await runTracking({ deadline: Date.now() + 15000, orderIds: [id], job: "track-one" });
       return json(await detail(id));
     }
-    const site = cbSite(o.shop);
+    const site = await siteFor(o.shop);
     if (!site) throw bad("no_site", "Липсва API ключ за този магазин.");
     await upsertOrders({ id: o.shop, currency: o.currency }, [await getOrder(site, o.cb_id)], await getRates());
     await runTracking({ deadline: Date.now() + 15000, orderIds: [id], job: "track-one" });

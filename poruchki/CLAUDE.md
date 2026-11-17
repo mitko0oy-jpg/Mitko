@@ -24,6 +24,7 @@
 - `companies`; всеки `users` и `shops` има `company_id`. Всичко, което беше, е фирма 1 (на Митко); настройките от Netlify (CB_SITES, SPEEDY_*, ECONT_*, SMSAPI_*, NEKOREKTEN_KEY, SHIPPING_DEFAULTS, MW_*, AGENT_TOKEN) важат само за фирма 1 (`ENV_COMPANY`).
 - Фирмата на заявката е в `lib/ctx.mts`/`lib/tenant.mts` (AsyncLocalStorage): `handle()` започва контекст, `requireUser()` (и `requireAgent()`) го попълва; `companyId()` хвърля грешка без фирма, за да не излезе чужда поръчка. Фонови задачи: `withCompany(id, fn)` (`runTrackingAll`, nekorekten и MW в `runSync`).
 - Филтри: `s.company_id = companyId()` в списъци/табло/експорт, `inCompany()` за заявки по `shop`, `ownOrder(one, id)` преди всяко действие по поръчка (orders, agent). Настройките на фирма са `<ключ>@<фирма>` (`cKey`): sms, automation, shipping, courier:*, econt_profile, nekorekten, …; `fx` и `econt_offices` са общи. `phone_checks` е по (company_id, phone_key).
+- Като в Middleware: `/magazini/` (`/api/shops`) – фирмата добавя ConvertBuilder магазин с API ключ (проверява се с `/orders`, пази се криптиран в `shops.api_key_sealed`; `cb.mts` `allSites()`/`siteFor()` дават и тези от CB_SITES, и тези от базата), сменя име/пазар/валута/бележка, спира го, тегли поръчките. `/kurieri/` – свързаните куриери (+ → „Избери куриер“: Спиди и Еконт сега), достъп до API и „Изпращане“ (офис за предаване от падащ списък, подател от `/api/waybills/clients`, преглед/тест, тегло, етикет) + автоматичните товарителници. `/potrebiteli/` – хора с роля собственик/служител, смяна на име/роля/парола (новата парола гони сесиите му), последно влизане. В `/nastroiki/` остават обновяването, историята, SMS и nekorekten.
 - `users.is_owner` – собственикът на платформата: страница `/firmi/` (`/api/companies`) – нова фирма с първия ѝ потребител, преименуване, спиране (спряна фирма не може да влиза). Той не вижда поръчките на другите фирми.
 
 ## Незавършени поръчки
@@ -48,7 +49,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/nastroiki/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |
@@ -73,13 +74,13 @@
 
 ## Настройки в Netlify (env)
 
-`CB_SITES` (JSON с id, label, domain, key за всеки магазин), `SECRET_KEY` (криптира паролите в базата), `SETUP_CODE` (първи вход), `SPEEDY_USER`/`SPEEDY_PASS`, `ECONT_USER`/`ECONT_PASS` (или се въвеждат в Настройки), по желание `MW_TOKEN`, `MW_TENANT`, `MW_STORES` ({"bg": "<id на магазина в Middleware>"}) докато върви паралелно с Middleware.
+`CB_SITES` (JSON с id, label, domain, key за всеки магазин), `SECRET_KEY` (криптира паролите в базата), `SETUP_CODE` (първи вход), `SPEEDY_USER`/`SPEEDY_PASS`, `ECONT_USER`/`ECONT_PASS` (или се въвеждат в Куриери), по желание `MW_TOKEN`, `MW_TENANT`, `MW_STORES` ({"bg": "<id на магазина в Middleware>"}) докато върви паралелно с Middleware.
 
 ## Тестове
 
 ```
 cd poruchki && npm install
-npm test                                  # 41 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 44 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

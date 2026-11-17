@@ -49,6 +49,11 @@ export const STAGES = {
 export const ONE = { new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
 export const STAGE_ORDER = ["new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
 export const COURIER = { speedy: "Спиди", econt: "Еконт", gls: "GLS", boxnow: "BOX NOW", sameday: "Sameday" };
+// Courier marks (drawn here): Speedy – a red parcel cube, Econt – a blue E.
+export const CMARK = {
+  speedy: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8L12 12 3.5 7.3z" fill="#f04a3e"/><path d="M3.5 7.3L12 12v9.5l-8.5-4.8z" fill="#d42a20"/><path d="M20.5 7.3L12 12v9.5l8.5-4.8z" fill="#a8180f"/><path d="M7.6 4.9l8.6 4.8" stroke="#fff" stroke-width="1.3" opacity=".85"/></svg>`,
+  econt: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#1f3c88"/><path d="M8 6.5h8.2v2.6H11v1.7h4.4v2.5H11v1.8h5.3v2.6H8z" fill="#fff"/></svg>`,
+};
 
 // ---- dates (Sofia) ----
 const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit" });
@@ -185,10 +190,10 @@ export async function shell(active) {
     ["/poruchki/", "Поръчки", "poruchki", ICONS.cart],
     ["/nezavarsheni/", "Незавършени", "nezavarsheni", ICONS.hourglass],
     ["/pechat/", "Печат", "pechat", ICONS.print],
-    ["/nastroiki/#magazini", "Магазини", "magazini", ICONS.store],
-    ["/nastroiki/#kurieri", "Куриери", "kurieri", ICONS.truck],
+    ["/magazini/", "Магазини", "magazini", ICONS.store],
+    ["/kurieri/", "Куриери", "kurieri", ICONS.truck],
     ["/nastroiki/#sms", "SMS", "sms", ICONS.chat],
-    ["/nastroiki/#potrebiteli", "Потребители", "potrebiteli", ICONS.users],
+    ["/potrebiteli/", "Потребители", "potrebiteli", ICONS.users],
     ["/nastroiki/", "Настройки", "nastroiki", ICONS.gear],
   ];
   // Only the platform owner manages companies.

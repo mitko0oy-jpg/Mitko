@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Куриери – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="wide">
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row">
+        <h1>Куриери</h1>
+        <button class="roundbtn" id="addCourier" title="Свържи куриер" aria-label="Свържи куриер">+</button>
+      </div>
+    </div>
+    <div id="msg"></div>
+    <section class="card" style="padding:8px 12px 12px">
+      <div class="scroll"><table class="otbl shopsTbl" id="table"></table></div>
+      <div id="tracked" class="small muted" style="padding:8px 6px 0"></div>
+    </section>
+    <section class="card stack">
+      <h2>Автоматични товарителници</h2>
+      <label class="chk"><input type="checkbox" id="autoWaybill"> <b>След AI потвърждение създавай товарителницата сама</b> (и я пращай на страницата „Печат“). Ако клиентът поиска промяна в доставката, не я създава, а оставя бележка.</label>
+    </section>
+  </main>
+  <dialog class="modal" id="dlg"></dialog>
+  <script type="module" src="/assets/kurieri.js"></script>
+</body>
+</html>

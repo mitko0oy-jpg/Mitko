@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { courierInfo } from "../lib/track.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
-import { cancelFor, createFor, draftForOrder, getDefaults, labelsFor, markPrintedPublic, officesFor, priceFor, printQueue, saveDefaults } from "../lib/waybills.mts";
+import { cancelFor, clientsFor, createFor, draftForOrder, getDefaults, labelsFor, markPrintedPublic, officesFor, priceFor, printQueue, saveDefaults } from "../lib/waybills.mts";
 import { getAutomation, saveAutomation } from "../lib/agent.mts";
 
 const orderId = (v: unknown) => {
@@ -32,6 +32,7 @@ export default handle(async (req) => {
       });
     }
     if (what === "offices") return json({ offices: await officesFor(str(u.get("courier"), 10), str(u.get("q"), 60)) });
+    if (what === "clients") return json({ clients: await clientsFor(str(u.get("courier"), 10)) });
     if (what === "label") {
       const ids = String(u.get("ids") || "").split(",").map(Number).filter((n) => Number.isSafeInteger(n) && n > 0).slice(0, 40);
       if (!ids.length) throw bad("ids", "Няма избрани поръчки.");

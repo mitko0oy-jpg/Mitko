@@ -22,9 +22,9 @@
     </section>
 
     <section class="card stack">
-      <h2 id="magazini">Магазини</h2>
-      <p class="muted small">Поръчките се изтеглят на всеки 30 минути. С „Връзка в реално време“ магазинът ни праща всяка нова или променена поръчка веднага.</p>
-      <div class="scroll" id="shops"></div>
+      <h2 id="magazini">Магазини – връзка и история</h2>
+      <p class="muted small">Поръчките се изтеглят на всеки 30 минути. С „Връзка в реално време“ магазинът ни праща всяка нова или променена поръчка веднага. Добавяш, променяш и спираш магазини в <a href="/magazini/">Магазини</a>.</p>
+      <div id="shopsInfo" class="small"></div>
       <div class="row">
         <button class="btn" id="hooks">Връзка в реално време</button>
         <span class="row small">Изтегли историята за <select id="months"><option>3</option><option selected>6</option><option>12</option><option>24</option></select> месеца <button class="btn" id="history">Започни</button></span>
@@ -32,39 +32,8 @@
     </section>
 
     <section class="card stack">
-      <h2 id="kurieri">Куриери</h2>
-      <p class="muted small">С тези данни питаме Спиди и Еконт докъде е стигнала всяка пратка. Пазят се криптирани.</p>
-      <div id="couriers" class="grid2"></div>
-      <div id="tracked" class="small muted"></div>
-    </section>
-
-    <section class="card stack" id="shipCard">
-      <h2>Товарителници – подател</h2>
-      <p class="muted small">Така се създава всяка товарителница. Настроено е като в Middleware: предаваш в офис, доставката я плащаш ти, наложеният платеж е сумата на поръчката.</p>
-      <label class="chk"><input type="checkbox" id="autoWaybill"> <b>След AI потвърждение създавай товарителницата сама</b> (и я пращай на страницата „Печат“). Ако клиентът поиска промяна в доставката, не я създава, а оставя бележка.</label>
-      <form id="ship" class="grid2">
-        <div class="form">
-          <b>Спиди</b>
-          <label>Клиент (подател)<input name="sp_clientId" inputmode="numeric"></label>
-          <label>Офис, в който предаваш (№)<input name="sp_dropoffOfficeId" inputmode="numeric" placeholder="празно = вземат от адреса"></label>
-          <label>Услуга<input name="sp_serviceId" inputmode="numeric"></label>
-          <label>Преди плащане клиентът може<select name="sp_obpd"><option value="TEST">да прегледа и тества</option><option value="OPEN">да прегледа</option><option value="">нищо</option></select></label>
-          <label>Опаковка<select name="sp_package"><option value="ENVELOPE">плик</option><option value="BOX">кутия</option></select></label>
-          <label>Тегло по подразбиране (кг)<input name="sp_weight" type="number" step="0.05" min="0.05"></label>
-          <label>ДДС група за касовата бележка<select name="sp_vatGroup"><option>А</option><option>Б</option><option>В</option><option>Г</option></select></label>
-          <label>Етикет<select name="sp_paper"><option value="A6">A6 (за етикетен принтер)</option><option value="A4">A4</option></select></label>
-        </div>
-        <div class="form">
-          <b>Еконт</b>
-          <label>Офис, в който предаваш (код)<input name="ec_senderOfficeCode" inputmode="numeric"></label>
-          <label>Тегло по подразбиране (кг)<input name="ec_weight" type="number" step="0.05" min="0.05"></label>
-          <label class="chk"><input type="checkbox" name="ec_sms"> SMS до получателя</label>
-          <label class="chk"><input type="checkbox" name="ec_agreement"> Наложен платеж по договора (по-евтино)</label>
-          <label class="chk"><input type="checkbox" name="ec_payAfterTest"> Плащане след преглед и тест</label>
-          <label class="chk"><input type="checkbox" name="ec_payAfterAccept"> Плащане след преглед</label>
-          <div><button class="btn primary" id="shipSave">Запиши</button></div>
-        </div>
-      </form>
+      <h2 id="kurieri">Куриери и товарителници</h2>
+      <p class="muted small">Спиди, Еконт, офисът, от който изпращаш, и автоматичните товарителници са в <a href="/kurieri/">Куриери</a>. Хората с достъп са в <a href="/potrebiteli/">Потребители</a>.</p>
     </section>
 
     <section class="card stack" id="smsCard">
@@ -74,7 +43,7 @@
       <form id="smsForm" class="grid2">
         <div class="form">
           <label>Токен от SMSAPI<input name="token" type="password" autocomplete="off" placeholder="постави нов токен"></label>
-          <label>Име на подателя<input name="sender" maxlength="11" placeholder="напр. BeeVenom"></label>
+          <label>Име на подателя<input type="text" name="sender" maxlength="11" placeholder="напр. BeeVenom"></label>
           <label class="chk"><input type="checkbox" name="latin"> По подразбиране на латиница (по-евтино)</label>
           <div class="row"><button class="btn primary" id="smsSave">Запиши</button></div>
           <div class="row small"><input type="tel" id="smsTestPhone" placeholder="твоят телефон" style="flex:1"><button type="button" class="btn sm" id="smsTest">Пробен SMS</button></div>
@@ -101,16 +70,6 @@
       <p class="muted small">Условие на nekorekten.com: в политиката за поверителност на сайтовете, в частта „С кого споделяме вашите данни“, добави: „Доставчици на услуги като Nekorekten.com, които защитават търговци и клиенти от некоректни практики, измами и други.“</p>
     </section>
 
-    <section class="card stack" id="usersCard" hidden>
-      <h2 id="potrebiteli">Хора с достъп</h2>
-      <div id="users"></div>
-      <form class="row" id="addUser">
-        <input type="text" name="name" placeholder="Име" required>
-        <input type="email" name="email" placeholder="Имейл" required>
-        <input type="password" name="password" placeholder="Парола (поне 10 знака)" minlength="10" required>
-        <button class="btn">Добави</button>
-      </form>
-    </section>
   </main>
   <script type="module" src="/assets/nastroiki.js"></script>
 </body>

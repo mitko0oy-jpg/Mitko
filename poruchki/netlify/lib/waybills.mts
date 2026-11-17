@@ -196,7 +196,7 @@ function speedyServices(d: Draft, o: OrderRow, def: Defaults["speedy"]) {
 }
 
 function speedySender(def: Defaults["speedy"]) {
-  if (!def.clientId) throw fail("Спиди: липсва подател. Попълни го в Настройки → Товарителници.");
+  if (!def.clientId) throw fail("Спиди: липсва подател. Избери го в Куриери → Спиди.");
   return { clientId: def.clientId, ...(def.dropoffOfficeId ? { dropoffOfficeId: def.dropoffOfficeId } : {}) };
 }
 
@@ -250,6 +250,16 @@ export async function speedyCancel(creds: Creds, shipmentId: string) {
   await speedy("/shipment/cancel", creds, { shipmentId, comment: "Анулирана от платформата Поръчки" });
 }
 
+/** The sender objects (clients) of the Speedy account, for the "Подател" dropdown. */
+export async function speedyClients(creds: Creds) {
+  const d = await speedy("/client/contract", creds, {});
+  return (d?.clients || []).map((c: any) => ({
+    id: String(c.clientId),
+    name: [c.clientName, c.objectName].filter(Boolean).join(" – "),
+    address: c.address?.fullAddressString || "",
+  }));
+}
+
 export async function speedyOffices(creds: Creds, query: string, limit = 30) {
   const name = query.trim().toUpperCase();
   if (/^\d+$/.test(name)) {
@@ -293,7 +303,7 @@ async function econtProfile(creds: Creds) {
 }
 
 export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profile: { client: any; agreement: string | null }) {
-  if (!def.senderOfficeCode) throw fail("Еконт: липсва офис на подателя. Попълни го в Настройки → Товарителници.");
+  if (!def.senderOfficeCode) throw fail("Еконт: липсва офис на подателя. Избери го в Куриери → Еконт.");
   return {
     senderClient: profile.client,
     senderOfficeCode: def.senderOfficeCode,
@@ -382,7 +392,7 @@ export async function loadOrder(id: number): Promise<OrderRow> {
 
 async function credsFor(courier: "speedy" | "econt"): Promise<Creds> {
   const c = (await loadCreds())[courier];
-  if (!c) throw fail(`Няма достъп до ${courier === "speedy" ? "Спиди" : "Еконт"}. Свържи го в Настройки.`);
+  if (!c) throw fail(`Няма достъп до ${courier === "speedy" ? "Спиди" : "Еконт"}. Свържи го в Куриери.`);
   return c;
 }
 
@@ -557,6 +567,11 @@ export async function matchOffice(courier: string, city: string, text: string): 
   if (!list.length) return null;
   if (list[0].score > 0 && (list.length === 1 || list[0].score > list[1].score)) return list[0];
   return list.length === 1 && !words.length ? list[0] : null;
+}
+
+export async function clientsFor(courier: string) {
+  if (courier !== "speedy") return [];
+  return speedyClients(await credsFor("speedy"));
 }
 
 export async function officesFor(courier: string, query: string) {

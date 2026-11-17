@@ -3,7 +3,6 @@ import { ago, api, esc, num, shell } from "./app.js";
 const $ = (id) => document.getElementById(id);
 const me = await shell("nastroiki");
 const isAdmin = me.role === "admin";
-const COURIERS = { speedy: "Спиди", econt: "Еконт" };
 
 function say(text, ok = true) {
   $("msg").innerHTML = text ? `<div class="note ${ok ? "" : "err"}">${esc(text)}</div>` : "";
@@ -38,81 +37,12 @@ function render(s) {
     ${s.middleware.enabled ? `<div class="muted">Middleware е свързан – оттам идват товарителниците, докато не ги правим сами.</div>` : ""}
     ${s.fx?.rates?.HUF ? `<div class="muted">Курс: 1 € = ${String(s.fx.rates.HUF).replace(".", ",")} HUF (ЕЦБ${s.fx.date ? `, ${esc(s.fx.date)}` : ""})</div>` : ""}`;
 
-  $("shops").innerHTML = s.shops.length
-    ? `<table class="tbl"><thead><tr><th>Магазин</th><th>Пазар</th><th>Валута</th><th class="r">Поръчки</th><th>Последно</th><th>Включен</th></tr></thead><tbody>
-      ${s.shops
-        .map(
-          (x) => `<tr data-id="${esc(x.id)}">
-          <td><b>${esc(x.label)}</b><div class="muted small">${esc(x.domain)}</div>
-            ${x.error ? `<div class="err small">${esc(x.error)}</div>` : ""}
-            ${!x.hasKey ? `<div class="err small">Няма API ключ</div>` : ""}
-            ${x.history ? `<div class="small">Изтегля историята… стигна до ${new Date(x.history.to * 1000).toLocaleDateString("bg-BG")}</div>` : ""}</td>
-          <td><select data-f="region" ${isAdmin ? "" : "disabled"}><option value="bg" ${x.region === "bg" ? "selected" : ""}>България</option><option value="abroad" ${x.region === "abroad" ? "selected" : ""}>Чужбина</option></select></td>
-          <td><input data-f="currency" value="${esc(x.currency)}" size="4" maxlength="3" ${isAdmin ? "" : "disabled"}></td>
-          <td class="r">${num(x.orders)}${x.firstDay ? `<div class="muted small">от ${new Date(x.firstDay).toLocaleDateString("bg-BG")}</div>` : ""}</td>
-          <td class="small">${ago(x.syncedAt)}${x.hook ? `<div class="ok">в реално време</div>` : ""}</td>
-          <td><input type="checkbox" data-f="active" ${x.active ? "checked" : ""} ${isAdmin ? "" : "disabled"} aria-label="Включен"></td>
-        </tr>`,
-        )
-        .join("")}
-      </tbody></table>`
-    : `<div class="note">Няма свързани магазини. Нужна е настройката CB_SITES в Netlify.</div>`;
-  $("shops").querySelectorAll("[data-f]").forEach((el) => {
-    el.onchange = async () => {
-      const id = el.closest("tr").dataset.id;
-      const f = el.dataset.f;
-      const value = f === "active" ? el.checked : el.value;
-      try {
-        render(await api("/api/settings/shop", { method: "POST", body: { id, [f]: value } }));
-        say("Записано.");
-      } catch (e) {
-        say(e.message, false);
-      }
-    };
-  });
-
-  $("couriers").innerHTML = Object.entries(COURIERS)
-    .map(([id, label]) => {
-      const c = s.couriers[id] || {};
-      const status = !c.configured
-        ? `<span class="err">не е свързан</span>`
-        : c.ok === false
-          ? `<span class="err">не приема данните: ${esc(c.error || "")}</span>`
-          : `<span class="ok">свързан</span> <span class="muted">(${esc(c.user)}${c.source === "env" ? ", от Netlify" : ""})</span>`;
-      return `<form class="form" data-c="${id}">
-        <div><b>${label}</b> – ${status}</div>
-        ${
-          isAdmin
-            ? `<label>Потребител за API<input name="user" autocomplete="off" required></label>
-               <label>Парола за API<input name="pass" type="password" autocomplete="new-password" required></label>
-               <div class="row"><button class="btn">${c.configured ? "Смени" : "Свържи"}</button>${c.source === "app" ? `<button type="button" class="btn link" data-remove>Премахни</button>` : ""}</div>`
-            : ""
-        }
-      </form>`;
-    })
-    .join("");
-  $("couriers").querySelectorAll("form").forEach((f) => {
-    f.onsubmit = async (e) => {
-      e.preventDefault();
-      const btn = f.querySelector("button");
-      await busy(btn, "Проверявам…", async () => {
-        render(await api("/api/settings/courier", { method: "POST", body: { courier: f.dataset.c, user: f.user.value, pass: f.pass.value } }));
-        say(`${COURIERS[f.dataset.c]} е свързан.`);
-      });
-    };
-    const rm = f.querySelector("[data-remove]");
-    if (rm) rm.onclick = async () => render(await api("/api/settings/courier", { method: "POST", body: { courier: f.dataset.c, remove: true } }));
-  });
-  const t = s.tracked || {};
-  $("tracked").textContent = `Последните 60 дни: ${num(t.with_no || 0)} поръчки с товарителница, ${num(t.tracked || 0)} проверени при куриера${t.matched ? `, ${num(t.matched)} намерени в Еконт по телефон` : ""}.`;
-
-  $("usersCard").hidden = !isAdmin;
-  if (isAdmin) {
-    $("users").innerHTML = `<table class="tbl"><tbody>${s.users
-      .map((u) => `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${u.role === "admin" ? "собственик" : "служител"}</td><td class="r">${u.role === "admin" ? "" : `<button class="btn link" data-del="${u.id}">Премахни</button>`}</td></tr>`)
-      .join("")}</tbody></table>`;
-    $("users").querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => render(await api("/api/settings/users/delete", { method: "POST", body: { id: Number(b.dataset.del) } }))));
-  }
+  const hist = s.shops.filter((x) => x.history);
+  const errs = s.shops.filter((x) => x.error);
+  const live = s.shops.filter((x) => x.hook).length;
+  $("shopsInfo").innerHTML = `${num(s.shops.filter((x) => x.active).length)} включени магазина · в реално време: ${num(live)}
+    ${hist.map((x) => `<div>${esc(x.label)}: изтегля историята… стигна до ${new Date(x.history.to * 1000).toLocaleDateString("bg-BG")}</div>`).join("")}
+    ${errs.map((x) => `<div class="err">${esc(x.label)}: ${esc(x.error)}</div>`).join("")}`;
   for (const b of ["hooks", "history"]) $(b).disabled = !isAdmin;
 }
 
@@ -141,56 +71,12 @@ $("history").onclick = () =>
     say("Историята се изтегля на части, от най-новото назад. Може да отнеме няколко часа – таблото се попълва постепенно.");
     render(await api("/api/settings"));
   });
-$("addUser").onsubmit = async (e) => {
-  e.preventDefault();
-  const f = e.target;
-  try {
-    render(await api("/api/settings/users", { method: "POST", body: { name: f.name.value, email: f.email.value, password: f.password.value } }));
-    f.reset();
-    say("Добавен.");
-  } catch (err) {
-    say(err.message, false);
-  }
-};
-
 try {
   render(await api("/api/settings"));
 } catch (e) {
   say(e.message, false);
 }
 
-
-// ---- waybill sender defaults ----
-async function loadShip() {
-  const { defaults: d, automation } = await api("/api/waybills/settings");
-  $("autoWaybill").checked = !!automation?.autoWaybill;
-  $("autoWaybill").disabled = !isAdmin;
-  const f = $("ship");
-  for (const [k, v] of Object.entries(d.speedy)) if (f[`sp_${k}`]) f[`sp_${k}`].value = v ?? "";
-  for (const [k, v] of Object.entries(d.econt)) {
-    const el = f[`ec_${k}`];
-    if (!el) continue;
-    if (el.type === "checkbox") el.checked = !!v;
-    else el.value = v ?? "";
-  }
-  for (const el of f.elements) el.disabled = !isAdmin;
-}
-$("ship").onsubmit = async (e) => {
-  e.preventDefault();
-  const f = e.target;
-  const body = { speedy: {}, econt: {} };
-  for (const el of f.elements) {
-    const m = /^(sp|ec)_(\w+)$/.exec(el.name || "");
-    if (!m) continue;
-    body[m[1] === "sp" ? "speedy" : "econt"][m[2]] = el.type === "checkbox" ? el.checked : el.value;
-  }
-  await busy($("shipSave"), "Записвам…", async () => {
-    await api("/api/waybills/settings", { method: "POST", body });
-    await loadShip();
-    say("Подателят е записан.");
-  });
-};
-loadShip().catch((e) => say(e.message, false));
 
 // ---- SMS ----
 function renderSms(d) {
@@ -255,12 +141,3 @@ $("nekRemove").onclick = async () => {
   say("Ключът е махнат.");
 };
 api("/api/nekorekten/settings?check=1").then(renderNek).catch((e) => say(e.message, false));
-
-$("autoWaybill").onchange = async (e) => {
-  try {
-    await api("/api/waybills/settings", { method: "POST", body: { automation: { autoWaybill: e.target.checked } } });
-    say(e.target.checked ? "Товарителницата ще се създава сама след AI потвърждение." : "Автоматичното създаване е спряно.");
-  } catch (err) {
-    say(err.message, false);
-  }
-};

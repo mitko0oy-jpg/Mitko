@@ -10,7 +10,7 @@ const done = (status = 204) => new Response(null, { status, headers: { "cache-co
 export default async (req: Request, ctx: any) => {
   if (req.method !== "POST") return done(405);
   try {
-    const shop = shopForOrigin(req.headers.get("origin"));
+    const shop = await shopForOrigin(req.headers.get("origin"));
     if (!shop) return done(403);
     const text = await req.text();
     if (text.length > 4000) return done(413);

@@ -628,3 +628,50 @@ body.focus main { padding-top: 8px; }
 .modal .warn { color: var(--warn); }
 a.pill.more { cursor: pointer; background: var(--accent); border-color: var(--accent); color: var(--surface); text-decoration: none; }
 a.pill.more:hover { filter: brightness(1.1); }
+
+/* shops page */
+.shopcell { display: flex; align-items: center; gap: 10px; }
+.shoplogo { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, #3b82f6, #7c3aed); flex: none; }
+.statepill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #fff; }
+.statepill.ok { background: #2bb673; }
+.statepill.off { background: #9a9a9a; }
+.platform { color: #2a9fd6; font-weight: 600; }
+.okmark { color: #2bb673; font-size: 18px; font-weight: 700; }
+.shopsTbl td { vertical-align: middle; }
+.actsin .iconbtn.warnbtn { color: #d99a00; border-color: color-mix(in srgb, #d99a00 55%, var(--line)); }
+.statepill.bad { background: #df5c3e; }
+.courierlogo { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); flex: none; vertical-align: middle; }
+.courierlogo .clogo { width: 22px; height: 22px; margin: 0; }
+.courierlogo.big { width: 56px; height: 56px; border-radius: 14px; }
+.courierlogo.big .clogo { width: 34px; height: 34px; }
+.cmark.big { font-size: 20px; font-weight: 800; color: var(--muted); }
+.ctiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.ctile { display: grid; justify-items: center; gap: 6px; padding: 16px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.ctile:hover:not(:disabled) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ctile:disabled { opacity: .5; cursor: default; }
+.modal h2 .courierlogo { width: 30px; height: 30px; margin-right: 6px; }
+.modal fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; margin: 0 0 12px; min-width: 0; }
+.modal fieldset:disabled { opacity: .6; }
+.modal legend { padding: 0 6px; font-weight: 700; }
+.steps { display: flex; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+.steps span { padding: 4px 12px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.steps span.on { background: var(--accent); color: var(--surface); font-weight: 700; }
+.steps span.done { background: var(--accent-soft); color: var(--accent); }
+.opick { position: relative; display: grid; gap: 4px; }
+.odrop { position: absolute; z-index: 5; top: 64px; left: 0; right: 0; max-height: 260px; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.odrop button { display: grid; gap: 2px; width: 100%; text-align: left; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); font: inherit; cursor: pointer; }
+.odrop button:hover, .odrop button:focus { background: var(--accent-soft); }
+.rolepill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.rolepill.admin { background: var(--accent); color: var(--surface); }
+.rolepill.staff { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+.modal fieldset.form { max-width: none; }
+.modal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), .modal select { width: 100%; min-width: 0; }
+.modal .sub, .opick .sub { font-size: 12px; color: var(--muted); }
+.modal .mh h2 { display: flex; align-items: center; gap: 4px; }
+.ctile .sub { font-size: 12px; color: var(--muted); }
+label.chk, .form label.chk { display: flex; align-items: center; gap: 8px; }
+label.chk input { flex: none; }
+/* Long dialogs: the middle scrolls, the buttons stay visible. */
+dialog.modal[open] { display: flex; flex-direction: column; }
+dialog.modal > .mb { flex: 1 1 auto; min-height: 0; }
+dialog.modal > .mh, dialog.modal > .mf { flex: none; }

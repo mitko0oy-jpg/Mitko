@@ -1,7 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { randomBytes } from "node:crypto";
 import { hashPassword, requireUser, validEmail } from "../lib/auth.mts";
-import { cbSite, createWebhook, deleteWebhook } from "../lib/cb.mts";
+import { cbSite, createWebhook, deleteWebhook, siteFor } from "../lib/cb.mts";
 import { COURIERS, isCourier } from "../lib/couriers.mts";
 import { one, q } from "../lib/db.mts";
 import { companyId, inCompany, ENV_COMPANY } from "../lib/tenant.mts";
@@ -43,7 +43,7 @@ async function overview(req: Request, isAdmin: boolean) {
       hookAt: s.hook_at,
       orders: byShop.get(s.id)?.n || 0,
       firstDay: byShop.get(s.id)?.first_day || null,
-      hasKey: Boolean(cbSite(s.id)),
+      hasKey: Boolean(cbSite(s.id)) || Boolean((s as any).api_key_sealed),
     })),
     couriers: await courierInfo(),
     middleware: { enabled: mwConfig().enabled },
@@ -52,7 +52,14 @@ async function overview(req: Request, isAdmin: boolean) {
     tracked,
     fx: await getRates(),
     secretKey: (env("SECRET_KEY") || "").length >= 32,
-    users: isAdmin ? await q("SELECT id, email, name, role, created_at FROM users WHERE company_id = $1 ORDER BY id", [companyId()]) : [],
+    users: isAdmin
+      ? await q(
+          `SELECT u.id, u.email, u.name, u.role, u.is_owner AS owner, u.created_at,
+                  (SELECT max(s.created_at) FROM sessions s WHERE s.user_id = u.id) AS last_login
+             FROM users u WHERE u.company_id = $1 ORDER BY u.role, u.id`,
+          [companyId()],
+        )
+      : [],
     site: new URL(req.url).origin,
   };
 }
@@ -117,7 +124,7 @@ export default handle(async (req) => {
     if (!origin.startsWith("https://") && !/^http:\/\/localhost(:\d+)?$/.test(origin)) throw bad("https", "Връзката работи само на истинския адрес (https).");
     const result: Record<string, string> = {};
     for (const shop of await ensureShops()) {
-      const site = cbSite(shop.id);
+      const site = await siteFor(shop.id);
       if (!shop.active || !site) continue;
       try {
         if (shop.hook_id) await deleteWebhook(site, shop.hook_id).catch(() => null);
@@ -137,7 +144,27 @@ export default handle(async (req) => {
     if (arg === "delete") {
       const id = Number(b.id);
       if (id === user.id) throw bad("self", "Не можеш да изтриеш собствения си профил.");
-      await q("DELETE FROM users WHERE id = $1 AND role <> 'admin' AND company_id = $2", [id, companyId()]);
+      const r = await q("DELETE FROM users WHERE id = $1 AND NOT is_owner AND company_id = $2 RETURNING id", [id, companyId()]);
+      if (!r.length) throw bad("owner", "Този профил не може да се изтрие.");
+      return json(await overview(req, isAdmin));
+    }
+    // Change a person: name, role, a new password (their sessions end).
+    if (arg === "change") {
+      const id = Number(b.id);
+      const u = await one<any>("SELECT id, is_owner FROM users WHERE id = $1 AND company_id = $2", [id, companyId()]);
+      if (!u) throw notFound("Няма такъв човек.");
+      if (b.role !== undefined) {
+        if (!["admin", "staff"].includes(b.role)) throw bad("role", "Непозната роля.");
+        if ((u.is_owner || id === user.id) && b.role !== "admin") throw bad("self", "Собственикът остава собственик.");
+      }
+      const name = b.name !== undefined ? str(b.name, 80) : null;
+      if (name !== null && name.length < 2) throw bad("name", "Напиши името.");
+      if (b.password !== undefined && b.password !== "") {
+        if (typeof b.password !== "string" || b.password.length < 10) throw bad("password", "Паролата трябва да е поне 10 знака.");
+        await q("UPDATE users SET password_hash = $2 WHERE id = $1", [id, await hashPassword(b.password)]);
+        if (id !== user.id) await q("DELETE FROM sessions WHERE user_id = $1", [id]);
+      }
+      await q("UPDATE users SET name = COALESCE($2, name), role = COALESCE($3, role) WHERE id = $1", [id, name, b.role ?? null]);
       return json(await overview(req, isAdmin));
     }
     const email = str(b.email, 200).toLowerCase();
@@ -147,7 +174,9 @@ export default handle(async (req) => {
     if (password.length < 10) throw bad("password", "Паролата трябва да е поне 10 знака.");
     const exists = await one("SELECT 1 FROM users WHERE email = $1", [email]);
     if (exists) throw bad("email_taken", "Вече има профил с този имейл.");
-    await q("INSERT INTO users (email, password_hash, name, role, company_id) VALUES ($1, $2, $3, 'staff', $4)", [email, await hashPassword(password), name, companyId()]);
+    if (name.length < 2) throw bad("name", "Напиши името.");
+    const role = b.role === "admin" ? "admin" : "staff";
+    await q("INSERT INTO users (email, password_hash, name, role, company_id) VALUES ($1, $2, $3, $4, $5)", [email, await hashPassword(password), name, role, companyId()]);
     return json(await overview(req, isAdmin));
   }
 

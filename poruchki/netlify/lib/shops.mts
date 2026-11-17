@@ -26,7 +26,7 @@ export type Shop = {
   company_id: number;
 };
 
-/** Adds new shops from CB_SITES and refreshes names; returns all shops. */
+/** Adds new shops from CB_SITES (names and order can then be changed in Магазини); returns the shops. */
 export async function ensureShops(): Promise<Shop[]> {
   const sites = cbSites();
   if (sites.length) {
@@ -39,7 +39,7 @@ export async function ensureShops(): Promise<Shop[]> {
     // The shops in CB_SITES (Netlify settings) are company 1's.
     await q(
       `INSERT INTO shops (id, label, domain, region, currency, position, company_id) VALUES ${rows.join(", ")}
-       ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, domain = EXCLUDED.domain, position = EXCLUDED.position`,
+       ON CONFLICT (id) DO UPDATE SET domain = EXCLUDED.domain`,
       vals,
     );
   }

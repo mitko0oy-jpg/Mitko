@@ -2,7 +2,7 @@
 // Every run: the last 3 days of every shop. Then, with the time left, a deeper pass:
 // the daily re-read of the last 60 days (statuses change on older orders) or the history import.
 // Webhooks (order_created / order_updated) bring changes in between runs.
-import { cbSites, listOrders, PAGE, type Site } from "./cb.mts";
+import { allSites, listOrders, PAGE, type Site } from "./cb.mts";
 import { q, logJob } from "./db.mts";
 import { companyId, withCompany, ENV_COMPANY } from "./tenant.mts";
 import { getRates, refreshRates, type Rates } from "./fx.mts";
@@ -52,7 +52,7 @@ async function deepStep(shop: Shop, site: Site, deadline: number, rates: Rates, 
 export async function runSync(opts: { deadline: number; job?: string; onlyShop?: string }) {
   const { deadline } = opts;
   const shops = (await ensureShops()).filter((s) => s.active && (!opts.onlyShop || s.id === opts.onlyShop));
-  const sites = new Map(cbSites().map((s) => [s.id, s]));
+  const sites = new Map((await allSites()).map((s) => [s.id, s]));
   const rates = (await refreshRates()) || (await getRates());
   const now = Math.floor(Date.now() / 1000);
   const c: Counts = { pages: 0, inserted: 0, updated: 0 };
@@ -62,7 +62,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   for (const shop of shops) {
     const site = sites.get(shop.id);
     if (!site) {
-      errors[shop.id] = "няма ключ в CB_SITES";
+      errors[shop.id] = "няма API ключ";
       await shopError(shop.id, "Липсва API ключ за този магазин.");
       continue;
     }
@@ -94,7 +94,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
 
   // 3) Products of the shops, once a day (to add to orders).
   let products: Record<string, unknown> = {};
-  if (Date.now() < deadline - 5000) products = await syncAllProducts(deadline - 3000).catch((e) => ({ error: e.message }));
+  if (!opts.onlyShop && Date.now() < deadline - 5000) products = await syncAllProducts(deadline - 3000).catch((e) => ({ error: e.message }));
 
   // Unfinished orders are kept 30 days.
   await purgeLeads().catch((e) => console.error("purge leads", e.message));

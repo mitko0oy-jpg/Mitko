@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Потребители – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="wide">
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row">
+        <h1>Потребители</h1>
+        <button class="roundbtn" id="addUser" title="Добави човек" aria-label="Добави човек">+</button>
+        <span class="muted small" id="count"></span>
+      </div>
+      <div class="head-tools">
+        <label class="searchbox"><input type="search" id="q" placeholder="Търсене по име или имейл" aria-label="Търсене"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></label>
+      </div>
+    </div>
+    <div id="msg"></div>
+    <section class="card" style="padding:8px 12px 12px">
+      <div class="scroll"><table class="otbl shopsTbl" id="table"></table></div>
+      <p class="small muted" style="padding:8px 6px 0">Собственикът вижда всичко и променя настройките. Служителят работи с поръчките, товарителниците и SMS-ите, но не вижда настройките и хората. Всеки вижда само поръчките на твоята фирма.</p>
+    </section>
+  </main>
+  <dialog class="modal" id="dlg"></dialog>
+  <script type="module" src="/assets/potrebiteli.js"></script>
+</body>
+</html>
