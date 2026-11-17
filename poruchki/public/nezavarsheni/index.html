@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Незавършени поръчки</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="row spread">
+      <h1>Незавършени поръчки</h1>
+      <div class="row">
+        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+        <button class="btn" id="reload">Обнови</button>
+      </div>
+    </div>
+    <p class="muted small" style="margin:0">Клиенти, които са написали телефона си във формата за поръчка, но не са я изпратили. Щом поръчат, отиват в „Поръчали“ сами. Пазят се 30 дни.</p>
+    <section class="card">
+      <div class="tabs" role="tablist" id="tabs">
+        <button data-tab="open" class="on">Незавършени <span class="n"></span></button>
+        <button data-tab="ordered">Поръчали <span class="n"></span></button>
+        <button data-tab="hidden">Скрити <span class="n"></span></button>
+      </div>
+      <div id="list"></div>
+    </section>
+    <details class="card" id="setup">
+      <summary><b>Как се включва на сайта</b></summary>
+      <div class="stack" style="margin-top:10px">
+        <p style="margin:0">В ConvertBuilder отвори сайта → настройките, където е кодът на Middleware (ред, който започва с <code>&lt;script data-platform="checkout-middleware"</code>). Постави този ред веднага след него и запази. Направи го за всеки сайт, за който искаш незавършените поръчки.</p>
+        <div class="row"><code id="line" style="word-break:break-all"></code><button class="btn" id="copy">Копирай</button></div>
+        <p class="muted small" style="margin:0">Скриптът чете само име, телефон, град, адрес и количката. В политиката за поверителност на сайта добави: „Данните, които въведете във формата за поръчка, се записват, за да можем да се свържем с вас, ако поръчката не бъде завършена. Пазим ги до 30 дни.“</p>
+      </div>
+    </details>
+  </main>
+  <script type="module" src="/assets/nezavarsheni.js"></script>
+</body>
+</html>

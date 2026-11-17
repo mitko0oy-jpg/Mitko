@@ -7,6 +7,7 @@ import { q, logJob } from "./db.mts";
 import { getRates, refreshRates, type Rates } from "./fx.mts";
 import { pullMiddleware } from "./mw.mts";
 import { syncAllProducts } from "./products.mts";
+import { purgeLeads } from "./leads.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
 
@@ -92,6 +93,9 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   // 3) Products of the shops, once a day (to add to orders).
   let products: Record<string, unknown> = {};
   if (Date.now() < deadline - 5000) products = await syncAllProducts(deadline - 3000).catch((e) => ({ error: e.message }));
+
+  // Unfinished orders are kept 30 days.
+  await purgeLeads().catch((e) => console.error("purge leads", e.message));
 
   // 4) Middleware, while it still makes the waybills.
   const mw = Date.now() < deadline - 2000 ? await pullMiddleware(deadline - 1000) : { enabled: true, skipped: true };

@@ -360,3 +360,13 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
   .head-tools input[type="search"] { flex: 1 1 100%; order: -1; max-width: none; width: 100%; }
   .head-tools .btn { white-space: nowrap; }
 }
+
+/* unfinished orders */
+.lead { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.lead:last-child { border-bottom: 0; }
+.lead-main { display: grid; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.lead-main .row.spread { gap: 10px; }
+.lead-cart { margin: 2px 0; padding-left: 18px; font-size: 13px; color: var(--text-2); }
+.lead-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 0 0 auto; max-width: 340px; }
+a.badge:hover { text-decoration: none; filter: brightness(1.1); }
+@media (max-width: 760px) { .lead { flex-direction: column; } .lead-acts { justify-content: flex-start; max-width: none; } }

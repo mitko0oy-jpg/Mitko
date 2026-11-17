@@ -506,3 +506,35 @@ test("phone agent: a delivery change stops the automatic waybill; an order taken
   assert.equal(p.confirmed_by, "AI агент");
   assert.equal(made.data.waybill.courier, "speedy");
 });
+
+test("unfinished orders: taken only from the shops' sites, merged per visit, matched to a later order", async () => {
+  const send = (body, origin = `http://127.0.0.1:${SHOP_PORT}`) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", ...(origin ? { Origin: origin } : {}) }, body: JSON.stringify(body) });
+  assert.equal((await send({ sid: "visit000001", phone: "0888555111" }, "https://evil.example")).status, 403);
+  assert.equal((await send({ sid: "visit000001", phone: "0888555111" }, null)).status, 403);
+  // No phone yet: nothing kept.
+  assert.equal((await send({ sid: "visit000001", name: "Мария" })).status, 204);
+  assert.equal((await send({ sid: "visit000001", name: "Мария Иванова", phone: "0888 555 111", cart: ["BeeVenom Care Gel · 1 · 20,00 €"], total: "24,50 €" })).status, 204);
+  // A later post of the same visit fills the city and keeps what was typed before.
+  await send({ sid: "visit000001", name: "", phone: "0888555111", city: "Плевен <b>", cart: [] });
+  // Someone who ordered afterwards (order 1 has this phone).
+  await send({ sid: "visit000002", name: "Клиент 1", phone: "0888100001" });
+
+  const open = (await api("/api/leads?tab=open")).data;
+  const l = open.leads.find((x) => x.phone === "0888555111");
+  assert.ok(l, JSON.stringify(open));
+  assert.equal(l.name, "Мария Иванова");
+  assert.equal(l.city, "Плевен b");
+  assert.deepEqual(l.cart, ["BeeVenom Care Gel · 1 · 20,00 €"]);
+  assert.equal(l.shop, "bg");
+  assert.equal(l.typing, true);
+  const ordered = (await api("/api/leads?tab=ordered")).data;
+  assert.equal(ordered.leads.find((x) => x.phone === "0888100001")?.order_no, "5001");
+  assert.equal(open.counts.open, 1);
+
+  assert.equal((await api(`/api/leads/${l.id}`, { action: "dismiss" })).status, 200);
+  assert.equal((await api("/api/leads?tab=hidden")).data.leads[0].id, l.id);
+  assert.equal((await api("/api/leads?tab=open")).data.counts.open, 0);
+  // Not for visitors.
+  assert.equal((await fetch(`${B}/api/leads`)).status, 401);
+});

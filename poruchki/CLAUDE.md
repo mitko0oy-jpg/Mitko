@@ -16,6 +16,13 @@
 - SMS през SMSAPI (`api.smsapi.com/sms.do`, Bearer токен в Настройки или `SMSAPI_TOKEN`): шаблони с {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}; латиница по закона за транслитерацията (ъ → a); ~0,054 € на част (160 латински / 70 кирилица).
 - Следващи: черен списък и повторни поръчки, склад/Pick & Pack, статистики, форма с офиси в магазина, касови бележки по Н-18. Не копираме кода на Middleware – само идеите; всичко минава през официалните API на куриерите.
 
+## Незавършени поръчки
+
+- Ред `<script src="https://mitko-poruchki.netlify.app/c.js" defer></script>` в ConvertBuilder (до кода на Middleware). `public/c.js` чете полетата `name`, `shippingPhone`, `shippingCity`, `shippingAddress`, редовете на `.cart-table` и `.grand-total-wrapper` и ги праща с `sendBeacon` (text/plain, без preflight) към `POST /api/collect` (`collect.mts`) 2 s след писане и при напускане. Без имейл, пароли и плащане.
+- `/api/collect` приема само от домейните в `CB_SITES` (по Origin, без www.), лимит 150 на час на IP; един ред `leads` на посещение (`sid` в sessionStorage). Празните полета не трият написаното.
+- „Поръчал“ се смята при показване: поръчка със същия телефон (последните 9 цифри) след `first_at - 30 мин`, или създадена от „Създай поръчка“ (`leads.order_id`). Пазят се 30 дни (`purgeLeads` в синхронизацията).
+- Страница `/nezavarsheni/`: Незавършени / Поръчали / Скрити, обаждане, нова поръчка с попълнени данни, скриване. В политиката за поверителност на сайта трябва изречение за това.
+
 ## AI агентът за обаждания
 
 Отделен Netlify проект `mitko-obazhdania` (код в `poruchki-agent/`). Говори с платформата през `/api/agent/*` с `Authorization: Bearer AGENT_TOKEN` (`netlify/functions/agent.mts`, `netlify/lib/agent.mts`):
@@ -31,7 +38,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nastroiki/`, `/vhod/` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/nastroiki/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |
@@ -62,7 +69,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 35 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 36 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

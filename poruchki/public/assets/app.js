@@ -140,6 +140,7 @@ export async function shell(active) {
   const links = [
     ["/", "Табло", "tablo"],
     ["/poruchki/", "Поръчки", "poruchki"],
+    ["/nezavarsheni/", "Незавършени", "nezavarsheni"],
     ["/pechat/", "Печат", "pechat"],
     ["/nastroiki/", "Настройки", "nastroiki"],
   ];

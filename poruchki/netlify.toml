@@ -20,6 +20,12 @@
   [headers.values]
     Cache-Control = "public, max-age=300"
 
+# The unfinished-orders script on the shop pages (see /nezavarsheni/).
+[[headers]]
+  for = "/c.js"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
 [[headers]]
   for = "/fonts/*"
   [headers.values]
