@@ -85,6 +85,7 @@ export function readPostCall(payload) {
     questions: String(val("questions") || ""),
     health: val("allergy_or_health") === true || String(val("allergy_or_health")).toLowerCase() === "true",
     summary: String(val("summary") || analysis.transcript_summary || ""),
+    upsell: String(val("upsell") || "").trim().toLowerCase(),
     intent: String(val("intent") || "").trim().toLowerCase(),
     needsHuman: val("needs_human") === true || String(val("needs_human")).toLowerCase() === "true",
     agentId: d.agent_id || "",

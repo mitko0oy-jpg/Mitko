@@ -4,6 +4,7 @@
 // Prices and totals are computed here from agent/pricelist-bg.json, never by the AI.
 import { randomBytes } from "node:crypto";
 import { normalizePhoneBG, moneyBG } from "./format.mjs";
+import { freeDeliveryFor } from "./upsell.mjs";
 
 /** Price list as text for the inbound agent's prompt. */
 export function renderPriceList(pl) {
@@ -31,8 +32,10 @@ export function quote(pl, order) {
   const d = pl.delivery[order.delivery];
   if (!d) errors.push("не е избран начин на доставка (офис на Еконт, офис на Спиди или адрес със Спиди)");
   const subtotal = lines.reduce((s, l) => s + l.sum, 0);
-  const total = Math.round((subtotal + (d?.price || 0)) * 100) / 100;
-  return { errors, lines, delivery: d, subtotal, total, totalText: moneyBG(total) };
+  const free = Boolean(d) && freeDeliveryFor(lines, pl);
+  const delivery = d && free ? { ...d, price: 0, label: `${d.label} (безплатна)` } : d;
+  const total = Math.round((subtotal + (delivery?.price || 0)) * 100) / 100;
+  return { errors, lines, delivery, freeDelivery: free, subtotal, total, totalText: moneyBG(total) };
 }
 
 const STATUS_BG = {

@@ -53,6 +53,7 @@ export function labelFor(key) {
   return LABELS[key] || key;
 }
 
+const money = (x) => `${Number(x).toFixed(2).replace('.', ',')} €`;
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
@@ -73,6 +74,10 @@ export function buildMessage(rec, label, call, opts = {}) {
   if (call) {
     if (call.deliveryChange) lines.push(`📍 <b>Нова доставка:</b> ${esc(call.deliveryChange)}`);
     if (call.orderChange) lines.push(`✏️ <b>Промяна:</b> ${esc(call.orderChange)}`);
+    const u = rec.upsell;
+    if (u && call.upsell === "one_box") lines.push(`➕ <b>Добави 1 кутия билкови пластири (${esc(money(u.box))})</b> · нова сума: <b>${esc(money(u.totalOne))}</b>`);
+    if (u && call.upsell === "two_boxes" && u.totalTwo != null) lines.push(`➕ <b>Добави 2 кутии билкови пластири + БЕЗПЛАТНА доставка</b> · нова сума: <b>${esc(money(u.totalTwo))}</b>`);
+    if (u && call.upsell === "two_boxes" && u.totalTwo == null) lines.push(`➕ <b>Добави 2 кутии билкови пластири</b> · нова сума: <b>${esc(money(u.totalBase + 2 * u.box))}</b>`);
     if (call.cancelReason) lines.push(`Причина за отказ: ${esc(call.cancelReason)}`);
     if (call.callbackWhen) lines.push(`🕐 Кога: ${esc(call.callbackWhen)}`);
     if (call.questions) lines.push(`❓ Въпроси: ${esc(call.questions)}`);

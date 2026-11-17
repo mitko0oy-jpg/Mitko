@@ -3,6 +3,7 @@
 import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
 import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN } from "./policy.mjs";
 import { readPostCall } from "./elevenlabs.mjs";
+import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
 
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
@@ -62,6 +63,7 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
       phone,
       itemsText: itemsTextBG(o.items),
       totalText: moneyBG(o.total),
+      upsell: upsellFor(o),
       deliveryText: o.deliveryText || "",
       state: phone ? "queued" : "needs_mitko",
       attempts: 0,
@@ -143,6 +145,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
           order_total: rec.totalText,
           delivery_text: rec.deliveryText || "както е посочено в поръчката",
           delivery_days: config.deliveryDays,
+          ...upsellVariables(rec.upsell),
         },
       });
       const updated = {
@@ -253,4 +256,16 @@ async function handleInboundCall({ notify }, call) {
   const label = (call.needsHuman ? "🙋 Обади се – " : "") + (INBOUND_LABELS[call.intent] || INBOUND_LABELS.other);
   await notify(buildMessage({ orderNo: "входящо", site: "входяща линия", name: "клиент", phone: caller }, label, call));
   return { inbound: true, notified: true };
+}
+
+/** Ready-made texts for the agent's one extra offer (no arithmetic left to the AI). */
+export function upsellVariables(u) {
+  if (!u) return { upsell_kind: "none", upsell_box_price: "", total_with_one_box: "", total_with_two_boxes: "", delivery_fee: "" };
+  return {
+    upsell_kind: u.kind,
+    upsell_box_price: moneyBG(u.box),
+    total_with_one_box: moneyBG(u.totalOne),
+    total_with_two_boxes: u.totalTwo == null ? "" : moneyBG(u.totalTwo),
+    delivery_fee: moneyBG(u.shipping),
+  };
 }

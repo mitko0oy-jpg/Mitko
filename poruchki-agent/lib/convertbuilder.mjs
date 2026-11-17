@@ -87,6 +87,7 @@ export function normalizeOrder(site, o) {
     phone: ship.phone || bill.phone || "",
     items: (o.items || []).map((it) => ({ name: String(it.name || "").trim(), qty: it.quantity || 1, price: Number(it.total) || 0 })),
     total: Number(o.total) || 0,
+    shipping: Number(o.shippingAmount) || 0,
     deliveryText: deliveryText(o),
   };
 }

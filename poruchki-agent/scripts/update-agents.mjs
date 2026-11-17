@@ -11,8 +11,20 @@ for (const pair of process.argv.slice(2)) {
   const [file, agentId] = pair.split("=");
   const { spec, prompt } = await loadSpec(file);
   const body = {
-    conversation_config: { agent: { first_message: spec.first_message, prompt: { prompt } } },
+    conversation_config: {
+      agent: {
+        first_message: spec.first_message,
+        prompt: { prompt },
+        ...(spec.placeholders ? { dynamic_variables: { dynamic_variable_placeholders: spec.placeholders } } : {}),
+      },
+    },
     platform_settings: {
+      data_collection: Object.fromEntries(
+        Object.entries(spec.data_collection).map(([id, d]) => [
+          id,
+          typeof d === "string" ? { type: id === "allergy_or_health" ? "boolean" : "string", description: d } : d,
+        ]),
+      ),
       evaluation: {
         criteria: Object.entries(spec.evaluation_criteria).map(([id, goal]) => ({ id, name: id, type: "prompt", conversation_goal_prompt: goal })),
       },

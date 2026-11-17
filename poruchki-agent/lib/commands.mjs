@@ -21,8 +21,13 @@ const SAMPLE = {
   customer_name: "Митко",
   order_number: "1000",
   order_items: "BeeVenom Care Gel 2 плюс 1 броя",
-  order_total: "24 евро и 40 цента",
-  delivery_text: "Доставка до офис на Еконт, Пловдив, офис Тракия",
+  order_total: "27 евро и 40 цента",
+  delivery_text: "до офис на Еконт „Пловдив – Тракия“",
+  upsell_kind: "two_boxes_free",
+  upsell_box_price: "4 евро и 90 цента",
+  total_with_one_box: "32 евро и 30 цента",
+  total_with_two_boxes: "32 евро и 70 цента",
+  delivery_fee: "4 евро и 50 цента",
 };
 
 /**
