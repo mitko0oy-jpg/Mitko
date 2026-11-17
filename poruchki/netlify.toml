@@ -15,10 +15,11 @@
     Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     X-Robots-Tag = "noindex, nofollow"
 
+# Asked again each time (a quick "not changed" answer), so a new version shows right after a deploy.
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=300"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # The unfinished-orders script on the shop pages (see /nezavarsheni/).
 [[headers]]

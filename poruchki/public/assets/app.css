@@ -856,3 +856,14 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .side .grp { border-top-color: color-mix(in srgb, var(--line) 80%, transparent); }
 .actsin { gap: 4px; }
 @media (min-width: 761px) { .otbl td.c-no { width: 100px; } .nocell { gap: 7px; } }
+/* the counts next to the filters: quiet, never bright white on the dark theme */
+.tgl .n, .side .tgl .n { color: var(--muted); font-weight: 500; background: var(--surface-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tgl .n { color: #6e7888; background: rgb(255 255 255 / 0.04); } }
+:root[data-theme="dark"] .tgl .n { color: #6e7888; background: rgb(255 255 255 / 0.04); }
+.tabs .n { color: var(--muted); }
+.side .badge.abandoned::before { display: none; }
+@media (max-width: 1299px) and (min-width: 761px) { .otbl td, .otbl th { padding-left: 4px; padding-right: 4px; } }
+.side .tgl { grid-template-columns: 34px minmax(0, 1fr) 40px; }
+.side .tgl .badge { padding: 4px 4px; }
+@media (min-width: 761px) { .otbl td.c-client { min-width: 176px; } }
+.side .tgl .badge { letter-spacing: -0.015em; }
