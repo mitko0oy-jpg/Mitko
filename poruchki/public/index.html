@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Табло – Поръчки</title>
+  <meta name="theme-color" content="#f4f4f1">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="row spread">
+      <h1>Табло</h1>
+      <div class="row small">
+        <span class="muted" id="synced"></span>
+        <button class="btn" id="refresh">Обнови сега</button>
+      </div>
+    </div>
+
+    <div class="seg" id="region" role="group" aria-label="Пазар">
+      <button data-v="" class="on">Всички</button>
+      <button data-v="bg">България</button>
+      <button data-v="abroad">Чужбина</button>
+    </div>
+
+    <section class="tiles" id="tiles" aria-label="Накратко"></section>
+
+    <section class="card stack">
+      <div class="filters">
+        <div class="seg" id="presets" role="group" aria-label="Период"></div>
+        <span class="row small">
+          <input type="date" id="from" aria-label="От"> – <input type="date" id="to" aria-label="До">
+        </span>
+        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+      </div>
+      <div class="muted small" id="rangeText"></div>
+      <div class="heads" id="heads"></div>
+    </section>
+
+    <section class="card">
+      <div class="row spread"><h2>Къде са поръчките</h2><span class="muted small">натисни ред, за да видиш поръчките</span></div>
+      <div class="stages" id="stages"></div>
+    </section>
+
+    <section class="card" id="daysCard">
+      <div class="row spread">
+        <h2>Сума на поръчките по дни</h2>
+        <button class="btn link small" id="daysToggle">Покажи като таблица</button>
+      </div>
+      <div class="chart" id="chart"></div>
+      <div class="scroll" id="daysTable" hidden></div>
+    </section>
+
+    <section class="card">
+      <h2>По магазини</h2>
+      <div class="scroll" id="shops"></div>
+    </section>
+
+    <section class="card">
+      <h2>Продукти</h2>
+      <div class="scroll" id="products"></div>
+    </section>
+  </main>
+  <script type="module" src="/assets/tablo.js"></script>
+</body>
+</html>

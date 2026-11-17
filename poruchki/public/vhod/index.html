@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход – Поръчки</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <main class="center">
+    <section class="card" style="width:min(400px,100%)">
+      <h1 style="margin-bottom:4px">Поръчки</h1>
+      <p class="muted small" id="lead">Влез с имейла и паролата си.</p>
+      <form class="form" id="login">
+        <label>Имейл<input type="email" name="email" autocomplete="username" required></label>
+        <label>Парола<input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="btn primary">Влез</button>
+      </form>
+      <form class="form" id="setup" hidden>
+        <label>Твоето име<input type="text" name="name" autocomplete="name" required></label>
+        <label>Имейл<input type="email" name="email" autocomplete="username" required></label>
+        <label>Парола (поне 10 знака)<input type="password" name="password" minlength="10" autocomplete="new-password" required></label>
+        <label>Код за първи вход<input type="text" name="code" autocomplete="off" required></label>
+        <button class="btn primary">Създай профила</button>
+      </form>
+      <p class="err small" id="err"></p>
+    </section>
+  </main>
+  <script type="module" src="/assets/vhod.js"></script>
+</body>
+</html>

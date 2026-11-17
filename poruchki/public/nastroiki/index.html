@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Настройки – Поръчки</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <main class="stack" id="app">
+    <h1>Настройки</h1>
+    <div id="msg"></div>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Обновяване</h2>
+        <div class="row"><button class="btn" id="sync">Изтегли поръчките сега</button><button class="btn" id="track">Провери пратките сега</button></div>
+      </div>
+      <div id="jobs" class="small"></div>
+    </section>
+
+    <section class="card stack">
+      <h2>Магазини</h2>
+      <p class="muted small">Поръчките се изтеглят на всеки 30 минути. С „Връзка в реално време“ магазинът ни праща всяка нова или променена поръчка веднага.</p>
+      <div class="scroll" id="shops"></div>
+      <div class="row">
+        <button class="btn" id="hooks">Връзка в реално време</button>
+        <span class="row small">Изтегли историята за <select id="months"><option>3</option><option selected>6</option><option>12</option><option>24</option></select> месеца <button class="btn" id="history">Започни</button></span>
+      </div>
+    </section>
+
+    <section class="card stack">
+      <h2>Куриери</h2>
+      <p class="muted small">С тези данни питаме Спиди и Еконт докъде е стигнала всяка пратка. Пазят се криптирани.</p>
+      <div id="couriers" class="grid2"></div>
+      <div id="tracked" class="small muted"></div>
+    </section>
+
+    <section class="card stack" id="usersCard" hidden>
+      <h2>Хора с достъп</h2>
+      <div id="users"></div>
+      <form class="row" id="addUser">
+        <input type="text" name="name" placeholder="Име" required>
+        <input type="email" name="email" placeholder="Имейл" required>
+        <input type="password" name="password" placeholder="Парола (поне 10 знака)" minlength="10" required>
+        <button class="btn">Добави</button>
+      </form>
+    </section>
+  </main>
+  <script type="module" src="/assets/nastroiki.js"></script>
+</body>
+</html>
