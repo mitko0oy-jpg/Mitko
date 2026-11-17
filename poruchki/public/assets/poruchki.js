@@ -1,4 +1,4 @@
-import { ago, api, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
+import { api, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
 import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openWaybill } from "./waybill.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
@@ -28,6 +28,7 @@ for (const f of FIELDS) $(f).value = qs().get(f) || "";
 $("nowaybill").checked = qs().get("nowaybill") === "1";
 
 const ICON = {
+  ship: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></svg>`,
   print: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/></svg>`,
   info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`,
   sms: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.7A8 8 0 1 1 21 12z"/></svg>`,
@@ -69,15 +70,26 @@ function clientBadges(o) {
 const canShip = (o) => !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 const courierOf = (o) => o.courier || o.delivery?.courier || "";
 
+/** "преди 45 мин", "преди 5 ч", "преди 3 д 17 ч" – like Middleware; the exact time is on the line below. */
+function since(iso) {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  if (m < 60) return m < 1 ? "току-що" : `преди ${m} мин`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `преди ${h} ч`;
+  const d = Math.floor(h / 24);
+  return d < 30 ? `преди ${d} д${h % 24 ? ` ${h % 24} ч` : ""}` : `преди ${d} д`;
+}
+
 function deliveryCell(o) {
   const d = o.delivery || {};
   const c = courierOf(o);
   const where = d.type === "office" ? "До офис" : d.type === "automat" ? "До автомат" : d.type === "address" ? "До адрес" : "";
-  return `<b>${esc(COURIER[c] || c || "–")}</b><div class="sub">${esc(where)}${d.officeName ? ` „${esc(d.officeName)}“` : ""}</div>`;
+  const place = `${where}${d.officeName ? ` „${d.officeName}“` : ""}`;
+  return `<b>${esc(COURIER[c] || c || "–")}</b><div class="sub clamp" title="${esc(place)}">${esc(place)}</div>`;
 }
 
 function courierCell(o) {
-  if (!o.tracking_no) return `<span class="sub">${o.region === "bg" ? "няма товарителница" : ""}</span>`;
+  if (!o.tracking_no) return "";
   const src = o.tracking_source === "own" ? "" : o.tracking_source === "speedy_ref" || o.tracking_source === "econt_match" || o.tracking_source === "middleware" ? " · Middleware" : "";
   const no = o.tracking_link ? `<a href="${esc(o.tracking_link)}" target="_blank" rel="noopener">${esc(o.tracking_no)}</a>` : esc(o.tracking_no);
   return `<div class="cour">${esc(o.parcel_text || "")}</div><div class="wb">${no}<span class="sub">${src}</span></div>`;
@@ -86,7 +98,7 @@ function courierCell(o) {
 function actions(o) {
   const c = courierOf(o);
   const out = [];
-  if (canShip(o)) out.push(`<button class="btn primary sm" data-act="ship" data-id="${o.id}">Товарителница</button>`);
+  if (canShip(o)) out.push(`<button class="iconbtn primary" title="Създай товарителница" aria-label="Създай товарителница" data-act="ship" data-id="${o.id}">${ICON.ship}</button>`);
   if (o.tracking_no && (c === "speedy" || c === "econt")) out.push(`<button class="iconbtn" title="Печат на етикета" aria-label="Печат на етикета" data-act="print" data-id="${o.id}">${ICON.print}</button>`);
   if (o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage)) out.push(`<button class="iconbtn" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
   if (!o.confirmed_at && ["new"].includes(o.stage)) {
@@ -141,8 +153,8 @@ function renderTable(d) {
         <td class="c-deliv">${deliveryCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
         <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}${o.currency !== "EUR" ? `<div class="sub">${eur(o.total_eur)}</div>` : o.shipping ? `<div class="sub">${money(o.sub_total, o.currency)} + доставка</div>` : ""}</td>
-        <td class="c-when">${ago(o.ordered_at)}<div class="sub">${new Date(o.ordered_at).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></td>
-        <td class="c-note"><button class="notebtn" data-act="note" data-id="${o.id}" title="Бележка">${o.note ? esc(o.note.length > 70 ? o.note.slice(0, 70) + "…" : o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>
+        <td class="c-when">${since(o.ordered_at)}<div class="sub">${new Date(o.ordered_at).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></td>
+        <td class="c-note"><button class="notebtn${o.note ? " clamp" : ""}" data-act="note" data-id="${o.id}" title="${o.note ? esc(o.note) : "Бележка"}">${o.note ? esc(o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>
         <td class="acts">${actions(o)}</td>
       </tr>`,
       )

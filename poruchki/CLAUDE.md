@@ -16,6 +16,13 @@
 - SMS през SMSAPI (`api.smsapi.com/sms.do`, Bearer токен в Настройки или `SMSAPI_TOKEN`): шаблони с {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}; латиница по закона за транслитерацията (ъ → a); ~0,054 € на част (160 латински / 70 кирилица).
 - Следващи: черен списък и повторни поръчки, склад/Pick & Pack, статистики, форма с офиси в магазина, касови бележки по Н-18. Не копираме кода на Middleware – само идеите; всичко минава през официалните API на куриерите.
 
+## AI агентът за обаждания
+
+Отделен Netlify проект `mitko-obazhdania` (код в `poruchki-agent/`). Говори с платформата през `/api/agent/*` с `Authorization: Bearer AGENT_TOKEN` (`netlify/functions/agent.mts`, `netlify/lib/agent.mts`):
+- `GET /api/agent/orders?shops=&since=` – кого да набере (нови поръчки на магазините с пчелна отрова + „AI потвърждение“); `GET /api/agent/orders/:id` – още ли чака; `GET /api/agent/by-phone`; `POST /api/agent/orders` – поръчка по телефона.
+- `POST /api/agent/orders/:id/calling` и `/result` – всеки опит се записва в хронологията и като бележка; „потвърди“ = `confirmed_by = 'AI агент'`, корекцията (`edit`) минава през `editOrder`, после товарителница, ако `automation.autoWaybill` и клиентът не иска промяна на доставката.
+- Изходите „без разговор“ (`voicemail`, `no_conversation`, `busy`, `no-answer`, `unknown`) трябва да съвпадат със `RETRY_OUTCOMES` в `poruchki-agent/lib/policy.mjs`.
+
 ## Важно: кодът е в публично хранилище
 
 Папка `poruchki/` в `mitko0oy-jpg/Mitko`. Никакви ключове, пароли и лични данни в git. Всичко тайно е в настройките на Netlify (`manage-env-vars`) или криптирано в базата.
@@ -55,7 +62,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 30 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 35 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

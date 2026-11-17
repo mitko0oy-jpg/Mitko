@@ -38,7 +38,8 @@ export async function archiveOrder(id: number, archived: boolean, userId: number
 
 export type Contact = { name: string; phone: string; email: string; city: string; zip: string; address: string; delivery: { type: string; courier: string; officeId?: string; officeName?: string } };
 
-export function cleanContact(input: any, current?: Partial<Contact>): Contact {
+/** loose: an order taken by phone may name the office only in words – it is kept, and the waybill waits for the office. */
+export function cleanContact(input: any, current?: Partial<Contact>, loose = false): Contact {
   const d = input?.delivery || {};
   const courier = d.courier === "econt" || d.courier === "speedy" ? d.courier : current?.delivery?.courier || "";
   const type = ["office", "automat", "address"].includes(d.type) ? d.type : current?.delivery?.type || "address";
@@ -53,8 +54,8 @@ export function cleanContact(input: any, current?: Partial<Contact>): Contact {
   };
   if (!out.name) throw fail("Липсва името на клиента.");
   if (out.phone.replace(/\D/g, "").length < 9) throw fail("Провери телефона.");
-  if (type !== "address" && !/^\d{1,8}$/.test(out.delivery.officeId || "")) throw fail("Избери офис или автомат.");
-  if (type === "address" && (!out.city || out.address.length < 3)) throw fail("За доставка до адрес попълни град и адрес.");
+  if (!loose && type !== "address" && !/^\d{1,8}$/.test(out.delivery.officeId || "")) throw fail("Избери офис или автомат.");
+  if (!loose && type === "address" && (!out.city || out.address.length < 3)) throw fail("За доставка до адрес попълни град и адрес.");
   return out;
 }
 
@@ -88,7 +89,7 @@ export async function editContact(id: number, input: any, userId: number | null,
 export async function createOrder(input: any, opts: { source: "manual" | "phone"; userId: number | null; who: string | null; by: string }) {
   const shop = await one<any>("SELECT id, currency FROM shops WHERE id = $1", [s(input?.shop, 20)]);
   if (!shop) throw fail("Избери магазин.");
-  const c = cleanContact(input);
+  const c = cleanContact(input, undefined, opts.source === "phone");
   const items = cleanItems(input?.items);
   const shipping = round2(Number(input?.shipping ?? 0));
   const discount = round2(Number(input?.discount ?? 0));

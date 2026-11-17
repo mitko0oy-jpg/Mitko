@@ -50,6 +50,7 @@ export function forAgent(o: any) {
     confirmed: Boolean(o.confirmed_at),
     stillToCall: !o.confirmed_at && !o.archived_at && !o.tracking_no && o.stage === "new",
     requested: o.call?.state === "requested",
+    requestedAt: o.call?.state === "requested" && o.call?.at ? new Date(o.call.at).toISOString() : null,
     stage: o.stage,
     trackingNo: o.tracking_no,
     courier: o.courier || d.courier || null,
@@ -97,7 +98,11 @@ const LABEL: Record<string, string> = {
   wrong_person: "вдигна друг човек",
   wrong_number: "грешен номер",
   gave_up: "не вдига след 3 опита",
+  bad_phone: "невалиден телефон",
+  call_error: "грешка при обаждането",
 };
+/** The same list as the agent's policy: these mean "nobody talked", and the agent tries again. */
+const NO_TALK = new Set(["voicemail", "no_conversation", "busy", "no-answer", "no_answer", "unknown", ""]);
 
 export type CallResult = {
   outcome: string;
@@ -129,13 +134,13 @@ const t = (v: unknown, max = 400) => (typeof v === "string" ? v.replace(/\s+/g, 
 export async function applyCallResult(id: number, r: CallResult) {
   const o = await one<any>("SELECT id, confirmed_at, tracking_no FROM orders WHERE id = $1", [id]);
   if (!o) return { ok: false, reason: "no order" };
-  const outcome = t(r.outcome, 40) || "no_conversation";
+  const outcome = t(r.outcome, 40).toLowerCase() || "no_conversation";
   const summary = t(r.summary, 600);
-  const retry = !LABEL[outcome];
+  const retry = NO_TALK.has(outcome);
   await q("UPDATE orders SET call = jsonb_build_object('state', $2::text, 'attempts', $3::int, 'at', now(), 'summary', $4::text, 'final', $5::boolean) WHERE id = $1", [
     id, retry && r.final ? "gave_up" : outcome, Number(r.attempt) || 1, summary, Boolean(r.final) || !retry,
   ]);
-  await addEvent(id, "call", `Обаждане (опит ${Number(r.attempt) || 1}): ${retry ? (r.final ? LABEL.gave_up : "без разговор") : LABEL[outcome]}${summary ? ` – ${summary}` : ""}`, { outcome }, null, AI);
+  await addEvent(id, "call", `Обаждане (опит ${Number(r.attempt) || 1}): ${retry ? (r.final ? LABEL.gave_up : "без разговор") : LABEL[outcome] || outcome}${summary ? ` – ${summary}` : ""}`, { outcome }, null, AI);
 
   const out: Record<string, unknown> = { ok: true, outcome };
   if (retry) {
@@ -170,6 +175,6 @@ export async function applyCallResult(id: number, r: CallResult) {
     return out;
   }
   const details = [summary, outcome === "canceled" && t(r.cancel_reason), deliveryChange && `доставка: ${deliveryChange}`, orderChange && `промяна: ${orderChange}`, t(r.callback_when) && `кога: ${t(r.callback_when)}`, t(r.questions) && `въпроси: ${t(r.questions)}`].filter(Boolean);
-  await addNote(id, `AI: ${LABEL[outcome]}${details.length ? ` – ${details.join("; ")}` : ""}`, null, AI);
+  await addNote(id, `AI: ${LABEL[outcome] || outcome}${details.length ? ` – ${details.join("; ")}` : ""}`, null, AI);
   return out;
 }
