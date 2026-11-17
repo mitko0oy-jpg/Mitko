@@ -108,11 +108,11 @@ async function loadPeriod() {
 
 function renderHeads(d) {
   const st = d.stages;
-  const open = st.new.n + st.shipped.n + st.at_office.n;
+  const open = st.new.n + st.prepared.n + st.shipped.n + st.at_office.n;
   $("heads").innerHTML = `
     <div class="head"><div class="lbl">Поръчки</div><div class="big">${num(d.orders)}</div><div class="sub">за ${eur(d.sum)}</div></div>
     <div class="head"><div class="lbl">Взети (оборот)</div><div class="big">${eur(st.delivered.sum)}</div><div class="sub">${num(st.delivered.n)} поръчки</div></div>
-    <div class="head"><div class="lbl">Още не са приключили</div><div class="big">${eur(st.new.sum + st.shipped.sum + st.at_office.sum)}</div><div class="sub">${num(open)} поръчки</div></div>
+    <div class="head"><div class="lbl">Още не са приключили</div><div class="big">${eur(st.new.sum + st.prepared.sum + st.shipped.sum + st.at_office.sum)}</div><div class="sub">${num(open)} поръчки</div></div>
     <div class="head"><div class="lbl">Взети от приключилите</div><div class="big">${pct(d.takenRate)}</div><div class="sub">върнати ${num(st.returned.n)}${d.refused ? `, от тях отказани на място ${num(d.refused)}` : ""}</div></div>`;
 }
 
@@ -194,7 +194,7 @@ function drawChart(days) {
     tip.innerHTML = `<div class="t">${dayLong(x.day)}${x.day === today && state.to === today ? " · денят не е свършил" : ""}</div>
       ${num(x.orders)} поръчки за <b>${eur(x.sum)}</b><br>
       взети ${num(st.delivered.n)} · върнати ${num(st.returned.n)} · отказани ${num(st.canceled.n)}<br>
-      <span class="muted">още в процес ${num(st.new.n + st.shipped.n + st.at_office.n)}</span>`;
+      <span class="muted">още в процес ${num(st.new.n + st.prepared.n + st.shipped.n + st.at_office.n)}</span>`;
     tip.hidden = false;
     const rect = box.getBoundingClientRect();
     const cx = m.l + i * step + step / 2;
@@ -236,7 +236,7 @@ function renderShops(d) {
           <td>${esc(s.label)}${s.region === "abroad" ? ` <span class="muted small">чужбина</span>` : ""}</td>
           <td class="r">${num(s.orders)}</td><td class="r">${eur(s.sum)}</td>
           <td class="r">${eur(st.delivered.sum)}<div class="muted small">${num(st.delivered.n)}</div></td>
-          <td class="r hide-sm">${num(st.new.n + st.shipped.n + st.at_office.n)}</td>
+          <td class="r hide-sm">${num(st.new.n + st.prepared.n + st.shipped.n + st.at_office.n)}</td>
           <td class="r">${num(st.returned.n)}</td><td class="r hide-sm">${num(st.canceled.n)}</td>
           <td class="r">${pct(s.takenRate)}</td></tr>`;
       })

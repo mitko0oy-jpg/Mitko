@@ -1,9 +1,10 @@
 import { ago, api, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
 import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openWaybill } from "./waybill.js";
 import { openSms } from "./sms.js";
+import { openOrderForm } from "./order-form.js";
 
 const $ = (id) => document.getElementById(id);
-const FIELDS = ["q", "shop", "region", "courier", "from", "to"];
+const FIELDS = ["q", "shop", "region", "courier", "from", "to", "confirmed"];
 const state = {
   tab: qs().has("tab") ? qs().get("tab") : qs().get("stage") ? "" : "active",
   stages: new Set((qs().get("stage") || "").split(",").filter(Boolean)),
@@ -11,12 +12,14 @@ const state = {
   per: Number(qs().get("per")) === 100 ? 100 : 50,
 };
 let rows = [];
+let shopList = [];
 const selected = new Set();
 
 await shell("poruchki");
 
 try {
   const s = await api("/api/settings");
+  shopList = s.shops.filter((x) => x.active);
   $("shop").innerHTML += s.shops.filter((x) => x.active).map((x) => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join("");
 } catch {
   /* optional */
@@ -28,6 +31,9 @@ const ICON = {
   print: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/></svg>`,
   info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`,
   sms: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.7A8 8 0 1 1 21 12z"/></svg>`,
+  robot: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+  note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>`,
   cancel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>`,
 };
 
@@ -39,7 +45,25 @@ function params() {
   p.nowaybill = $("nowaybill").checked ? "1" : "";
   p.page = state.page > 1 ? String(state.page) : "";
   p.per = state.per === 100 ? "100" : "";
+  p.archived = state.tab === "archived" ? "1" : "";
+  if (p.tab === "archived") p.tab = "";
   return p;
+}
+
+const AI = "AI агент";
+const CALL = { requested: "чака AI обаждане", calling: "AI звъни…", no_conversation: "не вдига", voicemail: "не вдига", gave_up: "не вдига (3 опита)", canceled: "отказа по телефона", change_requested: "иска промяна", needs_human: "иска човек", callback_later: "да се обадим пак", wrong_person: "друг човек", wrong_number: "грешен номер" };
+function confirmCell(o) {
+  if (o.confirmed_at) return o.confirmed_by === AI ? `<div class="conf ai" title="Потвърдена от AI агента">🤖 AI потвърдена</div>` : `<div class="conf us" title="${esc(o.confirmed_by || "")}">✓ Потвърдена</div>`;
+  const c = o.call && CALL[o.call.state] ? `☎ ${CALL[o.call.state]}${o.call.attempts > 1 && !["gave_up"].includes(o.call.state) ? ` (${o.call.attempts})` : ""}` : "";
+  if (["new"].includes(o.stage)) return `<div class="conf no">${c || "непотвърдена"}</div>`;
+  return c ? `<div class="conf no">${c}</div>` : "";
+}
+function clientBadges(o) {
+  const out = [];
+  if (o.other_orders) out.push(`<span class="cnt" title="Още ${o.other_orders} поръчки от този телефон">${o.other_orders + 1}</span>`);
+  if (o.returned_before) out.push(`<span class="warnb" title="Върнал е ${o.returned_before} пратки">⚠ върнал ${o.returned_before}</span>`);
+  if (o.paid) out.push(`<span class="paidb" title="Платена">платена</span>`);
+  return out.join(" ");
 }
 
 const canShip = (o) => !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
@@ -64,7 +88,11 @@ function actions(o) {
   const out = [];
   if (canShip(o)) out.push(`<button class="btn primary sm" data-act="ship" data-id="${o.id}">Товарителница</button>`);
   if (o.tracking_no && (c === "speedy" || c === "econt")) out.push(`<button class="iconbtn" title="Печат на етикета" aria-label="Печат на етикета" data-act="print" data-id="${o.id}">${ICON.print}</button>`);
-  if (o.tracking_source === "own" && ["shipped", "new"].includes(o.stage)) out.push(`<button class="iconbtn" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
+  if (o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage)) out.push(`<button class="iconbtn" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
+  if (!o.confirmed_at && ["new"].includes(o.stage)) {
+    out.push(`<button class="iconbtn" title="Потвърди" aria-label="Потвърди" data-act="confirm" data-id="${o.id}">${ICON.check}</button>`);
+    if (o.phone && !["requested", "calling"].includes(o.call?.state)) out.push(`<button class="iconbtn ai" title="AI потвърждение – агентът да звънне" aria-label="AI потвърждение" data-act="ai" data-id="${o.id}">${ICON.robot}</button>`);
+  }
   if (o.phone) out.push(`<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>`);
   out.push(`<a class="iconbtn" title="Подробности" aria-label="Подробности" href="/poruchka/?id=${o.id}">${ICON.info}</a>`);
   return out.join(" ");
@@ -72,7 +100,7 @@ function actions(o) {
 
 function renderSide(f) {
   const total = Object.values(f.stages).reduce((a, b) => a + b, 0);
-  const active = (f.stages.new || 0) + (f.stages.shipped || 0) + (f.stages.at_office || 0);
+  const active = (f.stages.new || 0) + (f.stages.prepared || 0) + (f.stages.shipped || 0) + (f.stages.at_office || 0);
   $("nActive").textContent = num(active);
   $("nDone").textContent = num(total - active);
   $("nAll").textContent = num(total);
@@ -100,20 +128,21 @@ function renderTable(d) {
   const allOn = rows.every((o) => selected.has(o.id));
   $("table").innerHTML = `<thead><tr>
       <th><input type="checkbox" id="selAll" aria-label="Избери всички" ${allOn ? "checked" : ""}></th>
-      <th>№</th><th>Статус</th><th>Магазин</th><th>Клиент</th><th>Доставка</th><th>Куриер</th><th class="money">Сума</th><th>Поръчана</th><th></th>
+      <th>№</th><th>Статус</th><th>Магазин</th><th>Клиент</th><th>Доставка</th><th>Куриер</th><th class="money">Сума</th><th>Поръчана</th><th>Бележка</th><th></th>
     </tr></thead><tbody>
     ${rows
       .map(
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
         <td class="no"><a href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a></td>
-        <td class="c-badge"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span></td>
+        <td class="c-badge"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</td>
         <td class="c-shop">${esc(o.shop_label)}</td>
-        <td class="c-client">${esc(o.customer_name || "–")}<div class="sub">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${o.city ? ` · ${esc(o.city)}` : ""}</div></td>
+        <td class="c-client">${esc(o.customer_name || "–")} ${clientBadges(o)}<div class="sub">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${o.city ? ` · ${esc(o.city)}` : ""}</div></td>
         <td class="c-deliv">${deliveryCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
         <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}${o.currency !== "EUR" ? `<div class="sub">${eur(o.total_eur)}</div>` : o.shipping ? `<div class="sub">${money(o.sub_total, o.currency)} + доставка</div>` : ""}</td>
         <td class="c-when">${ago(o.ordered_at)}<div class="sub">${new Date(o.ordered_at).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div></td>
+        <td class="c-note"><button class="notebtn" data-act="note" data-id="${o.id}" title="Бележка">${o.note ? esc(o.note.length > 70 ? o.note.slice(0, 70) + "…" : o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>
         <td class="acts">${actions(o)}</td>
       </tr>`,
       )
@@ -163,6 +192,19 @@ async function act(what, id) {
       if (await openWaybill(id)) load(true);
     } else if (what === "print") openLabels([id]);
     else if (what === "sms") await openSms(id);
+    else if (what === "confirm") {
+      await api(`/api/orders/${id}/confirm`, { method: "POST", body: {} });
+      load(true);
+    } else if (what === "ai") {
+      await api(`/api/orders/${id}/ai-call`, { method: "POST", body: {} });
+      load(true);
+    } else if (what === "note") {
+      const text = prompt("Бележка към поръчката:", o?.note || "");
+      if (text && text.trim()) {
+        await api(`/api/orders/${id}/note`, { method: "POST", body: { text } });
+        load(true);
+      }
+    }
     else if (what === "cancel" && (await cancelWaybill(id, o?.tracking_no))) load(true);
   } catch (e) {
     alert(e.message);
@@ -208,7 +250,11 @@ $("q").oninput = () => {
   clearTimeout(t);
   t = setTimeout(() => ((state.page = 1), load()), 300);
 };
-for (const f of ["shop", "region", "courier", "from", "to", "nowaybill"]) $(f).onchange = () => ((state.page = 1), load());
+$("newOrder").onclick = async () => {
+  const r = await openOrderForm({ mode: "new", shops: shopList });
+  if (r?.id) location.href = `/poruchka/?id=${r.id}`;
+};
+for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "confirmed"]) $(f).onchange = () => ((state.page = 1), load());
 $("clear").onclick = () => {
   for (const f of FIELDS) $(f).value = "";
   $("nowaybill").checked = false;

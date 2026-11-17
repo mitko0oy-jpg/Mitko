@@ -8,8 +8,9 @@ const round2 = (x: number) => Math.round((Number(x) || 0) * 100) / 100;
 const fail = (m: string) => new HttpError(400, "edit", m);
 const euro = (x: number) => `${round2(x).toFixed(2).replace(".", ",")} €`;
 
-export async function addEvent(orderId: number, kind: string, text: string, info: Record<string, unknown> = {}, userId: number | null = null) {
-  await q("INSERT INTO order_events (order_id, kind, text, info, user_id) VALUES ($1, $2, $3, $4, $5)", [orderId, kind, text.slice(0, 1000), JSON.stringify(info), userId]);
+/** `who` names someone who is not a user of the platform, e.g. "Агент". */
+export async function addEvent(orderId: number, kind: string, text: string, info: Record<string, unknown> = {}, userId: number | null = null, who: string | null = null) {
+  await q("INSERT INTO order_events (order_id, kind, text, info, user_id, who) VALUES ($1, $2, $3, $4, $5, $6)", [orderId, kind, text.slice(0, 1000), JSON.stringify(info), userId, who]);
 }
 
 export type Item = { name: string; qty: number; total: number; sku?: string };
@@ -61,7 +62,7 @@ function waybillWarning(o: any, total: number) {
   return null;
 }
 
-export async function editOrder(id: number, input: any, userId: number | null) {
+export async function editOrder(id: number, input: any, userId: number | null, who: string | null = null) {
   const o = await load(id);
   const items = cleanItems(input?.items);
   const shipping = round2(Number(input?.shipping));
@@ -71,15 +72,15 @@ export async function editOrder(id: number, input: any, userId: number | null) {
   if (!(discount >= 0 && discount <= subTotal + shipping)) throw fail("Отстъпката е по-голяма от сумата.");
   const total = round2(subTotal + shipping - discount);
   const changes = describe({ items: o.items || [], shipping: o.shipping, discount: o.discount, total: o.total }, { items, shipping, discount, total });
-  if (!changes.length) return { changed: false, total, warning: null };
+  if (!changes.length) return { changed: false, total, warning: null, changes };
   await q(
     `UPDATE orders SET items = $2, sub_total = $3, shipping = $4, discount = $5, total = $6, total_eur = round($6 / fx, 2),
             edit = jsonb_build_object('at', now(), 'by', $7::bigint, 'cbTotal', cb_total)
       WHERE id = $1`,
     [id, JSON.stringify(items), subTotal, shipping, discount, total, userId],
   );
-  await addEvent(id, "edit", `Поръчката е коригирана: ${changes.join("; ")}`, { before: { items: o.items, shipping: o.shipping, discount: o.discount, total: o.total } }, userId);
-  return { changed: true, total, warning: waybillWarning(o, total) };
+  await addEvent(id, "edit", `Поръчката е коригирана: ${changes.join("; ")}`, { before: { items: o.items, shipping: o.shipping, discount: o.discount, total: o.total } }, userId, who);
+  return { changed: true, total, warning: waybillWarning(o, total), changes };
 }
 
 /** Back to the shop's own products and amounts. */

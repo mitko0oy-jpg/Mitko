@@ -4,7 +4,7 @@
 import { env } from "./http.mts";
 
 export type Creds = { user: string; pass: string };
-export type ParcelStatus = "in_transit" | "at_office" | "delivered" | "returned" | "refused";
+export type ParcelStatus = "prepared" | "in_transit" | "at_office" | "delivered" | "returned" | "refused";
 export type ParcelEvent = { at: string | null; text: string; place?: string };
 export type ParcelState = {
   status: ParcelStatus;
@@ -63,6 +63,7 @@ const SP_DELIVERED = -14;
 const SP_REFUSED = new Set([123]); // Refused by recipient
 const SP_RETURNED = new Set([111, 124]); // Return to sender / delivered back to sender
 const SP_AT_OFFICE = new Set([134, 1134]); // Prepared for self-collecting / notification for parcel in office or locker
+const SP_PREPARED = new Set([148]); // Data about the parcel received (not handed over yet)
 
 export function speedyState(opsIn: any[]): ParcelState {
   const ops = (Array.isArray(opsIn) ? opsIn : [])
@@ -77,6 +78,8 @@ export function speedyState(opsIn: any[]): ParcelState {
   if (returned) return { ...base, status: "returned", final: true, deliveredAt: null };
   if (delivered) return { ...base, status: "delivered", final: true, deliveredAt: delivered.at };
   if (last && SP_AT_OFFICE.has(last.code)) return { ...base, status: "at_office", final: false, deliveredAt: null };
+  // Only "Получена информация за пратка" (148): the waybill exists, the courier has not taken the parcel.
+  if (ops.every((o) => SP_PREPARED.has(o.code))) return { ...base, status: "prepared", final: false, deliveredAt: null };
   return { ...base, status: "in_transit", final: false, deliveredAt: null };
 }
 
@@ -151,6 +154,7 @@ export function econtState(st: any): ParcelState {
   if (en === "in delivery office" || bg.startsWith("пристигнал") || /в автомат|очаква получаване/.test(bg) || (lastType === "office" && !en.startsWith("awaiting"))) {
     return { ...base, status: "at_office", final: false, deliveredAt: null };
   }
+  if (en.startsWith("awaiting") || bg.startsWith("очаква предаване") || lastType === "prepared" || !types.length) return { ...base, status: "prepared", final: false, deliveredAt: null };
   return { ...base, status: "in_transit", final: false, deliveredAt: null };
 }
 

@@ -9,9 +9,10 @@ import { getRates } from "../lib/fx.mts";
 import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { STAGES, upsertOrders } from "../lib/orders.mts";
 import { runTracking } from "../lib/track.mts";
-import { editOrder, resetOrder } from "../lib/edit.mts";
+import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
+import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editContact, unconfirmOrder } from "../lib/manage.mts";
 
-const ACTIVE = "o.stage IN ('new', 'shipped', 'at_office')";
+const ACTIVE = "o.stage IN ('new', 'prepared', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 
 /** WHERE for the list; the stage/tab part is left out for the counts next to each status. */
@@ -43,6 +44,11 @@ function filters(u: URLSearchParams, withStage: boolean) {
   if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
   if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
+  const conf = u.get("confirmed");
+  if (conf === "no") parts.push("o.confirmed_at IS NULL");
+  if (conf === "ai") parts.push("o.confirmed_by = 'AI агент'");
+  if (conf === "us") parts.push("o.confirmed_at IS NOT NULL AND o.confirmed_by IS DISTINCT FROM 'AI агент'");
+  parts.push(u.get("archived") === "1" ? "o.archived_at IS NOT NULL" : "o.archived_at IS NULL");
   const search = str(u.get("q"), 80);
   if (search) {
     const digits = search.replace(/\D/g, "");
@@ -70,8 +76,14 @@ async function list(u: URLSearchParams) {
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
-              o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit
+              o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
+              o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before
          FROM orders o JOIN shops s ON s.id = o.shop
+         LEFT JOIN LATERAL (
+           SELECT count(*)::int AS n, count(*) FILTER (WHERE x.stage = 'returned')::int AS ret
+             FROM orders x
+            WHERE o.phone <> '' AND x.id <> o.id AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
+         ) h ON true
         WHERE ${w.sql}
         ORDER BY o.ordered_at DESC, o.id DESC
         LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
@@ -118,7 +130,7 @@ async function detail(id: number) {
   const raw = o.raw || {};
   const { raw: _r, ...rest } = o;
   const events = await q<any>(
-    `SELECT e.kind, e.text, e.at, u.name AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
+    `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
     [id],
   );
   return {
@@ -145,6 +157,12 @@ export default handle(async (req) => {
   const [idStr, action] = sub(req, "/api/orders");
   const u = new URL(req.url).searchParams;
   if (req.method === "GET" && !idStr) return json(await list(u));
+  // A new order made by hand.
+  if (req.method === "POST" && !idStr) {
+    const user = await requireUser(req);
+    const r = await createOrder(await body(req), { source: "manual", userId: user.id, who: null, by: user.name || user.email });
+    return json(r);
+  }
   const id = Number(idStr);
   if (!Number.isSafeInteger(id) || id <= 0) throw notFound();
   if (req.method === "GET" && !action) return json(await detail(id));
@@ -161,10 +179,33 @@ export default handle(async (req) => {
     return json({ ...r, order: await detail(id) });
   }
 
+  if (req.method === "POST" && ["confirm", "unconfirm", "note", "contact", "archive", "unarchive", "duplicate", "ai-call"].includes(action)) {
+    const user = await requireUser(req);
+    const b = await body(req);
+    const by = user.name || user.email;
+    if (action === "confirm") await confirmOrder(id, by, user.id);
+    if (action === "unconfirm") await unconfirmOrder(id, user.id);
+    if (action === "note") await addNote(id, str(b.text, 1000), user.id);
+    if (action === "contact") await editContact(id, b, user.id);
+    if (action === "archive" || action === "unarchive") await archiveOrder(id, action === "archive", user.id);
+    if (action === "duplicate") return json(await duplicateOrder(id, user.id, by));
+    // Ask the phone agent to call this order (it picks requests up within 5 minutes, in calling hours).
+    if (action === "ai-call") {
+      const r = await q("UPDATE orders SET call = jsonb_build_object('state', 'requested', 'at', now(), 'by', $2::text) WHERE id = $1 AND confirmed_at IS NULL RETURNING id", [id, by]);
+      if (!r.length) throw bad("confirmed", "Поръчката вече е потвърдена.");
+      await addEvent(id, "call", "Изпратена за AI потвърждение по телефона", {}, user.id);
+    }
+    return json(await detail(id));
+  }
+
   // Re-read this order from the shop and ask the courier again.
   if (req.method === "POST" && action === "refresh") {
-    const o = await one<any>("SELECT o.shop, o.cb_id, s.currency FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1", [id]);
+    const o = await one<any>("SELECT o.shop, o.cb_id, o.source, s.currency FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1", [id]);
     if (!o) throw notFound();
+    if (o.source !== "shop") {
+      await runTracking({ deadline: Date.now() + 15000, orderIds: [id], job: "track-one" });
+      return json(await detail(id));
+    }
     const site = cbSite(o.shop);
     if (!site) throw bad("no_site", "Липсва API ключ за този магазин.");
     await upsertOrders({ id: o.shop, currency: o.currency }, [await getOrder(site, o.cb_id)], await getRates());

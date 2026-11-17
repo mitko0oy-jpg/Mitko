@@ -63,12 +63,13 @@ test("Speedy operation codes", () => {
   assert.equal(speedyState([op(1, 0), op(123, 1), op(111, 2)]).status, "refused");
   assert.equal(speedyState([op(1, 0), op(111, 3)]).status, "returned");
   assert.equal(speedyState([op(1, 0), op(11, 1)]).status, "in_transit");
-  assert.equal(speedyState([]).status, "in_transit");
+  assert.equal(speedyState([]).status, "prepared");
+  assert.equal(speedyState([op(148, 0)]).status, "prepared");
 });
 
 test("Econt statuses as they come for real parcels", () => {
   const ev = (type, t) => ({ destinationType: type, destinationDetails: type, time: t });
-  assert.equal(econtState({ shortDeliveryStatus: "Очаква предаване към Еконт", shortDeliveryStatusEn: "Awaiting delivery to Econt", trackingEvents: [ev("prepared", 1)] }).status, "in_transit");
+  assert.equal(econtState({ shortDeliveryStatus: "Очаква предаване към Еконт", shortDeliveryStatusEn: "Awaiting delivery to Econt", trackingEvents: [ev("prepared", 1)] }).status, "prepared");
   assert.equal(econtState({ shortDeliveryStatus: "Пристигнала в офис", shortDeliveryStatusEn: "In delivery office", trackingEvents: [ev("courier_direction", 1), ev("office", 2)] }).status, "at_office");
   const d = econtState({ shortDeliveryStatus: "Доставена", shortDeliveryStatusEn: "Delivered", deliveryTime: 1794480000000, cdCollectedAmount: 44.8, trackingEvents: [ev("office", 1), ev("client", 2)] });
   assert.equal(d.status, "delivered");

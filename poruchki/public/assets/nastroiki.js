@@ -162,7 +162,9 @@ try {
 
 // ---- waybill sender defaults ----
 async function loadShip() {
-  const { defaults: d } = await api("/api/waybills/settings");
+  const { defaults: d, automation } = await api("/api/waybills/settings");
+  $("autoWaybill").checked = !!automation?.autoWaybill;
+  $("autoWaybill").disabled = !isAdmin;
   const f = $("ship");
   for (const [k, v] of Object.entries(d.speedy)) if (f[`sp_${k}`]) f[`sp_${k}`].value = v ?? "";
   for (const [k, v] of Object.entries(d.econt)) {
@@ -224,3 +226,12 @@ $("smsTest").onclick = () =>
     say(`Пробният SMS е изпратен (${r.parts} SMS).`);
   });
 api("/api/sms/settings?check=1").then(renderSms).catch((e) => say(e.message, false));
+
+$("autoWaybill").onchange = async (e) => {
+  try {
+    await api("/api/waybills/settings", { method: "POST", body: { automation: { autoWaybill: e.target.checked } } });
+    say(e.target.checked ? "Товарителницата ще се създава сама след AI потвърждение." : "Автоматичното създаване е спряно.");
+  } catch (err) {
+    say(err.message, false);
+  }
+};

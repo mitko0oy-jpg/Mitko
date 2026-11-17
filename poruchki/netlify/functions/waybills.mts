@@ -2,7 +2,8 @@ import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { courierInfo } from "../lib/track.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
-import { cancelFor, createFor, draftForOrder, getDefaults, labelsFor, officesFor, priceFor, saveDefaults } from "../lib/waybills.mts";
+import { cancelFor, createFor, draftForOrder, getDefaults, labelsFor, markPrintedPublic, officesFor, priceFor, printQueue, saveDefaults } from "../lib/waybills.mts";
+import { getAutomation, saveAutomation } from "../lib/agent.mts";
 
 const orderId = (v: unknown) => {
   const id = Number(v);
@@ -37,7 +38,8 @@ export default handle(async (req) => {
       const pdf = await labelsFor(ids);
       return new Response(pdf, { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="etiketi-${ids.length}.pdf"`, "cache-control": "no-store" } });
     }
-    if (what === "settings") return json({ defaults: await getDefaults() });
+    if (what === "settings") return json({ defaults: await getDefaults(), automation: await getAutomation() });
+    if (what === "queue") return json({ queue: await printQueue() });
     throw notFound();
   }
 
@@ -48,7 +50,13 @@ export default handle(async (req) => {
   if (what === "cancel") return json(await cancelFor(orderId(b.orderId), user.id));
   if (what === "settings") {
     if (user.role !== "admin") throw bad("admin", "Само собственикът може да променя подателя.");
-    return json({ defaults: await saveDefaults(b) });
+    const automation = b.automation ? await saveAutomation(b.automation) : await getAutomation();
+    return json({ defaults: b.speedy || b.econt ? await saveDefaults(b) : await getDefaults(), automation });
+  }
+  if (what === "printed") {
+    const ids = (Array.isArray(b.ids) ? b.ids : []).map(Number).filter((n: number) => Number.isSafeInteger(n) && n > 0).slice(0, 100);
+    await markPrintedPublic(ids);
+    return json({ ok: true });
   }
   throw notFound();
 });

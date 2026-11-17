@@ -2,11 +2,32 @@ import { api, COURIER, esc, eur, money, ONE, qs, shell, when } from "./app.js";
 import { cancelWaybill, openLabels, openWaybill } from "./waybill.js";
 import { mountProducts, renderHistory } from "./order-edit.js";
 import { openSms } from "./sms.js";
+import { openOrderForm } from "./order-form.js";
 
 const $ = (id) => document.getElementById(id);
 const id = Number(qs().get("id"));
 const SINGULAR = ONE;
 const SOURCE = { cb: "от магазина", middleware: "от Middleware", own: "създадена от платформата", econt_match: "от Middleware (намерена в Еконт по телефона)", speedy_ref: "от Middleware (намерена в Спиди по номера на поръчката)" };
+const AI = "AI агент";
+const STEPS = [
+  ["new", "Създадена"],
+  ["confirmed", "Потвърдена"],
+  ["prepared", "Изготвена"],
+  ["shipped", "Изпратена"],
+  ["at_office", "В офис"],
+  ["delivered", "Взета"],
+];
+function progress(o) {
+  if (["returned", "canceled"].includes(o.stage)) return "";
+  const reached = new Set(["new"]);
+  if (o.confirmed_at) reached.add("confirmed");
+  const order = ["prepared", "shipped", "at_office", "delivered"];
+  const at = order.indexOf(o.stage);
+  for (let i = 0; i <= at; i++) reached.add(order[i]);
+  if (at >= 0) reached.add("confirmed");
+  if (o.stage === "delivered") reached.add("at_office");
+  return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}">${l}</li>`).join("")}</ol>`;
+}
 const CB_STATUS = { pending: "нова", shipped: "изпратена", completed: "завършена", canceled: "отказана", archived: "архивирана" };
 
 await shell("poruchki");
@@ -27,12 +48,22 @@ function render(o) {
     <div class="row spread">
       <div><h1>Поръчка № ${esc(o.order_no)}</h1><div class="muted small">${esc(o.shop_label)} · ${when(o.ordered_at)}</div></div>
       <div class="row"><span class="badge ${o.stage}" style="font-size:14px">${stage}</span>
+        ${
+          o.confirmed_at
+            ? `<span class="conf ${o.confirmed_by === AI ? "ai" : "us"}" style="margin:0" title="${when(o.confirmed_at)}">${o.confirmed_by === AI ? "🤖 AI потвърдена" : `✓ Потвърдена (${esc(o.confirmed_by || "")})`}</span>`
+            : `<button class="btn primary" id="confirmBtn">✓ Потвърди</button>${o.phone && !["requested", "calling"].includes(o.call?.state) ? `<button class="btn" id="aiBtn">🤖 AI потвърждение</button>` : o.call?.state ? `<span class="conf no">☎ ${o.call.state === "calling" ? "AI звъни…" : "чака AI обаждане"}</span>` : ""}`
+        }
         <button class="btn" id="smsBtn">SMS</button>
+        <button class="btn" id="noteBtn">Бележка</button>
+        <button class="btn" id="dupBtn">Дублирай</button>
+        <button class="btn" id="archBtn">${o.archived_at ? "Върни от архива" : "Архивирай"}</button>
         <button class="btn" id="refresh">Провери пак</button></div>
     </div>
+    ${progress(o)}
+    ${o.note ? `<div class="note">📝 ${esc(o.note)}</div>` : ""}
     <div class="grid2">
       <section class="card">
-        <h2>Клиент и доставка</h2>
+        <div class="row spread"><h2>Клиент и доставка</h2><button class="btn sm" id="contactBtn">Редактирай</button></div>
         <dl class="kv">
           <dt>Име</dt><dd>${esc(o.customer_name || "–")}</dd>
           <dt>Телефон</dt><dd>${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : "–"}</dd>
@@ -73,6 +104,33 @@ function render(o) {
   </div>`;
   mountProducts($("productsCard"), o, (fresh) => render(fresh));
   renderHistory($("historyCard"), o);
+  const reloadNow = async () => render(await api(`/api/orders/${id}`));
+  const post = async (action, body = {}) => {
+    try {
+      render(await api(`/api/orders/${id}/${action}`, { method: "POST", body }));
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+  if ($("confirmBtn")) $("confirmBtn").onclick = () => post("confirm");
+  if ($("aiBtn")) $("aiBtn").onclick = () => post("ai-call");
+  $("noteBtn").onclick = () => {
+    const text = prompt("Бележка към поръчката:", o.note || "");
+    if (text && text.trim()) post("note", { text });
+  };
+  $("archBtn").onclick = () => post(o.archived_at ? "unarchive" : "archive");
+  $("dupBtn").onclick = async () => {
+    if (!confirm("Да направя ли нова поръчка със същия клиент, доставка и продукти?")) return;
+    try {
+      const r = await api(`/api/orders/${id}/duplicate`, { method: "POST", body: {} });
+      location.href = `/poruchka/?id=${r.id}`;
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+  $("contactBtn").onclick = async () => {
+    if (await openOrderForm({ mode: "contact", order: o })) reloadNow();
+  };
   $("smsBtn").onclick = async () => {
     if (await openSms(id)) render(await api(`/api/orders/${id}`));
   };
@@ -81,7 +139,7 @@ function render(o) {
   $("wbActs").innerHTML = [
     canShip ? `<button class="btn primary sm" id="wbNew">Създай товарителница</button>` : "",
     o.tracking_no && (courier === "speedy" || courier === "econt") ? `<button class="btn sm" id="wbPrint">Етикет</button>` : "",
-    o.tracking_source === "own" && ["shipped", "new"].includes(o.stage) ? `<button class="btn sm danger" id="wbCancel">Анулирай</button>` : "",
+    o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage) ? `<button class="btn sm danger" id="wbCancel">Анулирай</button>` : "",
   ].join("");
   const reload = async () => render(await api(`/api/orders/${id}`));
   if ($("wbNew")) $("wbNew").onclick = async () => (await openWaybill(id)) && reload();

@@ -413,7 +413,7 @@ export async function createFor(id: number, input: any, userId: number | null) {
   const waybill = { courier: d.courier, number: made.number, shipmentId: made.shipmentId, price: made.price, currency: made.currency, cod: d.cod, pdf: made.pdf, type: d.type, officeId: d.officeId || null, at: new Date().toISOString(), by: userId };
   await q(
     `UPDATE orders SET tracking_no = $2, courier = $3, tracking_source = 'own', tracking_url = NULL, waybill = $4,
-            parcel_status = 'in_transit', parcel_text = 'Товарителницата е създадена', parcel_at = now(), parcel_final = false,
+            parcel_status = 'prepared', parcel_text = 'Товарителницата е създадена', parcel_at = now(), parcel_final = false,
             parcel_events = $5, tracked_at = NULL, track_error = NULL, delivered_at = NULL
       WHERE id = $1`,
     [id, made.number, d.courier, JSON.stringify(waybill), JSON.stringify([{ at: waybill.at, text: "Товарителницата е създадена" }])],
@@ -449,6 +449,26 @@ export async function cancelFor(id: number, userId: number | null) {
   return { canceled: w.number };
 }
 
+async function markPrinted(ids: number[]) {
+  await q("UPDATE orders SET waybill = waybill || jsonb_build_object('printedAt', now()) WHERE id = ANY($1) AND waybill IS NOT NULL AND waybill->>'number' = tracking_no", [ids]);
+}
+
+/** Waybills made here that were not printed yet (the print page prints them). */
+export async function printQueue() {
+  const rows = await q<any>(
+    `SELECT o.id, o.order_no, o.courier, o.tracking_no, o.customer_name, o.waybill->>'at' AS at, s.label AS shop_label
+       FROM orders o JOIN shops s ON s.id = o.shop
+      WHERE o.tracking_source = 'own' AND o.waybill->>'number' = o.tracking_no AND o.waybill->>'printedAt' IS NULL
+        AND (o.waybill->>'at')::timestamptz > now() - interval '3 days'
+      ORDER BY (o.waybill->>'at')`,
+  );
+  return rows.map((r) => ({ ...r, id: Number(r.id) }));
+}
+
+export async function markPrintedPublic(ids: number[]) {
+  await markPrinted(ids);
+}
+
 /** One PDF: Speedy labels together; an Econt label one at a time. */
 export async function labelsFor(ids: number[]): Promise<Uint8Array> {
   const rows = await q<any>("SELECT id, courier, tracking_no, waybill FROM orders WHERE id = ANY($1) AND tracking_no IS NOT NULL", [ids]);
@@ -458,7 +478,9 @@ export async function labelsFor(ids: number[]): Promise<Uint8Array> {
   const courier = rows[0].courier;
   if (courier === "speedy") {
     const def = await getDefaults();
-    return speedyLabels(await credsFor("speedy"), rows.map((r) => String(r.tracking_no)), def.speedy.paper);
+    const pdf = await speedyLabels(await credsFor("speedy"), rows.map((r) => String(r.tracking_no)), def.speedy.paper);
+    await markPrinted(rows.map((r) => Number(r.id)));
+    return pdf;
   }
   if (courier === "econt") {
     if (rows.length > 1) throw fail("Етикетите на Еконт се печатат по един.");
@@ -469,7 +491,9 @@ export async function labelsFor(ids: number[]): Promise<Uint8Array> {
     const safe = /^http:\/\/(127\.0\.0\.1|localhost)[:/]/.test(url) ? url : url.replace(/^http:/, "https:");
     const res = await fetchImpl(safe, { signal: AbortSignal.timeout(25000) });
     if (!res.ok) throw fail(`Еконт: етикетът не се отвори (грешка ${res.status}).`);
-    return new Uint8Array(await res.arrayBuffer());
+    const pdf = new Uint8Array(await res.arrayBuffer());
+    await markPrinted([Number(r.id)]);
+    return pdf;
   }
   throw fail("Етикет можем да отпечатаме само за Спиди и Еконт.");
 }

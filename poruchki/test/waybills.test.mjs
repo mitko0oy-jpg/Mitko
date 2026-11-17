@@ -99,5 +99,5 @@ test("Speedy: Middleware's waybill found by order number, only with the same pho
   assert.equal(found.length, 1);
   assert.equal(found[0].orderId, 1);
   assert.equal(found[0].number, "111");
-  assert.equal(found[0].state.status, "in_transit");
+  assert.equal(found[0].state.status, "prepared"); // only "Получена информация за пратка" so far
 });

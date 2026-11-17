@@ -16,6 +16,7 @@
         <button class="btn filters-toggle" id="filtersBtn">Филтри</button>
         <input type="search" id="q" placeholder="Име, телефон, № или товарителница" aria-label="Търсене">
         <button class="btn" id="refresh">Обнови</button>
+        <button class="btn primary" id="newOrder">+ Нова поръчка</button>
       </div>
     </div>
 
@@ -26,6 +27,10 @@
           <div class="stlist" id="stages"></div>
         </div>
         <label class="chk"><input type="checkbox" id="nowaybill"> Само без товарителница</label>
+        <div>
+          <h3>Потвърждение</h3>
+          <select id="confirmed" aria-label="Потвърждение"><option value="">Всички</option><option value="no">Непотвърдени</option><option value="ai">🤖 Потвърдени от AI</option><option value="us">✓ Потвърдени от нас</option></select>
+        </div>
         <div>
           <h3>Магазин</h3>
           <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
@@ -50,6 +55,7 @@
           <button data-tab="active">Активни<span class="n" id="nActive"></span></button>
           <button data-tab="done">Приключени<span class="n" id="nDone"></span></button>
           <button data-tab="">Всички<span class="n" id="nAll"></span></button>
+          <button data-tab="archived">Архивирани</button>
         </div>
         <div class="scroll"><table class="otbl" id="table"></table></div>
         <div class="pager" id="pager"></div>

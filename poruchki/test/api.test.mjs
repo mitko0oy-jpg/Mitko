@@ -144,6 +144,7 @@ test.before(async () => {
       SPEEDY_USER: "su", SPEEDY_PASS: "sp", ECONT_USER: "eu", ECONT_PASS: "ep",
       SPEEDY_API_URL: `http://127.0.0.1:${COURIER_PORT}/speedy`,
       ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
+      AGENT_TOKEN: "agent-token-agent-token-agent-token-0000",
       SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
@@ -296,7 +297,7 @@ test("waybill with Speedy like Middleware, then Econt, label and cancel", async 
   const row = (await api("/api/orders?q=5060")).data.orders[0];
   assert.equal(row.tracking_no, "62000000099");
   assert.equal(row.tracking_source, "own");
-  assert.equal(row.stage, "shipped");
+  assert.equal(row.stage, "prepared"); // "Изготвена" until the courier takes it
 
   const label = await fetch(`${B}/api/waybills/label?ids=${o.id}`, { headers: { cookie } });
   assert.equal(label.headers.get("content-type"), "application/pdf");
@@ -377,4 +378,131 @@ test("SMS: templates filled for the order, sent through SMSAPI, kept in the hist
   const ev = (await api(`/api/orders/${o.id}`)).data.events.at(-1);
   assert.equal(ev.kind, "sms");
   assert.match(ev.text, /^SMS до 0888100060: Zdraveyte/);
+});
+
+const AGENT = "agent-token-agent-token-agent-token-0000";
+async function agent(p, body) {
+  const r = await fetch(B + "/api/agent/" + p, {
+    method: body ? "POST" : "GET",
+    headers: { authorization: `Bearer ${AGENT}`, ...(body ? { "content-type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return { status: r.status, data: await r.json().catch(() => null) };
+}
+
+test("confirm by hand, notes, AI call request, archive", async () => {
+  const o = (await api("/api/orders?q=5060")).data.orders[0];
+  assert.equal(o.confirmed_at, null);
+  const ai = await api(`/api/orders/${o.id}/ai-call`, {});
+  assert.equal(ai.data.call.state, "requested");
+  const n = await api(`/api/orders/${o.id}/note`, { text: "Да се провери адресът" });
+  assert.equal(n.data.note, "Да се провери адресът");
+  const c = await api(`/api/orders/${o.id}/confirm`, {});
+  assert.equal(c.data.confirmed_by, "Митко");
+  assert.equal((await api("/api/orders?confirmed=us&q=5060")).data.total, 1);
+  assert.equal((await api("/api/orders?confirmed=ai&q=5060")).data.total, 0);
+  await api(`/api/orders/${o.id}/unconfirm`, {});
+  await api(`/api/orders/${o.id}/archive`, {});
+  assert.equal((await api("/api/orders?q=5060")).data.total, 0);
+  assert.equal((await api("/api/orders?q=5060&archived=1")).data.total, 1);
+  await api(`/api/orders/${o.id}/unarchive`, {});
+  await api(`/api/waybills/settings`, { automation: { autoWaybill: true } });
+});
+
+test("contact correction survives the shop sync; new and duplicated orders", async () => {
+  const o = (await api("/api/orders?q=5059")).data.orders[0];
+  const r = await api(`/api/orders/${o.id}/contact`, { name: "Нова Клиентка", phone: "0888999888", delivery: { courier: "speedy", type: "office", officeId: "414", officeName: "Пловдив – Велешки" } });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  await api("/api/settings/sync", {});
+  const after = (await api(`/api/orders/${o.id}`)).data;
+  assert.equal(after.customer_name, "Нова Клиентка");
+  assert.equal(after.delivery.officeId, "414");
+  assert.match(after.events.at(-1).text, /Променени данни: име: Нова Клиентка; телефон: 0888999888; доставка: До офис Спиди № 414/);
+
+  const made = await api("/api/orders", { shop: "bg", name: "Иван Иванов", phone: "0899123123", delivery: { courier: "econt", type: "office", officeId: "8501", officeName: "Айтос" }, items: [{ name: "Спрей", qty: 2, price: 12.9 }], shipping: 4.5, note: "по телефона" });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  assert.match(made.data.order_no, /^T\d+$/);
+  assert.equal(made.data.total, 30.3);
+  const mo = (await api(`/api/orders/${made.data.id}`)).data;
+  assert.equal(mo.source, "manual");
+  assert.equal(mo.confirmed_by, "Митко");
+  assert.equal(mo.note, "по телефона");
+  await api("/api/settings/sync", {}); // the shop sync leaves it alone
+  assert.equal((await api(`/api/orders/${made.data.id}`)).data.total, 30.3);
+
+  const dup = await api(`/api/orders/${made.data.id}/duplicate`, {});
+  assert.equal(dup.status, 200, JSON.stringify(dup.data));
+  const d2 = (await api(`/api/orders/${dup.data.id}`)).data;
+  assert.equal(d2.total, 30.3);
+  assert.equal(d2.confirmed_at, null);
+  assert.equal(d2.delivery.officeId, "8501");
+});
+
+test("phone agent: refused without the token; orders to call; no answer is written down", async () => {
+  assert.equal((await fetch(B + "/api/agent/orders?shops=bg")).status, 403);
+  const list = await agent(`orders?shops=bg&since=${new Date(Date.now() - 3 * 86400000).toISOString()}`);
+  assert.equal(list.status, 200);
+  const o = list.data.orders.find((x) => x.orderNo === "5060");
+  assert.ok(o, JSON.stringify(list.data.orders.map((x) => x.orderNo)));
+  assert.equal(o.stillToCall, true);
+  assert.ok(o.items[0].price > 0);
+  assert.match(o.deliveryText, /до офис на Спиди/);
+  // Orders of other shops come only when someone asked for an AI call.
+  const other = (await agent(`orders?shops=sk&since=${new Date(Date.now() - 86400000).toISOString()}`)).data.orders;
+  assert.deepEqual(other.map((x) => [x.orderNo, x.requested]), [["5060", true]]); // 5060 was sent for AI confirmation above
+
+  await agent(`orders/${o.id}/calling`, { attempt: 1 });
+  const next = new Date(Date.now() + 3600000).toISOString();
+  const r = await agent(`orders/${o.id}/result`, { outcome: "voicemail", attempt: 1, next_at: next });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const d = (await api(`/api/orders/${o.id}`)).data;
+  assert.match(d.note, /^☎ AI звъня \(опит 1\) – не вдигна, ще опита пак около \d\d:\d\d$/);
+  assert.equal(d.call.state, "voicemail");
+  assert.equal(d.confirmed_at, null);
+});
+
+test("phone agent confirms with an extra box: correction, note, waybill made and waiting for print", async () => {
+  const o = (await agent("by-phone?phone=0888100060")).data.orders.find((x) => x.orderNo === "5060");
+  const r = await agent(`orders/${o.id}/result`, {
+    outcome: "confirmed",
+    attempt: 2,
+    summary: "Потвърди и добави една кутия пластири.",
+    upsell: "one_box",
+    edit: { items: [...o.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price / i.qty })), { name: "Билкови пластири 12 бр.", qty: 1, price: 4.9 }], shipping: o.shipping },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.waybill.courier, "speedy");
+  const d = (await api(`/api/orders/${o.id}`)).data;
+  assert.equal(d.confirmed_by, "AI агент");
+  assert.equal(d.total, 29.4);
+  assert.match(d.note, /^AI потвърди по телефона\. Корекция: добавен „Билкови пластири 12 бр\.“/);
+  assert.equal(d.tracking_source, "own");
+  assert.equal(d.stage, "prepared");
+  assert.equal((await api("/api/orders?confirmed=ai&q=5060")).data.total, 1);
+  // The COD of the automatic waybill is the corrected total.
+  const sh = sent.filter((x) => x.path === "/speedy/shipment").pop().body;
+  assert.equal(sh.service.additionalServices.cod.amount, 29.4);
+
+  const queue = (await api("/api/waybills/queue")).data.queue;
+  assert.ok(queue.some((x) => x.id === o.id));
+  await fetch(`${B}/api/waybills/label?ids=${o.id}`, { headers: { cookie } });
+  assert.ok(!(await api("/api/waybills/queue")).data.queue.some((x) => x.id === o.id));
+  await api("/api/waybills/cancel", { orderId: o.id });
+});
+
+test("phone agent: a delivery change stops the automatic waybill; an order taken by phone", async () => {
+  const o = (await api("/api/orders?q=5059")).data.orders[0];
+  await api(`/api/orders/${o.id}/unconfirm`, {});
+  const r = await agent(`orders/${o.id}/result`, { outcome: "confirmed", delivery_change: "иска до адрес в Пловдив, ул. Шипка 5" });
+  assert.equal(r.data.waybill, undefined);
+  const d = (await api(`/api/orders/${o.id}`)).data;
+  assert.match(d.note, /⚠ Провери: иска друга доставка: иска до адрес в Пловдив/);
+  assert.equal(d.tracking_no, null);
+
+  const made = await agent("orders", { shop: "bg", name: "Петър Петров", phone: "0877111222", delivery: { courier: "speedy", type: "office", officeId: "414" }, items: [{ name: "Крем", qty: 1, price: 29.9 }], shipping: 4.5, note: "Поръчка по телефона" });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  const p = (await api(`/api/orders/${made.data.id}`)).data;
+  assert.equal(p.source, "phone");
+  assert.equal(p.confirmed_by, "AI агент");
+  assert.equal(made.data.waybill.courier, "speedy");
 });

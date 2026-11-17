@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Печат на товарителници</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="row spread">
+      <h1>Печат на товарителници</h1>
+      <label class="chk" style="font-size:16px"><input type="checkbox" id="auto"> <b>Печатай автоматично</b></label>
+    </div>
+    <div class="note small" id="howto">
+      Остави тази страница отворена на компютъра до принтера. На всеки 20 секунди проверява за нови товарителници
+      (например след AI потвърждение) и ги отпечатва. За печат без прозорец „Печат“: стартирай Chrome с
+      <code>--kiosk-printing</code> (десен бутон на иконата на Chrome → Свойства → в края на „Цел“ добави <code> --kiosk-printing</code>)
+      и избери етикетния принтер по подразбиране.
+    </div>
+    <section class="card">
+      <div class="row spread"><h2>Чакат печат</h2><div class="row"><span class="muted small" id="checked"></span><button class="btn" id="printAll">Печатай всички</button></div></div>
+      <div id="queue"></div>
+    </section>
+    <section class="card">
+      <h2>Отпечатани сега</h2>
+      <ul class="timeline" id="done"></ul>
+    </section>
+    <iframe id="frame" title="Етикет" style="position:absolute;width:1px;height:1px;border:0;left:-9999px"></iframe>
+  </main>
+  <script type="module" src="/assets/pechat.js"></script>
+</body>
+</html>

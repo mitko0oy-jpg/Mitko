@@ -38,6 +38,7 @@ export const pct = (x) => (x == null ? "–" : `${String(x).replace(".", ",")}%`
 
 export const STAGES = {
   new: { label: "Нови", hint: "още не са изпратени" },
+  prepared: { label: "Изготвени", hint: "товарителница, куриерът още не я е взел" },
   shipped: { label: "Изпратени", hint: "на път към клиента" },
   at_office: { label: "В офис", hint: "чакат клиента в офис или автомат" },
   delivered: { label: "Взети", hint: "клиентът е платил" },
@@ -45,8 +46,8 @@ export const STAGES = {
   canceled: { label: "Отказани", hint: "преди изпращане" },
   archived: { label: "Архивирани", hint: "без друга информация" },
 };
-export const ONE = { new: "Нова", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
-export const STAGE_ORDER = ["new", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
+export const ONE = { new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
+export const STAGE_ORDER = ["new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
 export const COURIER = { speedy: "Спиди", econt: "Еконт", gls: "GLS", boxnow: "BOX NOW", sameday: "Sameday" };
 
 // ---- dates (Sofia) ----
@@ -100,6 +101,7 @@ export async function shell(active) {
   const links = [
     ["/", "Табло", "tablo"],
     ["/poruchki/", "Поръчки", "poruchki"],
+    ["/pechat/", "Печат", "pechat"],
     ["/nastroiki/", "Настройки", "nastroiki"],
   ];
   const top = document.createElement("header");

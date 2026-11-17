@@ -13,6 +13,7 @@ const COLS = [
   "cb_items", "cb_sub_total", "cb_shipping", "cb_discount", "cb_total",
 ];
 const OURS = "orders.edit IS NOT NULL";
+const CONTACT = "orders.contact_edit IS NOT NULL";
 
 // The shop's own amounts and products always go to cb_*; the shown ones follow the shop only while
 // the order has no correction of ours (orders.edit).
@@ -24,9 +25,16 @@ const SAME_CURRENCY = "orders.currency = EXCLUDED.currency";
 const UPSERT_TAIL = `
 ON CONFLICT (shop, cb_id) DO UPDATE SET
   order_no = EXCLUDED.order_no, ordered_at = EXCLUDED.ordered_at, day = EXCLUDED.day, cb_status = EXCLUDED.cb_status,
-  customer_name = EXCLUDED.customer_name, phone = EXCLUDED.phone, email = EXCLUDED.email, country = EXCLUDED.country,
-  city = EXCLUDED.city, zip = EXCLUDED.zip, address = EXCLUDED.address, address2 = EXCLUDED.address2,
-  shipping_name = EXCLUDED.shipping_name, delivery = EXCLUDED.delivery, currency = EXCLUDED.currency,
+  customer_name = CASE WHEN ${CONTACT} THEN orders.customer_name ELSE EXCLUDED.customer_name END,
+  phone = CASE WHEN ${CONTACT} THEN orders.phone ELSE EXCLUDED.phone END,
+  email = CASE WHEN ${CONTACT} THEN orders.email ELSE EXCLUDED.email END,
+  country = EXCLUDED.country,
+  city = CASE WHEN ${CONTACT} THEN orders.city ELSE EXCLUDED.city END,
+  zip = CASE WHEN ${CONTACT} THEN orders.zip ELSE EXCLUDED.zip END,
+  address = CASE WHEN ${CONTACT} THEN orders.address ELSE EXCLUDED.address END,
+  address2 = CASE WHEN ${CONTACT} THEN orders.address2 ELSE EXCLUDED.address2 END,
+  delivery = CASE WHEN ${CONTACT} THEN orders.delivery ELSE EXCLUDED.delivery END,
+  shipping_name = EXCLUDED.shipping_name, currency = EXCLUDED.currency,
   cb_items = EXCLUDED.cb_items, cb_sub_total = EXCLUDED.cb_sub_total, cb_shipping = EXCLUDED.cb_shipping,
   cb_discount = EXCLUDED.cb_discount, cb_total = EXCLUDED.cb_total,
   items = CASE WHEN ${OURS} THEN orders.items ELSE EXCLUDED.items END,
@@ -80,5 +88,5 @@ export async function upsertOrders(shop: { id: string; currency: string }, raws:
   return { inserted, updated };
 }
 
-export const STAGES = ["new", "shipped", "at_office", "delivered", "returned", "canceled", "archived"] as const;
+export const STAGES = ["new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"] as const;
 export type Stage = (typeof STAGES)[number];
