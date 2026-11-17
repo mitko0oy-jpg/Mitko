@@ -79,11 +79,11 @@ const badPhone = (o) => o.region === "bg" && o.phone && !/^(?:\+?359|0)?[2-9]\d{
 /** "преди 45 мин", "преди 5 ч", "преди 3 д 17 ч" – like Middleware; the exact time is on the line below. */
 function since(iso) {
   const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
-  if (m < 60) return m < 1 ? "току-що" : `преди ${m} мин`;
+  if (m < 60) return m < 1 ? "току-що" : `преди ${m}м`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `преди ${h} ч ${m % 60} мин`;
+  if (h < 24) return `преди ${h}ч ${m % 60}м`;
   const d = Math.floor(h / 24);
-  return d < 30 ? `преди ${d} д${h % 24 ? ` ${h % 24} ч` : ""}` : `преди ${d} д`;
+  return d < 30 ? `преди ${d}д${h % 24 ? ` ${h % 24}ч` : ""}` : `преди ${d}д`;
 }
 const fullDate = (iso) => new Date(iso).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(" г.", "");
 
@@ -112,6 +112,29 @@ const CMARK = {
   speedy: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.5 4.8L12 12 3.5 7.3z" fill="#f04a3e"/><path d="M3.5 7.3L12 12v9.5l-8.5-4.8z" fill="#d42a20"/><path d="M20.5 7.3L12 12v9.5l8.5-4.8z" fill="#a8180f"/><path d="M7.6 4.9l8.6 4.8" stroke="#fff" stroke-width="1.3" opacity=".85"/></svg>`,
   econt: `<svg class="clogo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#1f3c88"/><path d="M8 6.5h8.2v2.6H11v1.7h4.4v2.5H11v1.8h5.3v2.6H8z" fill="#fff"/></svg>`,
 };
+
+// Country of the shop, for the little flag on the status (like Middleware).
+const COUNTRY = { bg: "bg", max4: "bg", bioshop: "bg", edubel: "bg", edubelbg: "bg", sk: "sk", vcelijed: "sk", sl: "si", si: "si", hu: "hu" };
+const COUNTRY_NAME = { bg: "България", sk: "Словакия", si: "Словения", hu: "Унгария" };
+function flag(o) {
+  const c = COUNTRY[o.shop] || (o.currency === "HUF" ? "hu" : o.region === "bg" ? "bg" : "");
+  return c ? `<span class="flag ${c}" title="${COUNTRY_NAME[c]}"></span>` : "";
+}
+
+/** The four small signs next to the number: payment, on its way, how many items, packed (has a waybill). */
+const G = {
+  truck: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7h11v9h-11zM13.5 10.5h4l3 3V16h-7"/><circle cx="6.5" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/></svg>`,
+  box: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>`,
+};
+function icons4(o) {
+  const away = ["shipped", "at_office", "delivered", "returned"].includes(o.stage);
+  return `<span class="ic4">
+    <span class="i4 ${o.paid ? "on" : ""}" title="${o.paid ? "Платена" : "Наложен платеж"}">$</span>
+    <span class="i4 ${away ? "on" : ""}" title="${away ? "Пратката е тръгнала" : "Още не е тръгнала"}">${G.truck}</span>
+    <span class="i4 n" title="${o.items_qty || 0} бр.: ${esc((o.items || []).join(", "))}">${o.items_qty || 0}</span>
+    <span class="i4 ${o.tracking_no ? "on" : "off"}" title="${o.tracking_no ? "Има товарителница" : "Няма товарителница"}">${G.box}</span>
+  </span>`;
+}
 
 function courierCell(o) {
   const d = o.delivery || {};
@@ -237,8 +260,8 @@ function renderTable(d) {
       .map(
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
-        <td class="c-no"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a><div class="pills">${o.paid ? `<span class="pill pay" title="Платена">$</span>` : `<span class="pill cod" title="Наложен платеж">$</span>`}<span class="pill n" title="${o.items_qty || 0} бр. в поръчката: ${esc((o.items || []).join(", "))}">${o.items_qty || 0}</span>${o.source === "phone" ? `<span class="pill" title="Поръчка по телефона">☎</span>` : o.source === "manual" ? `<span class="pill" title="Въведена ръчно">✎</span>` : ""}</div></td>
-        <td class="c-badge"><div class="st"><span class="badge ${o.stage}">${o.parcel_status === "refused" ? "Отказана на място" : ONE[o.stage] || o.stage}</span>${confirmCell(o)}</div></td>
+        <td class="c-no"><div class="nocell"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a>${icons4(o)}</div></td>
+        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div></td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
         <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
