@@ -2,6 +2,7 @@
 // nor Middleware gave us the waybill number, we find it by the receiver's phone and the COD amount.
 import { addDays, sofiaDay } from "./dates.mts";
 import { getSetting, q, setSetting } from "./db.mts";
+import { cKey, companyId } from "./tenant.mts";
 import type { Creds } from "./couriers.mts";
 import { env } from "./http.mts";
 
@@ -64,18 +65,18 @@ export function pickMatches(awbs: Awb[], orders: Candidate[]): { orderId: number
 }
 
 // Econt orders without a waybill number (the shops do not get Middleware's numbers back).
-const CANDIDATES = `
+const CANDIDATES = () => `
   FROM orders o JOIN shops s ON s.id = o.shop
- WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND o.delivery->>'courier' = 'econt'
+ WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND s.company_id = ${companyId()} AND o.delivery->>'courier' = 'econt'
    AND o.ordered_at > now() - interval '20 days' AND o.ordered_at < now() - interval '15 minutes'`;
 
 export async function matchEcont(creds: Creds | undefined, deadline: number, force = false) {
   if (!creds) return { matched: 0 };
   // The waybill list is slow to fetch (~15 s for two weeks): at most every 2 hours, and only when something is missing.
-  const last = await getSetting<{ at: number }>("econt_match");
+  const last = await getSetting<{ at: number }>(cKey("econt_match"));
   if (!force && last && Date.now() - last.at < 2 * 3600000) return { matched: 0, skipped: true };
-  await setSetting("econt_match", { at: Date.now() });
-  const rows = await q<any>(`SELECT o.id, o.phone, o.total_eur::float AS total, extract(epoch FROM o.ordered_at) * 1000 AS at ${CANDIDATES}`);
+  await setSetting(cKey("econt_match"), { at: Date.now() });
+  const rows = await q<any>(`SELECT o.id, o.phone, o.total_eur::float AS total, extract(epoch FROM o.ordered_at) * 1000 AS at ${CANDIDATES()}`);
   if (!rows.length) return { matched: 0, candidates: 0 };
   const today = sofiaDay(new Date());
   const awbs = await econtWaybills(creds, addDays(today, -21), today, deadline);

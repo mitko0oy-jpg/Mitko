@@ -1,6 +1,7 @@
 // Shops: the list comes from CB_SITES; region, currency and on/off are kept in the database.
 import { cbSites } from "./cb.mts";
 import { q } from "./db.mts";
+import { companyId, hasCompany, ENV_COMPANY } from "./tenant.mts";
 
 // Defaults for shops seen for the first time (changeable in Настройки).
 const ABROAD = new Set(["sk", "sl", "si", "hu", "vcelijed", "cz", "ro", "gr", "pl", "hr", "at", "de"]);
@@ -22,6 +23,7 @@ export type Shop = {
   backfill: { from: number; to: number; skip: number } | null;
   last_error: string | null;
   error_at: string | null;
+  company_id: number;
 };
 
 /** Adds new shops from CB_SITES and refreshes names; returns all shops. */
@@ -32,15 +34,17 @@ export async function ensureShops(): Promise<Shop[]> {
     const rows = sites.map((s, i) => {
       vals.push(s.id, s.label, s.domain, ABROAD.has(s.id.toLowerCase()) ? "abroad" : "bg", CURRENCY[s.id.toLowerCase()] || "EUR", i);
       const b = i * 6;
-      return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6})`;
+      return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, ${ENV_COMPANY})`;
     });
+    // The shops in CB_SITES (Netlify settings) are company 1's.
     await q(
-      `INSERT INTO shops (id, label, domain, region, currency, position) VALUES ${rows.join(", ")}
+      `INSERT INTO shops (id, label, domain, region, currency, position, company_id) VALUES ${rows.join(", ")}
        ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, domain = EXCLUDED.domain, position = EXCLUDED.position`,
       vals,
     );
   }
-  return q<Shop>("SELECT * FROM shops ORDER BY position, id");
+  // A person sees only the shops of their company; background jobs see them all.
+  return hasCompany() ? q<Shop>("SELECT * FROM shops WHERE company_id = $1 ORDER BY position, id", [companyId()]) : q<Shop>("SELECT * FROM shops ORDER BY company_id, position, id");
 }
 
 export async function shopError(id: string, message: string | null) {

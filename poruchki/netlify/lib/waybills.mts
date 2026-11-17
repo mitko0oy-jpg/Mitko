@@ -6,6 +6,7 @@
 import { courierOf } from "./cb.mts";
 import type { Creds } from "./couriers.mts";
 import { getSetting, one, q, setSetting } from "./db.mts";
+import { cKey, companyId, ENV_COMPANY, inCompany } from "./tenant.mts";
 import { env, HttpError } from "./http.mts";
 import { loadCreds } from "./track.mts";
 import { addEvent } from "./edit.mts";
@@ -35,11 +36,11 @@ const BUILT_IN: Defaults = {
 export async function getDefaults(): Promise<Defaults> {
   let fromEnv: any = {};
   try {
-    fromEnv = JSON.parse(env("SHIPPING_DEFAULTS") || "{}");
+    fromEnv = companyId() === ENV_COMPANY ? JSON.parse(env("SHIPPING_DEFAULTS") || "{}") : {};
   } catch {
     fromEnv = {};
   }
-  const saved: any = (await getSetting("shipping")) || {};
+  const saved: any = (await getSetting(cKey("shipping"))) || {};
   return {
     speedy: { ...BUILT_IN.speedy, ...fromEnv.speedy, ...saved.speedy },
     econt: { ...BUILT_IN.econt, ...fromEnv.econt, ...saved.econt },
@@ -72,7 +73,7 @@ export async function saveDefaults(input: any): Promise<Defaults> {
       payAfterAccept: typeof ec.payAfterAccept === "boolean" ? ec.payAfterAccept : cur.econt.payAfterAccept,
     },
   };
-  await setSetting("shipping", next);
+  await setSetting(cKey("shipping"), next);
   return next;
 }
 
@@ -281,13 +282,13 @@ async function econt(path: string, creds: Creds, body: Record<string, unknown>) 
 }
 
 async function econtProfile(creds: Creds) {
-  const cached = await getSetting<{ at: number; user: string; profile: any }>("econt_profile");
+  const cached = await getSetting<{ at: number; user: string; profile: any }>(cKey("econt_profile"));
   if (cached && cached.user === creds.user && Date.now() - cached.at < 12 * 3600000) return cached.profile;
   const d = await econt("/Profile/ProfileService.getClientProfiles.json", creds, {});
   const p = d?.profiles?.[0];
   if (!p?.client) throw fail("Еконт: не намерихме профила на подателя.");
   const profile = { client: p.client, agreement: p.cdPayOptions?.[0]?.num || null };
-  await setSetting("econt_profile", { at: Date.now(), user: creds.user, profile });
+  await setSetting(cKey("econt_profile"), { at: Date.now(), user: creds.user, profile });
   return profile;
 }
 
@@ -373,7 +374,7 @@ async function cityOffices(courier: "speedy" | "econt", creds: Creds, city: stri
 // ---------------- what the API calls ----------------
 
 export async function loadOrder(id: number): Promise<OrderRow> {
-  const o = await one<OrderRow>("SELECT o.*, s.region, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1", [id]);
+  const o = await one<OrderRow>("SELECT o.*, s.region, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1 AND s.company_id = $2", [id, companyId()]);
   if (!o) throw new HttpError(404, "not_found", "Няма такава поръчка.");
   for (const k of ["total", "sub_total", "shipping", "discount", "total_eur"]) o[k] = Number(o[k]);
   return o;
@@ -473,7 +474,7 @@ export async function cancelFor(id: number, userId: number | null) {
 }
 
 async function markPrinted(ids: number[]) {
-  await q("UPDATE orders SET waybill = waybill || jsonb_build_object('printedAt', now()) WHERE id = ANY($1) AND waybill IS NOT NULL AND waybill->>'number' = tracking_no", [ids]);
+  await q(`UPDATE orders SET waybill = waybill || jsonb_build_object('printedAt', now()) WHERE id = ANY($1) AND ${inCompany()} AND waybill IS NOT NULL AND waybill->>'number' = tracking_no`, [ids]);
 }
 
 /** Waybills made here that were not printed yet (the print page prints them). */
@@ -481,7 +482,7 @@ export async function printQueue() {
   const rows = await q<any>(
     `SELECT o.id, o.order_no, o.courier, o.tracking_no, o.customer_name, o.waybill->>'at' AS at, s.label AS shop_label
        FROM orders o JOIN shops s ON s.id = o.shop
-      WHERE o.tracking_source = 'own' AND o.waybill->>'number' = o.tracking_no AND o.waybill->>'printedAt' IS NULL
+      WHERE s.company_id = ${companyId()} AND o.tracking_source = 'own' AND o.waybill->>'number' = o.tracking_no AND o.waybill->>'printedAt' IS NULL
         AND (o.waybill->>'at')::timestamptz > now() - interval '3 days'
       ORDER BY (o.waybill->>'at')`,
   );
@@ -494,7 +495,7 @@ export async function markPrintedPublic(ids: number[]) {
 
 /** One PDF: Speedy labels together; an Econt label one at a time. */
 export async function labelsFor(ids: number[]): Promise<Uint8Array> {
-  const rows = await q<any>("SELECT id, courier, tracking_no, waybill FROM orders WHERE id = ANY($1) AND tracking_no IS NOT NULL", [ids]);
+  const rows = await q<any>(`SELECT id, courier, tracking_no, waybill FROM orders WHERE id = ANY($1) AND ${inCompany()} AND tracking_no IS NOT NULL`, [ids]);
   if (!rows.length) throw fail("Няма товарителници за печат.");
   const couriers = new Set(rows.map((r) => r.courier));
   if (couriers.size > 1) throw fail("Отпечатай етикетите на Спиди и Еконт поотделно.");

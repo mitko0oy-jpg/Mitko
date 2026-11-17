@@ -626,3 +626,5 @@ body.focus main { padding-top: 8px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .i4.n { background: #000; border-color: #5a5a5a; } }
 :root[data-theme="dark"] .i4.n { background: #000; border-color: #5a5a5a; }
 .modal .warn { color: var(--warn); }
+a.pill.more { cursor: pointer; background: var(--accent); border-color: var(--accent); color: var(--surface); text-decoration: none; }
+a.pill.more:hover { filter: brightness(1.1); }

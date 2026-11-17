@@ -2,6 +2,7 @@
 // actually sold lately (names and prices exactly as in the orders) so the list is never empty.
 import { cb, cbSites, PAGE, type Site } from "./cb.mts";
 import { q } from "./db.mts";
+import { inCompany } from "./tenant.mts";
 
 const s = (v: unknown, max = 200) => (v == null ? "" : String(v).replace(/\s+/g, " ").trim().slice(0, max));
 const n = (v: unknown) => (Number.isFinite(Number(v)) ? Math.round(Number(v) * 100) / 100 : 0);
@@ -71,14 +72,14 @@ export async function catalog(shop: string, query: string) {
   const [fromShop, sold] = await Promise.all([
     q<any>(
       `SELECT title AS name, price::float AS price, sku, image FROM products
-        WHERE shop = $1 AND NOT hidden AND lower(title) LIKE $2 ORDER BY title LIMIT 60`,
+        WHERE shop = $1 AND ${inCompany()} AND NOT hidden AND lower(title) LIKE $2 ORDER BY title LIMIT 60`,
       [shop, like],
     ),
     q<any>(
       `SELECT it->>'name' AS name, (mode() WITHIN GROUP (ORDER BY round((it->>'total')::numeric / greatest((it->>'qty')::numeric, 1), 2)))::float AS price,
               count(*)::int AS n
          FROM orders o CROSS JOIN LATERAL jsonb_array_elements(coalesce(o.cb_items, o.items)) it
-        WHERE o.shop = $1 AND o.ordered_at > now() - interval '120 days' AND lower(it->>'name') LIKE $2
+        WHERE o.shop = $1 AND ${inCompany("o.shop")} AND o.ordered_at > now() - interval '120 days' AND lower(it->>'name') LIKE $2
         GROUP BY 1 ORDER BY n DESC LIMIT 40`,
       [shop, like],
     ),

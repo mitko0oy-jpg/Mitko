@@ -475,7 +475,7 @@ test("phone agent: refused without the token; orders to call; no answer is writt
   const r = await agent(`orders/${o.id}/result`, { outcome: "voicemail", attempt: 1, next_at: next });
   assert.equal(r.status, 200, JSON.stringify(r.data));
   const d = (await api(`/api/orders/${o.id}`)).data;
-  assert.match(d.note, /^☎ AI звъня \(опит 1\) – не вдигна, ще опита пак около \d\d:\d\d$/);
+  assert.match(d.note, /^☎ AI звъня \(опит 1\) – не вдигна, ще опита пак (утре )?около \d\d:\d\d$/);
   assert.equal(d.call.state, "voicemail");
   assert.equal(d.confirmed_at, null);
 });
@@ -667,4 +667,50 @@ test("phone order: an office said in words is found by city and street; an unkno
   const draft = (await api(`/api/waybills/draft?order=${unknown.data.id}`)).data.draft;
   assert.equal(draft.type, "office");
   assert.equal(draft.officeId, "");
+});
+
+test("companies: another company sees none of our orders, shops, people or settings", async () => {
+  // Only the platform owner creates companies.
+  const made = await api("/api/companies", { name: "Друга фирма ЕООД", userName: "Иван", email: "ivan@example.com", password: "ivan-password-1" });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  const other = made.data.companies.find((c) => c.name === "Друга фирма ЕООД");
+  assert.equal(other.users, 1);
+  assert.equal(other.shops, 0);
+
+  // Ivan's own session.
+  let ck = "";
+  const as = async (p, body) => {
+    const r = await fetch(B + p, { method: body ? "POST" : "GET", headers: { ...(body ? { "content-type": "application/json" } : {}), cookie: ck }, body: body ? JSON.stringify(body) : undefined });
+    const set = r.headers.get("set-cookie");
+    if (set) ck = set.split(";")[0];
+    return { status: r.status, data: await r.json().catch(() => null) };
+  };
+  assert.equal((await as("/api/auth/login", { email: "ivan@example.com", password: "ivan-password-1" })).status, 200);
+  const me = (await as("/api/auth/me")).data.user;
+  assert.equal(me.company, "Друга фирма ЕООД");
+  assert.equal(me.owner, false);
+
+  const ours = (await api("/api/orders?tab=")).data;
+  assert.ok(ours.total > 0);
+  const theirs = (await as("/api/orders?tab=")).data;
+  assert.equal(theirs.total, 0);
+  assert.equal(theirs.facets.products.length, 0);
+  assert.equal((await as(`/api/orders/${ours.orders[0].id}`)).status, 404);
+  assert.equal((await as(`/api/orders/${ours.orders[0].id}/note`, { text: "чужда" })).status, 404);
+  assert.equal((await as(`/api/waybills/draft?order=${ours.orders[0].id}`)).status, 404);
+  const set = (await as("/api/settings")).data;
+  assert.equal(set.shops.length, 0);
+  assert.deepEqual(set.users.map((u) => u.email), ["ivan@example.com"]);
+  assert.equal(set.couriers.speedy.configured, false, "our Speedy login is not theirs");
+  assert.equal((await as("/api/sms/settings")).data.configured, false);
+  const alerts = (await as("/api/stats/alerts")).data;
+  assert.equal(alerts.unconfirmed + alerts.toShip + alerts.leads + alerts.toPrint, 0);
+  assert.equal((await as("/api/leads?tab=all")).data.leads.length, 0);
+  assert.equal((await as("/api/companies")).status, 403);
+  // A new order needs one of their own shops.
+  assert.equal((await as("/api/orders", { shop: "bg", name: "X Y", phone: "0888000000", city: "София", delivery: { courier: "speedy", type: "office", officeId: "1" }, items: [{ name: "a", qty: 1, price: 1 }] })).status, 400);
+
+  // Switched off: Ivan cannot work any more.
+  await api(`/api/companies/${other.id}`, { archived: true });
+  assert.equal((await as("/api/orders?tab=")).status, 401);
 });

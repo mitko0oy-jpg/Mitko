@@ -4,6 +4,7 @@
 // allowed for it on nekorekten.com – Netlify has no fixed IP, so the key needs "*".
 // Their terms: say where the reports come from wherever they are shown, and name them in the privacy policy.
 import { getSetting, one, q, setSetting } from "./db.mts";
+import { cKey, companyId, ENV_COMPANY } from "./tenant.mts";
 import { env, HttpError } from "./http.mts";
 import { seal, unseal } from "./secret.mts";
 import { smsNumber } from "./sms.mts";
@@ -20,8 +21,8 @@ export const phoneKey = (p: string) => String(p || "").replace(/\D/g, "").slice(
 type Stored = { sealed?: string; auto?: boolean; at?: string };
 
 export async function nekSettings() {
-  const s = (await getSetting<Stored>("nekorekten")) || {};
-  let key = env("NEKOREKTEN_KEY") || "";
+  const s = (await getSetting<Stored>(cKey("nekorekten"))) || {};
+  let key = companyId() === ENV_COMPANY ? env("NEKOREKTEN_KEY") || "" : "";
   let source: "app" | "env" | null = key ? "env" : null;
   if (s.sealed) {
     try {
@@ -35,7 +36,7 @@ export async function nekSettings() {
 }
 
 export async function saveNekSettings(input: any) {
-  const cur = (await getSetting<Stored>("nekorekten")) || {};
+  const cur = (await getSetting<Stored>(cKey("nekorekten"))) || {};
   const next: Stored = { ...cur, at: new Date().toISOString() };
   if (typeof input?.key === "string" && input.key.trim()) {
     const k = input.key.trim();
@@ -44,7 +45,7 @@ export async function saveNekSettings(input: any) {
   }
   if (input?.removeKey === true) delete next.sealed;
   if (typeof input?.auto === "boolean") next.auto = input.auto;
-  await setSetting("nekorekten", next);
+  await setSetting(cKey("nekorekten"), next);
   return nekSettings();
 }
 
@@ -95,8 +96,8 @@ export async function checkPhone(key: string, phone: string) {
   }));
   const count = Number(d?.count) || reports.length;
   await q(
-    `INSERT INTO phone_checks (phone_key, phone, checked_at, count, reports, error) VALUES ($1, $2, now(), $3, $4::jsonb, NULL)
-     ON CONFLICT (phone_key) DO UPDATE SET phone = excluded.phone, checked_at = now(), count = excluded.count, reports = excluded.reports, error = NULL`,
+    `INSERT INTO phone_checks (company_id, phone_key, phone, checked_at, count, reports, error) VALUES (${companyId()}, $1, $2, now(), $3, $4::jsonb, NULL)
+     ON CONFLICT (company_id, phone_key) DO UPDATE SET phone = excluded.phone, checked_at = now(), count = excluded.count, reports = excluded.reports, error = NULL`,
     [phoneKey(number), number, count, JSON.stringify(reports)],
   );
   return { phone: number, count, reports };
@@ -105,7 +106,7 @@ export async function checkPhone(key: string, phone: string) {
 export async function phoneCheck(phone: string) {
   const k = phoneKey(phone);
   if (k.length < 9) return null;
-  return one<any>("SELECT phone, checked_at, count, reports FROM phone_checks WHERE phone_key = $1", [k]);
+  return one<any>("SELECT phone, checked_at, count, reports FROM phone_checks WHERE company_id = $2 AND phone_key = $1", [k, companyId()]);
 }
 
 /** A report from us: what happened with this order (their API needs the text and at least one contact field). */
@@ -139,8 +140,8 @@ export async function runNekChecks(deadline: number) {
   const rows = await q<{ phone: string }>(
     `SELECT DISTINCT ON (right(regexp_replace(o.phone, '\\D', '', 'g'), 9)) o.phone
        FROM orders o JOIN shops s ON s.id = o.shop
-       LEFT JOIN phone_checks pc ON pc.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
-      WHERE s.region = 'bg' AND o.phone <> '' AND o.ordered_at > now() - interval '3 days' AND o.archived_at IS NULL
+       LEFT JOIN phone_checks pc ON pc.company_id = s.company_id AND pc.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
+      WHERE s.region = 'bg' AND s.company_id = ${companyId()} AND o.phone <> '' AND o.ordered_at > now() - interval '3 days' AND o.archived_at IS NULL
         AND (pc.phone_key IS NULL OR pc.checked_at < now() - interval '30 days')
       ORDER BY right(regexp_replace(o.phone, '\\D', '', 'g'), 9), o.ordered_at DESC
       LIMIT $1`,
@@ -160,8 +161,8 @@ export async function runNekChecks(deadline: number) {
       const k = phoneKey(r.phone);
       if (k.length === 9)
         await q(
-          `INSERT INTO phone_checks (phone_key, phone, checked_at, error) VALUES ($1, $2, now(), $3)
-           ON CONFLICT (phone_key) DO UPDATE SET checked_at = now(), error = excluded.error`,
+          `INSERT INTO phone_checks (company_id, phone_key, phone, checked_at, error) VALUES (${companyId()}, $1, $2, now(), $3)
+           ON CONFLICT (company_id, phone_key) DO UPDATE SET checked_at = now(), error = excluded.error`,
           [k, r.phone, String(e.message).slice(0, 200)],
         );
     }

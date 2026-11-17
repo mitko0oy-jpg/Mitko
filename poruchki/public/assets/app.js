@@ -191,6 +191,8 @@ export async function shell(active) {
     ["/nastroiki/#potrebiteli", "Потребители", "potrebiteli", ICONS.users],
     ["/nastroiki/", "Настройки", "nastroiki", ICONS.gear],
   ];
+  // Only the platform owner manages companies.
+  if (me.user.owner) links.push(["/firmi/", "Фирми", "firmi", ICONS.users]);
   const u = me.user;
   const top = document.createElement("header");
   top.className = "top";
@@ -202,9 +204,9 @@ export async function shell(active) {
         <button class="topbtn" id="themeBtn" type="button"></button>
         <div class="popwrap"><button class="userchip" id="userBtn" type="button" aria-expanded="false" aria-label="Профил">
             <span class="avatar">${esc(initials(u.name || u.email))}</span>
-            <span class="uname"><b>${esc(u.name || u.email)}</b><small>${esc(ROLE[u.role] || "")}</small></span></button>
+            <span class="uname"><b>${esc(u.name || u.email)}</b><small>${esc(u.company || ROLE[u.role] || "")}</small></span></button>
           <div class="pop" id="userMenu" hidden>
-            <div class="muted small">${esc(u.email)}</div>
+            <div class="muted small">${esc(u.email)}<br>${esc(ROLE[u.role] || "")}${u.company ? ` · ${esc(u.company)}` : ""}</div>
             <a href="/nastroiki/">Настройки</a>
             <button type="button" id="logout">Изход</button>
           </div></div>

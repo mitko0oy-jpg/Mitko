@@ -19,6 +19,13 @@
 - SMS през SMSAPI (`api.smsapi.com/sms.do`, Bearer токен в Настройки или `SMSAPI_TOKEN`): шаблони с {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}; латиница по закона за транслитерацията (ъ → a); ~0,054 € на част (160 латински / 70 кирилица).
 - Следващи: черен списък и повторни поръчки, склад/Pick & Pack, статистики, форма с офиси в магазина, касови бележки по Н-18. Не копираме кода на Middleware – само идеите; всичко минава през официалните API на куриерите.
 
+## Фирми (отделни профили)
+
+- `companies`; всеки `users` и `shops` има `company_id`. Всичко, което беше, е фирма 1 (на Митко); настройките от Netlify (CB_SITES, SPEEDY_*, ECONT_*, SMSAPI_*, NEKOREKTEN_KEY, SHIPPING_DEFAULTS, MW_*, AGENT_TOKEN) важат само за фирма 1 (`ENV_COMPANY`).
+- Фирмата на заявката е в `lib/ctx.mts`/`lib/tenant.mts` (AsyncLocalStorage): `handle()` започва контекст, `requireUser()` (и `requireAgent()`) го попълва; `companyId()` хвърля грешка без фирма, за да не излезе чужда поръчка. Фонови задачи: `withCompany(id, fn)` (`runTrackingAll`, nekorekten и MW в `runSync`).
+- Филтри: `s.company_id = companyId()` в списъци/табло/експорт, `inCompany()` за заявки по `shop`, `ownOrder(one, id)` преди всяко действие по поръчка (orders, agent). Настройките на фирма са `<ключ>@<фирма>` (`cKey`): sms, automation, shipping, courier:*, econt_profile, nekorekten, …; `fx` и `econt_offices` са общи. `phone_checks` е по (company_id, phone_key).
+- `users.is_owner` – собственикът на платформата: страница `/firmi/` (`/api/companies`) – нова фирма с първия ѝ потребител, преименуване, спиране (спряна фирма не може да влиза). Той не вижда поръчките на другите фирми.
+
 ## Незавършени поръчки
 
 - Ред `<script src="https://mitko-poruchki.netlify.app/c.js" defer></script>` в ConvertBuilder (до кода на Middleware). `public/c.js` чете полетата `name`, `shippingPhone`, `shippingCity`, `shippingAddress`, редовете на `.cart-table` и `.grand-total-wrapper` и ги праща с `sendBeacon` (text/plain, без preflight) към `POST /api/collect` (`collect.mts`) 2 s след писане и при напускане. Без имейл, пароли и плащане.
@@ -72,7 +79,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 39 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 41 теста, сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

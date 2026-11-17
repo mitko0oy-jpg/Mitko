@@ -3,6 +3,7 @@
 // The shop's order number is `label` in Middleware.
 // Env: MW_TOKEN, MW_TENANT, MW_STORES = {"bg": "<Middleware store id>", ...}
 import { getSetting, q, setSetting } from "./db.mts";
+import { cKey, companyId, hasCompany, ENV_COMPANY } from "./tenant.mts";
 import { env } from "./http.mts";
 import { courierOf } from "./cb.mts";
 
@@ -24,7 +25,9 @@ export function mwConfig() {
   }
   const token = env("MW_TOKEN") || "";
   const tenant = env("MW_TENANT") || "";
-  return { enabled: Boolean(token && tenant && Object.keys(stores).length), token, tenant, stores };
+  // Middleware is Mitko's: only company 1 reads from it.
+  const mine = !hasCompany() || companyId() === ENV_COMPANY;
+  return { enabled: mine && Boolean(token && tenant && Object.keys(stores).length), token, tenant, stores };
 }
 
 export type MwOrder = { label: string; status: string; trackingNo: string | null; courier: string | null; trackingUrl: string | null; updatedAt: number | null };
@@ -84,7 +87,7 @@ export async function pullMiddleware(deadline: number): Promise<{ enabled: boole
   const cfg = mwConfig();
   if (!cfg.enabled) return { enabled: false, seen: 0, matched: 0 };
   const started = Date.now();
-  const cursor = (await getSetting<{ since: number }>("mw_cursor"))?.since || started - 60 * 86400000;
+  const cursor = (await getSetting<{ since: number }>(cKey("mw_cursor")))?.since || started - 60 * 86400000;
   let seen = 0;
   let matched = 0;
   let complete = true;
@@ -109,6 +112,6 @@ export async function pullMiddleware(deadline: number): Promise<{ enabled: boole
     return { enabled: true, seen, matched, error: e.message };
   }
   // Only move the cursor when every store was read to the end.
-  if (complete) await setSetting("mw_cursor", { since: started - 5 * 60000 });
+  if (complete) await setSetting(cKey("mw_cursor"), { since: started - 5 * 60000 });
   return { enabled: true, seen, matched };
 }

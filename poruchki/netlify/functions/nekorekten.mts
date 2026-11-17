@@ -1,6 +1,7 @@
 // nekorekten.com from the app: settings (owner), check a phone now, send a report about an order.
 import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
+import { companyId } from "../lib/tenant.mts";
 import { hit, one } from "../lib/db.mts";
 import { addEvent } from "../lib/edit.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
@@ -10,7 +11,7 @@ const publicSettings = (s: Awaited<ReturnType<typeof nekSettings>>) => ({ config
 
 async function orderFor(id: unknown) {
   const n = Number(id);
-  const o = Number.isSafeInteger(n) && n > 0 ? await one<any>("SELECT id, phone, customer_name, order_no FROM orders WHERE id = $1", [n]) : null;
+  const o = Number.isSafeInteger(n) && n > 0 ? await one<any>("SELECT o.id, o.phone, o.customer_name, o.order_no FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1 AND s.company_id = $2", [n, companyId()]) : null;
   if (!o) throw notFound("Няма такава поръчка.");
   if (!o.phone) throw bad("phone", "Поръчката няма телефон.");
   return o;

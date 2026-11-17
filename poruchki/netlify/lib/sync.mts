@@ -4,6 +4,7 @@
 // Webhooks (order_created / order_updated) bring changes in between runs.
 import { cbSites, listOrders, PAGE, type Site } from "./cb.mts";
 import { q, logJob } from "./db.mts";
+import { companyId, withCompany, ENV_COMPANY } from "./tenant.mts";
 import { getRates, refreshRates, type Rates } from "./fx.mts";
 import { pullMiddleware } from "./mw.mts";
 import { syncAllProducts } from "./products.mts";
@@ -98,11 +99,18 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   // Unfinished orders are kept 30 days.
   await purgeLeads().catch((e) => console.error("purge leads", e.message));
 
-  // 4) Middleware, while it still makes the waybills.
-  const mw = Date.now() < deadline - 2000 ? await pullMiddleware(deadline - 1000) : { enabled: true, skipped: true };
+  const companies = [...new Set(shops.map((s) => Number(s.company_id)))];
 
-  // 5) nekorekten.com for the new Bulgarian phones (a few per run).
-  const nekorekten = Date.now() < deadline - 2000 ? await runNekChecks(deadline - 1000).catch((e) => ({ error: e.message })) : { skipped: "time" };
+  // 4) Middleware (company 1's), while it still makes the waybills.
+  const mw =
+    companies.includes(ENV_COMPANY) && Date.now() < deadline - 2000 ? await withCompany(ENV_COMPANY, () => pullMiddleware(deadline - 1000)) : { enabled: true, skipped: true };
+
+  // 5) nekorekten.com for the new Bulgarian phones (a few per run), with each company's own key.
+  const nekorekten: Record<number, unknown> = {};
+  for (const company of companies) {
+    if (Date.now() > deadline - 2000) break;
+    nekorekten[company] = await withCompany(company, () => runNekChecks(deadline - 1000)).catch((e) => ({ error: e.message }));
+  }
 
   const info = { ...c, shops: shops.length, errors, mw, products, nekorekten };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
@@ -113,5 +121,5 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
 export async function startHistory(months: number) {
   const now = Math.floor(Date.now() / 1000);
   const from = now - Math.max(1, Math.min(36, months)) * 30 * DAY;
-  await q("UPDATE shops SET backfill = $1 WHERE active", [JSON.stringify({ from, to: now, skip: 0 })]);
+  await q("UPDATE shops SET backfill = $1 WHERE active AND company_id = $2", [JSON.stringify({ from, to: now, skip: 0 }), companyId()]);
 }

@@ -13,7 +13,7 @@ export default handle(async (req, ctx) => {
   if (req.method === "GET" && action === "me") {
     const user = await getUser(req);
     const any = user ? null : await one("SELECT 1 FROM users LIMIT 1");
-    return json({ user: user && { name: user.name, email: user.email, role: user.role }, needsSetup: !user && !any });
+    return json({ user: user && { name: user.name, email: user.email, role: user.role, company: user.companyName, owner: user.owner }, needsSetup: !user && !any });
   }
 
   if (req.method !== "POST") throw notFound();
@@ -33,7 +33,8 @@ export default handle(async (req, ctx) => {
     const id = await tx(async (t) => {
       const exists = await t("SELECT 1 FROM users LIMIT 1");
       if (exists.length) throw forbidden("Вече има профил. Влез с него.");
-      const [u] = await t<{ id: number }>("INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, 'admin') RETURNING id", [email, hash, name]);
+      // The first account owns the platform and works in company 1 (where the Netlify settings belong).
+      const [u] = await t<{ id: number }>("INSERT INTO users (email, password_hash, name, role, company_id, is_owner) VALUES ($1, $2, $3, 'admin', 1, true) RETURNING id", [email, hash, name]);
       return Number(u.id);
     });
     return json({ ok: true }, 200, { "set-cookie": await createSession(req, id) });

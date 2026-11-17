@@ -3,6 +3,7 @@
 import { normalize } from "./cb.mts";
 import { sofiaDay } from "./dates.mts";
 import { one, q } from "./db.mts";
+import { companyId } from "./tenant.mts";
 import { addEvent, cleanItems } from "./edit.mts";
 import { getRates, rateFor } from "./fx.mts";
 import { HttpError } from "./http.mts";
@@ -87,7 +88,7 @@ export async function editContact(id: number, input: any, userId: number | null,
 
 /** A new order made here (by hand, duplicated, or taken over the phone). */
 export async function createOrder(input: any, opts: { source: "manual" | "phone"; userId: number | null; who: string | null; by: string }) {
-  const shop = await one<any>("SELECT id, currency FROM shops WHERE id = $1", [s(input?.shop, 20)]);
+  const shop = await one<any>("SELECT id, currency FROM shops WHERE id = $1 AND company_id = $2", [s(input?.shop, 20), companyId()]);
   if (!shop) throw fail("Избери магазин.");
   const c = cleanContact(input, undefined, opts.source === "phone");
   const items = cleanItems(input?.items);

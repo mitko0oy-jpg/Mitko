@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
+import { companyId } from "../lib/tenant.mts";
 import { hit, one } from "../lib/db.mts";
 import { addEvent } from "../lib/edit.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
@@ -8,7 +9,7 @@ import { fillTemplate, PRICE_PER_PART, saveSmsSettings, sendSms, smsParts, smsPr
 async function order(id: unknown) {
   const n = Number(id);
   if (!Number.isSafeInteger(n) || n <= 0) throw bad("order", "Няма такава поръчка.");
-  const o = await one<any>("SELECT o.*, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1", [n]);
+  const o = await one<any>("SELECT o.*, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1 AND s.company_id = $2", [n, companyId()]);
   if (!o) throw notFound("Няма такава поръчка.");
   o.total = Number(o.total);
   return o;

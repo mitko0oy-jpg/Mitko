@@ -1,5 +1,7 @@
 // Small helpers shared by all API functions: JSON responses, errors, cookies, body parsing.
 
+import { runRequest } from "./ctx.mts";
+
 export class HttpError extends Error {
   status: number;
   code: string;
@@ -25,8 +27,11 @@ export function json(data: unknown, status = 200, headers: Record<string, string
 
 // Wraps a handler so thrown HttpErrors become JSON responses and anything else a generic 500.
 export function handle(fn: (req: Request, ctx: any) => Promise<Response>) {
-  return async (req: Request, ctx: any): Promise<Response> => {
-    try {
+  return (req: Request, ctx: any): Promise<Response> => runRequest(() => run(fn, req, ctx));
+}
+
+async function run(fn: (req: Request, ctx: any) => Promise<Response>, req: Request, ctx: any): Promise<Response> {
+  try {
       if (req.method !== "GET" && req.method !== "HEAD") {
         // JSON-only POSTs: a cross-site HTML form cannot send this content type without CORS.
         const ct = req.headers.get("content-type") || "";
@@ -38,7 +43,6 @@ export function handle(fn: (req: Request, ctx: any) => Promise<Response>) {
       console.error(e);
       return json({ error: "server_error", message: "Нещо се обърка. Опитай пак след малко." }, 500);
     }
-  };
 }
 
 export async function body<T = any>(req: Request, maxBytes = 64_000): Promise<T> {

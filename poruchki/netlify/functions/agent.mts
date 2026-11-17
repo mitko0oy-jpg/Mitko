@@ -7,6 +7,8 @@ import { addNote, createOrder } from "../lib/manage.mts";
 import { catalog } from "../lib/products.mts";
 import { getAutomation } from "../lib/agent.mts";
 import { createFor, matchOffice, searchOffices } from "../lib/waybills.mts";
+import { one } from "../lib/db.mts";
+import { ownOrder } from "../lib/tenant.mts";
 
 const idOf = (v: unknown) => {
   const n = Number(v);
@@ -71,6 +73,7 @@ export default handle(async (req) => {
 
   const id = idOf(idStr);
   if (what !== "orders") throw notFound();
+  await ownOrder(one, id);
   if (action === "calling") {
     await markCalling(id, Number(b.attempt) || 1);
     return json({ ok: true });

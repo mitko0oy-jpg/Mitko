@@ -3,6 +3,7 @@
 // phone that comes later marks the lead as ordered (computed when listing, nothing to keep in sync).
 import { cbSites } from "./cb.mts";
 import { one, q } from "./db.mts";
+import { inCompany } from "./tenant.mts";
 
 const clean = (v: unknown, max: number) =>
   typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "";
@@ -62,7 +63,8 @@ export async function saveLead(shop: string, l: Lead) {
 // The first order with the same phone placed after the form was opened (30 min slack for clocks and retries).
 const MATCH = `LEFT JOIN LATERAL (
     SELECT o.id, o.order_no, o.ordered_at FROM orders o
-    WHERE right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9)
+    WHERE o.shop IN (SELECT id FROM shops WHERE company_id = (SELECT company_id FROM shops WHERE id = l.shop))
+      AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9)
       AND o.ordered_at >= l.first_at - interval '30 minutes'
     ORDER BY o.ordered_at LIMIT 1) m ON true`;
 
@@ -87,27 +89,28 @@ export async function listLeads(tab: string, shop = "") {
     `SELECT l.id, l.shop, coalesce(s.label, l.shop) AS shop_label, l.name, l.phone, l.city, l.address, l.cart, l.total, l.page,
             l.first_at, l.last_at, l.status, l.last_at > now() - interval '15 minutes' AS typing,
             coalesce(l.order_id, m.id) AS order_id, coalesce(lo.order_no, m.order_no) AS order_no,
-            (SELECT count(*) FROM orders x WHERE right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
+            (SELECT count(*) FROM orders x WHERE ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
        FROM leads l LEFT JOIN shops s ON s.id = l.shop
        ${MATCH}
        LEFT JOIN orders lo ON lo.id = l.order_id
-      WHERE ${where}${shopSql} AND l.last_at > now() - interval '30 days'
+      WHERE ${where}${shopSql} AND ${inCompany("l.shop")} AND l.last_at > now() - interval '30 days'
       ORDER BY l.last_at DESC LIMIT 300`,
     params,
   );
   const counts = await one<any>(
     `SELECT count(*) FILTER (WHERE ${TABS.open})::int AS open, count(*) FILTER (WHERE ${TABS.ordered})::int AS ordered,
             count(*) FILTER (WHERE ${TABS.hidden})::int AS hidden, count(*)::int AS all
-       FROM leads l ${MATCH} WHERE l.last_at > now() - interval '30 days'${shopSql}`,
+       FROM leads l ${MATCH} WHERE ${inCompany("l.shop")} AND l.last_at > now() - interval '30 days'${shopSql}`,
     params,
   );
   return { leads: rows, counts };
 }
 
 export async function setLead(id: number, action: string, orderId?: number) {
-  if (action === "dismiss") return q("UPDATE leads SET status = 'dismissed' WHERE id = $1", [id]);
-  if (action === "restore") return q("UPDATE leads SET status = 'open' WHERE id = $1", [id]);
-  if (action === "ordered" && orderId) return q("UPDATE leads SET order_id = $2 WHERE id = $1", [id, orderId]);
+  const mine = inCompany();
+  if (action === "dismiss") return q(`UPDATE leads SET status = 'dismissed' WHERE id = $1 AND ${mine}`, [id]);
+  if (action === "restore") return q(`UPDATE leads SET status = 'open' WHERE id = $1 AND ${mine}`, [id]);
+  if (action === "ordered" && orderId) return q(`UPDATE leads SET order_id = $2 WHERE id = $1 AND ${mine} AND $2 IN (SELECT id FROM orders WHERE ${mine})`, [id, orderId]);
   return null;
 }
 
@@ -115,7 +118,7 @@ export async function setLead(id: number, action: string, orderId?: number) {
 export async function countOpenLeads(shop = "") {
   const r = await one<{ n: number }>(
     `SELECT count(*)::int AS n FROM leads l ${MATCH}
-      WHERE ${TABS.open} AND l.last_at > now() - interval '30 days'${shop ? " AND l.shop = $1" : ""}`,
+      WHERE ${TABS.open} AND ${inCompany("l.shop")} AND l.last_at > now() - interval '30 days'${shop ? " AND l.shop = $1" : ""}`,
     shop ? [shop] : [],
   );
   return r?.n || 0;

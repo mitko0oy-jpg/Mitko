@@ -71,7 +71,14 @@ function confirmCell(o) {
 
 const canShip = (o) => !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 // "ekont" (as Middleware writes it) is Econt.
-const courierOf = (o) => ({ ekont: "econt", spidi: "speedy" })[String(o.courier || o.delivery?.courier || "").toLowerCase()] || String(o.courier || o.delivery?.courier || "").toLowerCase();
+const COURIER_ALIAS = { ekont: "econt", spidi: "speedy", "dpd-courier": "speedy", dpd: "speedy" };
+function courierOf(o) {
+  const c = String(o.courier || o.delivery?.courier || "").toLowerCase();
+  if (c) return COURIER_ALIAS[c] || c;
+  // Address orders often name the courier only in the shipping method.
+  const n = String(o.shipping_name || "").toLowerCase();
+  return /спиди|speedy/.test(n) ? "speedy" : /еконт|econt/.test(n) ? "econt" : "";
+}
 const canCancel = (o) => o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage);
 // A Bulgarian mobile or landline number: +359 / 0 and 8–9 digits.
 const badPhone = (o) => o.region === "bg" && o.phone && !/^(?:\+?359|0)?[2-9]\d{7,8}$/.test(String(o.phone).replace(/[\s\-()/.]/g, ""));
@@ -101,7 +108,11 @@ function clientCell(o) {
     : "";
   return `<div class="cg">
     <span class="risk">${risky ? `<span class="ci bad" title="${esc(why)}">!</span>` : ""}</span>
-    <span class="cside"><span class="pill n" title="${o.other_orders ? `Още ${o.other_orders} поръчки от този телефон` : "Първа поръчка от този телефон"}">${(o.other_orders || 0) + 1}</span>${pop}</span>
+    <span class="cside">${
+      o.other_orders && o.phone
+        ? `<a class="pill n more" href="/poruchki/?tab=&q=${encodeURIComponent(String(o.phone).replace(/\D/g, "").slice(-9))}" title="Още ${o.other_orders} поръчки от този телефон – натисни, за да ги видиш">${o.other_orders + 1}</a>`
+        : `<span class="pill n" title="Първа поръчка от този телефон">1</span>`
+    }${pop}</span>
     <span class="cmain"><a class="cname2" href="/poruchka/?id=${o.id}">${esc(o.customer_name || "–")}</a>
       <span class="ph">${o.phone ? `<a href="tel:${esc(o.phone)}">${esc(o.phone)}</a>` : ""}${badPhone(o) ? `<span class="bad" title="Телефонът не прилича на български номер">✕</span>` : ""}</span></span>
   </div>`;

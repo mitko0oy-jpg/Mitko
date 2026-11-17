@@ -5,6 +5,7 @@
 //   Econt  – by the receiver's phone and the COD amount (see match.mts).
 import { speedyState, type Creds } from "./couriers.mts";
 import { q } from "./db.mts";
+import { companyId } from "./tenant.mts";
 import { phoneKey } from "./match.mts";
 import { env } from "./http.mts";
 
@@ -62,7 +63,7 @@ export async function lookupSpeedy(creds: Creds | undefined, deadline: number) {
   if (!creds) return { checked: 0, found: 0 };
   const rows = await q<any>(
     `SELECT o.id, o.order_no, o.phone, o.ordered_at FROM orders o JOIN shops s ON s.id = o.shop
-      WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND o.delivery->>'courier' = 'speedy'
+      WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND s.company_id = ${companyId()} AND o.delivery->>'courier' = 'speedy'
         AND o.ordered_at > now() - interval '20 days' AND o.ordered_at < now() - interval '15 minutes'
         AND (o.lookup_at IS NULL OR o.lookup_at < now() - interval '2 hours')
       ORDER BY o.lookup_at NULLS FIRST, o.ordered_at DESC LIMIT 300`,

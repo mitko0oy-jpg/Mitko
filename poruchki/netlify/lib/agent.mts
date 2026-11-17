@@ -3,6 +3,7 @@
 // After an AI confirmation the platform makes the waybill on its own, and the print page prints it.
 import { timingSafeEqual } from "node:crypto";
 import { getSetting, one, q, setSetting } from "./db.mts";
+import { cKey, enterCompany, ENV_COMPANY, companyId } from "./tenant.mts";
 import { editOrder, addEvent } from "./edit.mts";
 import { env, forbidden } from "./http.mts";
 import { addNote, confirmOrder } from "./manage.mts";
@@ -15,16 +16,18 @@ export function requireAgent(req: Request) {
   const want = env("AGENT_TOKEN") || "";
   const got = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (want.length < 32 || got.length !== want.length || !timingSafeEqual(Buffer.from(got), Buffer.from(want))) throw forbidden();
+  // The phone agent works for the company whose Netlify settings it uses.
+  enterCompany(ENV_COMPANY);
 }
 
 export type Automation = { autoWaybill: boolean };
 export async function getAutomation(): Promise<Automation> {
-  return { autoWaybill: true, ...((await getSetting<Automation>("automation")) || {}) };
+  return { autoWaybill: true, ...((await getSetting<Automation>(cKey("automation"))) || {}) };
 }
 export async function saveAutomation(input: any): Promise<Automation> {
   const cur = await getAutomation();
   const next = { ...cur, ...(typeof input?.autoWaybill === "boolean" ? { autoWaybill: input.autoWaybill } : {}) };
-  await setSetting("automation", next);
+  await setSetting(cKey("automation"), next);
   return next;
 }
 
@@ -58,13 +61,13 @@ export function forAgent(o: any) {
   };
 }
 
-const SELECT = "SELECT o.*, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop";
+const SELECT = () => `SELECT o.*, s.label AS shop_label FROM orders o JOIN shops s ON s.id = o.shop WHERE s.company_id = ${companyId()}`;
 
 /** New orders of the given shops, and any order someone sent for "AI потвърждение". */
 export async function ordersToCall(shops: string[], since: string) {
   const rows = await q<any>(
-    `${SELECT}
-      WHERE o.confirmed_at IS NULL AND o.archived_at IS NULL AND o.tracking_no IS NULL AND o.stage = 'new' AND o.source <> 'phone' AND o.phone <> ''
+    `${SELECT()}
+        AND o.confirmed_at IS NULL AND o.archived_at IS NULL AND o.tracking_no IS NULL AND o.stage = 'new' AND o.source <> 'phone' AND o.phone <> ''
         AND ((o.shop = ANY($1) AND o.ordered_at >= $2 AND o.ordered_at > now() - interval '48 hours')
              OR (o.call->>'state' = 'requested' AND o.ordered_at > now() - interval '14 days'))
       ORDER BY o.ordered_at LIMIT 50`,
@@ -74,14 +77,14 @@ export async function ordersToCall(shops: string[], since: string) {
 }
 
 export async function orderForAgent(id: number) {
-  const o = await one<any>(`${SELECT} WHERE o.id = $1`, [id]);
+  const o = await one<any>(`${SELECT()} AND o.id = $1`, [id]);
   return o ? forAgent(o) : null;
 }
 
 export async function ordersByPhone(phone: string, days = 45) {
   const key = phoneKey(phone);
   if (key.length < 9) return [];
-  const rows = await q<any>(`${SELECT} WHERE right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = $1 AND o.ordered_at > now() - make_interval(days => $2) ORDER BY o.ordered_at DESC LIMIT 10`, [key, days]);
+  const rows = await q<any>(`${SELECT()} AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = $1 AND o.ordered_at > now() - make_interval(days => $2) ORDER BY o.ordered_at DESC LIMIT 10`, [key, days]);
   return rows.map(forAgent);
 }
 

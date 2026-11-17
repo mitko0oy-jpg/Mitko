@@ -22,7 +22,7 @@ const pick = <T,>(a: T[]) => a[Math.floor(rnd() * a.length)];
 
 export async function seedDemo() {
   for (const [i, s] of SHOPS.entries()) {
-    await q("INSERT INTO shops (id, label, domain, region, currency, position, synced_at, full_sync_at) VALUES ($1, $2, $3, $4, $5, $6, now(), now()) ON CONFLICT (id) DO NOTHING", [
+    await q("INSERT INTO shops (id, label, domain, region, currency, position, synced_at, full_sync_at, company_id) VALUES ($1, $2, $3, $4, $5, $6, now(), now(), 1) ON CONFLICT (id) DO NOTHING", [
       s.id, s.label, `${s.id}.example`, s.region, s.currency, i,
     ]);
   }
@@ -80,12 +80,12 @@ export async function seedDemo() {
       );
     }
   }
-  await q("INSERT INTO users (email, password_hash, name, role) VALUES ('demo@local', $1, 'Демо', 'admin') ON CONFLICT (email) DO NOTHING", [await hashPassword("demo-demo-demo")]);
+  await q("INSERT INTO users (email, password_hash, name, role, company_id, is_owner) VALUES ('demo@local', $1, 'Демо', 'admin', 1, true) ON CONFLICT (email) DO NOTHING", [await hashPassword("demo-demo-demo")]);
   await q("INSERT INTO job_log (job, ok, info) VALUES ('sync', true, '{\"demo\": true}'), ('track', true, '{\"demo\": true}')");
   // nekorekten.com marks on a few returned customers (invented reports).
   await q(
-    `INSERT INTO phone_checks (phone_key, phone, count, reports)
-     SELECT DISTINCT right(regexp_replace(phone, '\\D', '', 'g'), 9), phone, 2,
+    `INSERT INTO phone_checks (company_id, phone_key, phone, count, reports)
+     SELECT DISTINCT 1, right(regexp_replace(phone, '\\D', '', 'g'), 9), phone, 2,
             '[{"id":1,"text":"Не взе пратката от офиса (измислен пример)","date":"2026-10-01T10:15:00+03:00","name":"","city":"София"},{"id":2,"text":"Отказа на място (измислен пример)","date":"2026-09-12T12:00:00+03:00","name":"","city":""}]'::jsonb
        FROM orders WHERE stage = 'returned' AND phone <> '' LIMIT 6
      ON CONFLICT DO NOTHING`,

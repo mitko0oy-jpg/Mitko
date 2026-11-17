@@ -5,6 +5,7 @@ import { cbSite, getOrder } from "../lib/cb.mts";
 import { trackingUrl } from "../lib/couriers.mts";
 import { isDay } from "../lib/dates.mts";
 import { getSetting, one, q, setSetting } from "../lib/db.mts";
+import { companyId, ownOrder } from "../lib/tenant.mts";
 import { countOpenLeads } from "../lib/leads.mts";
 import { getRates } from "../lib/fx.mts";
 import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
@@ -43,7 +44,8 @@ const SORTS: Record<string, string> = {
  */
 function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boolean; sent?: boolean } = {}) {
   const params: unknown[] = [];
-  const parts = ["s.active"];
+  // Only this company's shops – the first thing in every list, count and export.
+  const parts = ["s.active", `s.company_id = ${companyId()}`];
   const add = (sql: string, v: unknown) => {
     params.push(v);
     parts.push(sql.replaceAll("?", `$${params.length}`));
@@ -69,7 +71,7 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
   if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
-  if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9) AND pc2.count > 0)");
+  if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.company_id = s.company_id AND pc2.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9) AND pc2.count > 0)");
   if (u.get("sent") === "today" && !skip.sent) parts.push(SENT_TODAY);
   const product = str(u.get("product"), 200);
   if (product && !skip.product) add("EXISTS (SELECT 1 FROM jsonb_array_elements(o.items) i WHERE i->>'name' = ?)", product);
@@ -112,11 +114,12 @@ async function list(u: URLSearchParams) {
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
               pc.count AS nek_count, CASE WHEN pc.count > 0 THEN pc.reports END AS nek_reports
          FROM orders o JOIN shops s ON s.id = o.shop
-         LEFT JOIN phone_checks pc ON pc.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9)
+         LEFT JOIN phone_checks pc ON pc.company_id = s.company_id AND pc.phone_key = right(regexp_replace(o.phone, '\D', '', 'g'), 9)
          LEFT JOIN LATERAL (
            SELECT count(*)::int AS n, count(*) FILTER (WHERE x.stage = 'returned')::int AS ret
              FROM orders x
-            WHERE o.phone <> '' AND x.id <> o.id AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
+            WHERE o.phone <> '' AND x.id <> o.id AND x.shop IN (SELECT id FROM shops WHERE company_id = s.company_id)
+              AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
          ) h ON true
         WHERE ${w.sql}
         ORDER BY ${order}
@@ -211,15 +214,15 @@ async function exportCsv(u: URLSearchParams) {
 
 async function detail(id: number) {
   const o = await one<any>(
-    `SELECT o.*, s.label AS shop_label, s.domain AS shop_domain, s.region FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1`,
-    [id],
+    `SELECT o.*, s.label AS shop_label, s.domain AS shop_domain, s.region FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1 AND s.company_id = $2`,
+    [id, companyId()],
   );
   if (!o) throw notFound("Няма такава поръчка.");
   const raw = o.raw || {};
   const { raw: _r, ...rest } = o;
   const nek = await one<any>(
-    "SELECT checked_at, count, reports, error FROM phone_checks WHERE phone_key = right(regexp_replace($1, '\\D', '', 'g'), 9)",
-    [o.phone || ""],
+    "SELECT checked_at, count, reports, error FROM phone_checks WHERE company_id = $2 AND phone_key = right(regexp_replace($1, '\\D', '', 'g'), 9)",
+    [o.phone || "", companyId()],
   );
   const events = await q<any>(
     `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
@@ -278,6 +281,8 @@ export default handle(async (req) => {
   }
   const id = Number(idStr);
   if (!Number.isSafeInteger(id) || id <= 0) throw notFound();
+  // Every action on an order: only the company's own.
+  await ownOrder(one, id);
   if (req.method === "GET" && !action) return json(await detail(id));
 
   // Correct products, quantities, prices, shipping or discount (kept here; the shop's API cannot change them).

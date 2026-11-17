@@ -1,5 +1,6 @@
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { one, q } from "./db.mts";
+import { enterCompany } from "./tenant.mts";
 import { cookieHeader, forbidden, getCookie, unauthorized } from "./http.mts";
 
 const COOKIE = "pr_s";
@@ -44,23 +45,28 @@ export async function destroySession(req: Request): Promise<string> {
   return cookieHeader(COOKIE, "", 0, new URL(req.url).protocol === "https:");
 }
 
-export type User = { id: number; email: string; name: string; role: "admin" | "staff" };
+export type User = { id: number; email: string; name: string; role: "admin" | "staff"; company: number; companyName: string; owner: boolean };
 
 export async function getUser(req: Request): Promise<User | null> {
   const token = getCookie(req, COOKIE);
   if (!token || token.length > 100) return null;
   const row = await one<any>(
-    `SELECT u.id, u.email, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.token_hash = $1 AND s.expires_at > now()`,
+    `SELECT u.id, u.email, u.name, u.role, u.company_id, u.is_owner, c.name AS company_name
+       FROM sessions s JOIN users u ON u.id = s.user_id JOIN companies c ON c.id = u.company_id
+      WHERE s.token_hash = $1 AND s.expires_at > now() AND c.archived_at IS NULL`,
     [sha256(token)],
   );
-  return row ? { id: Number(row.id), email: row.email, name: row.name, role: row.role } : null;
+  return row
+    ? { id: Number(row.id), email: row.email, name: row.name, role: row.role, company: Number(row.company_id), companyName: row.company_name, owner: Boolean(row.is_owner) }
+    : null;
 }
 
 export async function requireUser(req: Request, roles: User["role"][] = ["admin", "staff"]): Promise<User> {
   const user = await getUser(req);
   if (!user) throw unauthorized();
   if (!roles.includes(user.role)) throw forbidden("Само собственикът може да прави това.");
+  // Everything after this works only with this person's company.
+  enterCompany(user.company);
   return user;
 }
 

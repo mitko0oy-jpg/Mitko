@@ -2,6 +2,7 @@
 // The token is typed in Настройки (kept encrypted) or set as SMSAPI_TOKEN in the Netlify env.
 // Price ~0.054 € per part; a part is 160 Latin characters or 70 with Cyrillic (153 / 67 when longer).
 import { getSetting, setSetting } from "./db.mts";
+import { cKey, companyId, ENV_COMPANY } from "./tenant.mts";
 import { env, HttpError } from "./http.mts";
 import { seal, unseal } from "./secret.mts";
 
@@ -24,8 +25,8 @@ export const DEFAULT_TEMPLATES: Record<string, { label: string; text: string }> 
 type Stored = { sealed?: string; sender?: string; templates?: Record<string, string>; latin?: boolean; at?: string };
 
 export async function smsSettings() {
-  const s = (await getSetting<Stored>("sms")) || {};
-  let token = env("SMSAPI_TOKEN") || "";
+  const s = (await getSetting<Stored>(cKey("sms"))) || {};
+  let token = companyId() === ENV_COMPANY ? env("SMSAPI_TOKEN") || "" : "";
   let source: "app" | "env" | null = token ? "env" : null;
   if (s.sealed) {
     try {
@@ -36,11 +37,11 @@ export async function smsSettings() {
     }
   }
   const templates = Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k, t]) => [k, { label: t.label, text: s.templates?.[k] || t.text }]));
-  return { token, source, sender: s.sender || env("SMSAPI_SENDER") || "", templates, latin: s.latin ?? false };
+  return { token, source, sender: s.sender || (companyId() === ENV_COMPANY ? env("SMSAPI_SENDER") : "") || "", templates, latin: s.latin ?? false };
 }
 
 export async function saveSmsSettings(input: any) {
-  const cur = (await getSetting<Stored>("sms")) || {};
+  const cur = (await getSetting<Stored>(cKey("sms"))) || {};
   const next: Stored = { ...cur, at: new Date().toISOString() };
   if (typeof input?.token === "string" && input.token.trim()) next.sealed = seal(input.token.trim());
   if (input?.removeToken === true) delete next.sealed;
@@ -57,7 +58,7 @@ export async function saveSmsSettings(input: any) {
     }
   }
   if (typeof input?.latin === "boolean") next.latin = input.latin;
-  await setSetting("sms", next);
+  await setSetting(cKey("sms"), next);
   return smsSettings();
 }
 

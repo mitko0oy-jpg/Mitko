@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Фирми – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="row spread">
+      <div class="row"><h1>Фирми</h1><span class="muted small" id="count"></span></div>
+    </div>
+    <p class="muted small" style="margin:0">Всяка фирма работи отделно: свои магазини, куриери, SMS, настройки и поръчки. Хората от една фирма не виждат другите – и ти не виждаш техните поръчки. Тук само създаваш фирма и първия ѝ потребител; той после добавя магазините и колегите си.</p>
+    <section class="card">
+      <h2>Нова фирма</h2>
+      <form class="grid2" id="newCompany">
+        <label class="form">Име на фирмата<input type="text" name="name" required maxlength="120" placeholder="напр. Иван Петров ЕООД"></label>
+        <label class="form">Име на човека<input type="text" name="userName" maxlength="80" placeholder="напр. Иван Петров"></label>
+        <label class="form">Имейл за вход<input name="email" type="email" required autocomplete="off"></label>
+        <label class="form">Първоначална парола (поне 10 знака)<input name="password" type="text" required minlength="10" autocomplete="off"></label>
+        <div class="row"><button class="btn primary" id="create">Създай фирмата</button><span class="small" id="msg"></span></div>
+      </form>
+      <p class="muted small">Изпрати паролата на човека лично (по телефон или в чат), а не в този сайт. Той я сменя, като влезе.</p>
+    </section>
+    <section class="card">
+      <h2>Всички фирми</h2>
+      <div class="scroll"><table class="tbl" id="list"></table></div>
+    </section>
+  </main>
+  <script type="module" src="/assets/firmi.js"></script>
+</body>
+</html>

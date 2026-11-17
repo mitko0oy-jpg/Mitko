@@ -2,6 +2,7 @@
 // Every order is in exactly one stage, so the stages always add up to the total.
 import { addDays, sofiaDay } from "./dates.mts";
 import { one, q } from "./db.mts";
+import { companyId } from "./tenant.mts";
 import { STAGES } from "./orders.mts";
 import { countOpenLeads } from "./leads.mts";
 import { printQueue } from "./waybills.mts";
@@ -11,7 +12,7 @@ type Cell = { n: number; sum: number };
 
 function where(f: Filter, firstParam = 1) {
   const params: unknown[] = [f.from, f.to];
-  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active"];
+  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active", `s.company_id = ${companyId()}`];
   if (f.region === "bg" || f.region === "abroad") {
     params.push(f.region);
     parts.push(`s.region = $${firstParam + params.length - 1}`);
@@ -122,12 +123,12 @@ export async function summary(region?: string) {
     regionSql = ` AND s.region = $${params.length}`;
   }
   params.push(lastMonthStart);
-  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND o.day >= $${params.length}${regionSql}`, params);
+  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.day >= $${params.length}${regionSql}`, params);
   const out: Record<string, any> = {};
   for (const [k, [from, to]] of Object.entries(periods)) {
     out[k] = { from, to, orders: row?.[`${k}_n`] || 0, sum: round(row?.[`${k}_sum`] || 0), delivered: row?.[`${k}_dn`] || 0, deliveredSum: round(row?.[`${k}_dsum`] || 0), canceled: row?.[`${k}_cn`] || 0 };
   }
-  const sync = await one<any>("SELECT max(synced_at) AS at FROM shops WHERE active");
+  const sync = await one<any>("SELECT max(synced_at) AS at FROM shops WHERE active AND company_id = $1", [companyId()]);
   return { today, periods: out, syncedAt: sync?.at || null };
 }
 
@@ -139,7 +140,7 @@ export async function alerts() {
               count(*) FILTER (WHERE o.confirmed_at IS NULL AND o.call->>'state' IN ('needs_human', 'change_requested', 'callback_later', 'wrong_person', 'wrong_number', 'canceled', 'gave_up'))::int AS ai,
               count(*) FILTER (WHERE o.confirmed_at IS NOT NULL AND o.tracking_no IS NULL AND s.region = 'bg')::int AS to_ship
          FROM orders o JOIN shops s ON s.id = o.shop
-        WHERE s.active AND o.stage = 'new' AND o.archived_at IS NULL AND o.ordered_at > now() - interval '30 days'`,
+        WHERE s.active AND s.company_id = ${companyId()} AND o.stage = 'new' AND o.archived_at IS NULL AND o.ordered_at > now() - interval '30 days'`,
     ),
     countOpenLeads().catch(() => 0),
     printQueue().then((r) => r.length).catch(() => 0),

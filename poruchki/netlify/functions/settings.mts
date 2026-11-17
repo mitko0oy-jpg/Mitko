@@ -4,6 +4,7 @@ import { hashPassword, requireUser, validEmail } from "../lib/auth.mts";
 import { cbSite, createWebhook, deleteWebhook } from "../lib/cb.mts";
 import { COURIERS, isCourier } from "../lib/couriers.mts";
 import { one, q } from "../lib/db.mts";
+import { companyId, inCompany, ENV_COMPANY } from "../lib/tenant.mts";
 import { getRates } from "../lib/fx.mts";
 import { bad, body, env, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { mwConfig } from "../lib/mw.mts";
@@ -13,16 +14,18 @@ import { courierInfo, runTracking, saveCreds } from "../lib/track.mts";
 
 async function overview(req: Request, isAdmin: boolean) {
   const shops = await ensureShops();
-  const counts = await q<any>("SELECT shop, count(*)::int AS n, min(day)::text AS first_day FROM orders GROUP BY shop");
+  const counts = await q<any>(`SELECT shop, count(*)::int AS n, min(day)::text AS first_day FROM orders WHERE ${inCompany()} GROUP BY shop`);
   const byShop = new Map(counts.map((c) => [c.shop, c]));
-  const jobs = await q<any>(
-    `SELECT DISTINCT ON (job) job, ok, info, at FROM job_log WHERE job IN ('sync', 'track') ORDER BY job, at DESC`,
-  );
+  // The job log covers all companies: only the platform's own company sees its details.
+  const jobs =
+    companyId() === ENV_COMPANY
+      ? await q<any>(`SELECT DISTINCT ON (job) job, ok, info, at FROM job_log WHERE job IN ('sync', 'track') ORDER BY job, at DESC`)
+      : [];
   const tracked = await one<any>(
     `SELECT count(*) FILTER (WHERE tracking_no IS NOT NULL)::int AS with_no,
             count(*) FILTER (WHERE tracking_no IS NOT NULL AND tracked_at IS NOT NULL)::int AS tracked,
             count(*) FILTER (WHERE tracking_source = 'econt_match')::int AS matched
-       FROM orders WHERE ordered_at > now() - interval '60 days'`,
+       FROM orders WHERE ${inCompany()} AND ordered_at > now() - interval '60 days'`,
   );
   return {
     shops: shops.map((s) => ({
@@ -44,11 +47,12 @@ async function overview(req: Request, isAdmin: boolean) {
     })),
     couriers: await courierInfo(),
     middleware: { enabled: mwConfig().enabled },
+    company: { id: companyId() },
     jobs,
     tracked,
     fx: await getRates(),
     secretKey: (env("SECRET_KEY") || "").length >= 32,
-    users: isAdmin ? await q("SELECT id, email, name, role, created_at FROM users ORDER BY id") : [],
+    users: isAdmin ? await q("SELECT id, email, name, role, created_at FROM users WHERE company_id = $1 ORDER BY id", [companyId()]) : [],
     site: new URL(req.url).origin,
   };
 }
@@ -69,7 +73,7 @@ export default handle(async (req) => {
 
   if (what === "shop") {
     const id = str(b.id, 20);
-    const s = await one("SELECT id FROM shops WHERE id = $1", [id]);
+    const s = await one("SELECT id FROM shops WHERE id = $1 AND company_id = $2", [id, companyId()]);
     if (!s) throw notFound("Няма такъв магазин.");
     if (b.region !== undefined && !["bg", "abroad"].includes(b.region)) throw bad("region", "Невалиден регион.");
     const currency = b.currency !== undefined ? str(b.currency, 3).toUpperCase() : null;
@@ -85,7 +89,7 @@ export default handle(async (req) => {
     const id = str(b.courier, 20);
     if (!isCourier(id)) throw bad("courier", "Непознат куриер.");
     if (b.remove === true) {
-      await q("DELETE FROM settings WHERE key = $1", [`courier:${id}`]);
+      await q("DELETE FROM settings WHERE key = $1", [cKey(`courier:${id}`)]);
       return json(await overview(req, isAdmin));
     }
     const user = str(b.user, 120);
@@ -133,7 +137,7 @@ export default handle(async (req) => {
     if (arg === "delete") {
       const id = Number(b.id);
       if (id === user.id) throw bad("self", "Не можеш да изтриеш собствения си профил.");
-      await q("DELETE FROM users WHERE id = $1 AND role <> 'admin'", [id]);
+      await q("DELETE FROM users WHERE id = $1 AND role <> 'admin' AND company_id = $2", [id, companyId()]);
       return json(await overview(req, isAdmin));
     }
     const email = str(b.email, 200).toLowerCase();
@@ -143,7 +147,7 @@ export default handle(async (req) => {
     if (password.length < 10) throw bad("password", "Паролата трябва да е поне 10 знака.");
     const exists = await one("SELECT 1 FROM users WHERE email = $1", [email]);
     if (exists) throw bad("email_taken", "Вече има профил с този имейл.");
-    await q("INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, 'staff')", [email, await hashPassword(password), name]);
+    await q("INSERT INTO users (email, password_hash, name, role, company_id) VALUES ($1, $2, $3, 'staff', $4)", [email, await hashPassword(password), name, companyId()]);
     return json(await overview(req, isAdmin));
   }
 
