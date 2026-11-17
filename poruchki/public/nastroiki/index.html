@@ -37,6 +37,34 @@
       <div id="tracked" class="small muted"></div>
     </section>
 
+    <section class="card stack" id="shipCard">
+      <h2>Товарителници – подател</h2>
+      <p class="muted small">Така се създава всяка товарителница. Настроено е като в Middleware: предаваш в офис, доставката я плащаш ти, наложеният платеж е сумата на поръчката.</p>
+      <form id="ship" class="grid2">
+        <div class="form">
+          <b>Спиди</b>
+          <label>Клиент (подател)<input name="sp_clientId" inputmode="numeric"></label>
+          <label>Офис, в който предаваш (№)<input name="sp_dropoffOfficeId" inputmode="numeric" placeholder="празно = вземат от адреса"></label>
+          <label>Услуга<input name="sp_serviceId" inputmode="numeric"></label>
+          <label>Преди плащане клиентът може<select name="sp_obpd"><option value="TEST">да прегледа и тества</option><option value="OPEN">да прегледа</option><option value="">нищо</option></select></label>
+          <label>Опаковка<select name="sp_package"><option value="ENVELOPE">плик</option><option value="BOX">кутия</option></select></label>
+          <label>Тегло по подразбиране (кг)<input name="sp_weight" type="number" step="0.05" min="0.05"></label>
+          <label>ДДС група за касовата бележка<select name="sp_vatGroup"><option>А</option><option>Б</option><option>В</option><option>Г</option></select></label>
+          <label>Етикет<select name="sp_paper"><option value="A6">A6 (за етикетен принтер)</option><option value="A4">A4</option></select></label>
+        </div>
+        <div class="form">
+          <b>Еконт</b>
+          <label>Офис, в който предаваш (код)<input name="ec_senderOfficeCode" inputmode="numeric"></label>
+          <label>Тегло по подразбиране (кг)<input name="ec_weight" type="number" step="0.05" min="0.05"></label>
+          <label class="chk"><input type="checkbox" name="ec_sms"> SMS до получателя</label>
+          <label class="chk"><input type="checkbox" name="ec_agreement"> Наложен платеж по договора (по-евтино)</label>
+          <label class="chk"><input type="checkbox" name="ec_payAfterTest"> Плащане след преглед и тест</label>
+          <label class="chk"><input type="checkbox" name="ec_payAfterAccept"> Плащане след преглед</label>
+          <div><button class="btn primary" id="shipSave">Запиши</button></div>
+        </div>
+      </form>
+    </section>
+
     <section class="card stack" id="usersCard" hidden>
       <h2>Хора с достъп</h2>
       <div id="users"></div>

@@ -17,14 +17,14 @@ export const phoneKey = (p: unknown) => String(p || "").replace(/\D/g, "").slice
 export type Awb = { number: string; phone: string; cod: number; created: number };
 
 export async function econtWaybills(creds: Creds, fromDay: string, toDay: string, deadline: number): Promise<Awb[]> {
-  const base = env("ECONT_DEMO") === "1" ? "https://demo.econt.com/ee/services" : "https://ee.econt.com/services";
+  const base = env("ECONT_API_URL") || (env("ECONT_DEMO") === "1" ? "https://demo.econt.com/ee/services" : "https://ee.econt.com/services");
   const out: Awb[] = [];
   for (let page = 1; page <= 20 && Date.now() < deadline; page++) {
     const res = await fetchImpl(`${base}/Shipments/ShipmentService.getMyAWB.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Basic " + Buffer.from(`${creds.user}:${creds.pass}`).toString("base64") },
       body: JSON.stringify({ dateFrom: fromDay, dateTo: toDay, page, side: "sender" }),
-      signal: AbortSignal.timeout(Math.max(1000, Math.min(9000, deadline - Date.now()))),
+      signal: AbortSignal.timeout(Math.max(1000, Math.min(40000, deadline - Date.now()))),
     });
     if (!res.ok) throw new Error(`Еконт (списък пратки): HTTP ${res.status}`);
     const d: any = await res.json();
@@ -63,18 +63,17 @@ export function pickMatches(awbs: Awb[], orders: Candidate[]): { orderId: number
   return out;
 }
 
-// Orders that were sent with Econt but have no waybill number from the shop or Middleware.
+// Econt orders without a waybill number (the shops do not get Middleware's numbers back).
 const CANDIDATES = `
   FROM orders o JOIN shops s ON s.id = o.shop
- WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND o.ordered_at > now() - interval '20 days'
-   AND o.delivery->>'courier' = 'econt'
-   AND (o.cb_shipped OR o.cb_status IN ('shipped', 'completed') OR o.mw_status IN ('shipped', 'completed', 'returned', 'redirected'))`;
+ WHERE o.tracking_no IS NULL AND s.region = 'bg' AND s.active AND o.delivery->>'courier' = 'econt'
+   AND o.ordered_at > now() - interval '20 days' AND o.ordered_at < now() - interval '15 minutes'`;
 
 export async function matchEcont(creds: Creds | undefined, deadline: number, force = false) {
   if (!creds) return { matched: 0 };
-  // The waybill list is slow to fetch: at most every 6 hours, and only when something is missing.
+  // The waybill list is slow to fetch (~15 s for two weeks): at most every 2 hours, and only when something is missing.
   const last = await getSetting<{ at: number }>("econt_match");
-  if (!force && last && Date.now() - last.at < 6 * 3600000) return { matched: 0, skipped: true };
+  if (!force && last && Date.now() - last.at < 2 * 3600000) return { matched: 0, skipped: true };
   await setSetting("econt_match", { at: Date.now() });
   const rows = await q<any>(`SELECT o.id, o.phone, o.total_eur::float AS total, extract(epoch FROM o.ordered_at) * 1000 AS at ${CANDIDATES}`);
   if (!rows.length) return { matched: 0, candidates: 0 };

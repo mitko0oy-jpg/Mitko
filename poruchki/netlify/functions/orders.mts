@@ -9,62 +9,99 @@ import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { STAGES, upsertOrders } from "../lib/orders.mts";
 import { runTracking } from "../lib/track.mts";
 
-const PER_PAGE = 50;
+const ACTIVE = "o.stage IN ('new', 'shipped', 'at_office')";
+const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 
-async function list(u: URLSearchParams) {
+/** WHERE for the list; the stage/tab part is left out for the counts next to each status. */
+function filters(u: URLSearchParams, withStage: boolean) {
   const params: unknown[] = [];
   const parts = ["s.active"];
   const add = (sql: string, v: unknown) => {
     params.push(v);
-    parts.push(sql.replace("?", `$${params.length}`));
+    parts.push(sql.replaceAll("?", `$${params.length}`));
   };
   const from = u.get("from");
   const to = u.get("to");
   if (isDay(from)) add("o.day >= ?", from);
   if (isDay(to)) add("o.day <= ?", to);
-  const stage = u.get("stage") || "";
-  if ((STAGES as readonly string[]).includes(stage)) add("o.stage = ?", stage);
-  if (stage === "open") parts.push("o.stage IN ('new', 'shipped', 'at_office')");
-  if (stage === "refused") parts.push("o.parcel_status = 'refused'");
+  if (withStage) {
+    const tab = u.get("tab");
+    if (tab === "active") parts.push(ACTIVE);
+    if (tab === "done") parts.push(DONE);
+    const stages = String(u.get("stage") || "").split(",").filter((x) => (STAGES as readonly string[]).includes(x));
+    if (u.get("stage") === "open") parts.push(ACTIVE);
+    if (u.get("stage") === "refused") parts.push("o.parcel_status = 'refused'");
+    if (stages.length) add("o.stage = ANY(?)", stages);
+  }
   const region = u.get("region");
   if (region === "bg" || region === "abroad") add("s.region = ?", region);
   const shop = str(u.get("shop"), 20);
   if (shop) add("o.shop = ?", shop);
+  const courier = u.get("courier");
+  if (courier === "speedy" || courier === "econt") add("coalesce(o.courier, o.delivery->>'courier') = ?", courier);
+  if (courier === "other") parts.push("coalesce(o.courier, o.delivery->>'courier', '') NOT IN ('speedy', 'econt')");
+  if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
   const search = str(u.get("q"), 80);
   if (search) {
     const digits = search.replace(/\D/g, "");
     params.push(`%${search.toLowerCase()}%`);
     const p = `$${params.length}`;
-    const or = [`lower(o.customer_name) LIKE ${p}`, `o.order_no = $${params.length + 1}`, `o.tracking_no = $${params.length + 1}`, `lower(o.city) LIKE ${p}`];
     params.push(search);
+    const exact = `$${params.length}`;
+    const or = [`lower(o.customer_name) LIKE ${p}`, `o.order_no = ${exact}`, `o.tracking_no = ${exact}`, `lower(o.city) LIKE ${p}`];
     if (digits.length >= 6) {
       params.push(`%${digits.slice(-9)}`);
       or.push(`regexp_replace(o.phone, '\\D', '', 'g') LIKE $${params.length}`);
     }
     parts.push(`(${or.join(" OR ")})`);
   }
+  return { sql: parts.join(" AND "), params };
+}
+
+async function list(u: URLSearchParams) {
+  const perPage = Number(u.get("per")) === 100 ? 100 : 50;
   const page = Math.max(1, Math.min(1000, Number(u.get("page")) || 1));
-  const whereSql = parts.join(" AND ");
-  const [rows, count] = await Promise.all([
+  const w = filters(u, true);
+  const all = filters(u, false);
+  const [rows, count, facets] = await Promise.all([
     q<any>(
-      `SELECT o.id, o.shop, s.label AS shop_label, o.order_no, o.ordered_at, o.customer_name, o.city, o.total, o.currency, o.total_eur::float AS total_eur,
-              o.stage, o.parcel_status, o.parcel_text, o.courier, o.tracking_no, o.delivery, o.items
+      `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
+              o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
+              o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
+              o.delivery, o.shipping_name, o.items, o.waybill
          FROM orders o JOIN shops s ON s.id = o.shop
-        WHERE ${whereSql}
+        WHERE ${w.sql}
         ORDER BY o.ordered_at DESC, o.id DESC
-        LIMIT ${PER_PAGE} OFFSET ${(page - 1) * PER_PAGE}`,
-      params,
+        LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
+      w.params,
     ),
-    one<any>(`SELECT count(*)::int AS n, coalesce(sum(o.total_eur), 0)::float AS sum FROM orders o JOIN shops s ON s.id = o.shop WHERE ${whereSql}`, params),
+    one<any>(`SELECT count(*)::int AS n, coalesce(sum(o.total_eur), 0)::float AS sum FROM orders o JOIN shops s ON s.id = o.shop WHERE ${w.sql}`, w.params),
+    q<any>(
+      `SELECT o.stage, count(*)::int AS n, count(*) FILTER (WHERE o.parcel_status = 'refused')::int AS refused
+         FROM orders o JOIN shops s ON s.id = o.shop WHERE ${all.sql} GROUP BY o.stage`,
+      all.params,
+    ),
   ]);
+  const stages: Record<string, number> = {};
+  let refused = 0;
+  for (const f of facets) {
+    stages[f.stage] = f.n;
+    refused += f.refused;
+  }
   return {
     page,
-    perPage: PER_PAGE,
+    perPage,
     total: count?.n || 0,
     sum: Math.round((count?.sum || 0) * 100) / 100,
+    facets: { stages, refused },
     orders: rows.map((r) => ({
       ...r,
+      id: Number(r.id),
       total: Number(r.total),
+      sub_total: Number(r.sub_total),
+      shipping: Number(r.shipping),
+      waybill: r.waybill && r.waybill.number === r.tracking_no ? { price: r.waybill.price, at: r.waybill.at } : null,
+      tracking_link: trackingUrl(r.courier, r.tracking_no),
       items: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).map((i: any) => `${i.qty > 1 ? i.qty + " × " : ""}${i.name}`),
     })),
   };

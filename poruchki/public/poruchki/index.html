@@ -8,36 +8,54 @@
   <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/app.css">
 </head>
-<body>
+<body class="wide">
   <main class="stack" id="app">
-    <div class="row spread"><h1>Поръчки</h1><span class="muted small" id="count"></span></div>
-    <section class="card stack">
-      <div class="filters">
-        <input type="search" id="q" placeholder="Име, телефон, № поръчка или товарителница" aria-label="Търсене" style="flex:1;min-width:220px">
+    <div class="row spread">
+      <div class="row"><h1>Поръчки</h1><span class="muted small" id="count"></span></div>
+      <div class="head-tools">
+        <button class="btn filters-toggle" id="filtersBtn">Филтри</button>
+        <input type="search" id="q" placeholder="Име, телефон, № или товарителница" aria-label="Търсене">
+        <button class="btn" id="refresh">Обнови</button>
       </div>
-      <div class="filters">
-        <select id="stage" aria-label="Етап">
-          <option value="">Всички етапи</option>
-          <option value="open">Още не са приключили</option>
-          <option value="new">Нови</option>
-          <option value="shipped">На път</option>
-          <option value="at_office">Чакат в офис</option>
-          <option value="delivered">Взети</option>
-          <option value="returned">Върнати</option>
-          <option value="refused">Отказани на място</option>
-          <option value="canceled">Отказани</option>
-          <option value="archived">Архивирани</option>
-        </select>
-        <select id="region" aria-label="Пазар"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select>
-        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
-        <span class="row small"><input type="date" id="from" aria-label="От"> – <input type="date" id="to" aria-label="До"></span>
-        <button class="btn link small" id="clear">Изчисти</button>
-      </div>
-    </section>
-    <section class="card">
-      <div class="scroll" id="list"></div>
-      <div class="pager" id="pager"></div>
-    </section>
+    </div>
+
+    <div class="work">
+      <aside class="side" id="side" aria-label="Филтри">
+        <div>
+          <h3>Статус</h3>
+          <div class="stlist" id="stages"></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="nowaybill"> Само без товарителница</label>
+        <div>
+          <h3>Магазин</h3>
+          <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+        </div>
+        <div>
+          <h3>Пазар</h3>
+          <select id="region" aria-label="Пазар"><option value="">България и чужбина</option><option value="bg">България</option><option value="abroad">Чужбина</option></select>
+        </div>
+        <div>
+          <h3>Куриер</h3>
+          <select id="courier" aria-label="Куриер"><option value="">Всички</option><option value="speedy">Спиди</option><option value="econt">Еконт</option><option value="other">Други</option></select>
+        </div>
+        <div>
+          <h3>Поръчани</h3>
+          <div class="dates"><input type="date" id="from" aria-label="От"><input type="date" id="to" aria-label="До"></div>
+        </div>
+        <button class="btn" id="clear">Изчисти филтрите</button>
+      </aside>
+
+      <section class="card" style="padding:8px 12px 12px">
+        <div class="tabs" id="tabs" role="tablist">
+          <button data-tab="active">Активни<span class="n" id="nActive"></span></button>
+          <button data-tab="done">Приключени<span class="n" id="nDone"></span></button>
+          <button data-tab="">Всички<span class="n" id="nAll"></span></button>
+        </div>
+        <div class="scroll"><table class="otbl" id="table"></table></div>
+        <div class="pager" id="pager"></div>
+        <div class="bulk" id="bulk" hidden></div>
+      </section>
+    </div>
   </main>
   <script type="module" src="/assets/poruchki.js"></script>
 </body>

@@ -56,7 +56,7 @@ export async function seedDemo() {
           created,
           status: fate === "canceled" ? "canceled" : fate === "new" ? "pending" : fate === "delivered" && s.region === "abroad" ? "completed" : "shipped",
           customerName: pick(NAMES),
-          shippingAddress: { name: "", phone: "0888" + String(100000 + Math.floor(rnd() * 899999)), city: pick(CITIES), address: courier === "econt" ? "До офис econt[1234]: Демо офис" : "ул. Демо 1" },
+          shippingAddress: { name: "", phone: "0888" + String(100000 + Math.floor(rnd() * 899999)), city: pick(CITIES), address: courier === "econt" ? "До офис econt[8501]: Айтос Автогара" : courier === "speedy" ? "До офис speedy[414]: ПЛОВДИВ - ВЕЛЕШКИ ул. Авксентий Велешки 31" : "ул. Демо 1" },
           items: [{ name, quantity: qty, total: Math.round(price * qty * 100) / 100 }],
           subTotal: price * qty,
           shippingAmount: shipping,

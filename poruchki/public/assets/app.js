@@ -38,13 +38,14 @@ export const pct = (x) => (x == null ? "–" : `${String(x).replace(".", ",")}%`
 
 export const STAGES = {
   new: { label: "Нови", hint: "още не са изпратени" },
-  shipped: { label: "На път", hint: "предадени на куриера" },
-  at_office: { label: "Чакат в офис", hint: "или в автомат" },
+  shipped: { label: "Изпратени", hint: "на път към клиента" },
+  at_office: { label: "В офис", hint: "чакат клиента в офис или автомат" },
   delivered: { label: "Взети", hint: "клиентът е платил" },
   returned: { label: "Върнати", hint: "непотърсени и отказани" },
   canceled: { label: "Отказани", hint: "преди изпращане" },
   archived: { label: "Архивирани", hint: "без друга информация" },
 };
+export const ONE = { new: "Нова", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
 export const STAGE_ORDER = ["new", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
 export const COURIER = { speedy: "Спиди", econt: "Еконт", gls: "GLS", boxnow: "BOX NOW", sameday: "Sameday" };
 

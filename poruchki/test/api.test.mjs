@@ -1,4 +1,5 @@
-// End to end against the local server: a fake ConvertBuilder shop, first login, sync, stats, webhook.
+// End to end against the local server: a fake ConvertBuilder shop and fake couriers,
+// first login, sync, stats, webhook, waybills.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
@@ -10,6 +11,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8000 + Math.floor(Math.random() * 500);
 const SHOP_PORT = PORT + 600;
+const COURIER_PORT = PORT + 1200;
 const B = `http://localhost:${PORT}`;
 const now = Math.floor(Date.now() / 1000);
 
@@ -38,6 +40,10 @@ orders.push(order(3, 2, "completed", { fulfillment: { courier: "Econt", tracking
 orders.push(order(4, 2, "canceled"));
 orders.push(order(5, 2, "canceled", { fulfillment: { courier: "Econt", trackingNo: "1051600000005" } })); // sent, then came back
 for (let i = 6; i < 60; i++) orders.push(order(i, 1 + (i % 2), "completed")); // > one page of 50
+orders.push(order(60, 0, "pending", {
+  shippingAddress: { name: "", phone: "0888100060", city: "Пловдив", address: "До офис speedy[414]: ПЛОВДИВ - ВЕЛЕШКИ ул. Авксентий Велешки 31" },
+  shippingName: "Доставка до офис на Спиди",
+}));
 
 const shop = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -63,6 +69,39 @@ const shop = createServer((req, res) => {
   res.writeHead(404).end("{}");
 });
 
+// ---- fake Speedy and Econt: what the platform sends is kept in `sent` ----
+const sent = [];
+const FAKE_PDF = "%PDF-1.4 fake label";
+const courier = createServer((req, res) => {
+  const u = new URL(req.url, "http://x");
+  if (req.method === "GET" && u.pathname === "/econt/pdf/1") return res.writeHead(200, { "content-type": "application/pdf" }).end(FAKE_PDF);
+  let raw = "";
+  req.on("data", (c) => (raw += c)).on("end", () => {
+    const b = raw ? JSON.parse(raw) : {};
+    sent.push({ path: u.pathname, body: b });
+    const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
+    switch (u.pathname) {
+      case "/speedy/calculate":
+        return json({ calculations: [{ serviceId: 505, price: { total: 3.24, currency: "EUR" } }] });
+      case "/speedy/shipment":
+        return json({ id: "62000000099", parcels: [{ id: "62000000099", seqNo: 1 }], price: { total: 3.24, currency: "EUR" } });
+      case "/speedy/print":
+        return res.writeHead(200, { "content-type": "application/pdf" }).end(FAKE_PDF);
+      case "/speedy/shipment/cancel":
+        return json({});
+      case "/econt/Profile/ProfileService.getClientProfiles.json":
+        return json({ profiles: [{ client: { name: "Фирма ЕООД", phones: ["0888000000"] }, cdPayOptions: [{ num: "CD123" }] }] });
+      case "/econt/Shipments/LabelService.createLabel.json":
+        if (b.mode === "calculate") return json({ label: { totalPrice: 3.8, currency: "EUR" } });
+        return json({ label: { shipmentNumber: "1051600009999", pdfURL: `http://127.0.0.1:${COURIER_PORT}/econt/pdf/1`, totalPrice: 3.8, currency: "EUR" } });
+      case "/econt/Shipments/LabelService.deleteLabels.json":
+        return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });
+      default:
+        return res.writeHead(404).end("{}");
+    }
+  });
+});
+
 let server;
 let cookie = "";
 async function api(p, body, method) {
@@ -78,12 +117,17 @@ async function api(p, body, method) {
 
 test.before(async () => {
   await new Promise((ok) => shop.listen(SHOP_PORT, ok));
+  await new Promise((ok) => courier.listen(COURIER_PORT, ok));
   server = spawn(process.execPath, ["scripts/dev-server.mjs", String(PORT)], {
     cwd: root,
     env: {
       ...process.env,
       DEMO: "",
       SETUP_CODE: "test-setup-code-123",
+      SPEEDY_USER: "su", SPEEDY_PASS: "sp", ECONT_USER: "eu", ECONT_PASS: "ep",
+      SPEEDY_API_URL: `http://127.0.0.1:${COURIER_PORT}/speedy`,
+      ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
+      SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
         { id: "bg", label: "Тест BG", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key" },
         { id: "hu", label: "Тест HU", domain: `127.0.0.1:${SHOP_PORT}`, key: "wrong" },
@@ -99,6 +143,7 @@ test.before(async () => {
 test.after(() => {
   server?.kill();
   shop.close();
+  courier.close();
 });
 
 test("first login needs the setup code, then only login works", async () => {
@@ -132,11 +177,11 @@ test("stages add up and returned parcels are not counted as cancelled", async ()
   const { data } = await api(`/api/stats?from=${from}&to=${to}`);
   assert.equal(data.orders, orders.length);
   const st = data.stages;
-  assert.equal(st.new.n, 1);
+  assert.equal(st.new.n, 2);
   assert.equal(st.shipped.n, 1);
   assert.equal(st.canceled.n, 1);
   assert.equal(st.returned.n, 1);
-  assert.equal(st.delivered.n, orders.length - 4);
+  assert.equal(st.delivered.n, orders.length - 5);
   assert.equal(Object.values(st).reduce((a, c) => a + c.n, 0), data.orders);
   assert.equal(data.sum, Math.round(orders.length * 24.5 * 100) / 100);
   assert.equal(data.shops[0].label, "Тест BG");
@@ -187,4 +232,84 @@ test("refused without login, and settings are owner-only for staff", async () =>
   const change = await api("/api/settings/shop", { id: "bg", active: false });
   assert.equal(change.status, 400);
   cookie = owner;
+});
+
+test("draft for an Econt office order", async () => {
+  const id = (await api("/api/orders?q=5001")).data.orders[0].id;
+  // The webhook test already gave order 5001 a Speedy number: start from a clean order 5004? No – use a fresh one.
+  void id;
+  const fresh = (await api("/api/orders?q=" + encodeURIComponent("Клиент 4"))).data.orders.find((o) => o.order_no === "5004");
+  assert.ok(fresh, "order 5004");
+  // 5004 was cancelled in the shop: no waybill button for it.
+  const draft = await api(`/api/waybills/draft?order=${fresh.id}`);
+  assert.equal(draft.status, 200);
+  assert.equal(draft.data.draft.courier, "econt");
+  assert.equal(draft.data.draft.officeId, "1");
+});
+
+test("waybill with Speedy like Middleware, then Econt, label and cancel", async () => {
+  const o = (await api("/api/orders?q=5060")).data.orders[0];
+  assert.equal(o.stage, "new");
+  const d = (await api(`/api/waybills/draft?order=${o.id}`)).data.draft;
+  assert.deepEqual([d.courier, d.type, d.officeId, d.cod, d.obpd], ["speedy", "office", "414", 24.5, "TEST"]);
+
+  const price = await api("/api/waybills/price", { orderId: o.id, draft: d });
+  assert.equal(price.status, 200, JSON.stringify(price.data));
+  assert.equal(price.data.price, 3.24);
+
+  const made = await api("/api/waybills/create", { orderId: o.id, draft: d });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  assert.equal(made.data.number, "62000000099");
+  const sh = sent.find((x) => x.path === "/speedy/shipment").body;
+  assert.deepEqual(sh.sender, { clientId: 100000000001, dropoffOfficeId: 301 });
+  assert.equal(sh.recipient.pickupOfficeId, 414);
+  assert.equal(sh.recipient.phone1.number, "0888100060");
+  assert.equal(sh.service.serviceId, 505);
+  assert.equal(sh.service.additionalServices.cod.amount, 24.5);
+  assert.deepEqual(sh.service.additionalServices.cod.fiscalReceiptItems.map((i) => i.amount), [20, 4.5]);
+  assert.equal(sh.service.additionalServices.obpd.option, "TEST");
+  assert.equal(sh.payment.courierServicePayer, "SENDER");
+  assert.equal(sh.ref1, "5060");
+
+  const again = await api("/api/waybills/create", { orderId: o.id, draft: d });
+  assert.equal(again.status, 400);
+  assert.match(again.data.message, /вече има товарителница/);
+
+  const row = (await api("/api/orders?q=5060")).data.orders[0];
+  assert.equal(row.tracking_no, "62000000099");
+  assert.equal(row.tracking_source, "own");
+  assert.equal(row.stage, "shipped");
+
+  const label = await fetch(`${B}/api/waybills/label?ids=${o.id}`, { headers: { cookie } });
+  assert.equal(label.headers.get("content-type"), "application/pdf");
+  assert.equal(await label.text(), "%PDF-1.4 fake label");
+
+  const cancel = await api("/api/waybills/cancel", { orderId: o.id });
+  assert.equal(cancel.status, 200, JSON.stringify(cancel.data));
+  const after = (await api("/api/orders?q=5060")).data.orders[0];
+  assert.equal(after.tracking_no, null);
+  assert.equal(after.stage, "new");
+
+  // Now with Econt to an Econt office, with the COD agreement.
+  const e = await api("/api/waybills/create", { orderId: o.id, draft: { ...d, courier: "econt", officeId: "8501", officeName: "Айтос" } });
+  assert.equal(e.status, 200, JSON.stringify(e.data));
+  assert.equal(e.data.number, "1051600009999");
+  const lb = sent.filter((x) => x.path === "/econt/Shipments/LabelService.createLabel.json").pop().body;
+  assert.equal(lb.mode, "create");
+  assert.equal(lb.label.senderOfficeCode, "1152");
+  assert.equal(lb.label.receiverOfficeCode, "8501");
+  assert.equal(lb.label.services.cdPayOptionsTemplate, "CD123");
+  assert.equal(lb.label.services.cdAmount, 24.5);
+  const pdf = await fetch(`${B}/api/waybills/label?ids=${o.id}`, { headers: { cookie } });
+  assert.equal(await pdf.text(), "%PDF-1.4 fake label");
+  assert.equal((await api("/api/waybills/cancel", { orderId: o.id })).status, 200);
+});
+
+test("waybill checks: bad phone, mixed label print, unknown order", async () => {
+  const o = (await api("/api/orders?q=5060")).data.orders[0];
+  const d = (await api(`/api/waybills/draft?order=${o.id}`)).data.draft;
+  const bad = await api("/api/waybills/create", { orderId: o.id, draft: { ...d, phone: "12" } });
+  assert.equal(bad.status, 400);
+  assert.match(bad.data.message, /телефона/);
+  assert.equal((await api("/api/waybills/draft?order=999999")).status, 404);
 });

@@ -39,10 +39,10 @@ const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(l
 
 // ---------------- Speedy ----------------
 
-const SPEEDY = "https://api.speedy.bg/v1";
+const speedyBase = () => env("SPEEDY_API_URL") || "https://api.speedy.bg/v1";
 
 async function speedy(path: string, creds: Creds, body: Record<string, unknown>) {
-  const res = await fetchImpl(SPEEDY + path, {
+  const res = await fetchImpl(speedyBase() + path, {
     method: "POST",
     headers: { "Content-Type": "application/json; charset=utf-8", Accept: "application/json" },
     body: JSON.stringify({ userName: creds.user, password: creds.pass, language: "BG", ...body }),
@@ -101,7 +101,7 @@ export async function speedyCheck(creds: Creds) {
 
 // ---------------- Econt ----------------
 
-const econtBase = () => (env("ECONT_DEMO") === "1" ? "https://demo.econt.com/ee/services" : "https://ee.econt.com/services");
+const econtBase = () => env("ECONT_API_URL") || (env("ECONT_DEMO") === "1" ? "https://demo.econt.com/ee/services" : "https://ee.econt.com/services");
 
 async function econt(path: string, creds: Creds, body: Record<string, unknown>) {
   const res = await fetchImpl(econtBase() + path, {

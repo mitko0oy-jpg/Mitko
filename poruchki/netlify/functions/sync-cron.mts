@@ -1,11 +1,13 @@
 // Every 30 minutes: new and changed orders from the shops (plus history import when one is running).
-import type { Config } from "@netlify/functions";
+// The work runs as a background job; only if that cannot start, a short run happens here
+// (Netlify cuts a scheduled call off after ~15 s, cold start included).
+import type { Config, Context } from "@netlify/functions";
+import { startJob } from "../lib/jobs.mts";
 import { runSync } from "../lib/sync.mts";
-// Netlify gives up on a scheduled call after about 15 s (cold start included) and calls it again, so each run stops after 8 s.
 
-export default async () => {
-  const info = await runSync({ deadline: Date.now() + 8000, job: "sync" });
-  console.log(JSON.stringify(info));
+export default async (_req: Request, context: Context) => {
+  if (await startJob("sync", context?.site?.url)) return;
+  console.log(JSON.stringify(await runSync({ deadline: Date.now() + 8000, job: "sync" })));
 };
 
 export const config: Config = { schedule: "*/30 * * * *" };

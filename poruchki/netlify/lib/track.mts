@@ -2,6 +2,7 @@
 import { COURIERS, CourierError, isCourier, type CourierId, type Creds, type ParcelState } from "./couriers.mts";
 import { getSetting, logJob, q, setSetting } from "./db.mts";
 import { env } from "./http.mts";
+import { lookupSpeedy } from "./lookup.mts";
 import { matchEcont } from "./match.mts";
 import { seal, unseal } from "./secret.mts";
 
@@ -80,8 +81,16 @@ const BATCH: Record<CourierId, number> = { speedy: 20, econt: 40 };
 export async function runTracking(opts: { deadline: number; limit?: number; orderIds?: number[]; job?: string }) {
   const creds = await loadCreds();
   const couriers = (Object.keys(creds) as CourierId[]).filter((c) => creds[c]);
-  const result = { checked: 0, changed: 0, matched: 0, couriers, errors: {} as Record<string, string> };
+  const result = { checked: 0, changed: 0, matched: 0, found: 0, couriers, errors: {} as Record<string, string> };
   if (!couriers.length) return result;
+  // Waybills Middleware made for Speedy orders: found by the order number.
+  if (!opts.orderIds?.length && creds.speedy && opts.deadline - Date.now() > 6000) {
+    try {
+      result.found = (await lookupSpeedy(creds.speedy, Date.now() + Math.min(60000, (opts.deadline - Date.now()) / 3))).found;
+    } catch (e: any) {
+      result.errors.lookup = e.message;
+    }
+  }
   const rows = opts.orderIds?.length
     ? await q<any>("SELECT id, courier, tracking_no, ordered_at FROM orders WHERE id = ANY($1) AND tracking_no IS NOT NULL AND courier = ANY($2)", [opts.orderIds, couriers])
     : await q<any>(
@@ -90,7 +99,7 @@ export async function runTracking(opts: { deadline: number; limit?: number; orde
             AND ordered_at > now() - interval '90 days'
             AND (tracked_at IS NULL OR tracked_at < now() - interval '80 minutes')
           ORDER BY tracked_at NULLS FIRST, ordered_at DESC LIMIT $2`,
-        [couriers, opts.limit || 400],
+        [couriers, opts.limit || 3000],
       );
   // The couriers take turns, so a slow one cannot use up all the time.
   const queues = new Map(couriers.map((id) => [id, rows.filter((r) => r.courier === id)]));

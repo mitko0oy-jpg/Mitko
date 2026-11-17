@@ -8,7 +8,9 @@
 - Пита Speedy и Еконт докъде е стигнала всяка пратка (на всеки час).
 - Табло: поръчки и сума за ден / седмица / месец, взети (оборот), върнати, отказани, по магазини и продукти; България и чужбина поотделно.
 - Чужбина (SK/SI/HU) е само за информация – там пращат външна фирма с фулфилмънт; статусите идват от ConvertBuilder.
-- Следващ етап: товарителници за Speedy и Еконт от платформата, SMS, после API като на Middleware.
+- Товарителници за Speedy и Еконт от платформата: бутон на всяка поръчка, масово създаване, печат на етикети (Speedy A6 в един PDF, Еконт по един), анулиране.
+- Товарителниците, които още прави Middleware, се намират сами: Speedy по номера на поръчката (ref1) + проверка на телефона, Еконт по телефон и сума.
+- Следващи: SMS, черен списък и повторни поръчки, склад/Pick & Pack, статистики, форма с офиси в магазина, касови бележки по Н-18. Не копираме кода на Middleware – само идеите; всичко минава през официалните API на куриерите.
 
 ## Важно: кодът е в публично хранилище
 
@@ -19,9 +21,9 @@
 | Част | Къде |
 |---|---|
 | Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nastroiki/`, `/vhod/` |
-| API | `netlify/functions/*.mts` – auth, stats, orders, settings, hook (webhook от ConvertBuilder) |
-| Фонови задачи | `sync-cron.mts` (*/30 мин – поръчки), `track-cron.mts` (всеки час – пратки) |
-| Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (Speedy/Еконт), `match` (Еконт по телефон), `mw` (Middleware, само за прехода), `orders`, `sync`, `track`, `stats` |
+| API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
+| Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
+| Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |
 | База | Netlify Database (Postgres), миграции в `netlify/database/migrations/` |
 
 ## Данни и правила
@@ -33,6 +35,14 @@
 - Еконт – реални статуси: „Очаква предаване към Еконт“, „Пристигнала в офис“, „Доставена“, „Върната“ (виж `econtState`). „Awaiting delivery…“ и „In delivery office“ съдържат „deliver“ – не ги бъркай с доставена.
 - Speedy – по кодовете на операциите (-14 доставена, 123 отказана, 111/124 върната, 134/1134 в офис). Speedy `track/bulk` не е разрешен за този акаунт.
 
+## Товарителници – както ги правеше Middleware
+
+- Speedy: подател – клиентът по договора (`clientId` в SHIPPING_DEFAULTS), предава в офис 301, услуга 505, наложен платеж = сумата с редове за касова бележка (ДДС група „А“, сборът = НП), преглед/тест (`obpd` TEST), плаща подателят, `ref1` = № на поръчката, `ref2` = магазин, опаковка ENVELOPE, 1 кг.
+- Еконт: профилът на подателя (`getClientProfiles`), офис 1152, наложен платеж с договора (`cdPayOptionsTemplate` → 3,80 € вместо 4,26 €), SMS, плаща подателят.
+- Офисите от магазина: `speedy[N]` = id на офис на Speedy, `econt[N]` = код на офис на Еконт.
+- Подателят е в `SHIPPING_DEFAULTS` (env) и може да се промени в Настройки → Товарителници.
+- Тестове без истински пратки: фалшив куриер чрез `SPEEDY_API_URL` / `ECONT_API_URL`; Еконт има и демо среда (`ECONT_DEMO=1`, iasp-dev / 1Asp-dev). Никога не създавай истинска товарителница при проверка – ползвай `/calculate` (Speedy) и `mode: calculate` (Еконт).
+
 ## Настройки в Netlify (env)
 
 `CB_SITES` (JSON с id, label, domain, key за всеки магазин), `SECRET_KEY` (криптира паролите в базата), `SETUP_CODE` (първи вход), `SPEEDY_USER`/`SPEEDY_PASS`, `ECONT_USER`/`ECONT_PASS` (или се въвеждат в Настройки), по желание `MW_TOKEN`, `MW_TENANT`, `MW_STORES` ({"bg": "<id на магазина в Middleware>"}) докато върви паралелно с Middleware.
@@ -41,7 +51,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 16 теста, сами пускат локален сървър с фалшив магазин
+npm test                                  # 24 теста, сами пускат локален сървър с фалшив магазин и фалшиви куриери
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

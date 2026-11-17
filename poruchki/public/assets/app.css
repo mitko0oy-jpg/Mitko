@@ -1,3 +1,8 @@
+/* Golos Text (SIL Open Font License), hosted here. Unlike the Mac system font it has no Bulgarian
+   letter shapes (д, л, т written like handwriting), so the pages look the same on every device. */
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/golos-text-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/golos-text-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
 :root {
   color-scheme: light;
   --bg: #f4f4f1;
@@ -16,7 +21,7 @@
   --warn: #8a5a00;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   --radius: 14px;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -200,3 +205,100 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
   .top .in { gap: 8px; }
   .filters select, .filters input[type="date"] { flex: 1 1 140px; }
 }
+
+/* ---------- orders workspace (wide, like a back office) ---------- */
+body.wide .top .in, body.wide main { max-width: 1600px; }
+.work { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-width: 0; gap: 16px; align-items: start; }
+.side { position: sticky; top: 64px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 14px; max-height: calc(100vh - 80px); overflow: auto; }
+.side h3 { font-size: 13px; color: var(--text-2); font-weight: 600; margin-bottom: 6px; }
+.side > * { min-width: 0; }
+.side select, .side input[type="date"] { width: 100%; min-width: 0; }
+.side .dates { display: grid; gap: 6px; }
+.side .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+.stlist { display: grid; gap: 4px; }
+.stlist button { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid transparent; background: none; border-radius: 8px; padding: 4px 6px; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.stlist button:hover { background: var(--surface-2); }
+.stlist button.on { border-color: var(--accent); background: var(--accent-soft); }
+.stlist .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.filters-toggle { display: none; }
+@media (max-width: 900px) {
+  .work { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; max-height: none; display: none; }
+  .side.open { display: grid; }
+  .filters-toggle { display: inline-flex; }
+}
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 4px; overflow-x: auto; }
+.tabs button { border: 0; background: none; padding: 8px 12px; font: inherit; color: var(--text-2); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tabs .n { color: var(--muted); font-size: 12px; margin-left: 4px; }
+
+.badge { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
+.badge.new { background: #4b5563; }
+.badge.shipped { background: #b45309; }
+.badge.at_office { background: #0369a1; }
+.badge.delivered { background: #15803d; }
+.badge.returned { background: #b91c1c; }
+.badge.canceled { background: #111827; }
+.badge.archived { background: #6b7280; }
+
+.otbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.otbl th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+.otbl td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.otbl tr.sel td { background: var(--accent-soft); }
+.otbl tr:hover td { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.otbl .no a { font-weight: 700; color: var(--text); }
+.otbl .sub { color: var(--muted); font-size: 12px; }
+.otbl .cour { font-style: italic; color: var(--text-2); font-size: 13px; }
+.otbl .wb { font-variant-numeric: tabular-nums; font-size: 13px; }
+.otbl .money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+.otbl .acts { white-space: nowrap; text-align: right; }
+.otbl input[type="checkbox"] { width: 18px; height: 18px; }
+.btn.sm { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.btn.danger { color: var(--bad); }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; width: 32px; height: 30px; cursor: pointer; display: inline-grid; place-items: center; color: var(--text-2); }
+.iconbtn:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.iconbtn svg { width: 16px; height: 16px; }
+
+.bulk { position: sticky; bottom: 12px; z-index: 5; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--text); color: var(--surface); border-radius: 12px; padding: 10px 14px; margin-top: 12px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }
+.bulk .btn { background: var(--surface); color: var(--text); border-color: transparent; }
+.bulk .btn.link { background: none; color: var(--surface); }
+
+@media (max-width: 760px) {
+  .otbl, .otbl tbody { display: block; }
+  .otbl thead { display: none; }
+  .otbl tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px 10px; padding: 12px 2px; border-bottom: 1px solid var(--line);
+    grid-template-areas: "chk no badge" "chk shop money" "chk client client" "chk deliv deliv" "chk cour cour" "acts acts acts"; }
+  .otbl td { display: block; padding: 0; border: 0; min-width: 0; }
+  .otbl td.c-check { grid-area: chk; }
+  .otbl td.no { grid-area: no; }
+  .otbl td.c-badge { grid-area: badge; text-align: right; }
+  .otbl td.c-shop { grid-area: shop; color: var(--muted); font-size: 13px; }
+  .otbl td.money { grid-area: money; }
+  .otbl td.c-client { grid-area: client; }
+  .otbl td.c-deliv { grid-area: deliv; }
+  .otbl td.c-cour { grid-area: cour; }
+  .otbl td.c-when { display: none; }
+  .otbl td.acts { grid-area: acts; text-align: left; margin-top: 6px; }
+  .otbl tr:hover td { background: none; }
+}
+
+/* ---------- waybill window ---------- */
+dialog.modal { border: 0; border-radius: 16px; padding: 0; width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 32px); background: var(--surface); color: var(--text); box-shadow: 0 24px 60px rgb(0 0 0 / 0.3); }
+dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
+.modal .mh { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.modal .mb { padding: 16px 18px; display: grid; gap: 12px; overflow: auto; }
+.modal .mf { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.modal .grid2 { gap: 10px; }
+.modal label { display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
+.modal input[type="text"], .modal input[type="number"], .modal input[type="tel"], .modal input[type="search"] { width: 100%; }
+.modal .office { display: flex; gap: 8px; align-items: center; justify-content: space-between; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.modal .results { display: grid; gap: 2px; max-height: 220px; overflow: auto; }
+.modal .results button { text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; font: inherit; color: inherit; }
+.modal .results button:hover { background: var(--surface-2); }
+.modal .price { font-size: 15px; }
+.modal .price b { font-variant-numeric: tabular-nums; }
+.progress { display: grid; gap: 4px; font-size: 14px; max-height: 320px; overflow: auto; }
+
+.head-tools { display: flex; gap: 8px; align-items: center; flex: 1 1 320px; justify-content: flex-end; min-width: 0; }
+.head-tools input[type="search"] { flex: 1 1 auto; width: 0; max-width: 380px; min-width: 0; }

@@ -1,9 +1,10 @@
-import { api, COURIER, esc, eur, money, qs, shell, when } from "./app.js";
+import { api, COURIER, esc, eur, money, ONE, qs, shell, when } from "./app.js";
+import { cancelWaybill, openLabels, openWaybill } from "./waybill.js";
 
 const $ = (id) => document.getElementById(id);
 const id = Number(qs().get("id"));
-const SINGULAR = { new: "Нова", shipped: "На път", at_office: "Чака в офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
-const SOURCE = { cb: "от магазина", middleware: "от Middleware", own: "създадена от нас", econt_match: "намерена в Еконт по телефона" };
+const SINGULAR = ONE;
+const SOURCE = { cb: "от магазина", middleware: "от Middleware", own: "създадена от платформата", econt_match: "от Middleware (намерена в Еконт по телефона)", speedy_ref: "от Middleware (намерена в Спиди по номера на поръчката)" };
 const CB_STATUS = { pending: "нова", shipped: "изпратена", completed: "завършена", canceled: "отказана", archived: "архивирана" };
 
 await shell("poruchki");
@@ -23,7 +24,7 @@ function render(o) {
   <div class="stack">
     <div class="row spread">
       <div><h1>Поръчка № ${esc(o.order_no)}</h1><div class="muted small">${esc(o.shop_label)} · ${when(o.ordered_at)}</div></div>
-      <div class="row"><span class="pill ${o.parcel_status === "refused" ? "returned" : o.stage}" style="font-size:14px">${stage}</span>
+      <div class="row"><span class="badge ${o.stage}" style="font-size:14px">${stage}</span>
         <button class="btn" id="refresh">Провери пак</button></div>
     </div>
     <div class="grid2">
@@ -39,7 +40,7 @@ function render(o) {
         </dl>
       </section>
       <section class="card">
-        <h2>Пратка</h2>
+        <div class="row spread"><h2>Пратка</h2><div class="row" id="wbActs"></div></div>
         <dl class="kv">
           <dt>Куриер</dt><dd>${esc(COURIER[o.courier] || o.courier || "–")}</dd>
           <dt>Товарителница</dt><dd>${o.tracking_no ? (o.tracking_link ? `<a href="${esc(o.tracking_link)}" target="_blank" rel="noopener">${esc(o.tracking_no)}</a>` : esc(o.tracking_no)) : "още няма"}
@@ -75,6 +76,24 @@ function render(o) {
         : ""
     }
   </div>`;
+  const courier = o.courier || o.delivery?.courier;
+  const canShip = !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
+  $("wbActs").innerHTML = [
+    canShip ? `<button class="btn primary sm" id="wbNew">Създай товарителница</button>` : "",
+    o.tracking_no && (courier === "speedy" || courier === "econt") ? `<button class="btn sm" id="wbPrint">Етикет</button>` : "",
+    o.tracking_source === "own" && ["shipped", "new"].includes(o.stage) ? `<button class="btn sm danger" id="wbCancel">Анулирай</button>` : "",
+  ].join("");
+  const reload = async () => render(await api(`/api/orders/${id}`));
+  if ($("wbNew")) $("wbNew").onclick = async () => (await openWaybill(id)) && reload();
+  if ($("wbPrint")) $("wbPrint").onclick = () => openLabels([id]);
+  if ($("wbCancel"))
+    $("wbCancel").onclick = async () => {
+      try {
+        if (await cancelWaybill(id, o.tracking_no)) reload();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
   $("refresh").onclick = async () => {
     const b = $("refresh");
     b.disabled = true;

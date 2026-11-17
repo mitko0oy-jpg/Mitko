@@ -159,3 +159,33 @@ try {
   say(e.message, false);
 }
 
+
+// ---- waybill sender defaults ----
+async function loadShip() {
+  const { defaults: d } = await api("/api/waybills/settings");
+  const f = $("ship");
+  for (const [k, v] of Object.entries(d.speedy)) if (f[`sp_${k}`]) f[`sp_${k}`].value = v ?? "";
+  for (const [k, v] of Object.entries(d.econt)) {
+    const el = f[`ec_${k}`];
+    if (!el) continue;
+    if (el.type === "checkbox") el.checked = !!v;
+    else el.value = v ?? "";
+  }
+  for (const el of f.elements) el.disabled = !isAdmin;
+}
+$("ship").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const body = { speedy: {}, econt: {} };
+  for (const el of f.elements) {
+    const m = /^(sp|ec)_(\w+)$/.exec(el.name || "");
+    if (!m) continue;
+    body[m[1] === "sp" ? "speedy" : "econt"][m[2]] = el.type === "checkbox" ? el.checked : el.value;
+  }
+  await busy($("shipSave"), "Записвам…", async () => {
+    await api("/api/waybills/settings", { method: "POST", body });
+    await loadShip();
+    say("Подателят е записан.");
+  });
+};
+loadShip().catch((e) => say(e.message, false));
