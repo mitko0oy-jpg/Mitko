@@ -22,7 +22,7 @@
     </section>
 
     <section class="card stack">
-      <h2>Магазини</h2>
+      <h2 id="magazini">Магазини</h2>
       <p class="muted small">Поръчките се изтеглят на всеки 30 минути. С „Връзка в реално време“ магазинът ни праща всяка нова или променена поръчка веднага.</p>
       <div class="scroll" id="shops"></div>
       <div class="row">
@@ -32,7 +32,7 @@
     </section>
 
     <section class="card stack">
-      <h2>Куриери</h2>
+      <h2 id="kurieri">Куриери</h2>
       <p class="muted small">С тези данни питаме Спиди и Еконт докъде е стигнала всяка пратка. Пазят се криптирани.</p>
       <div id="couriers" class="grid2"></div>
       <div id="tracked" class="small muted"></div>
@@ -68,7 +68,7 @@
     </section>
 
     <section class="card stack" id="smsCard">
-      <h2>SMS</h2>
+      <h2 id="sms">SMS</h2>
       <p class="muted small">SMS-ите се пращат през <a href="https://www.smsapi.bg/" target="_blank" rel="noopener">SMSAPI</a> (~0,05 € за SMS, без договор). Там: регистрация → OAuth токени → нов токен с право „SMS“ → постави го тук. Името на подателя (до 11 латински букви, напр. BeeVenom) се одобрява от SMSAPI.</p>
       <div id="smsState" class="small"></div>
       <form id="smsForm" class="grid2">
@@ -85,7 +85,7 @@
     </section>
 
     <section class="card stack" id="usersCard" hidden>
-      <h2>Хора с достъп</h2>
+      <h2 id="potrebiteli">Хора с достъп</h2>
       <div id="users"></div>
       <form class="row" id="addUser">
         <input type="text" name="name" placeholder="Име" required>

@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { daysBetween, isDay } from "../lib/dates.mts";
 import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
-import { dashboard, summary } from "../lib/stats.mts";
+import { alerts, dashboard, summary } from "../lib/stats.mts";
 
 export default handle(async (req) => {
   await requireUser(req);
@@ -12,6 +12,8 @@ export default handle(async (req) => {
   const region = (["bg", "abroad"].includes(u.get("region") || "") ? u.get("region") : "") as "bg" | "abroad" | "";
 
   if (what === "summary") return json(await summary(region));
+  // The bell in the top bar: what is waiting for someone.
+  if (what === "alerts") return json(await alerts());
 
   const from = u.get("from") || "";
   const to = u.get("to") || "";

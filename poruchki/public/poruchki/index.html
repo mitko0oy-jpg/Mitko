@@ -11,19 +11,23 @@
 </head>
 <body class="wide">
   <main class="stack" id="app">
-    <div class="row spread">
-      <div class="row"><h1>Поръчки</h1><span class="muted small" id="count"></span></div>
+    <div class="pagehead">
+      <div class="row">
+        <h1>Поръчки</h1>
+        <button class="roundbtn" id="newOrder" title="Нова поръчка" aria-label="Нова поръчка">+</button>
+        <span class="muted small" id="count"></span>
+      </div>
       <div class="head-tools">
         <button class="btn filters-toggle" id="filtersBtn">Филтри</button>
-        <input type="search" id="q" placeholder="Име, телефон, № или товарителница" aria-label="Търсене">
-        <button class="btn" id="refresh">Обнови</button>
-        <button class="btn primary" id="newOrder">+ Нова поръчка</button>
+        <label class="searchbox"><input type="search" id="q" placeholder="Име, телефон, № или товарителница" aria-label="Търсене"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></label>
+        <button class="btn" id="refresh" title="Изтегли новите поръчки от магазините">Обнови</button>
       </div>
     </div>
 
-    <div class="work">
+    <div class="work" id="work">
+      <button class="vtab" id="vtab" type="button" aria-controls="side" aria-expanded="true">Филтри</button>
       <aside class="side" id="side" aria-label="Филтри">
-        <div class="side-head"><h2>Филтри</h2><button class="iconbtn" id="closeSide" aria-label="Затвори филтрите">✕</button></div>
+        <div class="side-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 4h18l-7 9v6l-4 2v-8z"/></svg> Филтри</h2><button class="iconbtn" id="closeSide" aria-label="Скрий филтрите">✕</button></div>
         <div class="side-top">
           <button class="btn primary" id="clear">Изчисти филтрите</button>
           <button class="btn" id="starBtn" title="Запазени филтри" aria-label="Запазени филтри" aria-expanded="false">☆</button>
@@ -37,6 +41,15 @@
             <option value="sum_asc">Най-малка сума</option>
             <option value="sent">Последно изпратени</option>
             <option value="courier">Последна промяна при куриера</option>
+            <option value="parcel_asc">Най-стара промяна при куриера</option>
+            <option value="stage_asc">Статус (нови първо)</option>
+            <option value="stage_desc">Статус (приключени първо)</option>
+            <option value="shop_asc">Магазин (А → Я)</option>
+            <option value="shop_desc">Магазин (Я → А)</option>
+            <option value="cour_asc">Куриер (А → Я)</option>
+            <option value="cour_desc">Куриер (Я → А)</option>
+            <option value="note_desc">С бележка първо</option>
+            <option value="note_asc">Без бележка първо</option>
           </select>
         </label>
         <label class="fld">Магазин<select id="shop"><option value="">Всички магазини</option></select></label>
@@ -57,11 +70,19 @@
       </aside>
 
       <section class="card" style="padding:8px 12px 12px">
-        <div class="tabs" id="tabs" role="tablist">
-          <button data-tab="active">Активни<span class="n" id="nActive"></span></button>
-          <button data-tab="done">Приключени<span class="n" id="nDone"></span></button>
-          <button data-tab="">Всички<span class="n" id="nAll"></span></button>
-          <button data-tab="archived">Архивирани</button>
+        <div class="tabsbar">
+          <div class="tabs" id="tabs" role="tablist">
+            <button data-tab="active">Активни поръчки<span class="n" id="nActive"></span></button>
+            <button data-tab="done">Приключени<span class="n" id="nDone"></span></button>
+            <button data-tab="">Всички<span class="n" id="nAll"></span></button>
+            <button data-tab="archived">Архивирани поръчки</button>
+          </div>
+          <div class="tabletools">
+            <button class="toolbtn blue" id="exportBtn" title="Свали поръчките по тези филтри (Excel)" aria-label="Свали в Excel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/></svg></button>
+            <div class="popwrap"><button class="toolbtn yellow" id="colsBtn" title="Колони" aria-label="Кои колони да се виждат" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+              <div class="pop" id="colsMenu" hidden></div></div>
+            <button class="toolbtn" id="fullBtn" title="На цял екран" aria-label="На цял екран"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          </div>
         </div>
         <div class="scroll"><table class="otbl" id="table"></table></div>
         <div class="pager" id="pager"></div>

@@ -3,6 +3,8 @@
 import { addDays, sofiaDay } from "./dates.mts";
 import { one, q } from "./db.mts";
 import { STAGES } from "./orders.mts";
+import { countOpenLeads } from "./leads.mts";
+import { printQueue } from "./waybills.mts";
 
 export type Filter = { from: string; to: string; region?: "bg" | "abroad" | ""; shop?: string };
 type Cell = { n: number; sum: number };
@@ -127,4 +129,20 @@ export async function summary(region?: string) {
   }
   const sync = await one<any>("SELECT max(synced_at) AS at FROM shops WHERE active");
   return { today, periods: out, syncedAt: sync?.at || null };
+}
+
+/** The bell in the top bar: orders and leads waiting for someone, and labels waiting for the printer. */
+export async function alerts() {
+  const [o, leads, print] = await Promise.all([
+    one<any>(
+      `SELECT count(*) FILTER (WHERE o.confirmed_at IS NULL AND coalesce(o.call->>'state', '') NOT IN ('requested', 'calling'))::int AS unconfirmed,
+              count(*) FILTER (WHERE o.confirmed_at IS NULL AND o.call->>'state' IN ('needs_human', 'change_requested', 'callback_later', 'wrong_person', 'wrong_number', 'canceled', 'gave_up'))::int AS ai,
+              count(*) FILTER (WHERE o.confirmed_at IS NOT NULL AND o.tracking_no IS NULL AND s.region = 'bg')::int AS to_ship
+         FROM orders o JOIN shops s ON s.id = o.shop
+        WHERE s.active AND o.stage = 'new' AND o.archived_at IS NULL AND o.ordered_at > now() - interval '30 days'`,
+    ),
+    countOpenLeads().catch(() => 0),
+    printQueue().then((r) => r.length).catch(() => 0),
+  ]);
+  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print };
 }

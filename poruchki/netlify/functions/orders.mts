@@ -26,6 +26,15 @@ const SORTS: Record<string, string> = {
   sum_asc: "o.total_eur ASC NULLS LAST, o.ordered_at DESC",
   sent: "o.sent_at DESC NULLS LAST, o.ordered_at DESC",
   courier: "o.parcel_at DESC NULLS LAST, o.ordered_at DESC",
+  parcel_asc: "o.parcel_at ASC NULLS LAST, o.ordered_at DESC",
+  stage_asc: "array_position(ARRAY['new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) ASC, o.ordered_at DESC",
+  stage_desc: "array_position(ARRAY['new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) DESC, o.ordered_at DESC",
+  shop_asc: "s.label ASC, o.ordered_at DESC",
+  shop_desc: "s.label DESC, o.ordered_at DESC",
+  cour_asc: "coalesce(o.courier, o.delivery->>'courier', 'я') ASC, o.ordered_at DESC",
+  cour_desc: "coalesce(o.courier, o.delivery->>'courier', '') DESC, o.ordered_at DESC",
+  note_desc: "(coalesce(o.note, '') <> '') DESC, o.ordered_at DESC",
+  note_asc: "(coalesce(o.note, '') <> '') ASC, o.ordered_at DESC",
 };
 
 /**
@@ -153,6 +162,48 @@ async function list(u: URLSearchParams) {
   };
 }
 
+async function exportCsv(u: URLSearchParams) {
+  const w = filters(u, true);
+  const order = SORTS[String(u.get("sort"))] || SORTS.new;
+  const rows = await q<any>(
+    `SELECT o.order_no, s.label AS shop, o.ordered_at, o.customer_name, o.phone, o.city, o.address, coalesce(o.courier, o.delivery->>'courier') AS courier,
+            o.delivery->>'type' AS dtype, o.delivery->>'officeName' AS office, o.tracking_no, o.stage, o.parcel_text, o.total, o.sub_total, o.shipping,
+            o.currency, o.total_eur, o.items, o.confirmed_by, o.note
+       FROM orders o JOIN shops s ON s.id = o.shop WHERE ${w.sql} ORDER BY ${order} LIMIT 5000`,
+    w.params,
+  );
+  const cell = (v: unknown) => {
+    let t = v == null ? "" : String(v);
+    if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`; // never a formula
+    return /[";\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  // Phones as "0888 123 456": the spaces keep Excel from turning them into numbers.
+  const phone = (p: unknown) => {
+    const raw = String(p || "");
+    let d = raw.replace(/\D/g, "");
+    if (!d) return "";
+    if (d.startsWith("359") && d.length === 12) d = `0${d.slice(3)}`;
+    else if (raw.trim().startsWith("+")) d = `00${d}`;
+    return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`.trim();
+  };
+  const dec = (n: unknown) => (n == null ? "" : Number(n).toFixed(2).replace(".", ","));
+  const when = (d: any) => new Date(d).toLocaleString("bg-BG", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(" г.", "");
+  const STAGE_BG: Record<string, string> = { new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
+  const head = ["№", "Магазин", "Поръчана", "Клиент", "Телефон", "Град", "Адрес", "Куриер", "Доставка", "Офис", "Товарителница", "Статус", "Куриер статус", "Продукти", "Сума продукти", "Доставка (сума)", "Общо", "Валута", "Общо EUR", "Потвърдена от", "Бележка"];
+  const lines = rows.map((r) =>
+    [
+      r.order_no, r.shop, when(r.ordered_at), r.customer_name, phone(r.phone), r.city, r.address, r.courier,
+      { office: "до офис", automat: "до автомат", address: "до адрес" }[String(r.dtype)] || "", r.office, r.tracking_no, STAGE_BG[r.stage] || r.stage, r.parcel_text,
+      (r.items || []).map((i: any) => `${i.qty > 1 ? `${i.qty} × ` : ""}${i.name}`).join(", "),
+      dec(r.sub_total), dec(r.shipping), dec(r.total), r.currency, dec(r.total_eur), r.confirmed_by, r.note,
+    ].map(cell).join(";"),
+  );
+  const day = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Sofia" });
+  return new Response("\ufeff" + [head.join(";"), ...lines].join("\r\n"), {
+    headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="poruchki-${day}.csv"`, "cache-control": "no-store" },
+  });
+}
+
 async function detail(id: number) {
   const o = await one<any>(
     `SELECT o.*, s.label AS shop_label, s.domain AS shop_domain, s.region FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1`,
@@ -189,6 +240,8 @@ export default handle(async (req) => {
   const [idStr, action] = sub(req, "/api/orders");
   const u = new URL(req.url).searchParams;
   if (req.method === "GET" && !idStr) return json(await list(u));
+  // Excel (CSV with ; and a BOM, so Bulgarian Excel opens it with Cyrillic and decimal commas).
+  if (req.method === "GET" && idStr === "export") return exportCsv(u);
   // Saved filters (☆), per user.
   if (idStr === "saved") {
     const user = await requireUser(req);

@@ -564,3 +564,19 @@ test("filters like Middleware: sorting, product, sent today, saved filters", asy
   await api("/api/orders/saved", { name: "Спиди без товарителница", delete: true });
   assert.deepEqual((await api("/api/orders/saved")).data.saved, []);
 });
+
+test("bell counts and the Excel export", async () => {
+  const a = (await api("/api/stats/alerts")).data;
+  for (const k of ["unconfirmed", "ai", "toShip", "leads", "toPrint"]) assert.equal(typeof a[k], "number", k);
+  const r = await fetch(`${B}/api/orders/export?tab=&sort=old`, { headers: { cookie } });
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type"), /text\/csv/);
+  assert.match(r.headers.get("content-disposition"), /poruchki-\d{4}-\d{2}-\d{2}\.csv/);
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]); // BOM: Excel reads it as UTF-8
+  const lines = new TextDecoder().decode(bytes).split("\r\n");
+  assert.match(lines[0], /^№;Магазин;Поръчана;Клиент;Телефон/);
+  assert.equal(lines.length - 1, (await api("/api/orders?tab=")).data.total);
+  assert.match(lines[1], /;0888 \d{3} \d{3};/); // phones stay text in Excel
+  assert.equal((await fetch(`${B}/api/orders/export`)).status, 401);
+});

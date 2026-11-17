@@ -131,33 +131,125 @@ function themeButton(btn) {
   draw();
 }
 
+const I = (d, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
+export const ICONS = {
+  home: I('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
+  cart: I('<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11.5l2-8H6.2"/>'),
+  hourglass: I('<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>'),
+  print: I('<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/>'),
+  store: I('<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0V9M5 13v8h14v-8"/>'),
+  truck: I('<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'),
+  chat: I('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.7A8 8 0 1 1 21 12z"/>'),
+  users: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
+  gear: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  bell: I('<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>'),
+  logo: `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="currentColor"/><path d="M16 24l16-8 16 8v18l-16 8-16-8z" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/><path d="M16 24l16 8 16-8M32 32v18" fill="none" stroke="#fff" stroke-width="4.5" stroke-linejoin="round"/></svg>`,
+};
+
+const ROLE = { admin: "Собственик", staff: "Служител" };
+const initials = (n) =>
+  String(n || "?")
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
+/** One small menu open at a time; closes on a click outside or Esc. */
+function popup(btn, menu) {
+  const close = () => {
+    menu.hidden = true;
+    btn.setAttribute("aria-expanded", "false");
+  };
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    const open = menu.hidden;
+    document.querySelectorAll(".pop").forEach((m) => (m.hidden = true));
+    menu.hidden = !open;
+    btn.setAttribute("aria-expanded", String(open));
+    if (open) btn.dispatchEvent(new CustomEvent("popopen"));
+  };
+  document.addEventListener("click", (e) => !menu.contains(e.target) && close());
+  document.addEventListener("keydown", (e) => e.key === "Escape" && close());
+}
+
 export async function shell(active) {
   const me = await api("/api/auth/me");
   if (!me.user) {
     location.href = "/vhod/?next=" + encodeURIComponent(location.pathname + location.search);
     throw new Error("login");
   }
+  const here = active === "nastroiki" && location.hash ? location.hash.slice(1) : active;
   const links = [
-    ["/", "Табло", "tablo"],
-    ["/poruchki/", "Поръчки", "poruchki"],
-    ["/nezavarsheni/", "Незавършени", "nezavarsheni"],
-    ["/pechat/", "Печат", "pechat"],
-    ["/nastroiki/", "Настройки", "nastroiki"],
+    ["/", "Табло", "tablo", ICONS.home],
+    ["/poruchki/", "Поръчки", "poruchki", ICONS.cart],
+    ["/nezavarsheni/", "Незавършени", "nezavarsheni", ICONS.hourglass],
+    ["/pechat/", "Печат", "pechat", ICONS.print],
+    ["/nastroiki/#magazini", "Магазини", "magazini", ICONS.store],
+    ["/nastroiki/#kurieri", "Куриери", "kurieri", ICONS.truck],
+    ["/nastroiki/#sms", "SMS", "sms", ICONS.chat],
+    ["/nastroiki/#potrebiteli", "Потребители", "potrebiteli", ICONS.users],
+    ["/nastroiki/", "Настройки", "nastroiki", ICONS.gear],
   ];
+  const u = me.user;
   const top = document.createElement("header");
   top.className = "top";
-  top.innerHTML = `<div class="in">
-    <a class="brand" href="/">Поръчки</a>
-    <nav class="nav">${links.map(([h, t, k]) => `<a href="${h}" class="${k === active ? "on" : ""}">${t}</a>`).join("")}</nav>
-    <span class="who"><button class="themebtn" id="themeBtn" type="button"></button><span class="nm">${esc(me.user.name || me.user.email)}</span> <button class="btn link" id="logout">Изход</button></span>
-  </div>`;
+  top.innerHTML = `<div class="bar">
+      <a class="brand" href="/">${ICONS.logo}<span>Поръчки</span></a>
+      <div class="tools">
+        <div class="popwrap"><button class="topbtn" id="bellBtn" type="button" aria-label="Известия" aria-expanded="false">${ICONS.bell}<span class="dot" id="bellN" hidden></span></button>
+          <div class="pop" id="bellMenu" hidden></div></div>
+        <button class="topbtn" id="themeBtn" type="button"></button>
+        <div class="popwrap"><button class="userchip" id="userBtn" type="button" aria-expanded="false" aria-label="Профил">
+            <span class="avatar">${esc(initials(u.name || u.email))}</span>
+            <span class="uname"><b>${esc(u.name || u.email)}</b><small>${esc(ROLE[u.role] || "")}</small></span></button>
+          <div class="pop" id="userMenu" hidden>
+            <div class="muted small">${esc(u.email)}</div>
+            <a href="/nastroiki/">Настройки</a>
+            <button type="button" id="logout">Изход</button>
+          </div></div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Меню">${links.map(([h, t, k, ic]) => `<a href="${h}" class="${k === here ? "on" : ""}">${ic}<span>${t}</span></a>`).join("")}</nav>`;
   document.body.prepend(top);
   themeButton(top.querySelector("#themeBtn"));
+  popup(top.querySelector("#userBtn"), top.querySelector("#userMenu"));
+  popup(top.querySelector("#bellBtn"), top.querySelector("#bellMenu"));
   top.querySelector("#logout").onclick = async () => {
     await api("/api/auth/logout", { method: "POST", body: {} });
     location.href = "/vhod/";
   };
-  return me.user;
+  // On the settings page the menu items jump to their section.
+  if (active === "nastroiki")
+    addEventListener("hashchange", () => {
+      const h = location.hash.slice(1) || "nastroiki";
+      top.querySelectorAll(".nav a").forEach((a) => a.classList.toggle("on", (a.getAttribute("href").split("#")[1] || (a.getAttribute("href") === "/nastroiki/" ? "nastroiki" : "")) === h));
+    });
+  bell(top);
+  return u;
+}
+
+/** What is waiting: unconfirmed orders, AI calls that need a person, unfinished orders, labels to print. */
+async function bell(top) {
+  let a;
+  try {
+    a = await api("/api/stats/alerts");
+  } catch {
+    return;
+  }
+  const lines = [
+    [a.ai, "AI агентът иска човек", "/poruchki/?tab=active&confirmed=no"],
+    [a.unconfirmed, "непотвърдени нови поръчки", "/poruchki/?tab=active&stage=new&confirmed=no"],
+    [a.toShip, "потвърдени без товарителница", "/poruchki/?tab=active&stage=new&nowaybill=1"],
+    [a.toPrint, "етикета чакат печат", "/pechat/"],
+    [a.leads, "незавършени поръчки", "/nezavarsheni/"],
+  ];
+  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0);
+  const dot = top.querySelector("#bellN");
+  dot.hidden = !n;
+  dot.textContent = n > 99 ? "99+" : String(n);
+  top.querySelector("#bellMenu").innerHTML =
+    lines.filter(([k]) => k).map(([k, t, h]) => `<a href="${h}"><b>${num(k)}</b> ${t}</a>`).join("") || `<div class="muted small">Няма нищо, което да чака.</div>`;
 }
 
 export const qs = () => new URLSearchParams(location.search);
