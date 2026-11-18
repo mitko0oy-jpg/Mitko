@@ -12,8 +12,12 @@ for (const pair of process.argv.slice(2)) {
   const { spec, prompt } = await loadSpec(file);
   const body = {
     conversation_config: {
+      // Optional: let the greeting finish even if the customer says "ало", and do not stop
+      // talking at short "да" / "аха" (older customers say them while listening).
+      ...(spec.turn ? { turn: spec.turn } : {}),
       agent: {
         first_message: spec.first_message,
+        ...(spec.disable_first_message_interruptions != null ? { disable_first_message_interruptions: spec.disable_first_message_interruptions } : {}),
         prompt: { prompt },
         ...(spec.placeholders ? { dynamic_variables: { dynamic_variable_placeholders: spec.placeholders } } : {}),
       },
