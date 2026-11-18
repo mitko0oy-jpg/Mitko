@@ -88,9 +88,22 @@ export function normalizeOrder(site, o) {
     name: o.customerName || ship.name || bill.name || "",
     phone: ship.phone || bill.phone || "",
     items: (o.items || []).map((it) => ({ name: String(it.name || "").trim(), qty: it.quantity || 1, price: Number(it.total) || 0 })),
-    total: Number(o.total) || 0,
+    total: site.country === "sk" ? payableTotalSK(o) : Number(o.total) || 0,
     deliveryText: site.country === "sk" ? deliveryTextSK(o) : deliveryText(o),
   };
+}
+
+/**
+ * What a Slovak customer actually pays the courier. The 3+2 package ships free:
+ * the shop still adds 4 € shipping to the order, and the fulfilment deducts it.
+ */
+export function payableTotalSK(o) {
+  const total = Number(o.total) || 0;
+  const bigPackage = (o.items || []).some((it) => /\b3\s*\+\s*2\b/.test(String(it.name || "")));
+  if (!bigPackage) return total;
+  const listed = o.shippingAmount ?? o.shipping;
+  const shipping = listed != null ? Number(listed) || 0 : total - (Number(o.subTotal) || total) + (Number(o.discount) || 0);
+  return Math.round(Math.max(0, total - Math.max(0, shipping)) * 100) / 100;
 }
 
 /**

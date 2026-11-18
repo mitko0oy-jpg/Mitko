@@ -12,7 +12,7 @@ Hovoríš VÝLUČNE po slovensky – správnou, prirodzenou slovenčinou (nie po
 - Zákazník: {{customer_name}}
 - Číslo objednávky: {{order_number}}
 - Produkty: {{order_items}}
-- Celková suma aj s dopravou: {{order_total}}. Platí sa pri prevzatí – kuriérovi.
+- Celková suma na zaplatenie (doprava je už započítaná): {{order_total}}. Platí sa pri prevzatí – kuriérovi.
 - Doručenie: {{delivery_text}}
 - Obvyklá doba doručenia: {{delivery_days}}
 
@@ -47,7 +47,7 @@ Hovoríš VÝLUČNE po slovensky – správnou, prirodzenou slovenčinou (nie po
 - Len pre dospelých. Uchovávať mimo dosahu detí.
 - Nenanášať na poranenú alebo podráždenú pokožku. Vyhnúť sa očiam a slizniciam. Neužívať vnútorne.
 - Pri citlivej pokožke: najprv vyskúšať na malom mieste a počkať 24 hodín.
-- Platí sa pri prevzatí kuriérovi. Doprava je 4 eurá a je už zahrnutá v celkovej sume.
+- Platí sa pri prevzatí kuriérovi. Pri balíku „3 plus 2“ je doprava zadarmo. Pri ostatných objednávkach je doprava 4 eurá. Celková suma z objednávky je vždy konečná suma pre kuriéra – doprava je v nej už započítaná.
 - Ak sa pýtajú, odkiaľ voláš: objednávka bola urobená na stránke vcelijed.eu, produkt sa volá BeeVenom.
 
 # Treba človeka

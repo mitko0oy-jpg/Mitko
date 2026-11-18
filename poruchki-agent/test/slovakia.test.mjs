@@ -63,6 +63,17 @@ test("Slovak delivery text", () => {
   assert.equal(n.deliveryText, "kuriérom GLS na adresu Hlavná 12, Trnava");
 });
 
+test("the 3+2 package ships free in Slovakia: the agent says the total without shipping", () => {
+  const site = { id: "vcelijed", label: "Vcelijed SK", country: "sk" };
+  const big = { id: 7, invoiceNo: 98837, created: 1794700000, subTotal: 42.8, shippingAmount: 4, total: 46.8, items: [{ name: "Včelí jed 3+2", quantity: 1, total: 37.9 }, { name: "Darček: 16 náplastí s včelím jedom", quantity: 1, total: 0 }, { name: "Náplasti na kolená s prírodnými extraktmi - 12", quantity: 1, total: 4.9 }] };
+  assert.equal(normalizeOrder(site, big).total, 42.8);
+  const { shippingAmount, ...noShippingField } = big;
+  assert.equal(normalizeOrder(site, noShippingField).total, 42.8, "falls back to total minus subtotal");
+  const small = { id: 8, invoiceNo: 98836, created: 1794700000, subTotal: 27.9, shippingAmount: 4, total: 31.9, items: [{ name: "Včelí jed 2+1", quantity: 1, total: 27.9 }, { name: "Darček: 8 náplastí s včelím jedom", quantity: 1, total: 0 }] };
+  assert.equal(normalizeOrder(site, small).total, 31.9, "2+1 still pays 4 € shipping");
+  assert.equal(normalizeOrder({ id: "bg", label: "BG", country: "bg" }, { ...big, id: 9 }).total, 46.8, "Bulgaria is unchanged");
+});
+
 test("a Slovak order is called by the Slovak agent, in Slovak, in Slovak hours", async () => {
   const store = memoryStore();
   const calls = [];
