@@ -215,3 +215,32 @@ test("only orders that came after /rezhim are called", async () => {
   assert.equal(calls[0].variables.order_number, "31");
   assert.equal(calls[0].to, "+359877000000");
 });
+
+test("a call the line answered and dropped before anyone could pick up is tried again in minutes", async () => {
+  const { deps, store, orders, calls, messages, order } = setup();
+  await syncOrders(deps, T0);
+  orders.push(order(1801));
+  await syncOrders(deps, min(2));
+  await runDueCalls(deps, min(3));
+  const key = "order/bg/1801";
+  const short = (id) => ({ ...postCall(id, key, "no_conversation"), data: { ...postCall(id, key, "no_conversation").data, metadata: { call_duration_secs: 4 } } });
+
+  deps.ringSecs = async () => 2.5; // "answered" after 2.5 s
+  const r = await handleWebhook(deps, short("conv_1"), min(4));
+  assert.equal(r.lineFault, true);
+  let rec = await store.get(key, { type: "json" });
+  assert.equal(rec.state, "queued");
+  assert.equal(rec.attempts, 0, "a line fault is not an attempt");
+  assert.equal(rec.lineFaults, 1);
+  assert.equal(rec.nextAttemptAt, min(7).toISOString());
+  assert.equal(messages.length, 0);
+
+  await runDueCalls(deps, min(7));
+  assert.equal(calls.length, 2);
+  deps.ringSecs = async () => 15; // rang 15 s, then the customer hung up silently: a normal retry
+  await handleWebhook(deps, short("conv_2"), min(8));
+  rec = await store.get(key, { type: "json" });
+  assert.equal(rec.attempts, 1);
+  assert.equal(rec.lineFaults, 1);
+  assert.equal(rec.nextAttemptAt, min(68).toISOString());
+});

@@ -95,3 +95,20 @@ export function readPostCall(payload) {
     transcript,
   };
 }
+
+/**
+ * Seconds from our INVITE to the answer, from the SIP messages ElevenLabs keeps.
+ * Some phone routes "answer" after ~2.5 s – before anyone could pick up – and drop
+ * the call a few seconds later; such a call never reached the customer.
+ * @returns {Promise<number|null>}
+ */
+export async function ringSeconds({ apiKey, conversationId, fetchImpl = fetch }) {
+  if (!apiKey || !conversationId) return null;
+  const res = await fetchImpl(`${API}/v1/convai/conversations/${conversationId}/sip-messages`, { headers: { "xi-api-key": apiKey } });
+  if (!res.ok) return null;
+  const msgs = (await res.json()).sip_messages || [];
+  const at = (p) => msgs.filter((m) => String(m.raw_message || "").startsWith(p)).at(-1)?.created_at_unix_micro;
+  const inv = at("INVITE");
+  const ack = at("ACK");
+  return inv && ack ? (ack - inv) / 1e6 : null;
+}

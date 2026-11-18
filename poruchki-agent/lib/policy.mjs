@@ -5,6 +5,10 @@ export const MAX_ATTEMPTS = 3;
 export const RETRY_DELAYS_MIN = [60, 21 * 60];
 // If no result arrives this long after a call started, treat it as "no conversation".
 export const STALE_CALL_MIN = 30;
+// A call the phone line "answered" before anyone could pick up and then dropped:
+// tried again after a few minutes, without counting as an attempt, at most this many times.
+export const MAX_LINE_FAULTS = 3;
+export const LINE_FAULT_RETRY_MIN = 3;
 
 const RETRY_OUTCOMES = new Set(["voicemail", "no_conversation", "busy", "no-answer", "unknown", ""]);
 

@@ -1,7 +1,7 @@
 // The calling loop: pick up new orders, call when due, apply results.
 // All I/O comes in through arguments, so this file is testable with fakes.
 import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
-import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN } from "./policy.mjs";
+import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN, MAX_LINE_FAULTS, LINE_FAULT_RETRY_MIN } from "./policy.mjs";
 import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
@@ -209,6 +209,25 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
   if (rec.state !== "calling" || (conversationId && rec.conversationIds?.length && rec.conversationIds.at(-1) !== conversationId)) {
     return { ignored: "not waiting for this call" };
   }
+  // The line "answered" and dropped before the customer could pick up: try again soon.
+  const silentShort = call && (call.durationSecs ?? 99) <= 8 && !/^Клиент:/m.test(call.transcript || "");
+  if (silentShort && deps.ringSecs && (rec.lineFaults || 0) < MAX_LINE_FAULTS) {
+    const ring = await deps.ringSecs(conversationId).catch(() => null);
+    if (ring != null && ring < 5) {
+      const next = {
+        ...rec,
+        state: "queued",
+        callingSince: null,
+        attempts: Math.max(0, (rec.attempts || 1) - 1),
+        lineFaults: (rec.lineFaults || 0) + 1,
+        nextAttemptAt: new Date(now.getTime() + LINE_FAULT_RETRY_MIN * 60_000).toISOString(),
+        history: [...(rec.history || []), { at: now.toISOString(), event: "line fault", ring }],
+      };
+      await save(store, key, next, { onlyIfMatch: entry.etag });
+      return { key, state: "queued", lineFault: true };
+    }
+  }
+
   const r = applyOutcome(rec, { outcome }, now);
   if (call) r.rec.lastSummary = call.summary;
   await save(store, key, r.rec, { onlyIfMatch: entry.etag });

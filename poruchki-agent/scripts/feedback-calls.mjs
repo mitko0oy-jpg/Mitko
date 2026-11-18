@@ -4,10 +4,11 @@
 //   {label, name, phone, city, address, items: [{name, q}], deliveredAt}
 //
 //   ELEVENLABS_API_KEY=… EL_FEEDBACK_AGENT_ID=… EL_PHONE_NUMBER_ID=… \
-//     node scripts/feedback-calls.mjs <list.json> [--only 1649,1641] [--to +359…] [--dry]
+//     node scripts/feedback-calls.mjs <list.json> [--only 1649,1641] [--to +359…] [--dry] [--tries 3]
 //
 // --to   calls this number instead (a test; the result is marked 🧪 and not saved)
 // --dry  only prints what the agent would say
+// --tries  how many times to try when the line drops the call before anyone could answer (default 3)
 import fs from "node:fs";
 import { feedbackVariables } from "../lib/feedback.mjs";
 import { normalizePhoneBG, inCallingHours, sofiaNow } from "../lib/format.mjs";
@@ -32,11 +33,30 @@ async function result(id) {
     const d = await r.json();
     if (["done", "failed"].includes(d.status)) {
       const dc = d.analysis?.data_collection_results || {};
-      return { secs: d.metadata?.call_duration_secs, outcome: dc.outcome?.value || d.status, summary: dc.summary?.value || "" };
+      const spoke = (d.transcript || []).some((t) => t.role === "user" && t.message);
+      return { secs: d.metadata?.call_duration_secs, outcome: dc.outcome?.value || d.status, summary: dc.summary?.value || "", spoke, ring: await ringSecs(id) };
     }
   }
   return { outcome: "still running" };
 }
+
+// Seconds from our INVITE to the answer. Some Zadarma routes "answer" after ~2.5 s,
+// before the customer's phone could be picked up, and drop the call ~4 s later.
+// Such a call never reached the customer, so it is tried again.
+async function ringSecs(id) {
+  try {
+    const r = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${id}/sip-messages`, { headers: { "xi-api-key": key } });
+    const msgs = (await r.json()).sip_messages || [];
+    const at = (p) => msgs.filter((m) => String(m.raw_message || "").startsWith(p)).at(-1)?.created_at_unix_micro;
+    const inv = at("INVITE");
+    const ack = at("ACK");
+    return inv && ack ? (ack - inv) / 1e6 : null;
+  } catch {
+    return null;
+  }
+}
+const lineFault = (r) => !r.spoke && (r.secs ?? 99) <= 8 && r.ring != null && r.ring < 5;
+const TRIES = Number(opt("tries") || 3);
 
 for (const order of list.filter((o) => !only || only.includes(String(o.label)))) {
   const variables = feedbackVariables(order);
@@ -55,12 +75,20 @@ for (const order of list.filter((o) => !only || only.includes(String(o.label))))
     console.log(`#${order.label}: no valid phone – skipped`);
     continue;
   }
-  try {
-    const { conversationId } = await startCall({ apiKey: key, agentId, phoneNumberId, to: phone, variables });
-    const r = await result(conversationId);
-    console.log(`#${order.label}: ${r.outcome} (${r.secs ?? "?"} s) ${r.summary}`);
-  } catch (err) {
-    console.log(`#${order.label}: call failed – ${err.message}`);
+  for (let attempt = 1; attempt <= TRIES; attempt++) {
+    try {
+      const { conversationId } = await startCall({ apiKey: key, agentId, phoneNumberId, to: phone, variables });
+      const r = await result(conversationId);
+      if (lineFault(r)) {
+        console.log(`#${order.label}: line fault (answered after ${r.ring.toFixed(1)} s, dropped) – try ${attempt}/${TRIES}`);
+        await wait(90_000);
+        continue;
+      }
+      console.log(`#${order.label}: ${r.outcome} (${r.secs ?? "?"} s, rang ${r.ring?.toFixed(1) ?? "?"} s) ${r.summary}`);
+    } catch (err) {
+      console.log(`#${order.label}: call failed – ${err.message}`);
+    }
+    break;
   }
   await wait(20_000); // let the line free up before the next call
 }
