@@ -91,9 +91,9 @@ if (webhookUrl && !webhookId) {
   console.log(`EL_WEBHOOK_SECRET=${w.webhook_secret ?? "(not returned – copy it from the ElevenLabs dashboard)"}`);
 }
 
-const placeholders = spec.tools?.length ? {} : {
-  shop_name: spec.defaults.shop_name,
-  delivery_days: spec.defaults.delivery_days,
+const placeholders = spec.placeholders || (spec.tools?.length ? {} : {
+  shop_name: spec.defaults?.shop_name,
+  delivery_days: spec.defaults?.delivery_days,
   customer_name: "Мария",
   order_number: "1000",
   order_items: "BeeVenom Care Gel 2+1 броя, и подарък: 8 бр. пластири за стави и мускули",
@@ -101,7 +101,7 @@ const placeholders = spec.tools?.length ? {} : {
   delivery_text: "Доставка до офис на Еконт, Пловдив, офис Тракия",
   order_key: "test",
   test: "yes",
-};
+});
 
 const body = {
   name: spec.name,

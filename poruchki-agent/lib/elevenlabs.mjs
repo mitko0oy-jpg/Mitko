@@ -89,6 +89,7 @@ export function readPostCall(payload) {
     intent: String(val("intent") || "").trim().toLowerCase(),
     needsHuman: val("needs_human") === true || String(val("needs_human")).toLowerCase() === "true",
     agentId: d.agent_id || "",
+    fields: Object.fromEntries(Object.keys(dc).map((k) => [k, val(k)])),
     durationSecs: d.metadata?.call_duration_secs ?? null,
     failedChecks,
     transcript,

@@ -5,6 +5,7 @@ import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN } from "./policy.m
 import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
+import { handleFeedbackCall } from "./feedback.mjs";
 
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
 const doneKey = (key) => key.replace(/^order\//, "done/");
@@ -186,6 +187,8 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
     return { ignored: type };
   }
 
+  if (call?.variables?.campaign === "feedback") return handleFeedbackCall(deps, call, now);
+
   let key = call?.variables?.order_key;
   if (!key && conversationId) key = (await store.get(`conv/${conversationId}`, { type: "json" }))?.key;
   if (!key && call && deps.config.inboundAgentId && call.agentId === deps.config.inboundAgentId) return handleInboundCall(deps, call);
@@ -228,6 +231,14 @@ export async function purgeOld(store, now = new Date(), days = 14) {
   for (const { key } of (await store.list({ prefix: "phone-orders/" })).blobs) {
     const day = key.split("/")[1];
     if (day && now - new Date(`${day}T00:00:00Z`) > 30 * 86_400_000) {
+      await store.delete(key);
+      n++;
+    }
+  }
+  // Feedback results: kept 60 days (callbacks are asked for up to a month later).
+  for (const { key } of (await store.list({ prefix: "feedback/" })).blobs) {
+    const r = await store.get(key, { type: "json" });
+    if (r?.at && now - new Date(r.at) > 60 * 86_400_000) {
       await store.delete(key);
       n++;
     }
