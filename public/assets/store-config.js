@@ -49,7 +49,7 @@ export const CONTACT = {
   email: "edubel@mail.bg",
   viber: "https://invite.viber.com/?g2=AQAHAw6O7C9zc1dx8TZ9cIE8Z6G8lUWFiYkgY2OK8dH77VvsL%2B13ZY66S7ACf7Pz",
 };
-export const COMPANY = "Ангелова ЕДУ БЕЛ ЕООД · ЕИК 208473142";
+export const COMPANY = "ДД Димитров 26 ЕООД · ЕИК 208651506";
 
 // The two decks: what the cart, the product cards and the menu show.
 export const DECKS = {
