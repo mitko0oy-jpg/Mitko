@@ -71,3 +71,11 @@ test("a test feedback call is reported but not saved", async () => {
   assert.match(messages[0], /🧪 ТЕСТ/);
   assert.match(messages[0], /Да звъннем:<\/b> след пенсията/);
 });
+
+test("a 'reorder' without a confirmed pack is flagged for checking, not sent as an order", async () => {
+  const messages = [];
+  const deps = { store: memoryStore(), notify: async (t) => messages.push(t), config: {} };
+  await handleWebhook(deps, payload({ campaign: "feedback", order_key: "fb-test", test: "yes", order_number: "1000" }, { outcome: "reorder", reorder_pack: "none" }), NOW);
+  assert.match(messages[0], /Може би иска поръчка/);
+  assert.doesNotMatch(messages[0], /Нова поръчка/);
+});

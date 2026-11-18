@@ -118,6 +118,7 @@ const OUTCOME_LABEL = {
   wrong_number: "☎️ Грешен номер",
   do_not_call: "🚫 Не иска обаждания",
   needs_human: "🙋 Иска колега да му се обади",
+  unclear_order: "❓ Може би иска поръчка – прочети разговора",
   voicemail: "📵 Гласова поща",
   no_conversation: "📵 Не вдигна / затвори",
 };
@@ -132,7 +133,9 @@ const yes = (v) => v === true || String(v).toLowerCase() === "true";
 export function feedbackMessage(call) {
   const v = call.variables || {};
   const f = call.fields || {};
-  const outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
+  let outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
+  // "Reorder" without a confirmed pack is not an order – Mitko must check the conversation.
+  if (outcome === "reorder" && !/[35]/.test(String(f.reorder_pack || ""))) outcome = "unclear_order";
   const lines = [];
   lines.push(`${v.test === "yes" ? "🧪 ТЕСТ · " : ""}💬 <b>Обратна връзка · ${esc(OUTCOME_LABEL[outcome] || `❓ ${outcome}`)}</b>`);
   lines.push(`Поръчка #${esc(v.order_number)} · ${esc(v.customer_name)} · получена ${esc(v.delivered_ago)}`);
