@@ -117,6 +117,7 @@ const OUTCOME_LABEL = {
   wrong_person: "👤 Вдигна друг човек",
   wrong_number: "☎️ Грешен номер",
   do_not_call: "🚫 Не иска обаждания",
+  needs_human: "🙋 Иска колега да му се обади",
   voicemail: "📵 Гласова поща",
   no_conversation: "📵 Не вдигна / затвори",
 };
@@ -133,7 +134,7 @@ export function feedbackMessage(call) {
   const f = call.fields || {};
   const outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
   const lines = [];
-  lines.push(`${v.test === "yes" ? "🧪 ТЕСТ · " : ""}💬 <b>Обратна връзка · ${esc(OUTCOME_LABEL[outcome] || outcome)}</b>`);
+  lines.push(`${v.test === "yes" ? "🧪 ТЕСТ · " : ""}💬 <b>Обратна връзка · ${esc(OUTCOME_LABEL[outcome] || `❓ ${outcome}`)}</b>`);
   lines.push(`Поръчка #${esc(v.order_number)} · ${esc(v.customer_name)} · получена ${esc(v.delivered_ago)}`);
   lines.push(`Беше: ${esc(v.bought_text)}`);
   const uses = { yes: "ползва го", no: "още не го ползва", stopped: "спрял е" }[String(f.uses_product || "").toLowerCase()];
