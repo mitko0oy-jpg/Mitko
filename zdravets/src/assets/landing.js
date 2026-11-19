@@ -615,7 +615,7 @@ function productTop(p, d, ctx) {
         </label>`).join('')}</div>` : ''}
       ${others.length && comboReady() ? `<div class="sp-combo" hidden>
         <p class="sp-lbl"><span data-combo-need></span></p>
-        <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(x.shortName.replace(/^Пластири /, '').replace(/ пластири$/, ''))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
+        <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(((n) => n.charAt(0).toUpperCase() + n.slice(1))(x.shortName.replace(/^Пластири (с )?/, '').replace(/ пластири$/, '')))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
       ${bfOn() ? `<p class="sp-gift">🎁 <span><b>+ 12 билкови пластира подарък</b> към всяка поръчка до 30 ноември</span></p>` : ''}

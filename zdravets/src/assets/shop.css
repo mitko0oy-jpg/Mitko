@@ -8,6 +8,7 @@
   --cream:#FFFBF3; --ink:#24180C; --muted:#6E5D49; --line:#EFE2CC;
 }
 /* ---------- общият вид на сайта ---------- */
+[hidden]{display:none!important}
 body{background:var(--sp-cream);color:var(--sp-ink)}
 h1,h2,h3{font-family:var(--head);font-weight:800;letter-spacing:-.02em;color:var(--sp-ink)}
 h1 em,h2 em,h3 em{font-family:"Lora",Georgia,serif;font-style:italic;font-weight:700;color:var(--sp-acc);letter-spacing:0}

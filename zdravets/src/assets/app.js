@@ -86,7 +86,7 @@ const Cart = {
   }
 };
 const isGift = i => i.productId === CONFIG.giftStoreId;
-const countOf = o => (o.items || []).filter(i => !isGift(i)).reduce((s, i) => s + (i.quantity || 1), 0);
+const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.productId)).reduce((s, i) => s + (i.quantity || 1), 0);
 
 // По време на Черния петък подаръкът е във всяка поръчка (и само заедно с друг продукт).
 async function syncGift() {
