@@ -86,3 +86,11 @@ git commit … && git push                 # сайтът се сменя до 5
 - Каквото липсва в `LANDING`, се взима от категорията или от `PRODUCTS`; разделът без данни не се показва.
 - Снимките и видеата на гела са тези на beeevenom.eu (`landing/beevenom/media/` на фиксирани commit-и).
 
+
+### 3D сцените и видеата
+
+- Всеки продукт (без гела) има 3D сцена в своя цвят: `landing/zdravets/media/scene-<id>.webp` (1000 px) и `-600.webp`;
+  козметиката има и раздвижена версия `scene-<id>.mp4` (10 с, напред и назад, без звук). Направени са с Higgsfield
+  (сцена: GPT Image 2.6 по снимката на продукта; движение: Grok Imagine Video 1.5 Lite).
+- В кода: `SCENES`, `SCENE_VIDEOS` и `ZN_MEDIA` (commit-ът с файловете) в `landing-data.js`. Нов файл → commit на медията,
+  после нейният commit в `ZN_MEDIA` → build → commit → live.
