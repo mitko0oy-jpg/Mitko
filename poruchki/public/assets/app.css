@@ -1018,3 +1018,38 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 @media (max-width: 700px) { .lane { height: 240px; } .lane .ztag { font-size: 10px; padding: 1px 6px; left: 4px; } .cartpop { width: min(320px, calc(100vw - 48px)); } .zonecounts { font-size: 12px; } }
 .modal .remstep input[type="number"] { width: 84px !important; flex: none; }
 .badge.abandoned { --h: #8a7fc4; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
+
+
+/* Склад */
+.sktiles { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+a.tile { display: block; }
+.sktbl td { vertical-align: middle; }
+.sktbl .sub { color: var(--text-2); font-size: 12px; font-weight: 400; margin-top: 2px; }
+.sktbl td.r .sub { text-align: right; }
+.sktbl .nowrap, .nowrap { white-space: nowrap; }
+.skname { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--link, var(--accent)); cursor: pointer; text-align: left; }
+.skname:hover { text-decoration: underline; }
+.skcalc { display: grid; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.skcalc > div { display: flex; justify-content: space-between; gap: 12px; }
+.skcalc .tot { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+.skh { margin: 6px 0 0; font-size: 15px; }
+.sklinks { display: grid; gap: 6px; }
+.sklink { display: grid; grid-template-columns: minmax(0, 1fr) auto 72px 30px; gap: 6px; align-items: center; }
+#addLink { justify-self: start; }
+.head-tools a.btn { color: var(--text); }
+.skhist { display: grid; gap: 4px; font-size: 13px; max-height: 220px; overflow: auto; }
+#unlinkedCard details { margin-top: 10px; }
+@media (max-width: 760px) {
+  .sktbl thead, .skul thead { display: none; }
+  .sktbl, .sktbl tbody, .skul, .skul tbody { display: block; }
+  .sktbl tr, .skul tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .sktbl tr:last-child, .skul tr:last-child { border-bottom: 0; }
+  .sktbl td, .skul td { display: block; border: 0; padding: 0; text-align: left !important; }
+  .sktbl td[data-l]::before, .skul td[data-l]::before { content: attr(data-l); display: block; font-size: 11px; color: var(--muted); }
+  .sktbl td.r .sub { text-align: left; }
+  .sktbl .c-name, .sktbl .c-act, .skul .c-name { grid-column: 1 / -1; }
+  .sktbl .c-act, .skul .c-act { display: flex; gap: 8px; }
+  .sktbl .c-act .btn, .skul .c-act .btn { flex: 1; }
+  .sklink { grid-template-columns: minmax(0, 1fr) auto 60px 30px; }
+}
+@media (max-width: 720px) { .sktiles { grid-template-columns: 1fr 1fr; } .sktiles .tile:first-child { grid-column: 1 / -1; } .sktiles .tile .big { font-size: 20px; } }

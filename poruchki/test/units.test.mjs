@@ -155,3 +155,15 @@ test("Sofia days", () => {
   assert.equal(sofiaDay(Date.parse("2026-11-16T22:30:00Z")), "2026-11-17");
   assert.equal(addDays("2026-03-01", -1), "2026-02-28");
 });
+
+test("warehouse: the starting list opens only with its key", async () => {
+  const { createCipheriv, randomBytes } = await import("node:crypto");
+  const { openSeed } = await import("../netlify/lib/stock.mts");
+  const key = randomBytes(32);
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", key, iv);
+  const enc = Buffer.concat([c.update(JSON.stringify({ countedAt: "2026-11-19T12:45:00+02:00", items: [{ name: "Гел", qty: 2437 }] })), c.final()]);
+  const sealed = ["v1", iv.toString("base64url"), c.getAuthTag().toString("base64url"), enc.toString("base64url")].join(".");
+  assert.equal(openSeed(sealed, key.toString("base64url")).items[0].qty, 2437);
+  assert.throws(() => openSeed(sealed, randomBytes(32).toString("base64url")));
+});
