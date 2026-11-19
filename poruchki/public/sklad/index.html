@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Склад – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row">
+        <h1>Склад</h1>
+        <button class="roundbtn" id="addItem" title="Нов продукт в склада" aria-label="Нов продукт в склада" hidden>+</button>
+      </div>
+      <div class="head-tools">
+        <a class="btn" id="excel" href="/api/stock/export">Excel</a>
+        <button class="btn" id="reload">Обнови</button>
+      </div>
+    </div>
+
+    <section class="tiles sktiles" id="tiles" aria-label="Накратко"></section>
+    <p class="muted small" style="margin:0" id="how"></p>
+
+    <div id="groups" class="stack"></div>
+
+    <section class="card" id="unlinkedCard" hidden>
+      <div class="row spread"><h2>Продадени продукти без връзка със склада</h2><span class="muted small" id="unlinkedHint"></span></div>
+      <p class="muted small" style="margin:0 0 8px">Тези продукти от поръчките не намаляват нищо в склада. Свържи ги с продукта, от който са (и колко броя взимат), или ги скрий, ако не са от склада.</p>
+      <div class="scroll" id="unlinked"></div>
+      <details id="abroadBox" hidden><summary class="small"><b>Чужбина</b> <span class="muted" id="abroadN"></span> – свържи ги само ако тези поръчки излизат от твоя склад</summary><div class="scroll" id="abroad"></div></details>
+      <details id="ignoredBox" hidden><summary class="small muted">Скрити <span id="ignoredN"></span></summary><div id="ignored" class="stack small" style="margin-top:8px"></div></details>
+    </section>
+  </main>
+  <dialog class="modal" id="dlg"></dialog>
+  <datalist id="productNames"></datalist>
+  <script type="module" src="/assets/sklad.js"></script>
+</body>
+</html>

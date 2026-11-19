@@ -830,3 +830,63 @@ test("order panel like Middleware: products with SKU, weight and picture; what t
   if (sp) assert.equal((await api(`/api/orders/${sp.id}`)).data.courier_cost, 3.8);
   assert.ok(sent.some((x) => x.path === "/speedy/shipment/info"));
 });
+
+test("warehouse: value and days left, a package takes 5, deliveries at the average cost, count and write-off", async () => {
+  const r = await api("/api/stock", { name: "Гел с пчелна отрова", grp: "BeeVenom", qty: 100, unit_cost: 1.15, links: [{ product: "BeeVenom Care Gel", units: 1 }] });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const id = r.data.id;
+  let it = r.data.items.find((x) => x.id === id);
+  assert.equal(it.qty, 100, "orders sent before the count do not take from it");
+  assert.equal(it.value, 115);
+  assert.equal(r.data.total.value, 115);
+  assert.ok(it.sold > 10 && it.perDay > 0 && it.days > 0 && it.days < 100, JSON.stringify(it));
+  assert.ok(!r.data.unlinked.some((u) => u.name === "BeeVenom Care Gel"));
+  assert.equal((await api("/api/stock", { name: "гел с пчелна отрова", qty: 1, unit_cost: 1 })).status, 400, "same name twice");
+
+  // A package sold and sent after the count, not linked yet: shown as „без връзка“, takes nothing.
+  orders.push(order(70, 0, "shipped", { items: [{ name: "Склад пакет 3+2", quantity: 1, total: 30 }], fulfillment: { courier: "Econt", trackingNo: "1051600000070" } }));
+  await api("/api/settings/sync", {});
+  let d = (await api("/api/stock")).data;
+  // (the fake shop is behind two shops here, so the order may come twice)
+  const pk = d.unlinked.find((u) => u.name === "Склад пакет 3+2");
+  assert.ok(pk && pk.qty >= 1, JSON.stringify(d.unlinked));
+  assert.equal(d.items.find((x) => x.id === id).qty, 100);
+  d = (await api("/api/stock/link", { product: "Склад пакет 3+2", item_id: id, units: 5 })).data;
+  it = d.items.find((x) => x.id === id);
+  assert.equal(it.qty, 100 - 5 * pk.qty, "the sent package took 5 gels");
+  assert.equal(it.since.out, 5 * pk.qty);
+  const before = it.qty;
+  assert.ok(!d.unlinked.some((u) => u.name === "Склад пакет 3+2"));
+
+  // Delivery at another price: the cost becomes the average of what was there and what came.
+  let x = (await api(`/api/stock/${id}/move`, { kind: "receipt", qty: 50, unit_cost: 1.45, note: "доставка" })).data;
+  assert.equal(x.item.qty, before + 50);
+  assert.equal(x.item.unit_cost, Math.round(((before * 1.15 + 50 * 1.45) / (before + 50)) * 10000) / 10000);
+  assert.equal(x.moves[0].before, before);
+  // Count: the real number from now on; write-off takes from it.
+  x = (await api(`/api/stock/${id}/move`, { kind: "count", qty: 140 })).data;
+  assert.equal(x.item.qty, 140);
+  assert.equal(x.item.since.out, 0);
+  x = (await api(`/api/stock/${id}/move`, { kind: "writeoff", qty: 3, note: "счупени" })).data;
+  assert.equal(x.item.qty, 137);
+  assert.equal(x.moves[0].kind, "writeoff");
+  assert.equal((await api(`/api/stock/${id}/move`, { kind: "receipt", qty: 0 })).status, 400);
+
+  // Name, links and archive; archived items are out of the value.
+  x = (await api(`/api/stock/${id}`, { min_days: 45, links: [{ product: "BeeVenom Care Gel", units: 1 }, { product: "Склад пакет 3+2", units: 5 }, { product: "Гел 2+1", units: 3 }] })).data;
+  assert.equal(x.item.links.length, 3);
+  assert.equal(x.item.min_days, 45);
+  const p = (await api("/api/stock/products")).data.products;
+  assert.ok(p.some((n) => n.name === "BeeVenom Care Gel"));
+
+  // Hide a product that is not from the warehouse.
+  orders.push(order(71, 0, "pending", { items: [{ name: "Пробна матура книжна", quantity: 1, total: 9.9 }] }));
+  await api("/api/settings/sync", {});
+  d = (await api("/api/stock/ignore", { product: "Пробна матура книжна" })).data;
+  assert.ok(!d.unlinked.some((u) => u.name === "Пробна матура книжна") && d.ignored.includes("Пробна матура книжна"));
+
+  const csv = await (await fetch(B + "/api/stock/export", { headers: { cookie } })).text();
+  assert.match(csv, /Гел с пчелна отрова;137;1,2\d;/);
+  d = (await api(`/api/stock/${id}`, { archived: true })).data;
+  assert.equal((await api("/api/stock")).data.total.value, 0);
+});
