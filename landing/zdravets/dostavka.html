@@ -883,12 +883,16 @@ function renderCheckoutHelper() {
 }
 
 function renderThanks() {
-  // номерът и сумата идват от магазина, ако ги има
-  try {
-    const last = W() && W().Store && W().Store.Orders.getLastOrder && W().Store.Orders.getLastOrder();
-    const el = $('#order-no');
-    if (last && el && (last.number || last.id)) el.innerHTML = `Номер на поръчката: <b>${esc(last.number || last.id)}</b>`;
-  } catch (e) {}
+  // номерът и сумата идват от магазина (последната поръчка от този браузър)
+  const el = $('#order-no');
+  (function wait(n) {
+    const O = cbReady() && W().Store.Orders;
+    if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => wait(n + 1), 250); return; }
+    Promise.resolve(O.getLastOrder()).then(o => {
+      const no = o && (o.number || o.orderNumber || o.id);
+      if (el && no) el.innerHTML = `Номер на поръчката: <b>${esc(no)}</b>${o.total ? ` · за плащане при получаване: <b>${fmt(+o.total)}</b>` : ''}`;
+    }).catch(() => {});
+  })(0);
 }
 
 /* ---------- images by key (снимките се сменят само в данните) ---------- */
