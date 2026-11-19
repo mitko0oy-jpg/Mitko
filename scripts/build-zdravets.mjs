@@ -99,8 +99,8 @@ async function styles() {
   const reset =
     `.page-layout:has(#znl),.page-layout:has(#znf){overflow:clip;display:flow-root}` +
     `.grid-row:has(#znl),.grid-row:has(#znf){padding-left:0!important;padding-right:0!important}` +
-    `:is(.grid-content,.grid-column,.widget-row,.widget,.code-widget-content):is(:has(#znl),:has(#znf)){display:block!important;float:none!important;width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}` +
-    `${SCOPE}{position:relative;isolation:isolate;width:100%;font-size:var(--fs);text-align:left}` +
+    `:is(.grid-content,.grid-column,.widget-row,.widget,.code-widget-content):is(:has(#znl),:has(#znf)){display:block!important;float:none!important;clear:both;width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important}` +
+    `${SCOPE}{position:relative;isolation:isolate;width:100%;font-size:var(--fs);text-align:left;font-feature-settings:"locl" 0}` +
     `${SCOPE} b,${SCOPE} strong{font-weight:800}${SCOPE} ul{list-style:none;padding:0;margin:0}${SCOPE} .prose ul{list-style:disc;padding-left:1.3em;margin:0 0 1em}` +
     `${SCOPE} button{font-family:inherit}${SCOPE} input,${SCOPE} textarea{font-family:inherit;font-size:inherit}${SCOPE} a{text-decoration-thickness:1px}`;
   return (reset + css).replace(/\s*\n\s*/g, "").replace(/\s{2,}/g, " ");
@@ -136,9 +136,11 @@ for (const p of PAGES) {
   const header = meta.header === "no" ? "" : `<div data-zn-header></div>\n`;
   const footer = meta.footer === "no" ? "" : `\n<div data-zn-footer></div>`;
   const mbar = meta.mbar === "no" ? "" : " data-mbar";
+  // the page's own unscoped styles (the checkout form of ConvertBuilder on /poruchka)
+  const extra = meta.css ? (await readFile(path.join(SRC, "assets", meta.css), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s*\n\s*/g, "") : "";
   const out = `<!-- ЗДРАВЕЦ НАТУРА · ${meta.title} (${p.url}) · целият код отива в един HTML/Code блок в ConvertBuilder.
      Направен от scripts/build-zdravets.mjs – промените се правят в zdravets/src/ и после се генерира наново. -->
-<style>${css}</style>
+<style>${css}${extra}</style>
 <link rel="stylesheet" href="${FONTS}">
 <div id="${id}" class="zn-root" data-page="${meta.page || ""}"${mbar}>
 ${header}<div class="zn-main">

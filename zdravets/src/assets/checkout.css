@@ -1,0 +1,22 @@
+/* Формата за поръчка на ConvertBuilder (страницата /poruchka): по-едра и по-ясна – купувачите
+   често са възрастни хора. Влиза само в блока „poruchka“ и не е ограничена до него. */
+.payment-step-wrapper{font-family:'Manrope','Segoe UI',Arial,sans-serif!important;font-feature-settings:"locl" 0;color:#1b2419}
+.payment-step-wrapper .checkouts-wrapper{background:#fbf7ee!important}
+.payment-step-wrapper h3,.payment-step-wrapper h2{font-family:'Lora',Georgia,serif!important;font-size:24px!important;font-weight:700!important;color:#17301a!important;letter-spacing:0!important}
+.payment-step-wrapper input:not([type=checkbox]):not([type=radio]),.payment-step-wrapper select{font-size:19px!important;min-height:58px!important;border:2px solid #cfc6b0!important;border-radius:12px!important;color:#1b2419!important;background:#fff!important}
+.payment-step-wrapper input::placeholder{color:#6b7466!important;opacity:1}
+.payment-step-wrapper input:focus,.payment-step-wrapper select:focus{border-color:#3d7136!important;outline:3px solid rgba(232,163,23,.35)!important}
+.payment-step-wrapper .iti{width:100%}
+.payment-step-wrapper label.tick-wrapper,.payment-step-wrapper label.tick-wrapper span{font-size:18px!important;color:#1b2419!important}
+.payment-step-wrapper section label.tick-wrapper{border:2px solid #ddd6c4!important;border-radius:14px!important;background:#fff!important;padding-top:6px!important;padding-bottom:6px!important}
+.payment-step-wrapper .next-prev-buttons .btn{display:flex!important;align-items:center;justify-content:center;gap:10px;background:#e8a317!important;color:#2a1d00!important;font-size:21px!important;font-weight:800!important;min-height:68px!important;border-radius:999px!important;box-shadow:0 6px 0 #b97c06!important;border:0!important;line-height:1.2!important}
+.payment-step-wrapper .next-prev-buttons .btn:hover{background:#f2b12a!important}
+.payment-step-wrapper .next-prev-buttons .btn *{color:#2a1d00!important}
+.payment-step-wrapper .checkout-summary-inner{font-size:17px!important}
+.payment-step-wrapper .checkout-summary-inner *{font-family:'Manrope','Segoe UI',Arial,sans-serif}
+.payment-step-wrapper .checkout-summary-inner h3{font-family:'Lora',Georgia,serif!important}
+.payment-step-wrapper .grand-total-wrapper,.payment-step-wrapper .grand-total-wrapper *{font-size:22px!important;font-weight:800!important;color:#17301a!important}
+/* по-малко неща за мислене: без фактуриране на друг адрес и без празното поле за промо код */
+.payment-step-wrapper label.tick-wrapper:has(input[name=useDifferentBillingAddress]){display:none!important}
+/* количеството на подаръка не се сменя */
+.payment-step-wrapper .zn-gift-row .quantity-wrapper,.payment-step-wrapper .zn-gift-row input[type=number],.payment-step-wrapper .zn-gift-row .zn-qty{visibility:hidden}

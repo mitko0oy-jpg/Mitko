@@ -91,9 +91,10 @@ async function syncGift() {
   if (!CONFIG.giftStoreId || !cbReady()) return;
   const o = await Cart.get();
   const items = o.items || [];
-  const has = items.some(isGift), others = items.some(i => !isGift(i));
-  if (bfOn() && others && !has) await Cart.add(CONFIG.giftStoreId, 1);
-  else if (has && (!others || !bfOn())) await Cart.remove(CONFIG.giftStoreId);
+  const gift = items.find(isGift), others = items.some(i => !isGift(i));
+  if (bfOn() && others && !gift) await Cart.add(CONFIG.giftStoreId, 1);
+  else if (gift && (!others || !bfOn())) await Cart.remove(CONFIG.giftStoreId);
+  else if (gift && gift.quantity > 1) { await Cart.remove(CONFIG.giftStoreId); await Cart.add(CONFIG.giftStoreId, 1); }
 }
 
 let countNow = 0;
@@ -424,6 +425,13 @@ function renderCheckoutHelper() {
     working = false; draw();
   }
 
+  // редът с подаръка във формата: без + и −
+  function markGiftRow() {
+    document.querySelectorAll('.payment-step-wrapper .cart-row').forEach(r => {
+      if (/Подарък:/.test(r.textContent)) { r.classList.add('zn-gift-row'); r.querySelectorAll('.number-pad,.cart-row-quantity').forEach(e => e.classList.add('zn-qty')); }
+    });
+  }
+
   async function start() {
     if (!cbReady()) { setTimeout(start, 300); return; }
     // ?add=<номер>&q=<брой> – добавяне от страница без магазина
@@ -440,10 +448,11 @@ function renderCheckoutHelper() {
     // всяка промяна в поръчката (бутоните + и − във формата) обновява блока
     const S = W().Store, set = S.Orders.set;
     if (!set.znWrapped) {
-      S.Orders.set = function (id, order) { const r = set.apply(this, arguments); if (id === 'cart') { updateCount(order); clearTimeout(start.t); start.t = setTimeout(() => { if (!working) syncGift().catch(() => {}).then(draw); }, 400); } return r; };
+      S.Orders.set = function (id, order) { const r = set.apply(this, arguments); if (id === 'cart') { updateCount(order); markGiftRow(); clearTimeout(start.t); start.t = setTimeout(() => { if (!working) syncGift().catch(() => {}).then(draw); }, 400); } return r; };
       S.Orders.set.znWrapped = true;
     }
     draw();
+    markGiftRow();
     const o = await Cart.get();
     track('InitiateCheckout', { value: (o.items || []).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0), currency: 'EUR', num_items: countOf(o) });
   }
