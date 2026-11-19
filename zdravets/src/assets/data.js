@@ -47,8 +47,8 @@ const CONFIG = {
     bf: '/cheren-petak',
     products: '/produkti',
     product: '/produkt',
-    checkout: '/poruchka',
-    thanks: '/blagodarim',
+    checkout: '/kasa',            // фунията „Сайт поръчка“: поръчка → ъпсел → даунсел → благодарим
+    thanks: '/kasa/blagodarim',
     delivery: '/dostavka',
     contacts: '/kontakti',
     terms: '/obshti-usloviya',

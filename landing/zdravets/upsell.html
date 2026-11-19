@@ -86,8 +86,8 @@ const CONFIG = {
     bf: '/cheren-petak',
     products: '/produkti',
     product: '/produkt',
-    checkout: '/poruchka',
-    thanks: '/blagodarim',
+    checkout: '/kasa',            // фунията „Сайт поръчка“: поръчка → ъпсел → даунсел → благодарим
+    thanks: '/kasa/blagodarim',
     delivery: '/dostavka',
     contacts: '/kontakti',
     terms: '/obshti-usloviya',
@@ -952,6 +952,8 @@ function renderProduct() {
 function renderCheckoutHelper() {
   const box = $('#co-helper');
   if (!box) return;
+  // старата страница за поръчка води към фунията (там са ъпселът и даунселът); количката е обща
+  if (L.checkout !== '/poruchka' && location.pathname.replace(/\/$/, '') === '/poruchka') { location.replace(L.checkout + location.search); return; }
   const storeName = id => { const x = PRODUCTS.find(p => p.store === id) || BUNDLES.find(b => b.store === id); return x ? (x.title || x.name) : ''; };
   let working = false;
 
@@ -1077,7 +1079,7 @@ function renderThanks() {
     const O = cbReady() && W().Store.Orders;
     if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => wait(n + 1), 250); return; }
     Promise.resolve(O.getLastOrder()).then(o => {
-      const no = o && (o.number || o.orderNumber || o.id);
+      const no = o && (o.no || o.number || o.orderNumber || o.id); // no = номерът на фактурата, който показва ConvertBuilder
       if (el && no) el.innerHTML = `Номер на поръчката: <b>${esc(no)}</b>${o.total ? ` · за плащане при получаване: <b>${fmt(+o.total)}</b>` : ''}`;
     }).catch(() => {});
   })(0);
@@ -1133,7 +1135,7 @@ function renderUpsell() {
     const O = cbReady() && W().Store.Orders;
     if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => check(n + 1), 250); return; }
     Promise.resolve(O.getLastOrder()).then(o => {
-      const no = o && (o.number || o.orderNumber);
+      const no = o && (o.no || o.number || o.orderNumber || o.id);
       if (no) $$('[data-order-no]').forEach(e => { e.textContent = ` (№ ${no})`; });
       const ids = ((o && (o.items || o.products)) || []).map(i => +i.productId).filter(id => id && id !== CONFIG.giftStoreId);
       const has = ids.some(id => id === p.store || id === UPSELL.store);
