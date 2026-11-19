@@ -69,6 +69,12 @@
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
 
+## Здравец Натура (zdravets.eu) – друг бизнес на Митко в същото репо
+
+- Новият сайт на козметиката „Здравец Натура“ е в ConvertBuilder (сайтът zdravets.eu) по същия начин като edubel.bg: всяка страница има един ред `<script src="…/landing/zdravets/load.js" data-zn="<блок>">`, блоковете идват от jsDelivr за commit-а в `landing/zdravets/version.txt`.
+- Източник: `zdravets/src/` (страници, `assets/data.js` с цените и номерата на продуктите в магазина, `app.js`, `style.css`, `checkout.css`). Build: `node scripts/build-zdravets.mjs`; нова версия: commit и push → `node scripts/live-zdravets.mjs` → commit и push на `version.txt`. Упътване и списък на страниците: `landing/zdravets/README.md`.
+- Количката и поръчката са на магазина в ConvertBuilder (`WebPlatform.Store`), за да влизат поръчките в ConvertBuilder и OrderDesk. Цените в `data.js` трябва да съвпадат с продуктите в магазина. Без себестойности в репото (публично е).
+
 ## Тестове
 
 ```
