@@ -9,8 +9,10 @@
 .payment-step-wrapper .iti{width:100%}
 .payment-step-wrapper label.tick-wrapper,.payment-step-wrapper label.tick-wrapper span{font-size:18px!important;color:#1b2419!important}
 .payment-step-wrapper section label.tick-wrapper{border:2px solid #ddd6c4!important;border-radius:14px!important;background:#fff!important;padding-top:6px!important;padding-bottom:6px!important}
-.payment-step-wrapper .next-prev-buttons .btn{display:flex!important;align-items:center;justify-content:center;gap:10px;background:#e8a317!important;color:#2a1d00!important;font-size:21px!important;font-weight:800!important;min-height:68px!important;border-radius:999px!important;box-shadow:0 6px 0 #b97c06!important;border:0!important;line-height:1.2!important}
+.payment-step-wrapper .next-prev-buttons .btn:not(.none){display:flex!important;align-items:center;justify-content:center;gap:10px;background:#e8a317!important;color:#2a1d00!important;font-size:21px!important;font-weight:800!important;min-height:68px!important;border-radius:999px!important;box-shadow:0 6px 0 #b97c06!important;border:0!important;line-height:1.2!important}
 .payment-step-wrapper .next-prev-buttons .btn:hover{background:#f2b12a!important}
+/* бутоните, които ConvertBuilder крие (класът none – „Следваща стъпка“ при поръчка в една стъпка), остават скрити */
+.payment-step-wrapper .next-prev-buttons .none{display:none!important}
 .payment-step-wrapper .next-prev-buttons .btn *{color:#2a1d00!important}
 .payment-step-wrapper .checkout-summary-inner{font-size:17px!important}
 .payment-step-wrapper .checkout-summary-inner h3{font-family:'Lora',Georgia,serif!important}
