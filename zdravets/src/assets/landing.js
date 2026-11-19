@@ -92,7 +92,8 @@ function landingOffers(p, d) {
     const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
     const hot = !!k.featured && list.length > 1;
     const isBest = !hot && list.length > 2 && k === best;
-    const m = (d.packMedia && d.packMedia[k.key]) || (bundle && (bundle.img || (bundle.collage && bundle.collage[0][0]))) || p.img;
+    const sc = sceneOf(p.id);
+    const m = (d.packMedia && d.packMedia[k.key]) || (bundle && (bundle.img || (bundle.collage && bundle.collage[0][0]))) || (sc ? sc.small : p.img);
     const lis = [];
     if (gift) lis.push(`<li class="bv-gift"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
@@ -145,12 +146,14 @@ function renderLanding(p) {
   const eyebrow = d.eyebrow || (p.wellness ? '🩹 Уелнес пластир за всеки ден' : `🌿 ${cat.name}`);
   const badge = d.badge || { img: bee ? BVM(BV.extra, 'bee-side.webp') : p.img, name: cat.name, strong: p.name, eq: esc(p.size) };
   const legend = d.legend || (c.legend ? c.legend : ings.slice(0, 4).map(([n, t]) => [ingIcon(n), n, t.split(/ — |, | – /)[0]]));
-  const stage = d.stage || { img: p.img, plain: true };
+  const scene = sceneOf(p.id);
+  const stage = d.stage || (scene ? { img: scene.img, small: scene.small, video: scene.video, scene: true } : { img: p.img, plain: true });
+  const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const sealArgs = stage.seal || [String(days), 'ДНИ ГАРАНЦИЯ', 'ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ • ДОСТАВКА 1–2 ДНИ •'];
   const legendHtml = legend.length ? `<ul class="bv-inglegend bv-glass" aria-label="Съставки">${legend.map(([ic, b, s]) =>
     `<li>${/^https?:/.test(ic) ? `<img src="${ic}" alt="" width="40" height="40">` : `<span class="bv-legico" aria-hidden="true">${ic}</span>`}<span><b>${esc(b)}</b><small>${esc(s || '')}</small></span></li>`).join('')}</ul>` : '';
   const hero = `
-  <section class="bv-hero${stage.plain ? ' bv-hero--plain' : ''}">
+  <section class="bv-hero${stage.plain ? ' bv-hero--plain' : ''}${stage.scene ? ' bv-hero--scene' : ''}">
     ${!theme && (d.bg || (bee && !stage.plain)) ? `<div class="bv-hero__bg" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bg-a-2000.webp')}" alt="" width="2000" height="1125" fetchpriority="high"></div>` : '<div class="bv-hero__bg bv-hero__bg--soft" aria-hidden="true"></div>'}
     <canvas class="bv-dust" aria-hidden="true"></canvas>
     <div class="bv-wrap bv-hero__grid">
@@ -170,7 +173,10 @@ function renderLanding(p) {
       <div class="bv-stage">
         <div class="bv-stage__inner"${stage.ratio ? ` style="aspect-ratio:${stage.ratio}"` : ''}>
           <div class="bv-stage__glow" aria-hidden="true"></div>
-          <img class="bv-stage__img" src="${stage.img}"${stage.small ? ` srcset="${stage.small} 700w, ${stage.img} 1200w" sizes="(min-width:960px) 600px, 92vw"` : ''} alt="${esc(p.name)}" fetchpriority="high" decoding="async">
+          ${stage.scene ? `<div class="bv-stage__card">${stage.video && !still
+            ? `<video class="bv-stage__vid" autoplay muted loop playsinline preload="auto" poster="${stage.small}" aria-label="${esc(p.name)}"><source src="${stage.video}" type="video/mp4"></video>`
+            : `<img class="bv-stage__img bv-kb" src="${stage.img}" srcset="${stage.small} 600w, ${stage.img} 1000w" sizes="(min-width:960px) 560px, 92vw" alt="${esc(p.name)}" fetchpriority="high" decoding="async">`}<span class="bv-stage__sheen" aria-hidden="true"></span></div>`
+          : `<img class="bv-stage__img" src="${stage.img}"${stage.small ? ` srcset="${stage.small} 700w, ${stage.img} 1200w" sizes="(min-width:960px) 600px, 92vw"` : ''} alt="${esc(p.name)}" fetchpriority="high" decoding="async">`}
           ${stage.glint ? `<span class="bv-stage__glint" aria-hidden="true" style="-webkit-mask-image:url('${stage.small}');mask-image:url('${stage.small}')"></span>` : ''}
           ${stage.drop ? '<span class="bv-honeydrop" aria-hidden="true"></span>' : ''}
           ${seal(sealArgs[0], sealArgs[1], sealArgs[2], 'bvs-' + p.id)}
@@ -395,7 +401,7 @@ function renderLanding(p) {
   const related = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).concat(PRODUCTS.filter(x => x.cat !== p.cat && x.bestseller)).slice(0, 4);
   const final = `
   <section class="bv-final"><div class="bv-wrap">
-    <div class="bv-final__media${stage.plain ? ' bv-final__media--card' : ''}"><img src="${stage.plain ? p.img : (stage.small || stage.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async"></div>
+    <div class="bv-final__media${stage.plain ? ' bv-final__media--card' : stage.scene ? ' bv-final__media--scene' : ''}"><img src="${stage.plain ? p.img : (stage.small || stage.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async"></div>
     <h2>${p.wellness ? 'Малка стъпка всеки ден. ' : 'Грижата започва с първата поръчка. '}<em class="bv-accent">Заслужаваш я.</em></h2>
     <p class="bv-lead" style="margin-left:auto;margin-right:auto">Поръчай сега – плащаш чак когато пратката е в ръцете ти.</p>
     <div class="bv-cta-row"><a class="bv-btn bv-btn--xl bv-pulse" href="${toOffers}">Виж офертите ${arr}</a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a></div>
@@ -490,7 +496,7 @@ function bvEffects(root) {
     let loaded = false;
     if (reduce && v.classList.contains('bv-loop')) return;
     new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting && !loaded) { $$('source[data-src]', v).forEach(s => { s.src = s.getAttribute('data-src'); }); v.load(); loaded = true; }
+      if (e.isIntersecting && !loaded) { const ss = $$('source[data-src]', v); if (ss.length) { ss.forEach(s => { s.src = s.getAttribute('data-src'); }); v.load(); } loaded = true; }
       if (reduce) return;
       if (e.isIntersecting) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } else v.pause();
     }), { rootMargin: '300px 0px' }).observe(v);

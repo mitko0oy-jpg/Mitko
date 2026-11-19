@@ -752,3 +752,23 @@
 @media (max-width:719px){
   .bvp[data-shape] .bv-hero__bg--soft::after{-webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 55%);mask-image:linear-gradient(180deg,#000 0%,transparent 55%);-webkit-mask-composite:source-over;mask-composite:add}
 }
+/* ---------- 3D сцените (sceneOf в landing-data.js): карта с движение ---------- */
+.bvp .bv-hero--scene .bv-stage__inner{aspect-ratio:1/1}
+.bvp .bv-stage__card{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--honey-50);box-shadow:0 0 0 10px rgba(var(--t1rgb,245,166,35),.12),0 0 0 1px rgba(var(--t1rgb,245,166,35),.2),var(--shadow-l);isolation:isolate}
+.bvp .bv-stage__card>img,.bvp .bv-stage__card>video{display:block;width:100%;height:100%;object-fit:cover}
+.bvp .bv-kb{animation:bv-kb 18s ease-in-out infinite alternate;transform-origin:50% 60%}
+@keyframes bv-kb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-1.2%,-1.5%)}}
+.bvp .bv-stage__sheen{position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,rgba(255,255,255,0) 42%,rgba(255,255,255,.28) 50%,rgba(255,255,255,0) 58%) 0 0/300% 100% no-repeat;animation:bv-glint 8s ease-in-out 1.5s infinite;mix-blend-mode:soft-light}
+.bvp[data-dark] .bv-stage__card{box-shadow:0 0 0 10px rgba(var(--t1rgb),.18),0 0 0 1px rgba(var(--t1rgb),.45),0 30px 70px rgba(0,0,0,.5)}
+.bvp .bv-hero--scene .bv-seal10{left:-4%;top:-3%;width:22%;z-index:4}
+.bvp .bv-hero--scene .bv-stage__bee{top:-6%;right:-3%;z-index:4}
+.bvp .bv-hero--scene .bv-inglegend{margin-top:-6%}
+.bvp .bv-pack__media img.bv-loop[src*="/scene-"]{object-fit:cover;padding:0}
+.bvp .bv-final__media--scene img{mix-blend-mode:normal;width:300px;max-width:80%;height:auto;margin:0 auto;border-radius:32px;box-shadow:0 0 0 8px rgba(var(--t1rgb,245,166,35),.12),var(--shadow-l)}
+@media (max-width:719px){
+  .bvp .bv-hero--scene .bv-stage{max-width:380px}
+  .bvp .bv-stage__card{border-radius:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bvp .bv-kb,.bvp .bv-stage__sheen{animation:none!important}
+}
