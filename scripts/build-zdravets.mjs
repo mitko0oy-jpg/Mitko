@@ -27,6 +27,9 @@ const PAGES = [
   // the checkout page: this block above ConvertBuilder's checkout element, "dolu" below it
   { src: "poruchka", out: "poruchka", url: "/poruchka (над формата за поръчка)" },
   { src: "dolu", out: "dolu", url: "/poruchka (под формата за поръчка)" },
+  // фунията „Сайт поръчка“ (/kasa): поръчка → ъпсел → даунсел → благодарим; над елемента „Ъпсел / Даунсел“
+  { src: "upsell", out: "upsell", url: "/kasa/oferta-za-vas (над елемента „Ъпсел / Даунсел“)" },
+  { src: "downsell", out: "downsell", url: "/kasa/posledna-oferta (над елемента „Ъпсел / Даунсел“)" },
 ];
 // the old file names in the sources → the pages on the live site
 const LINKS = {

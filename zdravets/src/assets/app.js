@@ -391,6 +391,7 @@ function renderCheckoutHelper() {
     const ids = items.map(i => i.productId);
     const main = items.filter(i => !isGift(i));
     if (!main.length) {
+      drawBumps([]);
       box.innerHTML = `<div class="box empty"><h2>Количката е празна</h2><p class="lead">Избери продукт или комплект — поръчката отнема по-малко от минута.</p>
         <div class="row-btns">${bfOn() ? `<a class="btn btn-primary btn-lg" href="${L.bf}#oferti">Виж офертите за Черен петък</a>` : ''}<a class="btn btn-outline btn-lg" href="${L.products}">Всички продукти</a></div>
         <p>Или поръчай по телефона: <a href="tel:${CONFIG.phoneHref}"><b>${CONFIG.phone}</b></a></p></div>`;
@@ -399,8 +400,7 @@ function renderCheckoutHelper() {
     }
     document.documentElement.classList.remove('zn-cart-empty');
     const total = main.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
-    const inBundles = BUNDLES.filter(b => ids.includes(b.store)).flatMap(b => b.items.map(x => x[0]));
-    const addons = ADDONS.filter(a => !inBundles.includes(a.id) && !ids.includes(P(a.id).store));
+    drawBumps(items);
     // по-изгоден комплект: 1 гел или 2 гела → 3 гела
     let up = '';
     const gel1 = P('gel').store, b2 = B('bf2').store, b3 = B('bf3');
@@ -414,13 +414,7 @@ function renderCheckoutHelper() {
     box.innerHTML = `
       ${FREE_FROM ? `<div class="ship-progress">${toFree > 0 ? `Добави още ${fmt(toFree)} и доставката до офис е безплатна<div class="bar"><i style="width:${Math.min(100, total / FREE_FROM * 100)}%"></i></div>` : '🎉 Доставката до офис е безплатна'}</div>` : ''}
       ${up}
-      ${addons.length ? `<div class="box addons"><h2>Добави с отстъпка <span>само към тази поръчка, в същата пратка</span></h2><div class="addon-grid">
-        ${addons.map(a => { const p = P(a.id); let [name, why] = a.text.replace(/^Добави /, '').split(' — '); name = name[0].toUpperCase() + name.slice(1); return `
-          <div class="addon-card"><img src="${p.img}" alt="">
-            <div class="ac-text"><b>${esc(name)}</b>${why ? `<span class="why">${esc(why)}</span>` : ''}<span class="prices"><s>${fmt(p.price)}</s> <b>${fmt(a.price)}</b></span></div>
-            <button class="btn btn-green" type="button" data-addon="${a.id}">+ Добави</button></div>`; }).join('')}</div></div>` : ''}
       ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 билкови пластира) е в поръчката ти.</p>' : ''}`;
-    $$('[data-addon]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.add(ADDONS.find(a => a.id === b.dataset.addon).store, 1); })));
     $$('[data-swap]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.remove(+b.dataset.swap); await Cart.add(b3.store, 1); })));
   }
   async function run(btn, fn) {
@@ -429,6 +423,48 @@ function renderCheckoutHelper() {
     try { await fn(); await syncGift(); } catch (e) { toast('Не се получи. Опитай пак или се обади:', true); }
     working = false; draw();
   }
+
+  // Бъмп офертите: отметки точно над бутона „Завърши поръчката“ във формата на ConvertBuilder.
+  // Отметката добавя скрития продукт със специалната цена, махането ѝ го маха.
+  let bumpItems = [];
+  function drawBumps(items) {
+    bumpItems = items;
+    const btns = document.querySelector('.payment-step-wrapper .next-prev-buttons');
+    let host = document.getElementById('zn-bumps');
+    const ids = items.map(i => i.productId);
+    const inBundles = BUNDLES.filter(b => ids.includes(b.store)).flatMap(b => b.items.map(x => x[0]));
+    const list = BUMPS.filter(b => !inBundles.includes(b.id) && !ids.includes(P(b.id).store));
+    if (!btns || !items.some(i => !isGift(i)) || !list.length) { if (host) host.remove(); return; }
+    if (!host || host.nextElementSibling !== btns) {
+      if (host) host.remove();
+      host = document.createElement('div');
+      host.id = 'zn-bumps';
+      btns.parentElement.insertBefore(host, btns);
+    }
+    host.innerHTML = `<p class="zn-bumps-title">Специално само към тази поръчка:</p>` + list.map(b => {
+      const p = P(b.id), on = ids.includes(b.store);
+      return `<div class="zn-bump${on ? ' on' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-bump="${b.id}">
+        <span class="zn-bump-head"><span class="zn-box" aria-hidden="true"></span><span>Да, добави <b>${esc(b.title)}</b> за <b class="zn-price">${fmt(b.price)}</b> <s>${fmt(p.price)}</s></span></span>
+        <span class="zn-bump-body"><img src="${p.img}" alt=""><span>${esc(b.text)}</span></span></div>`;
+    }).join('');
+    host.querySelectorAll('[data-bump]').forEach(el => {
+      const toggle = async () => {
+        if (working) return;
+        const b = BUMPS.find(x => x.id === el.dataset.bump), on = el.getAttribute('aria-checked') === 'true';
+        working = true; el.classList.add('busy');
+        try { if (on) await Cart.remove(b.store); else await Cart.add(b.store, 1); await syncGift(); }
+        catch (e) { toast('Не се получи. Опитай пак или се обади:', true); }
+        working = false; draw();
+      };
+      el.addEventListener('click', toggle);
+      el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+    });
+  }
+  // формата на ConvertBuilder се зарежда и пренарежда сама: отметките се връщат на мястото си
+  setInterval(() => {
+    const btns = document.querySelector('.payment-step-wrapper .next-prev-buttons'), host = document.getElementById('zn-bumps');
+    if (btns && bumpItems.length && (!host || host.nextElementSibling !== btns)) drawBumps(bumpItems);
+  }, 1200);
 
   // редът с подаръка във формата: без + и −
   function markGiftRow() {
@@ -477,6 +513,66 @@ function renderThanks() {
   })(0);
 }
 
+/* ---------- офертата след поръчката (ъпсел / даунсел във фунията) ----------
+   Под блока стои елементът „Ъпсел / Даунсел“ на ConvertBuilder. Нашите бутони натискат неговите
+   (.upsell-positive-action / .upsell-negative-action): той добавя продукта към вече приетата
+   поръчка и води към следващата стъпка. Ако нашият код не тръгне, неговите бутони си остават.  */
+const JOINT_FREE = [...PRODUCTS.filter(p => p.cat !== 'stavi').map(p => p.store),
+  ...Object.entries(PACKS).filter(([k]) => k !== 'gel').flatMap(([, v]) => v.map(x => x.store)),
+  ...BUNDLES.filter(b => !b.items.some(x => (P(x[0]) || {}).cat === 'stavi')).map(b => b.store)];
+function renderUpsell() {
+  const box = $('#ups');
+  if (!box) return;
+  const p = P(UPSELL.product);
+  const price = page === 'downsell' ? UPSELL.downsellPrice : UPSELL.price;
+  $$('[data-ups-price]').forEach(e => { e.textContent = fmt(price); });
+  $$('[data-ups-regular]').forEach(e => { e.textContent = fmt(p.price); });
+  $$('[data-ups-save]').forEach(e => { e.textContent = fmt(p.price - price); });
+  $$('[data-ups-first]').forEach(e => { e.textContent = fmt(UPSELL.price); });
+
+  const native = yes => document.querySelector(yes ? '.upsell-positive-action' : '.upsell-negative-action');
+  let pressed = false;
+  function press(yes, auto) {
+    const el = native(yes);
+    if (!el) { if (!auto) toast('Бутонът още се зарежда — опитай след секунда.', true); return; }
+    if (pressed) return;
+    pressed = true;
+    box.classList.add(yes ? 'is-yes' : 'is-no');
+    $$('[data-ups]').forEach(b => { b.disabled = true; });
+    const btn = $(`[data-ups="${yes ? 'yes' : 'no'}"]`);
+    if (btn) btn.textContent = yes ? 'Добавяме го…' : 'Момент…';
+    el.click();
+    // ако нещо се обърка, бутоните се връщат
+    setTimeout(() => { pressed = false; box.classList.remove('is-yes', 'is-no'); $$('[data-ups]').forEach(b => { b.disabled = false; b.innerHTML = b.dataset.label; }); }, 12000);
+  }
+  $$('[data-ups]').forEach(b => {
+    b.dataset.label = b.innerHTML;
+    b.addEventListener('click', e => { e.preventDefault(); press(b.dataset.ups === 'yes'); });
+  });
+
+  // елементът на ConvertBuilder се скрива, щом нашите бутони са готови
+  (function hide(n) {
+    const el = native(true);
+    const w = el && (el.closest('.widget') || el.parentElement);
+    if (w && !w.contains(ROOT)) w.style.display = 'none';
+    else if (n < 60) setTimeout(() => hide(n + 1), 250);
+  })(0);
+
+  // поръчката: номерът горе, а ако кремът вече е в нея или в поръчката няма нищо за ставите – прескачаме
+  (function check(n) {
+    const O = cbReady() && W().Store.Orders;
+    if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => check(n + 1), 250); return; }
+    Promise.resolve(O.getLastOrder()).then(o => {
+      const no = o && (o.number || o.orderNumber);
+      if (no) $$('[data-order-no]').forEach(e => { e.textContent = `№ ${no}`; });
+      const ids = ((o && (o.items || o.products)) || []).map(i => +i.productId).filter(id => id && id !== CONFIG.giftStoreId);
+      const has = ids.some(id => id === p.store || id === UPSELL.store);
+      const noJoints = ids.length && ids.every(id => JOINT_FREE.includes(id));
+      if (has || noJoints) { box.classList.add('is-skip'); (function skip(k) { if (native(false)) press(false, true); else if (k < 40) setTimeout(() => skip(k + 1), 250); })(0); }
+    }).catch(() => {});
+  })(0);
+}
+
 /* ---------- images by key (снимките се сменят само в данните) ---------- */
 $$('[data-img-key]').forEach(i => { const k = i.dataset.imgKey; const src = LIFESTYLE[k] || (P(k) && P(k).img) || (B(k) && B(k).img); if (src) i.src = src; });
 $$('[data-bg-key]').forEach(i => { const src = LIFESTYLE[i.dataset.bgKey]; if (src) i.style.backgroundImage = `url("${src}")`; });
@@ -495,6 +591,7 @@ if (page === 'products') renderProducts();
 if (page === 'product') renderProduct();
 if (page === 'checkout') renderCheckoutHelper();
 if (page === 'thanks') renderThanks();
+if (page === 'upsell' || page === 'downsell') renderUpsell();
 bindAddButtons();
 tickCountdowns(); setInterval(tickCountdowns, 1000);
 // броят в количката (магазинът се зарежда малко след страницата)

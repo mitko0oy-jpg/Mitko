@@ -19,3 +19,21 @@
 .payment-step-wrapper label.tick-wrapper:has(input[name=useDifferentBillingAddress]){display:none!important}
 /* количеството на подаръка не се сменя */
 .payment-step-wrapper .zn-gift-row .quantity-wrapper,.payment-step-wrapper .zn-gift-row input[type=number],.payment-step-wrapper .zn-gift-row .zn-qty{visibility:hidden}
+/* бъмп офертите: отметки точно над бутона „Завърши поръчката“ (app.js → drawBumps) */
+#zn-bumps{clear:both;margin:20px 0 12px;font-family:'Manrope','Segoe UI',Arial,sans-serif;font-feature-settings:"locl" 0}
+#zn-bumps .zn-bumps-title{font-size:18px;font-weight:800;color:#17301a;margin:0 0 10px;line-height:1.3}
+.zn-bump{display:block;border:3px dashed #e8a317;border-radius:16px;background:#fffaf0;margin:0 0 14px;overflow:hidden;cursor:pointer;text-align:left;user-select:none;-webkit-user-select:none}
+.zn-bump:focus-visible{outline:3px solid #3d7136;outline-offset:2px}
+.zn-bump-head{display:flex;align-items:center;gap:14px;background:#fdf1d6;padding:14px 16px;font-size:19px;line-height:1.35;color:#2a1d00}
+.zn-bump-head b{font-weight:800}
+.zn-bump-head .zn-price{color:#b3261e;white-space:nowrap}
+.zn-bump-head s{color:#6b7466;font-size:16px;white-space:nowrap}
+.zn-box{flex:0 0 34px;width:34px;height:34px;border:3px solid #2c5a2c;border-radius:8px;background:#fff;display:grid;place-items:center;box-sizing:border-box}
+.zn-bump.on .zn-box{background:#2c5a2c}
+.zn-bump.on .zn-box::after{content:"";width:9px;height:17px;border:solid #fff;border-width:0 4px 4px 0;transform:translateY(-2px) rotate(45deg)}
+.zn-bump-body{display:flex;gap:14px;align-items:center;padding:12px 16px;font-size:17px;line-height:1.45;color:#1b2419}
+.zn-bump-body img{width:76px;height:76px;flex:0 0 76px;object-fit:contain;background:#fbf7ee;border-radius:10px}
+.zn-bump.on{border-style:solid;border-color:#3d7136;background:#f2f6ec}
+.zn-bump.on .zn-bump-head{background:#e7efdc}
+.zn-bump.busy{opacity:.55;pointer-events:none}
+@media(max-width:480px){.zn-bump-head{font-size:17px;padding:12px;gap:10px}.zn-bump-body{font-size:16px;padding:10px 12px}.zn-bump-body img{width:60px;height:60px;flex-basis:60px}}
