@@ -65,7 +65,7 @@ function landingOffers(p, d) {
       <div class="bv-pack__media">${bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
       <div class="bv-pack__body">
         <h3>${esc(k.label)}</h3>
-        <p class="bv-pack__sub">${esc(k.sub || p.size)}</p>
+        <p class="bv-pack__sub">${esc(String(k.sub || p.size).replace(/ · най-(избиран|изгодно)$/, ''))}</p>
         <ul>${lis.join('')}</ul>
         <div class="bv-price"><b${off ? ` data-from="${regular.toFixed(2)}"` : ''}>${fmt(k.price)}</b>${off ? `<s>${fmt(regular)}</s>` : ''}</div>
         <p class="bv-unit">${per}</p>
