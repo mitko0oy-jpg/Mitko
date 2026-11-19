@@ -45,7 +45,7 @@ const LINKS = {
   "obshti-usloviya.html": "/obshti-usloviya",
   "poveritelnost.html": "/poveritelnost",
 };
-const FONTS = "https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Manrope:wght@500;600;700;800&display=swap";
+const FONTS = "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,500;1,600&family=Manrope:wght@500;600;700;800&display=swap";
 
 /* ---------- styles: scope every selector to the block ---------- */
 function splitTop(list) {
@@ -93,8 +93,11 @@ function scopeBlock(css) {
 // rem follows the page (ConvertBuilder sets 16px); the site is sized from --fs, so rem → --fs.
 const remToFs = (s) => s.replace(/(\d*\.?\d+)rem\b/g, (m, n) => `calc(${n}*var(--fs))`);
 
-async function styles() {
+// landing: the long product pages in the design of beeevenom.eu (landing.css, landing-data.js, landing.js),
+// only in the blocks whose page says "landing: yes"
+async function styles(landing) {
   let css = (await readFile(path.join(SRC, "assets/style.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+  if (landing) css += "\n" + (await readFile(path.join(SRC, "assets/landing.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
   // html{font-size:var(--fs)} would resize ConvertBuilder's own elements: the size lives on the block
   css = css.replace(/(^|\})\s*html\{font-size:var\(--fs\);scroll-behavior:smooth\}/, "$1html{scroll-behavior:smooth}");
   css = remToFs(scopeBlock(css));
@@ -110,11 +113,13 @@ async function styles() {
   return (reset + css).replace(/\s*\n\s*/g, "").replace(/\s{2,}/g, " ");
 }
 
-async function script() {
-  const data = await readFile(path.join(SRC, "assets/data.js"), "utf8");
-  const app = await readFile(path.join(SRC, "assets/app.js"), "utf8");
+async function script(landing) {
+  const read = (f) => readFile(path.join(SRC, "assets", f), "utf8");
+  const data = await read("data.js");
+  const app = await read("app.js");
+  const extra = landing ? `${await read("landing-data.js")}\n${await read("landing.js")}\n` : "const renderLanding = null;\n";
   // one function: two blocks on one page (поръчка + долу) must not clash
-  return `(function(){"use strict";\n${data}\n${app}\n})();`;
+  return `(function(){"use strict";\n${data}\n${extra}${app}\n})();`;
 }
 
 function page(raw, file) {
@@ -131,11 +136,12 @@ function page(raw, file) {
 }
 
 await mkdir(OUT, { recursive: true });
-const css = await styles();
-const js = await script();
+const built = {};
+const assets = async (landing) => (built[landing] ||= { css: await styles(landing), js: await script(landing) });
 const list = [];
 for (const p of PAGES) {
   const { meta, body } = page(await readFile(path.join(SRC, "pages", p.src + ".html"), "utf8"), p.src);
+  const { css, js } = await assets(meta.landing === "yes");
   const id = meta.root || "znl";
   const header = meta.header === "no" ? "" : `<div data-zn-header></div>\n`;
   const footer = meta.footer === "no" ? "" : `\n<div data-zn-footer></div>`;

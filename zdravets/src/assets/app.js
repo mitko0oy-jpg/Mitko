@@ -314,6 +314,12 @@ function renderProduct() {
   const q = new URLSearchParams(location.search);
   const p = P(q.get('p')) || productFromPath() || P('gel');
   document.title = `${p.name} | Здравец Натура`;
+  // дългата страница в стила на beeevenom.eu (landing.js)
+  if (renderLanding) {
+    renderLanding(p);
+    track('ViewContent', { content_ids: [p.id], content_type: 'product', value: p.price, currency: 'EUR' });
+    return;
+  }
   const cat = CATEGORIES.find(c => c.id === p.cat);
   const imgs = [p.img].concat(p.gallery || []);
   const packs = p.packs ? PACKS[p.packs] : null;
