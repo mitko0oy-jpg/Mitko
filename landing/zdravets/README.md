@@ -12,7 +12,8 @@
 | Начало (нов сайт) – за преглед, после става началната | `/nachalo` | `nachalo` |
 | Черен петък | `/cheren-petak` | `cheren-petak` |
 | Продукти | `/produkti` | `produkti` |
-| Продукт (един за всички, `?p=gel`, `?p=vein` …) | `/produkt` | `produkt` |
+| Продукт – всеки продукт има своя страница „Продукт: …“ (копие на „Продукт“); блокът познава продукта по адреса (`PRODUCT_PAGES` в `data.js`) | `/gel-za-stavi`, `/sprey-za-stavi`, `/hialuronov-krem`, `/bilkovi-plastiri`, `/plastiri-pchelna-otrova`, `/tibetski-plastiri`, `/krem-za-veni`, `/sprey-za-nokti`, `/krem-za-koja`, `/ghk-balsam`, `/plastiri-apetit`, `/plastiri-berberin`, `/plastiri-energy`, `/plastiri-stress-down`, `/plastiri-nad`, `/plastiri-focus`, `/plastiri-nastroenie`, `/plastiri-love` | `produkt` |
+| Старата обща страница на продукт (`?p=gel`, `?p=vein` …) – още работи | `/produkt` | `produkt` |
 | Старата поръчка (блокът я препраща към `/kasa`, количката е обща) | `/poruchka` | `poruchka`, после `dolu` |
 | Благодарим (нов сайт) – благодарствената страница на формата | `/blagodarim` | `blagodarim` |
 | Доставка | `/dostavka` | `dostavka` |

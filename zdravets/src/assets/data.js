@@ -528,3 +528,15 @@ const LIFESTYLE = {
   logo: zImg('hf_20260703_122142_5c3d9879-3b7b-4297-82e9-4822cc403748-3081614.png'),
   ingredientsBanner: bImg(IZ, 'Screenshot_2026-10-15_at_21.36.48-2089417.png')
 };
+
+/* ---------- ОТДЕЛНА СТРАНИЦА ЗА ВСЕКИ ПРОДУКТ ----------
+   Всеки продукт има своя страница в ConvertBuilder с адрес zdravets.eu/<адрес> и в нея един ред
+   с блока „produkt“ (data-zn="produkt"). Блокът разпознава продукта по адреса на страницата.
+   /produkt?p=<id> също продължава да работи.                                                  */
+const PRODUCT_PAGES = {
+  gel: 'gel-za-stavi', spray: 'sprey-za-stavi', hyal: 'hialuronov-krem', beeherb: 'bilkovi-plastiri',
+  bvpatch: 'plastiri-pchelna-otrova', tibet: 'tibetski-plastiri', vein: 'krem-za-veni', nail: 'sprey-za-nokti',
+  skin: 'krem-za-koja', ghk: 'ghk-balsam', apetit: 'plastiri-apetit', berberin: 'plastiri-berberin',
+  energy: 'plastiri-energy', stress: 'plastiri-stress-down', nad: 'plastiri-nad', focus: 'plastiri-focus',
+  mood: 'plastiri-nastroenie', love: 'plastiri-love'
+};

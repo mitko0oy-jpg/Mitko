@@ -38,6 +38,7 @@ const LINKS = {
   "produkti.html": "/produkti",
   "produkt.html": "/produkt",
   "porachka.html": "/kasa",
+  "gel-za-stavi.html": "/gel-za-stavi",
   "blagodarim.html": "/kasa/blagodarim",
   "dostavka.html": "/dostavka",
   "kontakti.html": "/kontakti",

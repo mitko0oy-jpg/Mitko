@@ -14,7 +14,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const P = id => PRODUCTS.find(p => p.id === id);
 const B = id => BUNDLES.find(b => b.id === id);
 const L = CONFIG.links;
-const productUrl = id => `${L.product}?p=${id}`;
+// всеки продукт е на своя страница (PRODUCT_PAGES в data.js); без такава – общата /produkt?p=
+const productUrl = id => PRODUCT_PAGES[id] ? `/${PRODUCT_PAGES[id]}` : `${L.product}?p=${id}`;
+const productFromPath = () => { const path = location.pathname.replace(/\/+$/, '').slice(1); const id = Object.keys(PRODUCT_PAGES).find(k => PRODUCT_PAGES[k] === path); return id ? P(id) : null; };
 const local = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -310,7 +312,7 @@ function renderProducts() {
 
 function renderProduct() {
   const q = new URLSearchParams(location.search);
-  const p = P(q.get('p')) || P('gel');
+  const p = P(q.get('p')) || productFromPath() || P('gel');
   document.title = `${p.name} | Здравец Натура`;
   const cat = CATEGORIES.find(c => c.id === p.cat);
   const imgs = [p.img].concat(p.gallery || []);

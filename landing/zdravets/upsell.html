@@ -568,6 +568,18 @@ const LIFESTYLE = {
   ingredientsBanner: bImg(IZ, 'Screenshot_2026-10-15_at_21.36.48-2089417.png')
 };
 
+/* ---------- ОТДЕЛНА СТРАНИЦА ЗА ВСЕКИ ПРОДУКТ ----------
+   Всеки продукт има своя страница в ConvertBuilder с адрес zdravets.eu/<адрес> и в нея един ред
+   с блока „produkt“ (data-zn="produkt"). Блокът разпознава продукта по адреса на страницата.
+   /produkt?p=<id> също продължава да работи.                                                  */
+const PRODUCT_PAGES = {
+  gel: 'gel-za-stavi', spray: 'sprey-za-stavi', hyal: 'hialuronov-krem', beeherb: 'bilkovi-plastiri',
+  bvpatch: 'plastiri-pchelna-otrova', tibet: 'tibetski-plastiri', vein: 'krem-za-veni', nail: 'sprey-za-nokti',
+  skin: 'krem-za-koja', ghk: 'ghk-balsam', apetit: 'plastiri-apetit', berberin: 'plastiri-berberin',
+  energy: 'plastiri-energy', stress: 'plastiri-stress-down', nad: 'plastiri-nad', focus: 'plastiri-focus',
+  mood: 'plastiri-nastroenie', love: 'plastiri-love'
+};
+
 /* ===== Здравец Натура — логика на сайта в ConvertBuilder =====
    Количката и поръчката са тези на магазина в ConvertBuilder (WebPlatform.Store):
    бутоните добавят продукта там и водят към страницата с поръчката (CONFIG.links.checkout). */
@@ -584,7 +596,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const P = id => PRODUCTS.find(p => p.id === id);
 const B = id => BUNDLES.find(b => b.id === id);
 const L = CONFIG.links;
-const productUrl = id => `${L.product}?p=${id}`;
+// всеки продукт е на своя страница (PRODUCT_PAGES в data.js); без такава – общата /produkt?p=
+const productUrl = id => PRODUCT_PAGES[id] ? `/${PRODUCT_PAGES[id]}` : `${L.product}?p=${id}`;
+const productFromPath = () => { const path = location.pathname.replace(/\/+$/, '').slice(1); const id = Object.keys(PRODUCT_PAGES).find(k => PRODUCT_PAGES[k] === path); return id ? P(id) : null; };
 const local = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -880,7 +894,7 @@ function renderProducts() {
 
 function renderProduct() {
   const q = new URLSearchParams(location.search);
-  const p = P(q.get('p')) || P('gel');
+  const p = P(q.get('p')) || productFromPath() || P('gel');
   document.title = `${p.name} | Здравец Натура`;
   const cat = CATEGORIES.find(c => c.id === p.cat);
   const imgs = [p.img].concat(p.gallery || []);
