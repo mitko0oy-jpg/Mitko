@@ -73,7 +73,7 @@
 
 - Новият сайт на козметиката „Здравец Натура“ е в ConvertBuilder (сайтът zdravets.eu) по същия начин като edubel.bg: всяка страница има един ред `<script src="…/landing/zdravets/load.js" data-zn="<блок>">`, блоковете идват от jsDelivr за commit-а в `landing/zdravets/version.txt`.
 - Източник: `zdravets/src/` (страници, `assets/data.js` с цените и номерата на продуктите в магазина, `app.js`, `style.css`, `checkout.css`). Build: `node scripts/build-zdravets.mjs`; нова версия: commit и push → `node scripts/live-zdravets.mjs` → commit и push на `version.txt`. Упътване и списък на страниците: `landing/zdravets/README.md`.
-- Количката и поръчката са на магазина в ConvertBuilder (`WebPlatform.Store`), за да влизат поръчките в ConvertBuilder и OrderDesk. Цените в `data.js` трябва да съвпадат с продуктите в магазина. Без себестойности в репото (публично е).
+- Количката и поръчката са на магазина в ConvertBuilder (`WebPlatform.Store`), за да влизат поръчките в ConvertBuilder и OrderDesk. Поръчката е във фунията `/kasa` (формата → ъпсел → даунсел → „Благодарим“); бъмп офертите са отметки над бутона (`BUMPS`), ъпселът и даунселът – `UPSELL` в `data.js` и елементът „Ъпсел / Даунсел“ на ConvertBuilder под нашия блок. Цените в `data.js` трябва да съвпадат с продуктите в магазина. Без себестойности в репото (публично е).
 
 ## Тестове
 
