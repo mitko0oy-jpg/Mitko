@@ -221,11 +221,11 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '6bf1538c74079f7a9be329732a97d0379920eb6c';
+const ZN_MEDIA = '9b01f1df86aa5fb0fd322240f5499b5365c05044';
 const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/landing/zdravets/media/${f}`;
 const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
-const SCENE_VIDEOS = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk'];
+const SCENE_VIDEOS = SCENES; // всички имат и раздвижена версия
 const sceneOf = id => SCENES.includes(id)
   ? { img: znM(`scene-${id}.webp`), small: znM(`scene-${id}-600.webp`), video: SCENE_VIDEOS.includes(id) ? znM(`scene-${id}.mp4`) : null }
   : null;

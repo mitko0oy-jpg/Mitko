@@ -90,7 +90,8 @@ git commit … && git push                 # сайтът се сменя до 5
 ### 3D сцените и видеата
 
 - Всеки продукт (без гела) има 3D сцена в своя цвят: `landing/zdravets/media/scene-<id>.webp` (1000 px) и `-600.webp`;
-  козметиката има и раздвижена версия `scene-<id>.mp4` (10 с, напред и назад, без звук). Направени са с Higgsfield
-  (сцена: GPT Image 2.6 по снимката на продукта; движение: Grok Imagine Video 1.5 Lite).
+  всеки има и раздвижена версия `scene-<id>.mp4` (10 с, напред и назад, без звук). Направени са с Higgsfield
+  (сцена: GPT Image 2.6 по снимката на продукта; движение: Grok Imagine Video 1.5 Lite за козметиката,
+  Kling 3.0 Pro за уелнес пластирите).
 - В кода: `SCENES`, `SCENE_VIDEOS` и `ZN_MEDIA` (commit-ът с файловете) в `landing-data.js`. Нов файл → commit на медията,
   после нейният commit в `ZN_MEDIA` → build → commit → live.
