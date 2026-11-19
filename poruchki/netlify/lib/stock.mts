@@ -38,8 +38,11 @@ async function movement(company: number, itemId: number | null = null): Promise<
          FROM it JOIN stock_links l ON l.item_id = it.id
      ), ln AS (
        SELECT lower(btrim(x->>'name')) AS p, coalesce((x->>'qty')::numeric, 1) AS qty,
-              o.stage, o.ordered_at, o.sent_at, coalesce(o.parcel_at, o.sent_at) AS back_at, o.archived_at
+              o.stage, o.ordered_at, sent.at AS sent_at, coalesce(o.parcel_at, sent.at) AS back_at, o.archived_at
          FROM orders o JOIN shops s ON s.id = o.shop CROSS JOIN b
+         -- sent: when it got a waybill; a sent order with no waybill number here (abroad: the fulfilment
+         -- company sends it) counts as sent on the day it was ordered
+         CROSS JOIN LATERAL (SELECT coalesce(o.sent_at, CASE WHEN o.stage IN ('prepared', 'shipped', 'at_office', 'delivered', 'returned') THEN o.ordered_at END) AS at) sent
          CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(o.items) = 'array' THEN o.items ELSE '[]'::jsonb END) x
         WHERE s.company_id = $1 AND coalesce(x->>'digital', '') <> 'true'
           AND (o.ordered_at > b.since OR o.sent_at > b.since OR o.parcel_at > b.since)
