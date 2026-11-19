@@ -815,7 +815,7 @@
 .bvp .bv-zones{display:grid;gap:24px;align-items:center;margin-top:46px;background:linear-gradient(180deg,var(--honey-50,#FFF7E8),#fff);border:1px solid var(--line);border-radius:28px;padding:26px 20px}
 .bvp .bv-zones__fig{max-width:240px;width:100%;margin:0 auto}
 .bvp .bv-body{display:block;width:100%;height:auto;overflow:visible}
-.bvp .bv-body__fig{fill:var(--tint2,#FFEDC8);stroke:var(--tint2,#FFEDC8);stroke-linecap:round}
+.bvp .bv-body__fig{fill:var(--tint1,#FFD68C);stroke:var(--tint1,#FFD68C);stroke-linecap:round;opacity:.75}
 .bvp .bv-body__fig circle,.bvp .bv-body__fig rect{stroke:none}
 .bvp .bv-body__pt{fill:var(--honey-d,#E08A00);stroke:#fff;stroke-width:3}
 .bvp .bv-body__ping{fill:var(--honey,#F5A623);opacity:.5;transform-box:fill-box;transform-origin:center;animation:bv-zping 2.6s ease-out infinite;animation-delay:var(--d,0s)}
