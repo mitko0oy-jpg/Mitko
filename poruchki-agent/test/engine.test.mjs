@@ -244,3 +244,30 @@ test("a call the line answered and dropped before anyone could pick up is tried 
   assert.equal(rec.lineFaults, 1);
   assert.equal(rec.nextAttemptAt, min(68).toISOString());
 });
+
+test("Zadarma's 'only possible within the country' recording counts as a line fault", async () => {
+  const { deps, store, orders, order } = setup();
+  await syncOrders(deps, T0);
+  orders.push(order(1802));
+  await syncOrders(deps, min(2));
+  await runDueCalls(deps, min(3));
+  const key = "order/bg/1802";
+  const p = postCall("conv_1", key, "no_conversation");
+  p.data.metadata = { call_duration_secs: 4 };
+  p.data.transcript = [{ role: "agent", message: "Здравейте" }, { role: "user", message: "These calls are only possible within the country." }];
+  deps.ringSecs = async () => 2.8;
+  const r = await handleWebhook(deps, p, min(4));
+  assert.equal(r.lineFault, true);
+  assert.equal((await store.get(key, { type: "json" })).lineFaults, 1);
+});
+
+test("CALLS_PAUSED in the environment stops outgoing calls", async () => {
+  const { deps, orders, calls, order } = setup();
+  deps.config.pausedByEnv = true;
+  await syncOrders(deps, T0);
+  orders.push(order(1803));
+  await syncOrders(deps, min(2));
+  const rep = await runDueCalls(deps, min(3));
+  assert.equal(rep.reason, "paused");
+  assert.equal(calls.length, 0);
+});

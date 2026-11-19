@@ -33,7 +33,8 @@ async function result(id) {
     const d = await r.json();
     if (["done", "failed"].includes(d.status)) {
       const dc = d.analysis?.data_collection_results || {};
-      const spoke = (d.transcript || []).some((t) => t.role === "user" && t.message);
+      // Zadarma's recording "These calls are only possible within the country" is not the customer.
+      const spoke = (d.transcript || []).some((t) => t.role === "user" && t.message && !/only possible within the country/i.test(t.message));
       return { secs: d.metadata?.call_duration_secs, outcome: dc.outcome?.value || d.status, summary: dc.summary?.value || "", spoke, ring: await ringSecs(id) };
     }
   }

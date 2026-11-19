@@ -18,6 +18,8 @@ export function readConfig() {
     sites: env("SITES", "bg").split(",").map((s) => s.trim()).filter(Boolean),
     inboundAgentId: env("EL_INBOUND_AGENT_ID"),
     maxCallsPerRun: Number(env("MAX_CALLS_PER_RUN", "1")) || 1,
+    // CALLS_PAUSED=1 in Netlify stops all outgoing calls, whatever Telegram says (incoming calls still work).
+    pausedByEnv: env("CALLS_PAUSED") === "1",
     ready: Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
   };
 }

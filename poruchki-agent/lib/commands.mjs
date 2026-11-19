@@ -60,6 +60,7 @@ export async function handleTelegram(deps, update, opts = {}) {
   }
   if (["/pusni", "/resume", "пусни"].includes(cmd)) {
     await saveSettings(store, { ...settings, paused: false });
+    if (config.pausedByEnv) return { chatId, reply: "⏸ Обажданията са спрени от настройките в Netlify (CALLS_PAUSED=1), докато оправим линията. Входящите работят." };
     return { chatId, reply: "▶️ Обажданията са пуснати." };
   }
   if (["/rezhim", "режим"].includes(cmd)) {
@@ -85,7 +86,7 @@ export async function handleTelegram(deps, update, opts = {}) {
     recent.sort((a, b) => String(b.finishedAt).localeCompare(String(a.finishedAt)));
     const lines = [
       `Режим: ${{ live: "звъни на клиентите", test: "ТЕСТ – звъни само на теб", off: "изключен" }[settings.mode || config.mode] || "изключен"}`,
-      settings.paused ? "⏸ На пауза" : "▶️ Работи",
+      config.pausedByEnv ? "⏸ Спрени от настройките в Netlify (CALLS_PAUSED) – /pusni не ги пуска" : settings.paused ? "⏸ На пауза" : "▶️ Работи",
       `Часове: ${config.hours} (неделя ${config.hoursSunday || config.hours})`,
       `Чакат обаждане: ${active}`,
       "",

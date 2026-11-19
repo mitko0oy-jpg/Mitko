@@ -117,7 +117,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
 
   if (mode === "off") return { ...report, reason: "off" };
   if (config.ready === false) return { ...report, reason: "ElevenLabs not configured yet" };
-  if (settings.paused) return { ...report, reason: "paused" };
+  if (settings.paused || config.pausedByEnv) return { ...report, reason: "paused" };
   const hours = sofiaNow(now).weekday === 0 ? config.hoursSunday || config.hours : config.hours;
   if (!inCallingHours(hours, now)) return { ...report, reason: "outside hours" };
   if (testMode && !config.testPhone) return { ...report, reason: "test mode without TEST_PHONE" };
@@ -210,7 +210,9 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
     return { ignored: "not waiting for this call" };
   }
   // The line "answered" and dropped before the customer could pick up: try again soon.
-  const silentShort = call && (call.durationSecs ?? 99) <= 8 && !/^Клиент:/m.test(call.transcript || "");
+  // Zadarma's recording "These calls are only possible within the country" is transcribed as the customer.
+  const announcement = /only possible within the country/i.test(call?.transcript || "");
+  const silentShort = call && (call.durationSecs ?? 99) <= 8 && (announcement || !/^Клиент:/m.test(call.transcript || ""));
   if (silentShort && deps.ringSecs && (rec.lineFaults || 0) < MAX_LINE_FAULTS) {
     const ring = await deps.ringSecs(conversationId).catch(() => null);
     if (ring != null && ring < 5) {
