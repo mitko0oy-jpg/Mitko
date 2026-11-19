@@ -5,13 +5,56 @@
    ========================================================================= */
 
 const WAVE = color => `<div class="bv-wave" aria-hidden="true" style="color:${color}"><svg class="bv-wave__back" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 46C240 16 480 16 720 46S1200 76 1440 46 1920 16 2160 46 2640 76 2880 46V80H0Z"/></svg><svg class="bv-wave__front" viewBox="0 0 2880 80" preserveAspectRatio="none"><path d="M0 40C240 70 480 70 720 40S1200 10 1440 40 1920 70 2160 40 2640 10 2880 40V80H0Z"/></svg></div>`;
-const HEXES = `<div class="bv-hexes" aria-hidden="true">${[[4, 12, 46, 0, 9], [90, 8, 34, 1.5, 11], [82, 46, 54, .8, 10], [8, 62, 30, 2.2, 12], [48, 92, 40, 3, 9.5], [94, 86, 26, 1.1, 13]]
-  .map(([x, y, w, d, t]) => `<svg class="bv-hex" style="left:${x}%;top:${y}%;width:${w}px;animation-delay:${d}s;animation-duration:${t}s" viewBox="0 0 56 64"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg>`).join('')}</div>`;
+const HEX_SPOTS = [[4, 12, 46, 0, 9], [90, 8, 34, 1.5, 11], [82, 46, 54, .8, 10], [8, 62, 30, 2.2, 12], [48, 92, 40, 3, 9.5], [94, 86, 26, 1.1, 13]];
+const hexes = t => `<div class="bv-hexes" aria-hidden="true">${HEX_SPOTS.map(([x, y, w, d, tt]) => t
+  ? `<svg class="bv-hex bv-hex--s" style="left:${x}%;top:${y}%;width:${w}px;animation-delay:${d}s;animation-duration:${tt}s" viewBox="0 0 24 24"><path d="${SHAPES[t.shape]}"/></svg>`
+  : `<svg class="bv-hex" style="left:${x}%;top:${y}%;width:${w}px;animation-delay:${d}s;animation-duration:${tt}s" viewBox="0 0 56 64"><path d="M28 2 54 17v30L28 62 2 47V17Z"/></svg>`).join('')}</div>`;
 const SPARKS = `<span class="bv-sparks" aria-hidden="true">${[[9, 5, 0], [22, 7, 1.3], [35, 4, 2.4], [48, 6, .6], [61, 5, 1.9], [74, 7, .9], [88, 4, 2.9], [55, 3, 3.3]]
   .map(([l, s, d]) => `<i style="left:${l}%;width:${s}px;height:${s}px;animation-delay:${d}s"></i>`).join('')}</span>`;
 const HONEY = BVM(BV.extra, 'honey-drop.webp');
-const FLOATERS = `<div class="bv-floaters" aria-hidden="true">${[[3, 20, 74, .8], [97, 38, 54, .5], [95, 84, 124, .9], [6, 78, 44, .4]]
-  .map(([x, y, s, z]) => `<span class="bv-floater" style="--fx:${x}%;--fy:${y}%;--flsz:${s}px;--fz:${z}"><img src="${HONEY}" alt="" loading="lazy" decoding="async"></span>`).join('')}</div>`;
+const FLOAT_SPOTS = [[3, 20, 74, .8], [97, 38, 54, .5], [95, 84, 124, .9], [6, 78, 44, .4]];
+const floaters = t => `<div class="bv-floaters" aria-hidden="true">${FLOAT_SPOTS.map(([x, y, sz, z]) => `<span class="bv-floater${t ? ' bv-floater--s' : ''}" style="--fx:${x}%;--fy:${y}%;--flsz:${t ? Math.round(sz * .62) : sz}px;--fz:${z}">${t
+  ? `<svg viewBox="0 0 24 24"><path d="${SHAPES[t.shape]}"/></svg>`
+  : `<img src="${HONEY}" alt="" loading="lazy" decoding="async">`}</span>`).join('')}</div>`;
+
+/* ---------- характерът на продукта (THEMES в landing-data.js) ---------- */
+const SHAPES = {
+  drop: 'M12 2.5C12 2.5 5 10.6 5 15.2a7 7 0 0 0 14 0C19 10.6 12 2.5 12 2.5Z',
+  bubble: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z',
+  dot: 'M12 6.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11Z',
+  leaf: 'M20.5 3.5C11 3.5 4 8.5 4 17.5c0 1 .1 2 .3 3C13.5 20.5 20.5 14 20.5 3.5ZM4.3 20.5C8 14 12 10.5 17 7.5',
+  sparkle: 'M12 1.5c.9 5.6 4.9 9.6 10.5 10.5c-5.6.9-9.6 4.9-10.5 10.5c-.9-5.6-4.9-9.6-10.5-10.5C7.1 11.1 11.1 7.1 12 1.5Z',
+  heart: 'M12 21s-8.5-5.4-8.5-11.2A4.8 4.8 0 0 1 12 6.9a4.8 4.8 0 0 1 8.5 2.9C20.5 15.6 12 21 12 21Z',
+  bolt: 'M13.5 1.5 4 13.5h7l-1.5 9 10-12.5h-7.2l1.2-8.5Z',
+  flame: 'M12 1.5c.8 4.2 6.5 6.6 6.5 13a6.5 6.5 0 0 1-13 0c0-3.4 2-5.6 3.3-7.4.2 2.2 1.2 3.6 2.6 3.9C11 8.2 10.8 4.6 12 1.5Z',
+  sun: 'M12 6.2a5.8 5.8 0 1 0 0 11.6a5.8 5.8 0 1 0 0-11.6ZM12 .8v3M12 20.2v3M.8 12h3M20.2 12h3M4.1 4.1l2.1 2.1M17.8 17.8l2.1 2.1M4.1 19.9l2.1-2.1M17.8 6.2l2.1-2.1'
+};
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mixC = (a, b, k) => { const x = hexRgb(a), y = hexRgb(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+const rgbT = h => hexRgb(h).join(',');
+function themeVars(t) {
+  const W = '#ffffff', K = '#000000', { a, d, n } = t;
+  const bg = t.bg || mixC(a, W, .955), sh = rgbT(mixC(n, K, .1));
+  const pat = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><g fill="none" stroke="${a}" stroke-opacity=".2" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(6 6) scale(.9)" d="${SHAPES[t.shape]}"/><path transform="translate(38 36) scale(.75) rotate(20 12 12)" d="${SHAPES[t.shape]}"/></g></svg>`;
+  return {
+    '--honey': a, '--honey-d': d, '--honey-50': mixC(a, W, .92), '--honey-100': mixC(a, W, .8), '--cream': bg,
+    '--night': n, '--night-2': mixC(n, W, .08), '--ink': mixC(n, K, .15), '--ink-2': mixC(n, W, .22), '--muted': mixC(n, W, .38), '--line': mixC(a, W, .84),
+    '--acc': mixC(d, K, .12), '--acc-d': mixC(d, K, .2), '--acc2': mixC(d, K, .05), '--gt1': mixC(d, K, .3), '--gt2': d, '--gt3': a,
+    '--tx': mixC(a, W, .35), '--dkt': mixC(n, W, .9), '--dkm': mixC(n, W, .78), '--dkm2': mixC(n, W, .7),
+    '--hl': mixC(a, W, .3), '--bd': mixC(a, W, .55), '--tint1': mixC(a, W, .62), '--tint2': mixC(a, W, .86),
+    '--tglow': rgbT(mixC(a, W, .35)), '--t1rgb': rgbT(a), '--t2rgb': rgbT(d), '--tint1rgb': rgbT(mixC(a, W, .62)), '--tint2rgb': rgbT(mixC(a, W, .86)),
+    '--creamrgb': rgbT(bg), '--sh': sh,
+    '--shadow': `0 1px 2px rgba(${sh},.06),0 8px 24px rgba(${sh},.08)`, '--shadow-l': `0 2px 6px rgba(${sh},.08),0 22px 50px rgba(${sh},.14)`,
+    '--pat': `url("data:image/svg+xml,${encodeURIComponent(pat)}")`,
+    '--dust-a': rgbT(mixC(a, W, .85)), '--dust-b': rgbT(mixC(a, W, .4)), '--dust-c': rgbT(a),
+    '--seal1': mixC(a, W, .45), '--seal2': a, '--seal3': d,
+    // тъмно начало: заглавието и малките надписи светят в цвета на продукта
+    ...(t.dark ? { '--gt1': a, '--gt2': mixC(a, W, .35), '--gt3': mixC(a, W, .6), '--acc2': mixC(a, W, .3) } : {})
+  };
+}
+const DECO_SPOTS = [[-7, 12, 46, 0], [90, 2, 32, 1.2], [97, 50, 40, .6], [-3, 66, 30, 2], [80, 86, 26, 1.6]];
+const stageDeco = t => t ? DECO_SPOTS.map(([x, y, w, dl]) => `<span class="bv-deco" aria-hidden="true" style="left:${x}%;top:${y}%;width:${w}px;animation-delay:-${dl}s"><svg viewBox="0 0 24 24"><path d="${SHAPES[t.shape]}"/></svg></span>`).join('') : '';
+const GRAD = '<svg class="bv-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="bvp-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--tint2)"/><stop offset=".45" style="stop-color:var(--honey)"/><stop offset="1" style="stop-color:var(--honey-d)"/></linearGradient></defs></svg>';
 
 const hTxt = a => a ? `${esc(a[0] || '')}${a[1] ? `<em class="bv-accent">${esc(a[1])}</em>` : ''}${esc(a[2] || '')}` : '';
 const arr = '<span class="bv-arr">→</span>';
@@ -21,7 +64,7 @@ function bvMedia(m, alt, w, h, cls = 'bv-loop') {
   return `<video class="${cls}" muted loop playsinline preload="none" width="${w}" height="${h}" poster="${m.poster}" aria-label="${esc(alt)}"><source data-src="${m.video}" type="video/mp4"></video>`;
 }
 function seal(big, small, ring, id) {
-  return `<svg class="bv-seal10" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD983"/><stop offset=".5" stop-color="#E9A21C"/><stop offset="1" stop-color="#B86A00"/></linearGradient><path id="${id}p" d="M60 60m-45 0a45 45 0 1 1 90 0a45 45 0 1 1-90 0"/></defs>
+  return `<svg class="bv-seal10" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--seal1,#FFD983)"/><stop offset=".5" style="stop-color:var(--seal2,#E9A21C)"/><stop offset="1" style="stop-color:var(--seal3,#B86A00)"/></linearGradient><path id="${id}p" d="M60 60m-45 0a45 45 0 1 1 90 0a45 45 0 1 1-90 0"/></defs>
     <circle cx="60" cy="60" r="58" fill="url(#${id}g)"/><circle cx="60" cy="60" r="52" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="2 3"/>
     <g class="bv-seal10__ring"><text font-family="Manrope,sans-serif" font-weight="800" font-size="8.6" fill="#3A2408" textLength="276" lengthAdjust="spacing"><textPath href="#${id}p">${esc(ring)}</textPath></text></g>
     <circle cx="60" cy="60" r="34" fill="#FFFBF3"/><text x="60" y="66" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="${big.length > 3 ? 21 : 27}" fill="#D62A1E">${esc(big)}</text>
@@ -29,7 +72,7 @@ function seal(big, small, ring, id) {
 }
 function guaranteeSeal(days) {
   return `<svg class="bv-seal" viewBox="0 0 120 120" aria-hidden="true"><defs><path id="bv-sealc" d="M60 60m-43 0a43 43 0 1 1 86 0a43 43 0 1 1-86 0"/></defs>
-    <circle cx="60" cy="60" r="57" fill="#F5A623"/><circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 4"/><circle cx="60" cy="60" r="34" fill="#fff"/>
+    <circle cx="60" cy="60" r="57" style="fill:var(--honey)"/><circle cx="60" cy="60" r="50" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 4"/><circle cx="60" cy="60" r="34" fill="#fff"/>
     <g class="bv-seal__ring"><text font-family="Manrope,sans-serif" font-weight="800" font-size="9.5" fill="#24180C" letter-spacing="1.6"><textPath href="#bv-sealc">ГАРАНЦИЯ · ВРЪЩАМЕ ПАРИТЕ · ГАРАНЦИЯ ·</textPath></text></g>
     <text x="60" y="63" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="30" fill="#D62A1E">${days}</text>
     <text x="60" y="78" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="11" fill="#24180C">ДНИ</text></svg>`;
@@ -84,6 +127,7 @@ function packQty(p, k) {
 function renderLanding(p) {
   const d = LANDING[p.id] || {};
   const c = CAT_LANDING[p.cat] || {};
+  const theme = THEMES[p.id] || null;
   const cat = CATEGORIES.find(x => x.id === p.cat);
   const bee = isBee(p);
   const days = CONFIG.guaranteeDays;
@@ -107,7 +151,7 @@ function renderLanding(p) {
     `<li>${/^https?:/.test(ic) ? `<img src="${ic}" alt="" width="40" height="40">` : `<span class="bv-legico" aria-hidden="true">${ic}</span>`}<span><b>${esc(b)}</b><small>${esc(s || '')}</small></span></li>`).join('')}</ul>` : '';
   const hero = `
   <section class="bv-hero${stage.plain ? ' bv-hero--plain' : ''}">
-    ${d.bg || (bee && !stage.plain) ? `<div class="bv-hero__bg" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bg-a-2000.webp')}" alt="" width="2000" height="1125" fetchpriority="high"></div>` : '<div class="bv-hero__bg bv-hero__bg--soft" aria-hidden="true"></div>'}
+    ${!theme && (d.bg || (bee && !stage.plain)) ? `<div class="bv-hero__bg" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bg-a-2000.webp')}" alt="" width="2000" height="1125" fetchpriority="high"></div>` : '<div class="bv-hero__bg bv-hero__bg--soft" aria-hidden="true"></div>'}
     <canvas class="bv-dust" aria-hidden="true"></canvas>
     <div class="bv-wrap bv-hero__grid">
       <div class="bv-hero__copy">
@@ -132,6 +176,7 @@ function renderLanding(p) {
           ${seal(sealArgs[0], sealArgs[1], sealArgs[2], 'bvs-' + p.id)}
           ${bee || d.bee ? `<span class="bv-stage__bee" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bee.webp')}" alt="" width="320" height="320" decoding="async"></span>` : ''}
         </div>
+        ${stageDeco(theme)}
         ${legendHtml}
       </div>
     </div>
@@ -173,7 +218,7 @@ function renderLanding(p) {
     <div class="bv-wrap bv-formula__grid">
       <div>
         <span class="bv-eyebrow">${esc(f.eyebrow || p.shortName)}</span>
-        <h2>${f.h2 ? `${esc(f.h2[0])}<em class="bv-accent" style="color:#FFC65C">${esc(f.h2[1])}</em>` : `${esc(p.name)} – <em class="bv-accent" style="color:#FFC65C">как действа</em>`}</h2>
+        <h2>${f.h2 ? `${esc(f.h2[0])}<em class="bv-accent" style="color:var(--tx,#FFC65C)">${esc(f.h2[1])}</em>` : `${esc(p.shortName)} – <em class="bv-accent" style="color:var(--tx,#FFC65C)">накратко</em>`}</h2>
         <p class="bv-lead">${esc(f.lead || p.short)}</p>
         <div class="bv-stats">${stats.map(([n, t]) => `<div class="bv-stat"><b>${esc(n)}</b><span>${esc(t)}</span></div>`).join('')}</div>
         <a class="bv-btn" href="${toOffers}">Поръчай сега ${arr}</a>
@@ -193,7 +238,7 @@ function renderLanding(p) {
   const tape = (cls, words) => `<div class="bv-tape ${cls}"><div class="bv-tape__track">${[...words, ...words, ...words, ...words].map(w => `<span>${esc(w)}</span><i>✦</i>`).join('')}</div></div>`;
   const why = `
   <section class="bv-why">
-    ${HEXES}
+    ${hexes(theme)}
     <div class="bv-wrap">
       <div class="bv-center">
         <span class="bv-eyebrow">Какво получаваш</span>
@@ -225,7 +270,7 @@ function renderLanding(p) {
   const offers = (id, title) => `
   <section class="bv-offers" id="${id}">
     ${WAVE('var(--honey-50)')}
-    ${FLOATERS}
+    ${floaters(theme)}
     <div class="bv-wrap">
       <div class="bv-center">
         <span class="bv-eyebrow">${bfOn() ? 'Черен петък' : 'Специални цени'}</span>
@@ -308,7 +353,7 @@ function renderLanding(p) {
       <div class="bv-tl">${tl.items.map(([when, h, li, emo]) => `<div class="bv-tl__item"><span class="bv-tl__emo${Array.isArray(emo) ? ' bv-cwflip' : ''}" aria-hidden="true">${Array.isArray(emo) ? emo.map(x => `<i>${x}</i>`).join('') : emo}</span><span class="bv-tl__when">${esc(when)}</span><h3>${esc(h)}</h3><ul>${li.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>
       <p class="bv-small bv-center" style="margin-top:18px">Индивидуалното усещане и резултатите могат да се различават. Продуктът е за външна козметична употреба и не е лекарство.</p>` : ''}
       ${life ? `<div class="bv-life bv-rv"><div class="bv-life__img"><img loading="lazy" src="${typeof life.img === 'function' ? life.img() : life.img}" width="1200" height="1200" alt=""></div>
-        <div class="bv-life__txt"><h3>${esc(life.h3[0])}<em class="bv-accent" style="color:#FFC65C">${esc(life.h3[1])}</em></h3><p>${esc(life.p)}</p><a class="bv-btn" href="${toOffers}">Виж специалната оферта ${arr}</a></div></div>` : ''}
+        <div class="bv-life__txt"><h3>${esc(life.h3[0])}<em class="bv-accent" style="color:var(--tx,#FFC65C)">${esc(life.h3[1])}</em></h3><p>${esc(life.p)}</p><a class="bv-btn" href="${toOffers}">Виж специалната оферта ${arr}</a></div></div>` : ''}
     </div>
   </section>` : '';
 
@@ -369,7 +414,9 @@ function renderLanding(p) {
 
   const root = $('#product');
   root.classList.add('bvp');
-  root.innerHTML = hero + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
+  root.removeAttribute('style'); delete root.dataset.shape; delete root.dataset.dark;
+  if (theme) { const v = themeVars(theme); Object.keys(v).forEach(k => root.style.setProperty(k, v[k])); root.dataset.shape = theme.shape; if (theme.dark) root.dataset.dark = '1'; }
+  root.innerHTML = GRAD + hero + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
     + ingsHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
     + faq + final + sticky;
@@ -416,7 +463,8 @@ function bvEffects(root) {
     let W = 0, H = 0, parts = [], running = false;
     const spr = document.createElement('canvas'); spr.width = spr.height = 32;
     const sg = spr.getContext('2d'), gr = sg.createRadialGradient(16, 16, 0, 16, 16, 16);
-    gr.addColorStop(0, 'rgba(255,246,214,1)'); gr.addColorStop(.35, 'rgba(255,212,120,.75)'); gr.addColorStop(1, 'rgba(255,190,80,0)');
+    const cs = getComputedStyle(root), dv = (k, f) => (cs.getPropertyValue(k) || '').trim() || f;
+    gr.addColorStop(0, `rgba(${dv('--dust-a', '255,246,214')},1)`); gr.addColorStop(.35, `rgba(${dv('--dust-b', '255,212,120')},.75)`); gr.addColorStop(1, `rgba(${dv('--dust-c', '255,190,80')},0)`);
     sg.fillStyle = gr; sg.fillRect(0, 0, 32, 32);
     const spawn = (p, anyY) => Object.assign(p, { x: W * (.3 + .7 * Math.pow(Math.random(), .6)), y: anyY ? Math.random() * H : H + 12, r: 2 + Math.random() * 6, vy: .12 + Math.random() * .38, vx: -.12 + Math.random() * .24, ph: Math.random() * 6.283, tw: .008 + Math.random() * .022 });
     const size = () => { const w = hero.clientWidth, h = hero.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); parts = []; for (let i = 0; i < (W < 700 ? 22 : 44); i++) parts.push(spawn({}, true)); };
