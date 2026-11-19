@@ -772,3 +772,71 @@
 @media (prefers-reduced-motion:reduce){
   .bvp .bv-kb,.bvp .bv-stage__sheen{animation:none!important}
 }
+
+/* ---------- уелнес пластирите: формулата в кръг ---------- */
+.bvp .bv-ring{--sz:min(84vw,440px);--r:calc(var(--sz) * .385);--bs:clamp(84px,24vw,112px);position:relative;width:var(--sz);height:var(--sz);margin:0 auto}
+.bvp .bv-ring__orbit{position:absolute;inset:calc(50% - var(--r));border-radius:50%;border:1.5px dashed rgba(var(--tint1rgb,255,214,140),.38);animation:bv-orbit 26s linear infinite}
+.bvp .bv-ring__orbit::after{content:"";position:absolute;left:50%;top:-6px;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;background:var(--tx,#FFC65C);box-shadow:0 0 14px 4px rgba(var(--t1rgb,245,166,35),.7)}
+.bvp .bv-ring__core{position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:#fff;padding:7%;box-shadow:0 0 0 8px rgba(var(--t1rgb,245,166,35),.16),0 0 60px 10px rgba(var(--t1rgb,245,166,35),.35),0 26px 50px rgba(0,0,0,.4);display:grid;place-items:center}
+.bvp .bv-ring__core img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.bvp .bv-ring__cap{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);white-space:nowrap;background:linear-gradient(180deg,var(--hl,#FFC24A),var(--honey-d,#E08A00));color:#fff;font-weight:800;font-size:calc(var(--fs) * 0.7222);letter-spacing:.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;box-shadow:0 8px 18px rgba(0,0,0,.3)}
+.bvp .bv-ring__list{list-style:none;margin:0;padding:0;position:absolute;inset:0;animation:bv-orbit 90s linear infinite}
+.bvp .bv-ring__list li{position:absolute;left:50%;top:50%;width:0;height:0;--a:calc(360deg / var(--n) * var(--i) - 90deg);transform:rotate(var(--a)) translate(var(--r)) rotate(calc(-1 * var(--a)))}
+.bvp .bv-ring__spin{position:absolute;left:0;top:0;animation:bv-orbit 90s linear infinite reverse}
+.bvp .bv-ring__b{position:absolute;left:0;top:0;width:var(--bs);height:var(--bs);transform:translate(-50%,-50%);border-radius:50%;background:#fff;color:var(--ink,#24170B);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px;text-align:center;box-shadow:0 0 0 4px rgba(var(--t1rgb,245,166,35),.28),0 14px 28px rgba(0,0,0,.35)}
+.bvp .bv-ring__b i{font-style:normal;font-size:calc(var(--fs) * 1.5);line-height:1}
+.bvp .bv-ring__b b{font-size:calc(var(--fs) * 0.6667);line-height:1.15;font-weight:800;hyphens:auto;overflow-wrap:anywhere}
+@keyframes bv-orbit{to{transform:rotate(360deg)}}
+@media (min-width:960px){.bvp .bv-ring__b b{font-size:calc(var(--fs) * 0.7222)}}
+
+/* ---------- уелнес пластирите: трите слоя ---------- */
+.bvp .bv-layers{background:#fff;overflow:hidden;overflow:clip}
+.bvp .bv-layers__grid{display:grid;gap:26px;align-items:center;margin-top:40px}
+.bvp .bv-layers__stack{position:relative;height:300px;max-width:440px;width:100%;margin:0 auto;perspective:1100px}
+.bvp .bv-plate{position:absolute;left:0;right:0;top:calc(30px + var(--k) * 64px);height:150px;transition:transform 1s cubic-bezier(.2,.8,.2,1) calc(var(--k) * .12s)}
+.bvp .bv-plate--1{--k:0;z-index:3}.bvp .bv-plate--2{--k:1;z-index:2}.bvp .bv-plate--3{--k:2;z-index:1}
+.bvp.bv-js .bv-layers__stack .bv-plate{transform:translateY(calc((1 - var(--k)) * 40px))}
+.bvp.bv-js .bv-layers__stack.bv-in .bv-plate{transform:none}
+.bvp .bv-plate__face{position:absolute;left:12%;width:64%;top:0;height:100%;border-radius:30px;transform:rotateX(60deg) rotateZ(-34deg);transform-style:preserve-3d;box-shadow:0 26px 40px rgba(var(--sh,36,23,11),.18)}
+.bvp .bv-plate__face--top{background:linear-gradient(135deg,#FFFFFF 0%,var(--tint2,#FFEDC8) 100%);border:2px solid var(--bd,#F5C76A)}
+.bvp .bv-plate__face--top::after{content:"";position:absolute;inset:0;border-radius:inherit;background:repeating-linear-gradient(45deg,rgba(var(--t1rgb,245,166,35),.07) 0 6px,transparent 6px 12px)}
+.bvp .bv-plate__face--mid{background:radial-gradient(circle at 22% 30%,rgba(255,255,255,.55) 0 5px,transparent 6px),radial-gradient(circle at 62% 64%,rgba(255,255,255,.5) 0 6px,transparent 7px),radial-gradient(circle at 78% 28%,rgba(255,255,255,.45) 0 4px,transparent 5px),radial-gradient(circle at 38% 78%,rgba(255,255,255,.45) 0 4px,transparent 5px),linear-gradient(135deg,var(--hl,#FFC24A),var(--honey-d,#E08A00));box-shadow:0 26px 40px rgba(var(--t2rgb,224,138,0),.32)}
+.bvp .bv-plate__face--glue{background:linear-gradient(135deg,rgba(var(--tint1rgb,255,214,140),.55),rgba(var(--tint2rgb,255,237,200),.75));border:2px dashed rgba(var(--t2rgb,224,138,0),.4);overflow:hidden}
+.bvp .bv-plate__face--glue::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:bv-glue 4.5s ease-in-out infinite}
+@keyframes bv-glue{0%,40%{left:-60%}100%{left:130%}}
+.bvp .bv-plate__n{position:absolute;right:2%;top:50%;margin-top:-20px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--night,#24170B);color:#fff;font-weight:800;font-size:calc(var(--fs) * 1);box-shadow:0 0 0 4px #fff,0 8px 18px rgba(var(--sh,36,23,11),.3)}
+.bvp .bv-layers__list{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.bvp .bv-layers__list li{display:flex;gap:16px;align-items:flex-start;background:var(--cream,#FFFBF3);border:1px solid var(--line);border-radius:20px;padding:18px 20px}
+.bvp .bv-layers__n{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--night,#24170B);color:#fff;font-weight:800}
+.bvp .bv-layers__list h3{font-size:calc(var(--fs) * 1.0556);margin:0 0 4px;line-height:1.25}
+.bvp .bv-layers__list p{margin:0;color:var(--ink-2);font-size:calc(var(--fs) * 0.9444);line-height:1.5}
+
+/* ---------- уелнес пластирите: къде да го залепиш ---------- */
+.bvp .bv-zones{display:grid;gap:24px;align-items:center;margin-top:46px;background:linear-gradient(180deg,var(--honey-50,#FFF7E8),#fff);border:1px solid var(--line);border-radius:28px;padding:26px 20px}
+.bvp .bv-zones__fig{max-width:240px;width:100%;margin:0 auto}
+.bvp .bv-body{display:block;width:100%;height:auto;overflow:visible}
+.bvp .bv-body__fig{fill:var(--tint2,#FFEDC8);stroke:var(--tint2,#FFEDC8);stroke-linecap:round}
+.bvp .bv-body__fig circle,.bvp .bv-body__fig rect{stroke:none}
+.bvp .bv-body__pt{fill:var(--honey-d,#E08A00);stroke:#fff;stroke-width:3}
+.bvp .bv-body__ping{fill:var(--honey,#F5A623);opacity:.5;transform-box:fill-box;transform-origin:center;animation:bv-zping 2.6s ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes bv-zping{0%{transform:scale(1);opacity:.55}80%,100%{transform:scale(2.6);opacity:0}}
+.bvp .bv-body text{fill:#fff;font:800 12px/1 Manrope,system-ui,sans-serif}
+.bvp .bv-zones__txt h3{font-size:calc(var(--fs) * 1.333);margin:0 0 14px;line-height:1.2}
+.bvp .bv-zones__list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.bvp .bv-zones__list li{display:flex;gap:12px;align-items:center;font-weight:700;font-size:calc(var(--fs) * 1)}
+.bvp .bv-zones__list span{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--honey-d,#E08A00);color:#fff;font-weight:800;font-size:calc(var(--fs) * 0.8333)}
+.bvp .bv-zones__lbl{margin:20px 0 10px;font-weight:800;font-size:calc(var(--fs) * 0.7778);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bvp .bv-zones__when{display:flex;flex-wrap:wrap;gap:8px}
+.bvp .bv-zones__when span{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-weight:700;font-size:calc(var(--fs) * 0.8889)}
+.bvp .bv-zones__when i{font-style:normal}
+.bvp .bv-hstep__ico{display:grid;place-items:center;height:130px;border-radius:24px 24px 0 0;background:radial-gradient(circle at 50% 60%,rgba(var(--t1rgb,245,166,35),.22),transparent 65%),var(--honey-50,#FFF7E8);font-size:56px}
+@media (min-width:720px){
+  .bvp .bv-layers__grid{grid-template-columns:1fr 1fr;gap:40px}
+  .bvp .bv-layers__stack{height:340px}
+  .bvp .bv-zones{grid-template-columns:260px 1fr;gap:40px;padding:34px 40px}
+  .bvp .bv-zones__fig{max-width:260px}
+}
+@media (min-width:960px){.bvp .bv-hsteps.bv-hsteps--3{grid-template-columns:repeat(3,1fr);max-width:960px;margin-left:auto;margin-right:auto}}
+@media (prefers-reduced-motion:reduce){
+  .bvp .bv-ring__orbit,.bvp .bv-ring__list,.bvp .bv-ring__spin,.bvp .bv-plate__face--glue::after,.bvp .bv-body__ping{animation:none!important}
+}

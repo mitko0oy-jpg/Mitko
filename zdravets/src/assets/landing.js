@@ -125,6 +125,51 @@ function packQty(p, k) {
   return m ? +m[1] : 1;
 }
 
+/* ---------- уелнес пластирите: кръгът на формулата, трите слоя, местата за залепване ---------- */
+const JAR_SVG = '<svg class="bv-vs__jar" viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="10" width="36" height="12" rx="4" fill="#C9BBA8"/><rect x="10" y="20" width="44" height="36" rx="9" fill="#E8DFD2" stroke="#C9BBA8" stroke-width="2"/><rect x="18" y="32" width="28" height="12" rx="3" fill="#F7F2EA"/></svg>';
+const PILLS_SVG = '<svg class="bv-vs__jar" viewBox="0 0 64 64" aria-hidden="true"><rect x="19" y="6" width="26" height="10" rx="3" fill="#C9BBA8"/><rect x="15" y="14" width="34" height="44" rx="8" fill="#E8DFD2" stroke="#C9BBA8" stroke-width="2"/><rect x="20" y="28" width="24" height="14" rx="3" fill="#F7F2EA"/><g transform="rotate(-35 46 50)"><rect x="34" y="44" width="24" height="11" rx="5.5" fill="#fff" stroke="#B9A994" stroke-width="1.6"/><path d="M46 44v11" stroke="#B9A994" stroke-width="1.6"/><path d="M46 44.8h6.5a4.7 4.7 0 0 1 0 9.4H46z" fill="#D9CCBA"/></g></svg>';
+const ingShort = n => {
+  const t = String(n).replace(/^Екстракт от /i, '').replace(/^Кора от /i, '').replace(/^Гъба /i, '').replace(/\s*\(.*?\)\s*/g, ' ')
+    .replace(/[„“"]/g, '').replace(/^Витамини от група B$/i, 'Витамини B').trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+function ingRing(p, ings) {
+  const list = ings.slice(0, 7);
+  return `<div class="bv-ring" style="--n:${list.length}">
+    <span class="bv-ring__orbit" aria-hidden="true"></span>
+    <div class="bv-ring__core"><img src="${productLook(p).img}" alt="${esc(p.name)}" loading="lazy" decoding="async"><span class="bv-ring__cap">${list.length} съставки</span></div>
+    <ul class="bv-ring__list" aria-label="Съставки">${list.map(([n], i) => `<li style="--i:${i}"><span class="bv-ring__spin"><span class="bv-ring__b"><i aria-hidden="true">${ingIcon(n)}</i><b>${esc(ingShort(n))}</b></span></span></li>`).join('')}</ul>
+  </div>`;
+}
+/* силует отпред; точките са местата за залепване – по реда на ZONE_AT */
+const ZONE_AT = { 'ръка': [56, 120], 'китка': [157, 196], 'гърди': [84, 98], 'корем': [102, 150], 'хълбок': [128, 188] };
+const bodySvg = zones => `<svg class="bv-body" viewBox="0 0 200 350" role="img" aria-label="Местата за залепване на пластира">
+  <g class="bv-body__fig"><circle cx="100" cy="36" r="23"/><rect x="91" y="54" width="18" height="16" rx="6"/><rect x="60" y="68" width="80" height="132" rx="30"/>
+    <path d="M66 84 40 206M134 84l26 122" stroke-width="20"/><path d="M84 192 79 338M116 192l5 146" stroke-width="27"/></g>
+  ${zones.map(([, k], i) => { const [x, y] = ZONE_AT[k] || [100, 120]; return `<g class="bv-body__dot" style="--d:${(i * .5).toFixed(1)}s"><circle class="bv-body__ping" cx="${x}" cy="${y}" r="10"/><circle class="bv-body__pt" cx="${x}" cy="${y}" r="10"/><text x="${x}" y="${y + 4}" text-anchor="middle">${i + 1}</text></g>`; }).join('')}
+</svg>`;
+function layersSection(L, p) {
+  if (!L) return '';
+  const plate = (i, cls) => `<div class="bv-plate bv-plate--${i + 1}"><div class="bv-plate__face ${cls}"></div><span class="bv-plate__n">${i + 1}</span></div>`;
+  return `
+  <section class="bv-layers"><div class="bv-wrap">
+    <div class="bv-center"><span class="bv-eyebrow">${esc(L.eyebrow)}</span><h2>${hTxt(L.h2)}</h2><p class="bv-lead">${esc(L.lead)}</p></div>
+    <div class="bv-layers__grid">
+      <div class="bv-layers__stack bv-rv" aria-hidden="true">${plate(0, 'bv-plate__face--top')}${plate(1, 'bv-plate__face--mid')}${plate(2, 'bv-plate__face--glue')}</div>
+      <ol class="bv-layers__list">${L.items.map(([h, t], i) => `<li class="bv-rv" style="--bv-d:${(i * .15).toFixed(2)}s"><span class="bv-layers__n">${i + 1}</span><div><h3>${esc(h)}</h3><p>${esc(t)}</p></div></li>`).join('')}</ol>
+    </div>
+    ${L.zones ? `<div class="bv-zones">
+      <div class="bv-zones__fig bv-rv">${bodySvg(L.zones)}</div>
+      <div class="bv-zones__txt">
+        <h3>Къде да го залепиш?</h3>
+        <ol class="bv-zones__list">${L.zones.map(([t], i) => `<li><span>${i + 1}</span>${esc(t)}</li>`).join('')}</ol>
+        ${L.when ? `<p class="bv-zones__lbl">Носиш го навсякъде – до 8 часа</p><div class="bv-zones__when">${L.when.map(([ic, t]) => `<span><i aria-hidden="true">${ic}</i>${esc(t)}</span>`).join('')}</div>` : ''}
+        ${L.note ? `<div class="bv-note"><span>🔄</span><span>${esc(L.note)}</span></div>` : ''}
+      </div>
+    </div>` : ''}
+  </div></section>`;
+}
+
 function renderLanding(p) {
   const d = LANDING[p.id] || {};
   const c = CAT_LANDING[p.cat] || {};
@@ -216,7 +261,7 @@ function renderLanding(p) {
   </div></div></section>`;
 
   // --- формулата (тъмен блок)
-  const f = d.formula || {};
+  const f = d.formula || c.formula || {};
   const stats = f.stats || c.stats || [[String(ings.length || 1), ings.length === 1 ? 'активна съставка' : 'активни съставки'], [String(days), 'дни гаранция'], ['1–2', 'работни дни до вратата ти'], ['0 €', 'предплащане – плащаш на куриера']];
   const formula = `
   <section class="bv-formula bv-honeycomb" id="bv-formula">
@@ -229,9 +274,9 @@ function renderLanding(p) {
         <div class="bv-stats">${stats.map(([n, t]) => `<div class="bv-stat"><b>${esc(n)}</b><span>${esc(t)}</span></div>`).join('')}</div>
         <a class="bv-btn" href="${toOffers}">Поръчай сега ${arr}</a>
       </div>
-      <figure class="bv-formula__fig bv-rv"><div class="bv-formula__media${f.media ? '' : ' bv-formula__media--img'}">${f.media
+      <figure class="bv-formula__fig bv-rv">${f.ring && ings.length > 1 ? ingRing(p, ings) : `<div class="bv-formula__media${f.media ? '' : ' bv-formula__media--img'}">${f.media
         ? bvMedia(f.media, p.name, 720, 1274, 'bv-formula__video')
-        : `<img src="${(p.gallery && p.gallery[0]) || p.img}" alt="${esc(p.name)}" loading="lazy" decoding="async">`}</div></figure>
+        : `<img src="${(p.gallery && p.gallery[0]) || p.img}" alt="${esc(p.name)}" loading="lazy" decoding="async">`}</div>`}</figure>
     </div>
   </section>`;
 
@@ -239,7 +284,7 @@ function renderLanding(p) {
   const bensD = d.bens;
   const icons = c.icons || ['✨', '🌿', '💧', '🛡️', '☀️', '🤲'];
   const bens = bensD ? bensD.items : p.bullets.map((b, i) => [icons[i % icons.length], b, '', null]);
-  const tapesA = d.tapes || c.tapes || (ings.length ? ings.map(x => x[0].toUpperCase()) : p.bullets.map(b => b.toUpperCase()));
+  const tapesA = d.tapes || (p.wellness && ings.length ? ings.map(x => ingShort(x[0]).toUpperCase()) : null) || c.tapes || (ings.length ? ings.map(x => x[0].toUpperCase()) : p.bullets.map(b => b.toUpperCase()));
   const tapesB = ['ПЛАЩАШ ПРИ ПОЛУЧАВАНЕ', 'ДОСТАВКА 1–2 ДНИ', `${days} ДНИ ГАРАНЦИЯ`, 'ПРОИЗВЕДЕНО ЗА БЪЛГАРИЯ'];
   const tape = (cls, words) => `<div class="bv-tape ${cls}"><div class="bv-tape__track">${[...words, ...words, ...words, ...words].map(w => `<span>${esc(w)}</span><i>✦</i>`).join('')}</div></div>`;
   const why = `
@@ -289,14 +334,15 @@ function renderLanding(p) {
   </section>`;
 
   // --- съставки
-  const ingD = d.ings;
+  const ingD = d.ings && d.ings.items ? d.ings : null;
+  const ingMeta = ingD || d.ings || c.ings || null;
   const ingItems = ingD ? ingD.items : ings.map(([n, t], i) => [n, i ? '' : 'Основна съставка', t, null, !i]);
   const ingsHtml = ingItems.length ? `
   <section id="bv-sastav"><div class="bv-wrap">
     <div class="bv-center">
-      <span class="bv-eyebrow">${esc(ingD ? ingD.eyebrow : 'Какво съдържа?')}</span>
+      <span class="bv-eyebrow">${esc(ingMeta && ingMeta.eyebrow ? ingMeta.eyebrow : 'Какво съдържа?')}</span>
       <h2>${ingD ? hTxt(ingD.h2) : `${ingItems.length === 1 ? 'Съставката' : `${ingItems.length} съставки`}, <em class="bv-accent">подбрани с грижа</em>`}</h2>
-      <p class="bv-lead">${esc(ingD ? ingD.lead : 'Пълният състав е отпечатан върху опаковката.')}</p>
+      <p class="bv-lead">${esc(ingMeta && ingMeta.lead ? ingMeta.lead : 'Пълният състав е отпечатан върху опаковката.')}</p>
     </div>
     <div class="bv-ings${ingItems.some(x => x[3]) ? '' : ' bv-ings--plain'}">${ingItems.map(([n, tag, t, m, main]) => `
       <article class="bv-ing${main ? ' bv-ing--main' : ''}">
@@ -306,16 +352,21 @@ function renderLanding(p) {
       </article>`).join('')}</div>
   </div></section>` : '';
 
+  // --- как е направен пластирът (трите слоя и къде да го залепиш)
+  const layersHtml = layersSection(d.layers || c.layers, p);
+
   // --- сравнение (само където има данни)
-  const vs = d.vs ? `
+  const vsD = d.vs || c.vs;
+  const vsUs = vsD && (vsD.us || [p.shortName, p.size.split(' · ')[0], productLook(p).img]);
+  const vs = vsD ? `
   <section class="bv-vs"><div class="bv-wrap">
-    <div class="bv-center"><span class="bv-eyebrow">Сравни сам</span><h2>${hTxt(d.vs.h2)}</h2><p class="bv-lead">${esc(d.vs.lead)}</p></div>
+    <div class="bv-center"><span class="bv-eyebrow">Сравни сам</span><h2>${hTxt(vsD.h2)}</h2><p class="bv-lead">${esc(vsD.lead)}</p></div>
     <div class="bv-vs__grid">
       <div class="bv-vs__hl" aria-hidden="true"></div>
       <div class="bv-vs__corner">Какво получаваш</div>
-      <div class="bv-vs__head bv-vs__head--us"><img src="${d.vs.us[2]}" alt="" width="106" height="180" loading="lazy" decoding="async"><div><b>${esc(d.vs.us[0])}</b><span>${esc(d.vs.us[1])}</span></div></div>
-      <div class="bv-vs__head bv-vs__head--them"><span class="bv-vs__badge" aria-hidden="true">VS</span><svg class="bv-vs__jar" viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="10" width="36" height="12" rx="4" fill="#C9BBA8"/><rect x="10" y="20" width="44" height="36" rx="9" fill="#E8DFD2" stroke="#C9BBA8" stroke-width="2"/><rect x="18" y="32" width="28" height="12" rx="3" fill="#F7F2EA"/></svg><div><b>${esc(d.vs.them[0])}</b><span>${esc(d.vs.them[1])}</span></div></div>
-      ${d.vs.rows.map(([ic, f, u, small, t], i) => {
+      <div class="bv-vs__head bv-vs__head--us"><img src="${vsUs[2]}" alt="" width="106" height="180" loading="lazy" decoding="async"><div><b>${esc(vsUs[0])}</b><span>${esc(vsUs[1])}</span></div></div>
+      <div class="bv-vs__head bv-vs__head--them"><span class="bv-vs__badge" aria-hidden="true">VS</span>${vsD.pills ? PILLS_SVG : JAR_SVG}<div><b>${esc(vsD.them[0])}</b><span>${esc(vsD.them[1])}</span></div></div>
+      ${vsD.rows.map(([ic, f, u, small, t], i) => {
         const dl = `style="--bv-d:${(.1 + i * .12).toFixed(2)}s"`;
         return `<div class="bv-vs__f bv-rv" ${dl}><span class="bv-vs__ic" aria-hidden="true">${ic}</span>${esc(f)}</div>
         <div class="bv-vs__u bv-rv" ${dl}><span class="bv-vs__ok" aria-hidden="true">✓</span><div><b>${u}</b><small>${esc(small)}</small></div></div>
@@ -326,7 +377,7 @@ function renderLanding(p) {
   </div></section>` : '';
 
   // --- как се използва
-  const howD = d.how;
+  const howD = d.how || c.how;
   const steps = howD ? howD.steps : String(p.usage || '').split(/(?<=\.)\s+/).filter(s => s.length > 3).slice(0, 4).map(s => [s.replace(/\.$/, ''), '', null]);
   const howHtml = steps.length ? `
   <section class="bv-how" style="background:var(--honey-50)"><div class="bv-wrap">
@@ -335,14 +386,14 @@ function renderLanding(p) {
       <h2>${howD ? hTxt(howD.h2) : `${steps.length === 1 ? 'Една стъпка' : `${steps.length} лесни стъпки`}. <em class="bv-accent">Това е всичко.</em>`}</h2>
       ${howD ? `<p class="bv-lead">${esc(howD.lead)}</p>` : ''}
     </div>
-    <ol class="bv-hsteps${steps.some(s => s[2]) ? '' : ' bv-hsteps--plain'}">${steps.map(([h, t, m], i) => `
+    <ol class="bv-hsteps${steps.some(s => s[2]) ? '' : ' bv-hsteps--plain'}${steps.length === 3 ? ' bv-hsteps--3' : ''}">${steps.map(([h, t, m, ic], i) => `
       <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:${(i * .6).toFixed(1)}s">${i + 1}</span>
-        ${m ? `<div class="bv-hstep__media">${bvMedia(m, h, 600, 600)}</div>` : ''}
+        ${m ? `<div class="bv-hstep__media">${bvMedia(m, h, 600, 600)}</div>` : ic ? `<div class="bv-hstep__ico" aria-hidden="true">${ic}</div>` : ''}
         <div class="bv-hstep__body"><h3>${esc(h)}</h3>${t ? `<p>${esc(t)}</p>` : ''}</div><span class="bv-glare" aria-hidden="true"></span></li>`).join('')}</ol>
     ${steps.some(s => s[2]) ? '<p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>' : ''}
     <div class="bv-how__foot">
       <div class="bv-note"><span>💡</span><span>${p.wellness
-        ? 'Не поставяй върху наранена или раздразнена кожа. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. Не е за деца.'
+        ? `${p.caution ? esc(p.caution) + ' ' : 'При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. '}Не поставяй върху наранена или раздразнена кожа. Не е за деца.`
         : `Само за външна употреба. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите.${bee ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</span></div>
       <a class="bv-btn" href="${toOffers}">Поръчай сега ${arr}</a>
     </div>
@@ -378,11 +429,13 @@ function renderLanding(p) {
 
   // --- въпроси
   const safety = p.wellness
-    ? ['Подходящ ли е за мен?', 'Пластирът не е лекарство и не замества лечението или разнообразното хранене. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар преди употреба. Не е подходящ за деца.']
+    ? ['Подходящ ли е за мен?', p.caution
+      ? `${p.caution} Пластирът не е лекарство и не замества лечението или разнообразното хранене. Не е подходящ за деца.`
+      : 'Пластирът не е лекарство и не замества лечението или разнообразното хранене. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар преди употреба. Не е подходящ за деца.']
     : ['Подходящ ли е за чувствителна кожа?', `Направи първо тест на малък участък (например вътрешната страна на предмишницата) и изчакай 24 часа. Ако няма зачервяване или дискомфорт – използвай спокойно.${bee ? ' При алергия към пчелни продукти (ужилвания, мед, прополис) не го използвай без разговор с лекар.' : ''} При бременност или кърмене се консултирай с лекар.`];
   const faqGroups = [
     ['За продукта', [...(d.faq || []), ['Как се използва правилно?', p.usage], ...(p.wellness || bee ? [] : []), ['Лекарство ли е?', 'Не. Това е продукт за ежедневна грижа и не замества лечение, предписано от лекар. Индивидуалното усещане е различно.']]],
-    ['Употреба и безопасност', [safety, ['Мога ли да го ползвам заедно с други продукти?', 'Да, при нужда остави време между нанасянията на една и съща зона. Ако приемаш лекарства или имаш заболяване, попитай лекаря си.']]],
+    ['Употреба и безопасност', [safety, ...(c.faq || [['Мога ли да го ползвам заедно с други продукти?', 'Да, при нужда остави време между нанасянията на една и съща зона. Ако приемаш лекарства или имаш заболяване, попитай лекаря си.']])]],
     ['Поръчка, доставка и гаранция', [
       ['Трябва ли да плащам предварително?', 'Не. Плащаш с наложен платеж – на куриера при получаване. Не въвеждаш данни за карта в сайта.'],
       ['Колко струва доставката и кога пристига?', `Изпращаме с Еконт и Спиди: до офис от ${fmt(SHIP_FROM)}, до адрес ${fmt(Math.max(...CONFIG.shipping.map(m => m.price)))}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пратката обикновено пристига за 1–2 работни дни.`],
@@ -425,7 +478,7 @@ function renderLanding(p) {
   const trustHtml = hero.slice(hero.indexOf('<div class="bv-trust">'));
   const top = productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
   root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
-    + ingsHtml + vs + howHtml + tlHtml + revHtml
+    + ingsHtml + layersHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
     + faq + final;
   bindTop(root, p);
@@ -627,8 +680,8 @@ function productTop(p, d, ctx) {
       <div class="sp-badges"><span>💶 Наложен платеж</span><span>🛡️ ${CONFIG.guaranteeDays} дни гаранция</span><span>📞 <a href="tel:${CONFIG.phoneHref}">${CONFIG.phone}</a></span></div>
       <div class="sp-acc">
         <details open><summary>Описание</summary><div><p>${esc(d.lead || p.short)}</p><ul>${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul><p class="sp-muted">${esc(p.size)}</p></div></details>
-        <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">Пълният състав е отпечатан върху опаковката.</p></div></details>
-        <details><summary>Как се използва</summary><div><p>${esc(p.usage)}</p><p class="sp-muted">${p.wellness ? 'Не е лекарство. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. Не е за деца.' : `Само за външна употреба. Не нанасяй върху наранена кожа и избягвай контакт с очите.${isBee(p) ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</p></div></details>
+        <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">${p.wellness ? 'Съставките са по данни на производителя. ' : ''}Пълният състав е отпечатан върху опаковката.</p></div></details>
+        <details><summary>Как се използва</summary><div><p>${esc(p.usage)}</p><p class="sp-muted">${p.wellness ? `${p.caution ? esc(p.caution) + ' ' : 'При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. '}Не е лекарство. Не е за деца.` : `Само за външна употреба. Не нанасяй върху наранена кожа и избягвай контакт с очите.${isBee(p) ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</p></div></details>
         <details><summary>Доставка и плащане</summary><div><ul>${CONFIG.shipping.map(m => `<li>${esc(m.label)} – <b>${fmt(m.price)}</b></li>`).join('')}</ul>${FREE_FROM ? `<p>При поръчка над <b>${fmt(FREE_FROM)}</b> доставката до офис е <b>безплатна</b>.</p>` : ''}<p>Плащаш на куриера при получаване. Пратката пристига за 1–2 работни дни.</p></div></details>
         <details><summary>Гаранция и връщане</summary><div><p>${CONFIG.guaranteeDays} дни гаранция за удовлетвореност – ако не си доволен, обади се и ти връщаме парите. Освен това по закон имаш 14 дни право на отказ.</p></div></details>
       </div>
