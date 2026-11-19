@@ -1250,7 +1250,7 @@ function renderUpsell() {
     if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => check(n + 1), 250); return; }
     Promise.resolve(O.getLastOrder()).then(o => {
       const no = o && (o.number || o.orderNumber);
-      if (no) $$('[data-order-no]').forEach(e => { e.textContent = `№ ${no}`; });
+      if (no) $$('[data-order-no]').forEach(e => { e.textContent = ` (№ ${no})`; });
       const ids = ((o && (o.items || o.products)) || []).map(i => +i.productId).filter(id => id && id !== CONFIG.giftStoreId);
       const has = ids.some(id => id === p.store || id === UPSELL.store);
       const noJoints = ids.length && ids.every(id => JOINT_FREE.includes(id));

@@ -10,7 +10,7 @@
     <ol class="ups-steps" aria-label="Стъпки на поръчката">
       <li class="done">✓ Поръчката е приета</li><li class="now">Последно предложение</li><li>Готово</li>
     </ol>
-    <p class="ups-ok">Разбираме. Поръчката ти <span data-order-no></span> си остава същата — само едно последно, още по-изгодно предложение.</p>
+    <p class="ups-ok">Разбираме. Поръчката ти<span data-order-no></span> си остава същата — само едно последно, още по-изгодно предложение.</p>
     <div class="ups-card">
       <p class="ups-tag">Последна цена · само сега</p>
       <h1>Хиалуронов крем за стави само за <span class="ups-price" data-ups-price>5,90 €</span> <s data-ups-regular>19,90 €</s></h1>
@@ -26,7 +26,7 @@
           </ul>
         </div>
       </div>
-      <button class="btn btn-primary btn-lg btn-block ups-yes" type="button" data-ups="yes">Да, искам го за <span data-ups-price>5,90 €</span></button>
+      <button class="btn btn-primary btn-lg btn-block ups-yes" type="button" data-ups="yes"><span>Да, искам го за <span data-ups-price>5,90 €</span></span></button>
       <button class="ups-no" type="button" data-ups="no">Не, благодаря — завърши поръчката</button>
     </div>
     <p class="ups-skip-msg">Момент… завършваме поръчката.</p>
@@ -1132,7 +1132,7 @@ function renderUpsell() {
     if (!O || !O.getLastOrder) { if (n < 40) setTimeout(() => check(n + 1), 250); return; }
     Promise.resolve(O.getLastOrder()).then(o => {
       const no = o && (o.number || o.orderNumber);
-      if (no) $$('[data-order-no]').forEach(e => { e.textContent = `№ ${no}`; });
+      if (no) $$('[data-order-no]').forEach(e => { e.textContent = ` (№ ${no})`; });
       const ids = ((o && (o.items || o.products)) || []).map(i => +i.productId).filter(id => id && id !== CONFIG.giftStoreId);
       const has = ids.some(id => id === p.store || id === UPSELL.store);
       const noJoints = ids.length && ids.every(id => JOINT_FREE.includes(id));
