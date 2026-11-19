@@ -350,7 +350,7 @@ function renderLanding(p) {
   const related = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).concat(PRODUCTS.filter(x => x.cat !== p.cat && x.bestseller)).slice(0, 4);
   const final = `
   <section class="bv-final"><div class="bv-wrap">
-    <div class="bv-final__media"><img src="${p.img}" alt="${esc(p.name)}" loading="lazy" decoding="async"></div>
+    <div class="bv-final__media${stage.plain ? ' bv-final__media--card' : ''}"><img src="${stage.plain ? p.img : (stage.small || stage.img)}" alt="${esc(p.name)}" loading="lazy" decoding="async"></div>
     <h2>${p.wellness ? 'Малка стъпка всеки ден. ' : 'Грижата започва с първата поръчка. '}<em class="bv-accent">Заслужаваш я.</em></h2>
     <p class="bv-lead" style="margin-left:auto;margin-right:auto">Поръчай сега – плащаш чак когато пратката е в ръцете ти.</p>
     <div class="bv-cta-row"><a class="bv-btn bv-btn--xl bv-pulse" href="${toOffers}">Виж офертите ${arr}</a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a></div>
