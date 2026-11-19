@@ -205,7 +205,7 @@ function renderFooter() {
     </div>
     <div class="legal">
       <p>${CONFIG.company} · ЕИК ${CONFIG.eik} · ${CONFIG.address} · Надзорен орган: Комисия за защита на потребителите.</p>
-      <p>Продуктите на този сайт са козметични продукти по смисъла на Регламент (ЕО) № 1223/2009 и не са лекарства. Те не са предназначени за диагностика, лечение или профилактика на заболявания. При здравословен проблем се консултирайте с лекар или фармацевт. Индивидуалното усещане може да се различава.</p>
+      <p>Продуктите на този сайт не са лекарства и не са предназначени за диагностика, лечение или профилактика на заболявания. Гелът, кремовете и спреевете са козметични продукти по смисъла на Регламент (ЕО) № 1223/2009. При здравословен проблем се консултирайте с лекар или фармацевт. Индивидуалното усещане може да се различава.</p>
       <p>© ${new Date().getFullYear()} Здравец Натура</p>
     </div>
   </div></footer>`;
@@ -351,10 +351,10 @@ function renderProduct() {
     </div>
     <div class="ptabs narrow">
       <h2>Съставки</h2>
-      <div class="ingr-list">${p.ingredients.map(([n, d]) => `<div><b>${esc(n)}</b> — ${esc(d)}</div>`).join('')}</div>
+      <div class="ingr-list">${p.ingredients.map(([n, d]) => `<div><b>${esc(n)}</b> — ${esc(d)}</div>`).join('')}<div>Пълният състав е на опаковката.</div></div>
       <h2>Как се използва</h2><p>${esc(p.usage)}</p>
       <h2>Важно</h2>
-      <div class="warn">Само за външна употреба. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите. ${/пчелна отрова/i.test(p.name + p.short) ? '<b>Не използвай при алергия към пчелни продукти (ужилвания, мед, прополис).</b> ' : ''}Преди първата употреба направи тест на малък участък кожа. При бременност, кърмене или здравословен проблем се консултирай с лекар. Съхранявай далеч от деца.</div>
+      ${p.wellness ? `<div class="warn">Не е лекарство и не замества лечението или разнообразното хранене. Не поставяй върху наранена или раздразнена кожа. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар преди употреба. Не е подходящ за деца. Съхранявай далеч от деца.</div>` : `<div class="warn">Само за външна употреба. Не нанасяй върху наранена или раздразнена кожа и избягвай контакт с очите. ${/пчелна отрова/i.test(p.name + p.short) ? '<b>Не използвай при алергия към пчелни продукти (ужилвания, мед, прополис).</b> ' : ''}Преди първата употреба направи тест на малък участък кожа. При бременност, кърмене или здравословен проблем се консултирай с лекар. Съхранявай далеч от деца.</div>`}
     </div>`;
   $$('[data-img]', root).forEach(b => b.addEventListener('click', () => { $('#mainimg').src = b.dataset.img; $$('[data-img]', root).forEach(x => x.classList.toggle('on', x === b)); }));
   $$('input[name=pack]', root).forEach(r => r.addEventListener('change', () => { sel = r.value; $$('.pack', root).forEach(l => l.classList.toggle('on', $('input', l).checked)); }));
@@ -369,7 +369,12 @@ function renderProduct() {
   $('#addcart').addEventListener('click', e => doAdd(false, e.currentTarget));
   const rel = $('#related');
   if (rel) { rel.innerHTML = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).concat(PRODUCTS.filter(x => x.cat !== p.cat)).slice(0, 4).map(productCard).join(''); bindAddButtons(rel); }
-  const rv = $('#reviews'); if (rv) { const r = REVIEWS.filter(x => p.shortName.toLowerCase().includes(x.product.toLowerCase().split(' ')[0])); rv.innerHTML = (r.length ? r : REVIEWS).slice(0, 3).map(reviewCard).join(''); }
+  // отзиви само за същия продукт; без тях разделът се маха
+  const rv = $('#reviews');
+  if (rv) {
+    const r = REVIEWS.filter(x => p.shortName.toLowerCase().includes(x.product.toLowerCase().split(' ')[0]));
+    if (r.length) rv.innerHTML = r.slice(0, 3).map(reviewCard).join(''); else { const sec = rv.closest('section'); if (sec) sec.remove(); }
+  }
   track('ViewContent', { content_ids: [p.id], content_type: 'product', value: p.price, currency: 'EUR' });
 }
 
