@@ -1049,7 +1049,7 @@ function drawCart(o) {
   };
   const gift = items.find(isGift);
   body.innerHTML = `
-    ${FREE_FROM ? `<div class="sp-ship"><p>${left > 0 ? `${ICON.truck} Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : `${ICON.truck} <b>Доставката до офис е безплатна!</b>`}</p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
+    ${FREE_FROM ? `<div class="sp-ship"><p>${ICON.truck}<span>${left > 0 ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>'}</span></p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
       ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 билкови пластира</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
     </div>
