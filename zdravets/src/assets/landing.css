@@ -710,3 +710,4 @@
 @media (min-width:1100px){
   .bvp .bv-packs--n4 .bv-btn{padding:14px 14px;font-size:calc(var(--fs) * .95)}
 }
+.bvp .bv-pack__media img.bv-loop{object-fit:contain;background:#fff;padding:4%}
