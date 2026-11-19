@@ -102,7 +102,7 @@ async function syncGift() {
 let countNow = 0;
 function updateCount(o) {
   if (o) countNow = countOf(o);
-  $$('[data-cart-count]').forEach(el => { el.textContent = countNow; });
+  $$('[data-cart-count]').forEach(el => { el.textContent = countNow; el.classList.toggle('is-zero', !countNow); });
 }
 
 /* ---------- toast ---------- */
@@ -118,7 +118,7 @@ function toast(msg, bad) {
 
 /* ---------- добавяне в количката ---------- */
 let busy = false;
-async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, contentId = '', bf = false }) {
+async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, contentId = '', bf = false, extra = [] }) {
   if (busy || !store) return;
   // без магазина на страницата: поръчката го добавя сама (?add=)
   if (!cbReady()) { location.href = `${L.checkout}?add=${store}&q=${qty}`; return; }
@@ -134,9 +134,13 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
       for (const it of (o.items || []).filter(i => BF_STORE_IDS.includes(i.productId) && i.productId !== store)) await Cart.remove(it.productId);
     }
     if (!skip) await Cart.add(store, qty);
+    for (const x of extra) await Cart.add(x, 1);
     await syncGift();
     if (go) { location.href = L.checkout; return; }
-    toast('Добавено в количката');
+    busy = false;
+    if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.innerHTML = label; }
+    openCart();
+    return;
   } catch (e) {
     toast('Не успяхме да добавим продукта. Опитай пак или поръчай по телефона:', true);
   }
@@ -165,48 +169,31 @@ function tickCountdowns() {
 /* ---------- header / footer ---------- */
 function renderHeader() {
   const h = $('[data-zn-header]');
-  if (!h) return;
-  const here = location.pathname.replace(/\/$/, '') || '/';
-  const nav = [
-    [L.home, 'Начало'],
-    [L.bf, '★ Черен петък', 'bf-link'],
-    [L.products, 'Продукти'],
-    [L.delivery, 'Доставка'],
-    [L.contacts, 'Контакти']
-  ].filter(n => n[0] !== L.bf || bfOn());
-  h.innerHTML = `
-    ${bfOn() ? `<div class="topbar">⚫ ЧЕРЕН ПЕТЪК: 3 гела + 12 пластира за ${fmt(B('bf3').price)} · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a></div>` : ''}
-    <header class="header"><div class="wrap">
-      <a class="logo" href="${L.home}" aria-label="Здравец Натура — начало"><img src="${LIFESTYLE.logo}" alt="Здравец Натура — натурална козметика" width="186" height="80"></a>
-      <nav class="nav" aria-label="Главно меню">${nav.map(n => `<a href="${n[0]}" class="${n[2] || ''} ${here === n[0] ? 'on' : ''}">${n[1]}</a>`).join('')}</nav>
-      <div class="head-actions">
-        <div class="fs-tools" aria-label="Размер на текста"><button type="button" data-fs="-" aria-label="По-малък текст">A−</button><button type="button" data-fs="+" aria-label="По-голям текст">A+</button></div>
-        <a class="phone-pill" href="tel:${CONFIG.phoneHref}"><span>Поръчка по телефона</span>${CONFIG.phone}</a>
-        <a class="cart-btn" href="${L.checkout}" aria-label="Количка">🛒 <span class="lbl">Количка</span> <span class="cart-count" data-cart-count aria-live="polite">0</span></a>
-        <button class="menu-btn" type="button" aria-expanded="false">☰ Меню</button>
-      </div>
-    </div></header>`;
-  $('.menu-btn', h).addEventListener('click', e => { const n = $('.nav', h); n.classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', n.classList.contains('open')); });
-  $$('[data-fs]', h).forEach(b => b.addEventListener('click', () => { let i = local.get('zn_fs', 0); i = b.dataset.fs === '+' ? Math.min(2, i + 1) : Math.max(0, i - 1); applyFs(i); }));
+  if (h) shopHeader(h);
 }
 
 function renderFooter() {
   const f = $('[data-zn-footer]');
   if (!f) return;
   f.innerHTML = `
-  <footer class="footer"><div class="wrap">
-    <div class="cols">
-      <div><a class="flogo" href="${L.home}"><img src="${LIFESTYLE.logo}" alt="Здравец Натура"></a>
-        <p class="small">Натурална козметика с пчелна отрова и билкови екстракти — за ставите, кожата и уморените крака.</p></div>
-      <div><h4>Продукти</h4><ul>${CATEGORIES.map(c => `<li><a href="${L.products}?cat=${c.id}">${c.name}</a></li>`).join('')}<li><a href="${L.products}">Всички продукти</a></li>${bfOn() ? `<li><a href="${L.bf}">Черен петък</a></li>` : ''}</ul></div>
-      <div><h4>Полезно</h4><ul><li><a href="${L.delivery}">Доставка и плащане</a></li><li><a href="${L.delivery}#vrashtane">Връщане и гаранция</a></li><li><a href="${L.terms}">Общи условия</a></li><li><a href="${L.privacy}">Поверителност</a></li><li><a href="https://kzp.bg" rel="noopener">КЗП</a></li></ul></div>
-      <div><h4>Поръчай по телефона</h4><ul>
-        <li><a href="tel:${CONFIG.phoneHref}" class="fphone">${CONFIG.phone}</a></li>
-        <li>${CONFIG.hours}</li><li><a href="mailto:${CONFIG.email}">${CONFIG.email}</a></li>
-        <li>Плащане при доставка · Еконт и Спиди</li><li>🇧🇬 Произведено за България</li></ul></div>
+  <section class="sp-perks" aria-label="Защо да поръчаш от нас"><div class="wrap sp-perks__in">
+    <div><span>💶</span><b>Плащаш при получаване</b><small>Без карта и без предплащане</small></div>
+    <div><span>🚚</span><b>Доставка 1–2 работни дни</b><small>Еконт и Спиди${FREE_FROM ? ` · безплатно над ${fmt(FREE_FROM)}` : ''}</small></div>
+    <div><span>🛡️</span><b>${CONFIG.guaranteeDays} дни гаранция</b><small>Не си доволен – връщаме парите</small></div>
+    <div><span>📞</span><b>Жив човек насреща</b><small>${CONFIG.phone} · ${esc(CONFIG.hours)}</small></div>
+  </div></section>
+  <footer class="sp-footer"><div class="wrap">
+    <div class="sp-footer__cols">
+      <div class="sp-footer__brand"><a class="sp-footer__logo" href="${L.home}"><img src="${LIFESTYLE.logo}" alt="Здравец Натура" width="170" height="73"></a>
+        <p>Натурална козметика и пластири с пчелна отрова и билки – за ставите, кожата и уморените крака. 🇧🇬 Произведено за България.</p>
+        <a class="sp-footer__phone" href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a><small>${esc(CONFIG.hours)}</small></div>
+      <div><h4>Магазин</h4><ul>${CATEGORIES.map(c => `<li><a href="${L.products}?cat=${c.id}">${esc(c.name)}</a></li>`).join('')}<li><a href="${L.products}">Всички продукти</a></li>${bfOn() ? `<li><a href="${L.bf}">★ Черен петък</a></li>` : ''}</ul></div>
+      <div><h4>Помощ</h4><ul><li><a href="${L.delivery}">Доставка и плащане</a></li><li><a href="${L.delivery}#vrashtane">Връщане и гаранция</a></li><li><a href="${L.contacts}">Контакти</a></li><li><a href="${L.terms}">Общи условия</a></li><li><a href="${L.privacy}">Поверителност</a></li><li><a href="https://kzp.bg" rel="noopener">КЗП</a></li></ul></div>
+      <div><h4>Най-поръчвани</h4><ul>${PRODUCTS.filter(p => p.bestseller).slice(0, 5).map(p => `<li><a href="${productUrl(p.id)}">${esc(p.shortName)}</a></li>`).join('')}</ul></div>
     </div>
-    <div class="legal">
-      <p>${CONFIG.company} · ЕИК ${CONFIG.eik} · ${CONFIG.address} · Надзорен орган: Комисия за защита на потребителите.</p>
+    <div class="sp-footer__pay"><span>💶 Наложен платеж</span><span>📦 Еконт</span><span>📦 Спиди</span><span>🔒 Без данни за карта</span></div>
+    <div class="sp-footer__legal">
+      <p>${CONFIG.company} · ЕИК ${CONFIG.eik} · ${CONFIG.address} · <a href="mailto:${CONFIG.email}">${CONFIG.email}</a> · Надзорен орган: Комисия за защита на потребителите.</p>
       <p>Продуктите на този сайт не са лекарства и не са предназначени за диагностика, лечение или профилактика на заболявания. Гелът, кремовете и спреевете са козметични продукти по смисъла на Регламент (ЕО) № 1223/2009. При здравословен проблем се консултирайте с лекар или фармацевт. Индивидуалното усещане може да се различава.</p>
       <p>© ${new Date().getFullYear()} Здравец Натура</p>
     </div>
@@ -227,17 +214,7 @@ function refreshMobileBar() {
 }
 
 /* ---------- components ---------- */
-function productCard(p) {
-  return `<article class="card pcard">
-    <a class="pimg" href="${productUrl(p.id)}">${p.id === 'gel' && bfOn() ? '<span class="tag dark">Черен петък</span>' : (p.bestseller ? '<span class="tag">Предпочитан</span>' : '')}<img src="${p.img}" alt="${esc(p.name)}" loading="lazy"></a>
-    <div class="pbody">
-      <h3><a href="${productUrl(p.id)}">${esc(p.name)}</a></h3>
-      <p>${esc(p.short)}</p>
-      <div class="row"><span class="price">${p.packs ? '<small>от</small> ' : ''}${fmt(p.price)}</span>
-        ${p.packs ? `<a class="btn btn-green" href="${productUrl(p.id)}">Избери</a>` : `<button class="btn btn-green" type="button" data-add="${p.id}">Добави</button>`}</div>
-      <a class="small more" href="${productUrl(p.id)}">Виж повече →</a>
-    </div></article>`;
-}
+function productCard(p) { return shopCard(p); }
 
 function bundleCard(b) {
   const sep = separateValue(b), save = sep - b.price;
@@ -297,16 +274,26 @@ function renderBF() {
 
 function renderProducts() {
   const q = new URLSearchParams(location.search);
-  let cat = q.get('cat') || 'all';
+  let cat = q.get('cat') || 'all', sort = 'pop';
+  const term = (q.get('q') || '').trim().toLowerCase();
   const chips = $('#chips'), grid = $('#grid');
+  const order = PRODUCTS.map((p, i) => [p, i]);
   const draw = () => {
-    chips.innerHTML = [['all', 'Всички']].concat(CATEGORIES.map(c => [c.id, c.name])).map(([id, n]) => `<button class="chip ${cat === id ? 'on' : ''}" data-cat="${id}" type="button">${n}</button>`).join('');
-    grid.innerHTML = PRODUCTS.filter(p => cat === 'all' || p.cat === cat).map(productCard).join('');
+    chips.innerHTML = [['all', 'Всички']].concat(CATEGORIES.map(c => [c.id, c.name])).map(([id, n]) => `<button class="${cat === id ? 'on' : ''}" data-cat="${id}" type="button" role="tab" aria-selected="${cat === id}">${n}</button>`).join('');
+    let list = order.filter(([p]) => (cat === 'all' || p.cat === cat) && (!term || [p.name, p.short].join(' ').toLowerCase().includes(term)));
+    if (sort === 'pop') list.sort((a, b) => ((b[0].bestseller ? 1 : 0) - (a[0].bestseller ? 1 : 0)) || a[1] - b[1]);
+    if (sort === 'asc') list.sort((a, b) => fromPrice(a[0]) - fromPrice(b[0]));
+    if (sort === 'desc') list.sort((a, b) => fromPrice(b[0]) - fromPrice(a[0]));
+    grid.innerHTML = list.map(([p]) => productCard(p)).join('');
+    $('#found').textContent = `${list.length} ${list.length === 1 ? 'продукт' : 'продукта'}`;
     $$('[data-cat]', chips).forEach(b => b.addEventListener('click', () => { cat = b.dataset.cat; history.replaceState(null, '', cat === 'all' ? L.products : `${L.products}?cat=${cat}`); draw(); }));
     bindAddButtons(grid);
     const c = CATEGORIES.find(x => x.id === cat);
-    $('#cat-title').textContent = c ? c.name : 'Всички продукти';
+    $('#cat-title').textContent = term ? `Търсене: „${q.get('q')}“` : c ? c.name : 'Всички продукти';
+    $('#crumb').textContent = c ? c.name : 'Продукти';
+    $('#cat-desc').textContent = c ? c.desc + '. Плащаш при получаване.' : 'Натурална козметика и пластири с пчелна отрова и билки. Плащаш при получаване.';
   };
+  $('#sort').addEventListener('change', e => { sort = e.target.value; draw(); });
   draw();
 }
 
@@ -396,6 +383,7 @@ function renderCheckoutHelper() {
   let working = false;
 
   async function draw() {
+    await syncCombos();
     const o = await Cart.get();
     const items = o.items || [];
     const ids = items.map(i => i.productId);
@@ -409,7 +397,7 @@ function renderCheckoutHelper() {
       return;
     }
     document.documentElement.classList.remove('zn-cart-empty');
-    const total = main.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+    const total = main.reduce((s, i) => s + (+i.price || 0), 0); // цената на реда е вече по броя
     drawBumps(items);
     // по-изгоден комплект: 1 гел или 2 гела → 3 гела
     let up = '';
@@ -595,7 +583,7 @@ $$('[data-price]').forEach(el => { const x = B(el.dataset.price) || P(el.dataset
 renderHeader();
 renderFooter();
 renderMobileBar();
-if (page === 'home') renderHome();
+if (page === 'home') { if (renderHomeBv) renderHomeBv(); else renderHome(); }
 if (page === 'bf') renderBF();
 if (page === 'products') renderProducts();
 if (page === 'product') renderProduct();

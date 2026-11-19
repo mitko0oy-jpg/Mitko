@@ -2,18 +2,24 @@
 title: Всички продукти | Здравец Натура
 desc: Гелове, кремове, спрей и пластири с пчелна отрова и билки — за стави и мускули, грижа за кожата, крака, вени и нокти. Плащане при доставка.
 page: products
+mbar: no
 -->
-<section class="pagehead">
+<section class="sp-coll-head">
   <div class="wrap">
-    <span class="eyebrow">Магазин</span>
+    <nav class="sp-crumbs" aria-label="Път"><a href="index.html">Начало</a><span>/</span><span id="crumb">Продукти</span></nav>
     <h1 id="cat-title">Всички продукти</h1>
-    <p class="lead">Избери категория. Всеки продукт може да се поръча и по телефона: <a href="tel:+359988880507"><b>0988 88 05 07</b></a>.</p>
-    <div class="chips" id="chips"></div>
+    <p class="lead" id="cat-desc">Натурална козметика и пластири с пчелна отрова и билки. Плащаш при получаване.</p>
   </div>
 </section>
-<section class="section" style="padding-top:10px">
+<section class="sp-coll">
   <div class="wrap">
-    <div class="grid g4" id="grid"></div>
+    <div class="sp-toolbar">
+      <div class="sp-tabs" id="chips" role="tablist"></div>
+      <label class="sp-sort"><span>Подреди:</span><select id="sort"><option value="pop">Най-поръчвани</option><option value="asc">Цена: ниска към висока</option><option value="desc">Цена: висока към ниска</option></select></label>
+    </div>
+    <p class="sp-found" id="found"></p>
+    <div class="sp-grid" id="grid"></div>
+    <p class="sp-coll-call">Не намираш каквото търсиш? Обади се на <a href="tel:+359988880507"><b>0988 88 05 07</b></a> – ще помогнем да избереш.</p>
   </div>
 </section>
 <section class="section tight" data-bf-only>

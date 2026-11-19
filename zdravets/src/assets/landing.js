@@ -422,10 +422,13 @@ function renderLanding(p) {
   root.classList.add('bvp');
   root.removeAttribute('style'); delete root.dataset.shape; delete root.dataset.dark;
   if (theme) { const v = themeVars(theme); Object.keys(v).forEach(k => root.style.setProperty(k, v[k])); root.dataset.shape = theme.shape; if (theme.dark) root.dataset.dark = '1'; }
-  root.innerHTML = GRAD + hero + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
+  const trustHtml = hero.slice(hero.indexOf('<div class="bv-trust">'));
+  const top = productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
+  root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
     + ingsHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
-    + faq + final + sticky;
+    + faq + final;
+  bindTop(root, p);
 
   // бутоните на офертите → количката на ConvertBuilder и към поръчката
   $$('[data-bv-buy]', root).forEach(b => b.addEventListener('click', () => {
@@ -540,4 +543,359 @@ function bvEffects(root) {
   // плавно появяване
   const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('bv-in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   $$('.bv-rv', root).forEach(el => rv.observe(el));
+}
+
+/* =========================================================================
+   Горната част на продукта в стил Shopify: снимки и видео вляво, вдясно
+   цена, избор на пакет/брой/комплект, „Добави в количката“ и „Купи сега“.
+   ========================================================================= */
+function packCalc(p, k) {
+  const bundle = k.bundle ? B(k.bundle) : null;
+  const qty = packQty(p, k);
+  const regular = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : p.price * qty;
+  const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
+  return { bundle, qty, regular, off };
+}
+function galleryItems(p, d) {
+  const lk = productLook(p), list = [];
+  if (lk.gel) {
+    list.push({ img: lk.big, thumb: lk.img, alt: p.name, gel: true });
+    list.push({ video: bvVid(BV.how, 'kak-deistva'), alt: 'Как действа гелът' });
+    list.push({ video: bvVid(BV.pack2, 'pack-2'), alt: '3 гела' });
+  } else if (lk.video) list.push({ video: { video: lk.video, poster: lk.img }, big: lk.big, alt: p.name });
+  else if (lk.scene) list.push({ img: lk.big, thumb: lk.img, alt: p.name });
+  [p.img].concat(p.gallery || []).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
+  return list;
+}
+function productTop(p, d, ctx) {
+  const { theme, packs, reviewsOn } = ctx;
+  const cat = catOf(p);
+  const g = galleryItems(p, d);
+  const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const tag = d.h1 ? `${esc(d.h1[0])}<em>${esc(d.h1[1])}</em>${esc(d.h1[2] || '')}` : '';
+  const media = (m, i) => m.video
+    ? `<div class="sp-slide${i ? '' : ' on'}" data-slide="${i}"><video ${i || still ? '' : 'autoplay '}muted loop playsinline preload="${i ? 'none' : 'auto'}" poster="${m.video.poster}" aria-label="${esc(m.alt)}"><source ${i ? 'data-src' : 'src'}="${m.video.video}" type="video/mp4"></video></div>`
+    : `<div class="sp-slide${i ? '' : ' on'}${m.photo ? ' is-photo' : ''}${m.gel ? ' is-gel' : ''}" data-slide="${i}"><img src="${m.img}" alt="${esc(m.alt)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} decoding="async"></div>`;
+  const opts = [];
+  if (packs) packs.forEach(k => {
+    const c = packCalc(p, k);
+    opts.push({ kind: 'pack', key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, bf: !!(k.bundle && B(k.bundle).bf !== false) });
+  });
+  else {
+    opts.push({ kind: 'qty', key: 'one', label: p.wellness ? '1 кутия' : '1 брой', sub: p.size, price: p.price });
+    if (p.wellness && comboReady()) PATCH_COMBOS.filter(c => c.store).forEach(c => opts.push({ kind: 'combo', key: `combo${c.n}`, n: c.n, label: `${c.n} вида по избор`, sub: `този + още ${c.n - 1} ${c.n - 1 === 1 ? 'вид' : 'вида'} пластири`, price: c.price, was: p.price * c.n, off: Math.round((1 - c.price / (p.price * c.n)) * 100), per: c.price / c.n, hot: c.n === 2 }));
+  }
+  const showOpts = opts.length > 1;
+  const sel = (opts.find(o => o.hot) || opts[0]).key;
+  const others = p.wellness ? PRODUCTS.filter(x => x.wellness && x.id !== p.id) : [];
+  return `
+  <section class="sp-top" id="sp-top"><div class="bv-wrap sp-top__grid">
+    <div class="sp-gallery">
+      <div class="sp-gallery__main">${g.map(media).join('')}
+        ${g.length > 1 ? `<button class="sp-gallery__nav sp-prev" type="button" aria-label="Предишна снимка">‹</button><button class="sp-gallery__nav sp-next" type="button" aria-label="Следваща снимка">›</button>` : ''}
+        ${bfOn() && p.id === 'gel' ? '<span class="sp-gallery__tag">★ Черен петък</span>' : ''}</div>
+      ${g.length > 1 ? `<div class="sp-gallery__thumbs">${g.map((m, i) => `<button type="button" class="${i ? '' : 'on'}${m.video ? ' is-video' : ''}" data-go="${i}" aria-label="Снимка ${i + 1}"><img src="${m.video ? m.video.poster : m.thumb}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+    </div>
+    <div class="sp-buy">
+      <nav class="sp-crumbs" aria-label="Път"><a href="${L.home}">Начало</a><span>/</span><a href="${L.products}?cat=${p.cat}">${esc(cat.name)}</a></nav>
+      <h1 class="sp-title">${esc(p.name)}</h1>
+      ${tag ? `<p class="sp-tagline">${tag}</p>` : ''}
+      ${reviewsOn ? '<a class="sp-rating" href="#bv-otzivi"><span class="bv-stars" aria-hidden="true">★★★★★</span> Истински отзиви от клиенти</a>' : ''}
+      <div class="sp-price"><b data-sp-price></b><s data-sp-was></s><span class="sp-off" data-sp-off></span></div>
+      <p class="sp-price__note"><span data-sp-per></span>С ДДС · плащаш при получаване</p>
+      <p class="sp-short">${esc(p.short)}</p>
+      <ul class="sp-bullets">${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+      ${showOpts ? `<p class="sp-lbl">${packs ? 'Избери комплект' : 'Избери количество'}</p>
+      <div class="sp-opts" role="radiogroup" aria-label="${packs ? 'Избери комплект' : 'Избери количество'}">${opts.map(o => `
+        <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
+          <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
+          ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</span>
+          <span class="sp-opt__price"><b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
+        </label>`).join('')}</div>` : ''}
+      ${others.length && comboReady() ? `<div class="sp-combo" hidden>
+        <p class="sp-lbl"><span data-combo-need></span></p>
+        <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(x.shortName.replace(/^Пластири /, '').replace(/ пластири$/, ''))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
+      </div>` : ''}
+      <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
+      ${bfOn() ? `<p class="sp-gift">🎁 <span><b>+ 12 билкови пластира подарък</b> към всяка поръчка до 30 ноември</span></p>` : ''}
+      <div class="sp-ctas">
+        <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
+        <button class="bv-btn bv-btn--xl sp-buynow" type="button" data-sp-buy>Купи сега – плащаш при получаване</button>
+      </div>
+      <p class="sp-eta">${ICON.truck}<span>Поръчай днес – пристига <b class="bv-eta-long">до 2 работни дни</b></span></p>
+      <div class="sp-badges"><span>💶 Наложен платеж</span><span>🛡️ ${CONFIG.guaranteeDays} дни гаранция</span><span>📞 <a href="tel:${CONFIG.phoneHref}">${CONFIG.phone}</a></span></div>
+      <div class="sp-acc">
+        <details open><summary>Описание</summary><div><p>${esc(d.lead || p.short)}</p><ul>${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul><p class="sp-muted">${esc(p.size)}</p></div></details>
+        <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">Пълният състав е отпечатан върху опаковката.</p></div></details>
+        <details><summary>Как се използва</summary><div><p>${esc(p.usage)}</p><p class="sp-muted">${p.wellness ? 'Не е лекарство. При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. Не е за деца.' : `Само за външна употреба. Не нанасяй върху наранена кожа и избягвай контакт с очите.${isBee(p) ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</p></div></details>
+        <details><summary>Доставка и плащане</summary><div><ul>${CONFIG.shipping.map(m => `<li>${esc(m.label)} – <b>${fmt(m.price)}</b></li>`).join('')}</ul>${FREE_FROM ? `<p>При поръчка над <b>${fmt(FREE_FROM)}</b> доставката до офис е <b>безплатна</b>.</p>` : ''}<p>Плащаш на куриера при получаване. Пратката пристига за 1–2 работни дни.</p></div></details>
+        <details><summary>Гаранция и връщане</summary><div><p>${CONFIG.guaranteeDays} дни гаранция за удовлетвореност – ако не си доволен, обади се и ти връщаме парите. Освен това по закон имаш 14 дни право на отказ.</p></div></details>
+      </div>
+    </div>
+  </div></section>
+  <div class="sp-sticky" aria-hidden="true"><div class="bv-wrap sp-sticky__in">
+    <img src="${productLook(p).img}" alt="" width="52" height="52"><div class="sp-sticky__txt"><b>${esc(p.shortName)}</b><span data-sp-sticky-lbl></span></div>
+    <b class="sp-sticky__price" data-sp-sticky-price></b>
+    <button class="bv-btn sp-sticky__btn" type="button" data-sp-add>Добави в количката</button>
+  </div></div>
+  <script type="application/json" class="sp-opts-data">${JSON.stringify({ opts, sel }).replace(/</g, '\\u003c')}<\/script>`;
+}
+function bindTop(root, p) {
+  const top = $('#sp-top', root);
+  if (!top) return;
+  const data = JSON.parse($('.sp-opts-data', root).textContent);
+  const opts = data.opts;
+  let sel = data.sel, qty = 1, picks = [];
+  // галерията
+  const slides = $$('.sp-slide', top), thumbs = $$('.sp-gallery__thumbs button', top);
+  let cur = 0;
+  const go = i => {
+    cur = (i + slides.length) % slides.length;
+    slides.forEach((s, k) => {
+      s.classList.toggle('on', k === cur);
+      const v = $('video', s);
+      if (!v) return;
+      if (k === cur) { $$('source[data-src]', v).forEach(x => { x.src = x.dataset.src; x.removeAttribute('data-src'); v.load(); }); const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } else v.pause();
+    });
+    thumbs.forEach((t, k) => t.classList.toggle('on', k === cur));
+  };
+  thumbs.forEach(t => t.addEventListener('click', () => go(+t.dataset.go)));
+  const prev = $('.sp-prev', top), next = $('.sp-next', top);
+  if (prev) prev.addEventListener('click', () => go(cur - 1));
+  if (next) next.addEventListener('click', () => go(cur + 1));
+  let x0 = null;
+  const main = $('.sp-gallery__main', top);
+  main.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  main.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1)); x0 = null; });
+  // изборът
+  const combo = $('.sp-combo', top);
+  const o = () => opts.find(x => x.key === sel);
+  const draw = () => {
+    const x = o();
+    const price = x.kind === 'qty' ? x.price * qty : x.price;
+    $('[data-sp-price]', top).textContent = fmt(price);
+    $('[data-sp-was]', top).textContent = x.was ? fmt(x.was) : '';
+    $('[data-sp-off]', top).textContent = x.off ? `−${x.off}%` : '';
+    $('[data-sp-off]', top).hidden = !x.off;
+    $('[data-sp-per]', top).textContent = x.per ? `${fmt(x.per)} за ${x.kind === 'combo' ? 'кутия' : 'брой'} · ` : '';
+    $$('.sp-opt', top).forEach(l => l.classList.toggle('on', $('input', l).value === sel));
+    const qr = $('.sp-qtyrow', top); if (qr) qr.hidden = x.kind !== 'qty';
+    if (combo) {
+      combo.hidden = x.kind !== 'combo';
+      if (x.kind === 'combo') {
+        picks = picks.slice(0, x.n - 1);
+        const need = x.n - 1 - picks.length;
+        $('[data-combo-need]', combo).innerHTML = need ? `Избери още <b>${need}</b> ${need === 1 ? 'вид' : 'вида'} пластири за комплекта:` : '✓ Комплектът е готов – можеш да смениш вид с едно натискане:';
+        $$('.sp-pick', combo).forEach(b => { const on = picks.includes(b.dataset.pick); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+      }
+    }
+    $('[data-sp-sticky-lbl]', root).textContent = x.kind === 'qty' ? `${qty} ${p.wellness ? (qty === 1 ? 'кутия' : 'кутии') : 'бр.'}` : x.label;
+    $('[data-sp-sticky-price]', root).textContent = fmt(price);
+  };
+  $$('.sp-opt input', top).forEach(r => r.addEventListener('change', () => { sel = r.value; draw(); }));
+  $$('[data-q]', top).forEach(b => b.addEventListener('click', () => { qty = Math.max(1, Math.min(20, qty + +b.dataset.q)); $('[data-qty]', top).textContent = qty; draw(); }));
+  if (combo) $$('.sp-pick', combo).forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.pick, x = o();
+    if (picks.includes(id)) picks = picks.filter(k => k !== id);
+    else { picks.push(id); if (picks.length > x.n - 1) picks.shift(); }
+    draw();
+  }));
+  const act = (goNow, btn) => {
+    const x = o();
+    if (x.kind === 'pack') return addFlow({ store: x.store, qty: 1, go: goNow, btn, value: x.price, contentId: x.key, bf: x.bf });
+    if (x.kind === 'qty') return addFlow({ store: p.store, qty, go: goNow, btn, value: p.price * qty, contentId: p.id });
+    if (picks.length < x.n - 1) { combo.scrollIntoView({ behavior: 'smooth', block: 'center' }); combo.classList.add('shake'); setTimeout(() => combo.classList.remove('shake'), 600); return; }
+    return addCombo(x.n, [p.id].concat(picks), { go: goNow, btn });
+  };
+  $$('[data-sp-add]', root).forEach(b => b.addEventListener('click', () => act(false, b)));
+  $$('[data-sp-buy]', root).forEach(b => b.addEventListener('click', () => act(true, b)));
+  draw();
+  // лепкавата лента: щом бутоните излязат нагоре от екрана
+  const sticky = $('.sp-sticky', root), ctas = $('.sp-ctas', top);
+  if (sticky && 'IntersectionObserver' in window) new IntersectionObserver(es => {
+    const out = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+    sticky.classList.toggle('on', out); sticky.setAttribute('aria-hidden', out ? 'false' : 'true');
+  }).observe(ctas);
+}
+
+/* =========================================================================
+   Началната страница: витрина в стил Shopify с цветовете и сцените на продуктите.
+   ========================================================================= */
+function renderHomeBv() {
+  const root = $('#home');
+  if (!root) return;
+  const days = CONFIG.guaranteeDays;
+  const gel = P('gel');
+  const look = id => productLook(P(id));
+  const stack = [['hyal', 6, 4, -6], ['beeherb', 2, 70, 5], ['vein', 78, 74, -4]];
+  const hero = `
+  <section class="bv-hero hv-hero">
+    <div class="bv-hero__bg" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bg-a-2000.webp')}" alt="" width="2000" height="1125" fetchpriority="high"></div>
+    <canvas class="bv-dust" aria-hidden="true"></canvas>
+    <div class="bv-wrap bv-hero__grid">
+      <div class="bv-hero__copy">
+        <span class="bv-eyebrow bv-glass">🌿 Здравец Натура · натурална козметика</span>
+        <h1>Природна грижа, <em class="bv-accent bv-goldtext">която усещаш</em><span class="bv-h1sub">С пчелна отрова и билки – <em class="bv-accent">за стави, кожа и крака</em></span></h1>
+        <p class="bv-lead">${PRODUCTS.length} продукта с пчелна отрова, билки и натурални екстракти – всеки със своя цел. Поръчваш за минута, плащаш на куриера.</p>
+        <div class="bv-proof bv-glass"><span class="bv-stars" aria-hidden="true">★★★★★</span><strong>Истински отзиви от наши клиенти</strong></div>
+        <div class="bv-cta-row">
+          <a class="bv-btn bv-btn--xl bv-pulse" href="${bfOn() ? L.bf : '#hv-shop'}">${bfOn() ? '★ Офертите за Черен петък' : 'Разгледай продуктите'} <span class="bv-arr">→</span></a>
+          <a class="bv-btn-ghost bv-glass" href="#hv-shop">Всички продукти</a>
+        </div>
+        <div class="bv-micro"><span>Плащаш при получаване</span><span>Доставка 1–2 дни</span><span>${days} дни гаранция</span></div>
+      </div>
+      <div class="bv-stage hv-stage">
+        <div class="bv-stage__inner" style="aspect-ratio:1200/1248">
+          <div class="bv-stage__glow" aria-hidden="true"></div>
+          <a href="${productUrl('gel')}" aria-label="${esc(gel.name)}"><img class="bv-stage__img" src="${BVM(BV.hero, 'hero-scene-1200.webp')}" srcset="${BVM(BV.hero, 'hero-scene-700.webp')} 700w, ${BVM(BV.hero, 'hero-scene-1200.webp')} 1200w" sizes="(min-width:960px) 600px, 92vw" alt="${esc(gel.name)}" fetchpriority="high" decoding="async"></a>
+          <span class="bv-honeydrop" aria-hidden="true"></span>
+          <span class="bv-stage__bee" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bee.webp')}" alt="" width="320" height="320" decoding="async"></span>
+        </div>
+        ${stack.map(([id, x, y, r], i) => `<a class="hv-chip" href="${productUrl(id)}" style="left:${x}%;top:${y}%;--r:${r}deg;--d:${i * 1.3}s;--pc:${look(id).a}"><img src="${look(id).img}" alt="" width="120" height="120" loading="lazy"><span>${esc(P(id).shortName)}</span></a>`).join('')}
+      </div>
+    </div>
+  </section>
+  <div class="bv-trust"><div class="bv-wrap bv-trust__grid">
+    <div class="bv-trust__item"><span class="bv-ico">💶</span><div><strong>Плащаш при получаване</strong>на куриера, без предплащане</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">🚚</span><div><strong>1–2 работни дни</strong>Еконт или Спиди, до офис или адрес</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">🛡️</span><div><strong>${days} дни гаранция</strong>не си доволен – връщаме парите</div></div>
+    <div class="bv-trust__item"><span class="bv-ico">📞</span><div><strong>${CONFIG.phone}</strong>поръчка и по телефона</div></div>
+  </div></div>`;
+
+  const catPic = { stavi: 'gel', koja: 'skin', kraka: 'vein', wellness: 'energy' };
+  const cats = `
+  <section class="hv-cats"><div class="bv-wrap">
+    <div class="bv-center"><span class="bv-eyebrow">Какво търсиш?</span><h2>Избери за какво е <em class="bv-accent">грижата</em></h2></div>
+    <div class="hv-cats__grid">${CATEGORIES.map(c => { const lk = look(catPic[c.id]); const n = PRODUCTS.filter(p => p.cat === c.id).length; return `
+      <a class="hv-cat${lk.gel ? ' is-gel' : ''}" href="${L.products}?cat=${c.id}" style="--pc:${lk.a};--pcd:${lk.d}">
+        <span class="hv-cat__img"><img src="${lk.img}" alt="" loading="lazy" width="600" height="600"></span>
+        <span class="hv-cat__txt"><small>${n} ${n === 1 ? 'продукт' : 'продукта'}</small><b>${esc(c.name)}</b><span>${esc(c.desc)}</span><i>Разгледай →</i></span>
+        <span class="bv-glare" aria-hidden="true"></span>
+      </a>`; }).join('')}</div>
+  </div></section>`;
+
+  const shop = `
+  <section class="hv-shop" id="hv-shop"><div class="bv-wrap">
+    <div class="bv-center"><span class="bv-eyebrow">Нашите продукти</span><h2>Всеки продукт – <em class="bv-accent">със свой характер</em></h2>
+      <p class="bv-lead">Всеки има своя страница с всичко важно: за какво е, съставки, употреба и цени.</p></div>
+    <div class="sp-tabs" role="tablist">${[['all', 'Най-поръчвани']].concat(CATEGORIES.map(c => [c.id, c.name])).map(([id, n], i) => `<button type="button" role="tab" class="${i ? '' : 'on'}" data-tab="${id}" aria-selected="${!i}">${esc(n)}</button>`).join('')}</div>
+    <div class="sp-grid" id="hv-grid"></div>
+    <p class="bv-center hv-more"><a class="sp-outline" href="${L.products}">Виж всички ${PRODUCTS.length} продукта →</a></p>
+  </div></section>`;
+
+  const bf = bfOn() ? `
+  <section class="hv-bf" id="hv-bf">
+    ${WAVE('var(--night)')}
+    <div class="bv-wrap">
+      <div class="bv-center"><span class="bv-eyebrow">⚫ Черен петък · до 30 ноември</span>
+        <h2>3 гела с пчелна отрова <em class="bv-accent" style="color:var(--tx,#FFC65C)">за ${fmt(B('bf3').price)}</em></h2>
+        <p class="bv-lead">+ 12 билкови пластира подарък към всяка поръчка. Офертата изтича след:</p>
+        <div class="countdown hv-cd" data-countdown></div></div>
+      <div class="bv-packs bv-packs--n4">${landingOffers(gel, LANDING.gel)}</div>
+      <p class="bv-center hv-more"><a class="sp-outline sp-outline--light" href="${L.bf}">Всички оферти за Черен петък →</a></p>
+    </div>
+  </section>` : '';
+
+  const wl = PRODUCTS.filter(p => p.wellness);
+  const combos = comboReady() ? `
+  <section class="hv-combo"><div class="bv-wrap hv-combo__in">
+    <div><span class="bv-eyebrow">Уелнес пластири</span><h2>Комбинирай пластирите – <em class="bv-accent">по-изгодно</em></h2>
+      <p class="bv-lead">Избери 2 или 3 вида – например „Апетит“ с Energy или Focus.</p>
+      <div class="hv-combo__prices"><span><b>2 вида</b>${fmt(PATCH_COMBOS[0].price)}</span><span><b>3 вида</b>${fmt(PATCH_COMBOS[1].price)}</span></div>
+      <a class="bv-btn" href="${productUrl('apetit')}">Направи своя комплект →</a></div>
+    <div class="hv-combo__grid">${wl.map(p => `<a href="${productUrl(p.id)}" style="--pc:${look(p.id).a}"><img src="${look(p.id).img}" alt="" loading="lazy" width="160" height="160"><span>${esc(p.shortName.replace(/^Пластири /, ''))}</span></a>`).join('')}</div>
+  </div></section>` : '';
+
+  const story = `
+  <section class="bv-formula bv-honeycomb">
+    ${WAVE('var(--night)')}
+    <div class="bv-wrap bv-formula__grid">
+      <div>
+        <span class="bv-eyebrow">Нашата история</span>
+        <h2>Силата на билките и пчелите, <em class="bv-accent" style="color:var(--tx,#FFC65C)">която познаваме от деца</em></h2>
+        <p class="bv-lead">Чаят от лайка при настинка, компресът от билки, бурканът с мехлем на бабината етажерка. Тръгнахме от тази традиция и я съчетахме с модерната козметика – с ясна цел и кратък състав: пчелна отрова, куркума, пелин, арника, конски кестен, мед.</p>
+        <div class="bv-stats"><div class="bv-stat"><b>${PRODUCTS.length}</b><span>продукта с ясна цел</span></div><div class="bv-stat"><b>${days}</b><span>дни гаранция</span></div><div class="bv-stat"><b>1–2</b><span>работни дни до вратата ти</span></div><div class="bv-stat"><b>0 €</b><span>предплащане – плащаш на куриера</span></div></div>
+        <a class="bv-btn" href="#hv-shop">Разгледай продуктите <span class="bv-arr">→</span></a>
+      </div>
+      <figure class="bv-formula__fig bv-rv"><div class="bv-formula__media hv-story__media">${bvMedia({ video: look('beeherb').video, poster: look('beeherb').img }, 'Билкови пластири', 720, 720, 'bv-formula__video')}</div></figure>
+    </div>
+  </section>`;
+
+  const steps = [['Избираш продукт', 'Натискаш „Добави в количката“ или „Купи сега“ на продукта или комплекта.'], ['Пишеш име и телефон', 'Само няколко полета. Обаждаме се, за да потвърдим поръчката.'], ['Плащаш на куриера', 'Пратката пристига за 1–2 работни дни. Плащаш, когато я получиш.']];
+  const how = `
+  <section class="bv-how" style="background:var(--honey-50)"><div class="bv-wrap">
+    <div class="bv-center"><span class="bv-eyebrow">Лесно е</span><h2>3 стъпки. <em class="bv-accent">Без регистрация и без карта.</em></h2></div>
+    <ol class="bv-hsteps bv-hsteps--plain">${steps.map(([h, t], i) => `<li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:${(i * .6).toFixed(1)}s">${i + 1}</span><div class="bv-hstep__body"><h3>${esc(h)}</h3><p>${esc(t)}</p></div><span class="bv-glare" aria-hidden="true"></span></li>`).join('')}</ol>
+    <div class="bv-callbar" style="margin-top:34px">
+      <div><small>Не обичаш да поръчваш онлайн?</small><a href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a></div>
+      <div><small>${esc(CONFIG.hours)}</small><strong>Обади се – ще запишем поръчката вместо теб</strong></div>
+    </div>
+  </div></section>`;
+
+  const shots = LANDING.gel.shots || [];
+  const reviews = `
+  <section id="bv-otzivi">
+    ${WAVE('var(--cream)')}
+    <div class="bv-wrap">
+      <div class="bv-rev-head bv-center"><span class="bv-eyebrow">Какво споделят клиентите</span><span class="bv-stars" aria-hidden="true">★★★★★</span>
+        <h2 style="margin:0">Какво казват <em class="bv-accent">хората, които ни избраха</em></h2>
+        <p class="bv-small" style="margin:6px 0 0">Коментари на клиенти от нашата Facebook страница</p></div>
+      <div class="bv-shots">${shots.slice(0, 6).map(([src, w, h, alt]) => `<figure class="bv-shot"><img loading="lazy" src="${src}" width="${w}" height="${h}" alt="Коментар: ${esc(alt)}"></figure>`).join('')}</div>
+      <div class="bv-stories">${REVIEWS.slice(0, 4).map(r => `<article class="bv-story"><span class="bv-stars" aria-hidden="true" style="font-size:18px;margin-bottom:10px">★★★★★</span><p>${esc(r.text)}</p><div class="bv-who"><span class="bv-av">${esc(r.name[0])}</span><div><strong>${esc(r.name)}</strong><span>${esc(r.city)} · ${esc(r.product)}</span></div></div></article>`).join('')}</div>
+    </div>
+  </section>`;
+
+  const assure = `
+  <section class="bv-why" style="padding-top:20px">
+    ${hexes(null)}
+    <div class="bv-wrap"><div class="bv-assure" style="margin-top:0">
+      <div class="bv-card"><h3><span class="bv-ico">🔬</span>Качество и сигурност</h3><ul class="bv-qual">
+        <li>Пълният състав е отпечатан върху всяка опаковка</li><li>Произведено за България</li>
+        <li>Обаждаме се да потвърдим всяка поръчка</li><li>Изпращаме до 1–2 работни дни от България</li></ul></div>
+      <div class="bv-card bv-guar">${guaranteeSeal(days)}<div><h3 style="margin-bottom:6px">Пробвай без риск</h3>
+        <p>Ако в рамките на ${days} дни продуктът не ти хареса, обади се и ще ти върнем парите. Без излишни въпроси.</p></div></div>
+    </div></div>
+  </section>`;
+
+  const qa = [
+    ['Как да направя поръчка?', `Натисни „Добави в количката“ или „Купи сега“, напиши име, телефон и офис или адрес. Можеш да поръчаш и по телефона на ${CONFIG.phone} (${CONFIG.hours}).`],
+    ['Как се плаща?', 'Плащаш на куриера, когато получиш пратката (наложен платеж). Не ти трябва карта и не плащаш нищо предварително.'],
+    ['Колко струва доставката и кога ще пристигне?', `${CONFIG.shipping.map(m => `${m.label} – ${fmt(m.price)}`).join(', ')}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пристига за 1–2 работни дни.`],
+    ['Мога ли да върна продукт?', `Да. Имаш ${days} дни гаранция за удовлетвореност и законово право да върнеш продукта в 14-дневен срок.`],
+    ['Лекарства ли са продуктите?', 'Не. Това са козметични продукти за външна употреба и уелнес пластири. Те не лекуват заболявания. При здравословен проблем се консултирай с лекар.'],
+    ['Подходящи ли са за чувствителна кожа?', 'Преди първата употреба направи тест на малък участък кожа. Продуктите с пчелна отрова не са подходящи при алергия към пчелни продукти.']
+  ];
+  const faq = `
+  <section class="bv-faq"><div class="bv-wrap"><div class="bv-faq__wrap">
+    <div class="bv-center"><span class="bv-eyebrow">Питай спокойно</span><h2>Често задавани <em class="bv-accent">въпроси</em></h2></div>
+    ${qa.map(([q, a]) => `<details><summary>${esc(q)}</summary><div><p>${esc(a)}</p></div></details>`).join('')}
+  </div></div></section>
+  <section class="bv-final"><div class="bv-wrap">
+    <div class="bv-final__media"><img src="${BVM(BV.hero, 'hero-scene-700.webp')}" alt="" loading="lazy" decoding="async"></div>
+    <h2>Грижата започва с първата поръчка. <em class="bv-accent">Заслужаваш я.</em></h2>
+    <p class="bv-lead" style="margin-left:auto;margin-right:auto">Плащаш чак когато пратката е в ръцете ти.</p>
+    <div class="bv-cta-row"><a class="bv-btn bv-btn--xl bv-pulse" href="${bfOn() ? L.bf : '#hv-shop'}">${bfOn() ? 'Офертите за Черен петък' : 'Разгледай продуктите'} <span class="bv-arr">→</span></a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a></div>
+  </div></section>`;
+
+  root.classList.add('bvp');
+  root.innerHTML = GRAD + hero + cats + shop + bf + combos + story + how + reviews + assure + faq;
+  // витрината с разделите
+  const grid = $('#hv-grid', root);
+  const order = PRODUCTS.slice().sort((a, b) => (b.bestseller ? 1 : 0) - (a.bestseller ? 1 : 0));
+  const show = tab => {
+    grid.innerHTML = (tab === 'all' ? order.slice(0, 8) : PRODUCTS.filter(p => p.cat === tab)).map(shopCard).join('');
+    bindAddButtons(grid);
+  };
+  $$('[data-tab]', root).forEach(b => b.addEventListener('click', () => {
+    $$('[data-tab]', root).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+    show(b.dataset.tab);
+  }));
+  show('all');
+  // офертите на гела
+  $$('[data-bv-buy]', root).forEach(b => b.addEventListener('click', () => {
+    const k = PACKS.gel.find(x => x.store === +b.dataset.bvBuy);
+    addFlow({ store: k.store, qty: 1, go: true, btn: b, value: k.price, contentId: k.key, bf: !!(k.bundle && B(k.bundle).bf !== false) });
+  }));
+  bvEffects(root);
 }

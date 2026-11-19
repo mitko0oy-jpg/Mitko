@@ -97,6 +97,8 @@ const remToFs = (s) => s.replace(/(\d*\.?\d+)rem\b/g, (m, n) => `calc(${n}*var(-
 // only in the blocks whose page says "landing: yes"
 async function styles(landing) {
   let css = (await readFile(path.join(SRC, "assets/style.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+  // магазинът в стил Shopify (меню, количка, карти) – на всяка страница
+  css += "\n" + (await readFile(path.join(SRC, "assets/shop.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
   if (landing) css += "\n" + (await readFile(path.join(SRC, "assets/landing.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
   // html{font-size:var(--fs)} would resize ConvertBuilder's own elements: the size lives on the block
   css = css.replace(/(^|\})\s*html\{font-size:var\(--fs\);scroll-behavior:smooth\}/, "$1html{scroll-behavior:smooth}");
@@ -117,7 +119,8 @@ async function script(landing) {
   const read = (f) => readFile(path.join(SRC, "assets", f), "utf8");
   const data = await read("data.js");
   const app = await read("app.js");
-  const extra = landing ? `${await read("landing-data.js")}\n${await read("landing.js")}\n` : "const renderLanding = null;\n";
+  // landing-data.js (цветовете и 3D сцените на продуктите) е на всяка страница – картите на продуктите ги ползват
+  const extra = `${await read("landing-data.js")}\n${await read("shop.js")}\n` + (landing ? `${await read("landing.js")}\n` : "const renderLanding = null, renderHomeBv = null;\n");
   // one function: two blocks on one page (поръчка + долу) must not clash
   return `(function(){"use strict";\n${data}\n${extra}${app}\n})();`;
 }
