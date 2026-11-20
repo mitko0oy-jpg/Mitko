@@ -277,7 +277,12 @@ function recs(items) {
   else if (inCart.some(p => p.wellness)) pool = PRODUCTS.filter(p => p.wellness).map(p => p.id);
   else if (inCart.some(p => p.cat === 'kraka' || p.cat === 'koja')) pool = ['vein', 'nail', 'skin', 'ghk'];
   else pool = ['gel', 'beeherb', 'vein', 'skin'];
-  return pool.map(P).filter(p => p && !has(p) && !inCart.includes(p));
+  // без продукта, който по време на Черния петък вече е подарък в поръчката;
+  // първи са тези, с които поръчката стига безплатната доставка
+  const sub = items.filter(i => !isGift(i)).reduce((t, i) => t + (+i.price || 0), 0);
+  const left = FREE_FROM && sub > 0 ? FREE_FROM - sub : 0;
+  const list = pool.map(P).filter(p => p && !has(p) && !inCart.includes(p) && !(bfOn() && items.some(isGift) && p.id === 'beeherb'));
+  return left > 0 ? list.slice().sort((x, y) => (fromPrice(y) >= left) - (fromPrice(x) >= left)) : list;
 }
 function recRow(p) {
   const lk = productLook(p);

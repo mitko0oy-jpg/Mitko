@@ -458,10 +458,43 @@ function renderCheckoutHelper() {
       el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
     });
   }
+  // Доставката. Над прага за безплатна доставка формата показва друг списък и сама избира първия ред
+  // („До адрес“, платен), макар офисът да е безплатен. Пазим избора на клиента; ако още не е избирал –
+  // не оставяме платения адрес, когато има офис. Оправяме и надписите, и подсказката в полето за адрес.
+  let shipKind = null;
+  const kindOf = t => /спиди|speedy/i.test(t) ? 'speedy' : /еконт|econt/i.test(t) ? 'econt' : 'address';
+  const SHIP_LABEL = { econt: 'До офис на Еконт', speedy: 'До офис на Спиди', address: 'До адрес (с куриер)' };
+  const ADDR_HINT = { econt: 'Офис на Еконт – име или адрес на офиса', speedy: 'Офис на Спиди – име или адрес на офиса', address: 'Улица, номер, блок, вход, апартамент' };
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (e.isTrusted && t && t.name === 'shippingOption' && t.closest('label')) shipKind = kindOf(t.closest('label').textContent);
+  }, true);
+  function fixShipping() {
+    const wrap = document.querySelector('.payment-step-wrapper [data-role="shipping-methods"]');
+    if (!wrap) return;
+    const rows = [...wrap.querySelectorAll('label')].map(l => {
+      const inp = l.querySelector('input[type="radio"]'), name = l.querySelector('span:not(.price)');
+      return inp && name ? { l, inp, name, kind: kindOf(name.textContent) } : null;
+    }).filter(Boolean);
+    if (!rows.length) return;
+    rows.forEach(r => {
+      const tn = [...r.name.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+      if (tn && tn.textContent.trim() !== SHIP_LABEL[r.kind]) tn.textContent = SHIP_LABEL[r.kind];
+    });
+    let cur = rows.find(r => r.inp.checked);
+    const want = shipKind ? rows.find(r => r.kind === shipKind) : (cur && cur.kind === 'address' ? rows.find(r => r.kind !== 'address') : null);
+    if (want && want !== cur) { want.l.click(); cur = want; }
+    const kind = cur ? cur.kind : 'address';
+    const addr = document.querySelector('.payment-step-wrapper input[name="shippingAddress"]');
+    if (addr && addr.placeholder !== ADDR_HINT[kind]) addr.placeholder = ADDR_HINT[kind];
+    const city = document.querySelector('.payment-step-wrapper input[name="shippingCity"]');
+    if (city && city.placeholder !== 'Град или село') city.placeholder = 'Град или село';
+  }
   // формата на ConvertBuilder се зарежда и пренарежда сама: отметките се връщат на мястото си
   setInterval(() => {
     const btns = document.querySelector('.payment-step-wrapper .next-prev-buttons'), host = document.getElementById('zn-bumps');
     if (btns && bumpItems.length && (!host || host.nextElementSibling !== btns)) drawBumps(bumpItems);
+    fixShipping();
   }, 1200);
 
   // редът с подаръка във формата: без + и −
@@ -493,7 +526,7 @@ function renderCheckoutHelper() {
     draw();
     markGiftRow();
     const o = await Cart.get();
-    track('InitiateCheckout', { value: (o.items || []).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0), currency: 'EUR', num_items: countOf(o) });
+    track('InitiateCheckout', { value: (o.items || []).reduce((s, i) => s + (+i.price || 0), 0), currency: 'EUR', num_items: countOf(o) }); // цената на реда е вече по броя
   }
   start();
 }

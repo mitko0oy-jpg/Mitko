@@ -840,3 +840,11 @@
 @media (prefers-reduced-motion:reduce){
   .bvp .bv-ring__orbit,.bvp .bv-ring__list,.bvp .bv-ring__spin,.bvp .bv-plate__face--glue::after,.bvp .bv-body__ping{animation:none!important}
 }
+
+/* телефон: фонът на началото не излиза под преливането; главният бутон е над снимката */
+@media (max-width:719px){
+  .bvp .bv-hero__bg{overflow:hidden}
+  .bvp .hv-hero .bv-cta-row{display:contents}
+  .bvp .hv-hero .bv-cta-row>.bv-btn{order:-2;margin:10px 0 18px}
+  .bvp .hv-hero .bv-cta-row>.bv-btn-ghost{margin:12px 0 4px}
+}

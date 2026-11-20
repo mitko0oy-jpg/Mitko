@@ -764,10 +764,12 @@ function bindTop(root, p) {
   $$('[data-sp-add]', root).forEach(b => b.addEventListener('click', () => act(false, b)));
   $$('[data-sp-buy]', root).forEach(b => b.addEventListener('click', () => act(true, b)));
   draw();
-  // лепкавата лента: щом бутоните излязат нагоре от екрана
+  // лепкавата лента: на компютър – щом бутоните излязат нагоре от екрана; на телефон – винаги,
+  // когато бутоните не се виждат (и в самото начало: там те са чак на третия екран)
   const sticky = $('.sp-sticky', root), ctas = $('.sp-ctas', top);
+  const phone = !!(window.matchMedia && matchMedia('(max-width:719px)').matches);
   if (sticky && 'IntersectionObserver' in window) new IntersectionObserver(es => {
-    const out = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+    const out = !es[0].isIntersecting && (phone || es[0].boundingClientRect.top < 0);
     sticky.classList.toggle('on', out); sticky.setAttribute('aria-hidden', out ? 'false' : 'true');
   }).observe(ctas);
 }
