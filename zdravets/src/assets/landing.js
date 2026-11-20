@@ -95,6 +95,9 @@ function landingOffers(p, d) {
     const isBest = !hot && list.length > 2 && k === best;
     const sc = sceneOf(p.id);
     const m = (d.packMedia && d.packMedia[k.key]) || (bundle && (bundle.img || (bundle.collage && bundle.collage[0][0]))) || (sc ? sc.small : p.img);
+    // снимката трябва да показва точно това, което е в пакета: 2 гела = две туби; „Пълна грижа“ = 3 гела + спрей
+    const tuba = BVM(BV.hero, 'vs-tuba.webp');
+    const duo = p.id !== 'gel' ? null : k.key === 'bf2' ? { imgs: [tuba, tuba] } : k.key === 'bfFull' && p.gallery && p.gallery[0] ? { imgs: [p.gallery[0], productLook(P('spray')).img], plus: true } : null;
     const lis = [];
     if (gift && (qty > 1 || bundle)) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
@@ -107,7 +110,7 @@ function landingOffers(p, d) {
     return `<article class="bv-pack${hot ? ' bv-pack--hot' : ''}${isBest ? ' bv-pack--best' : ''}">
       ${hot ? '<span class="bv-ribbon">⭐ Най-избиран</span>' : isBest ? '<span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>' : ''}
       ${off ? `<span class="bv-off">−${off}%</span>` : ''}
-      <div class="bv-pack__media">${bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
+      <div class="bv-pack__media">${duo ? `<div class="bv-pack__duo${duo.plus ? ' bv-pack__duo--plus' : ''}">${duo.imgs.map((src, i) => `${i && duo.plus ? '<span>+</span>' : ''}<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}</div>` : bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
       <div class="bv-pack__body">
         <h3>${esc(k.label)}</h3>
         <p class="bv-pack__sub">${esc(String(k.sub || p.size).replace(/ · най-(избиран|изгодно)$/, ''))}</p>

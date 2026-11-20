@@ -848,3 +848,10 @@
   .bvp .hv-hero .bv-cta-row>.bv-btn{order:-2;margin:10px 0 18px}
   .bvp .hv-hero .bv-cta-row>.bv-btn-ghost{margin:12px 0 4px}
 }
+
+/* снимка на пакета, сглобена от частите му */
+.bvp .bv-pack__duo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:2%;padding:5%;background:#fff}
+.bvp .bv-pack__duo img{height:100%;width:auto;max-width:47%;object-fit:contain}
+.bvp .bv-pack__duo--plus img:first-child{max-width:54%}
+.bvp .bv-pack__duo--plus img:last-child{height:auto;width:34%;aspect-ratio:1/1;object-fit:cover;border-radius:16px}
+.bvp .bv-pack__duo span{font-size:28px;font-weight:800;color:#C62828}
