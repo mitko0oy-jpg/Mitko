@@ -95,6 +95,23 @@ test("initiation webhook: if Zadarma shows our own number, the fresh callback is
   assert.equal(response.dynamic_variables.customer_name, "Митко");
 });
 
+test("initiation webhook: Zadarma's foreign line number (+44…) is the fresh callback", async () => {
+  const store = memoryStore();
+  await store.setJSON("pending/359899876063", { variables: { order_key: "test", customer_name: "Митко" }, at: T0.toISOString() });
+  const { orderKey, response } = await initiationData({ store, body: { caller_id: "+442045775777" }, outboundScript: SCRIPT, ownNumber: "+35924370192", now: min(1) });
+  assert.equal(orderKey, "test");
+  assert.equal(response.dynamic_variables.customer_name, "Митко");
+  assert.match(response.conversation_config_override.agent.prompt.prompt, /Ти си Елена/);
+});
+
+test("initiation webhook: a Bulgarian caller with no callback is not mixed up with someone else's order", async () => {
+  const store = memoryStore();
+  await store.setJSON("pending/359899876063", { variables: { order_key: "order/bg/9" }, at: T0.toISOString() });
+  const { orderKey } = await initiationData({ store, body: { caller_id: "0877111222" }, outboundScript: SCRIPT, ownNumber: "+35924370192", now: min(1) });
+  assert.equal(orderKey, null);
+  assert.ok(await store.get("pending/359899876063")); // still waiting for its customer
+});
+
 test("initiation webhook: without the script it still sends the order data", async () => {
   const store = memoryStore();
   await store.setJSON("pending/359888123456", { variables: { order_key: "test" }, at: T0.toISOString() });

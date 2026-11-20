@@ -19,7 +19,14 @@ export default async (req: Request, context: Context) => {
   loader ??= outboundScriptLoader({ apiKey: env("ELEVENLABS_API_KEY"), agentId: env("EL_AGENT_ID"), store });
   try {
     const { response, orderKey } = await initiationData({ store, body, outboundScript: loader, ownNumber: env("ZADARMA_FROM") });
-    console.log(JSON.stringify({ init: orderKey ? "callback" : "incoming", orderKey, conversation: body?.conversation_id || null }));
+    const matched = Object.keys(response.dynamic_variables || {}).length > 0;
+    console.log(JSON.stringify({
+      init: matched ? "callback" : "incoming",
+      script: Boolean(response.conversation_config_override),
+      orderKey,
+      from: String(body?.caller_id || "").replace(/\d{4}$/, "****"), // which line Zadarma shows, without the full number
+      conversation: body?.conversation_id || null,
+    }));
     return Response.json(response);
   } catch (err) {
     // Never block the call: without data it is answered as the normal incoming line.

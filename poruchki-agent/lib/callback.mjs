@@ -68,9 +68,12 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   const digits = phoneDigits(body?.caller_id);
   let key = digits ? pendingKey(digits) : null;
   let pending = key ? await store.get(key, { type: "json" }) : null;
-  // If Zadarma shows our own number (or none) instead of the customer's, take the
-  // callback started in the last 3 minutes – there is at most one at a time.
-  if (!pending && (!digits || digits === phoneDigits(ownNumber))) {
+  // Zadarma connects the callback with its own number, not the customer's: our
+  // number, none, or a foreign line (seen: +44 20 4577 5777). Bulgarian
+  // customers call from 359… numbers, so anything else right after a callback
+  // is the callback: take the one started in the last 3 minutes (at most one at a time).
+  const lineSide = !digits || digits === phoneDigits(ownNumber) || !digits.startsWith("359");
+  if (!pending && lineSide) {
     let newest = null;
     for (const { key: k } of (await store.list({ prefix: "pending/" })).blobs) {
       const p = await store.get(k, { type: "json" });
