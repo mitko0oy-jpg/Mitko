@@ -6,6 +6,7 @@ import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
 import { reportBody } from "./platform.mjs";
+import { NO_ANSWER_MIN } from "./callback.mjs";
 
 const seenKey = (site, orderNo, requestedAt) => `seen/${site}/${orderNo}${requestedAt ? `/r${requestedAt}` : ""}`;
 
@@ -132,9 +133,13 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     const entry = await store.getWithMetadata(key, { type: "json" });
     if (entry === null) continue;
     const rec = entry.data;
+    // A Zadarma callback the customer did not answer never reaches ElevenLabs:
+    // if the agent was not connected within a few minutes, count it as "no answer".
+    const sinceMin = rec.callingSince ? (now - new Date(rec.callingSince)) / 60_000 : 0;
+    const unanswered = rec.route === "zadarma" && !rec.answeredAt && sinceMin > NO_ANSWER_MIN;
     // A call that never reported back: count it as "no conversation".
-    if (rec.state === "calling" && rec.callingSince && now - new Date(rec.callingSince) > STALE_CALL_MIN * 60_000) {
-      const r = applyOutcome(rec, { outcome: "no_conversation" }, now);
+    if (rec.state === "calling" && rec.callingSince && (unanswered || sinceMin > STALE_CALL_MIN)) {
+      const r = applyOutcome(rec, { outcome: unanswered ? "no-answer" : "no_conversation" }, now);
       await save(store, key, r.rec, { onlyIfMatch: entry.etag });
       await toPlatform(deps, "report", rec, reportBody(rec, r.rec, null, r.rec.lastOutcome));
       if (r.notify) await notify(buildMessage(r.rec, r.label, null, { testMode }));
@@ -167,11 +172,11 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       report.skipped++;
       continue;
     }
-    const claimed = { ...rec, state: "calling", attempts: rec.attempts + 1, callingSince: now.toISOString() };
+    const claimed = { ...rec, state: "calling", attempts: rec.attempts + 1, callingSince: now.toISOString(), answeredAt: null };
     const { modified, etag: claimEtag } = await store.setJSON(key, claimed, { onlyIfMatch: etag });
     if (!modified) continue; // another run took it
     try {
-      const { conversationId } = await call({
+      const { conversationId, route } = await call({
         to: testMode ? config.testPhone : rec.phone,
         variables: {
           order_key: key,
@@ -188,6 +193,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       });
       const updated = {
         ...claimed,
+        route: route || "elevenlabs",
         conversationIds: [...(rec.conversationIds || []), conversationId].filter(Boolean),
         history: [...rec.history, { at: now.toISOString(), event: "call", attempt: claimed.attempts, conversationId }],
       };

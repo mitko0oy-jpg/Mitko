@@ -5,6 +5,7 @@ import { sendTelegram } from "./telegram.mjs";
 import { convertBuilder } from "./convertbuilder.mjs";
 import { middleware } from "./middleware.mjs";
 import { platform } from "./platform.mjs";
+import { startCallbackCall } from "./callback.mjs";
 
 const env = (k, d = "") => (globalThis.Netlify?.env.get(k) ?? process.env[k] ?? d);
 
@@ -19,7 +20,25 @@ export function readConfig() {
     sites: env("SITES", "bg").split(",").map((s) => s.trim()).filter(Boolean),
     inboundAgentId: env("EL_INBOUND_AGENT_ID"),
     maxCallsPerRun: Number(env("MAX_CALLS_PER_RUN", "1")) || 1,
-    ready: Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
+    // "zadarma": Zadarma rings the customer and connects them to the agent (see lib/callback.mjs).
+    // "elevenlabs": ElevenLabs calls out itself (blocked by Zadarma for Bulgarian numbers).
+    callRoute: callRoute(),
+    ready:
+      callRoute() === "zadarma"
+        ? Boolean(env("ZADARMA_KEY") && env("ZADARMA_SECRET") && env("ZADARMA_FROM"))
+        : Boolean(env("ELEVENLABS_API_KEY") && env("EL_AGENT_ID") && env("EL_PHONE_NUMBER_ID")),
+  };
+}
+
+const callRoute = () => (env("CALL_ROUTE", "elevenlabs").toLowerCase() === "zadarma" ? "zadarma" : "elevenlabs");
+
+/** Zadarma settings for the callback: our number, the PBX extension, API key. */
+export function zadarmaConfig() {
+  return {
+    key: env("ZADARMA_KEY"),
+    secret: env("ZADARMA_SECRET"),
+    from: env("ZADARMA_FROM"), // the agent's number, e.g. +35924370192
+    sip: env("ZADARMA_SIP"), // PBX extension, e.g. 100
   };
 }
 
@@ -31,7 +50,10 @@ export function telegramNotify(store) {
   };
 }
 
-export function realCall() {
+export function realCall(store) {
+  if (callRoute() === "zadarma") {
+    return ({ to, variables }) => startCallbackCall({ store, zadarma: zadarmaConfig(), to, variables });
+  }
   return ({ to, variables }) =>
     startCall({
       apiKey: env("ELEVENLABS_API_KEY"),
@@ -76,7 +98,7 @@ export function realDeps() {
         }
       : // Call only if the order is still pending in ConvertBuilder AND nobody confirmed or shipped it in Middleware.
         { ...shop, isStillPending: async (rec) => (await shop.isStillPending(rec)) && (await mw.stillOpen(rec)) },
-    call: realCall(),
+    call: realCall(store),
     notify: telegramNotify(store),
     config,
   };
