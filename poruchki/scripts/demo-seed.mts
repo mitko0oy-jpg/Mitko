@@ -94,6 +94,40 @@ export async function seedDemo() {
        FROM orders WHERE stage = 'returned' AND phone <> '' LIMIT 6
      ON CONFLICT DO NOTHING`,
   );
+  // Сега в сайтовете: people on the shop pages now and earlier today, and the feed.
+  const SOURCES = ["Facebook / Instagram", "Facebook / Instagram", "Facebook / Instagram", "Google реклама", "Google", "Директно", "TikTok", "sms", "newsletter"];
+  const CITIES2 = ["София", "Пловдив", "Варна", "Бургас", "Русе", "Стара Загора", "Плевен"];
+  for (let i = 0; i < 160; i++) {
+    const shop = SHOPS[i % SHOPS.length];
+    const online = i < 14;
+    const minsAgo = online ? Math.floor(rnd() * 1) : 3 + Math.floor(rnd() * 600);
+    const stage = online ? (i % 7 === 0 ? "filling" : i % 4 === 0 ? "checkout" : "browsing") : "browsing";
+    const reached = online ? stage : rnd() < 0.12 ? "filling" : rnd() < 0.25 ? "checkout" : "browsing";
+    const source = pick(SOURCES) as string;
+    const country = shop.region === "bg" ? "BG" : shop.id === "hu" ? "HU" : shop.id === "sk" ? "SK" : "SI";
+    const city = country === "BG" ? (pick(CITIES2) as string) : "";
+    const sid = `demo${String(i).padStart(6, "0")}`;
+    await q(
+      `INSERT INTO visits (shop, sid, vid, page, stage, reached, device, source, country, city, cart_lines, value, pages, first_at, last_at, left_at)
+       VALUES ($1, $2, $3, '/', $4, $5, $6, $7, $8, $9, $10, $11, $12, now() - make_interval(mins => $13 + 4), now() - make_interval(mins => $13), CASE WHEN $14 THEN NULL ELSE now() END)`,
+      [shop.id, sid, `v${sid}`, stage, reached, rnd() < 0.8 ? "mobile" : "desktop", source, country, city, reached === "browsing" ? 0 : 1, reached === "browsing" ? "" : "39,90 €", 1 + Math.floor(rnd() * 4), minsAgo, online],
+    );
+    if (minsAgo < 180) {
+      await q("INSERT INTO visit_events (shop, sid, kind, country, city, source, at) VALUES ($1, $2, 'came', $3, $4, $5, now() - make_interval(mins => $6 + 4))", [shop.id, sid, country, city, source, minsAgo]);
+      if (reached !== "browsing") await q("INSERT INTO visit_events (shop, sid, kind, country, city, source, at) VALUES ($1, $2, $3, $4, $5, $6, now() - make_interval(mins => $7 + 1))", [shop.id, sid, reached, country, city, source, minsAgo]);
+    }
+  }
+  // Today's orders came through these visits (the phone typed in the form links them).
+  const todays = await q<any>("SELECT id, shop, phone, ordered_at FROM orders WHERE day = (now() AT TIME ZONE 'Europe/Sofia')::date ORDER BY id LIMIT 40");
+  for (const [i, o] of todays.entries()) {
+    const sid = `demoo${String(i).padStart(5, "0")}`;
+    await q(
+      `INSERT INTO visits (shop, sid, vid, page, stage, reached, device, source, country, city, first_at, last_at, left_at)
+       VALUES ($1, $2, $3, '/', 'ordered', 'ordered', 'mobile', $4, 'BG', '', $5::timestamptz - interval '6 minutes', $5, $5)`,
+      [o.shop, sid, `v${sid}`, pick(SOURCES), o.ordered_at],
+    );
+    await q("INSERT INTO leads (shop, sid, name, phone, first_at, last_at) VALUES ($1, $2, '', $3, $4::timestamptz - interval '3 minutes', $4)", [o.shop, sid, o.phone, o.ordered_at]);
+  }
   return `demo: ${SHOPS.length} shops, ${total} orders, login demo@local / demo-demo-demo`;
 }
 

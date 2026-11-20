@@ -917,3 +917,39 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 .stagepill.filling { --h: #e59a0b; }
 .stagepill.ordered { --h: #22a447; }
 @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.livetop { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+.radarcard { position: relative; padding: 8px; }
+#radar { display: block; width: 100%; height: auto; max-height: 560px; }
+#radar .rlab { font-size: 15px; font-weight: 700; }
+#radar .ring { stroke: var(--muted); stroke-opacity: .35; stroke-dasharray: 4 6; }
+#radar .rcenter { fill: var(--surface); stroke: color-mix(in srgb, #e59a0b 55%, var(--line)); stroke-width: 1.5; }
+#radar .rnum { font-size: 34px; font-weight: 800; fill: var(--text); }
+#radar .rsub { font-size: 11px; fill: var(--muted); }
+#radar .slice { cursor: help; }
+#radar .slice:hover path:first-child { fill-opacity: .5; }
+#radar .pdot { stroke: var(--surface); stroke-width: 2; }
+#radar .pdot.filling, #radar .pdot.checkout { animation: pdot 1.6s ease-in-out infinite; }
+@keyframes pdot { 50% { stroke-width: 6; stroke-opacity: .4; } }
+.rtip { position: absolute; z-index: 5; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; box-shadow: 0 10px 30px rgb(0 0 0 / .2); }
+.rlegend { display: flex; justify-content: center; gap: 16px; font-size: 12px; color: var(--muted); padding-bottom: 6px; }
+.rlegend .ring { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed var(--muted); margin-right: 5px; vertical-align: -3px; }
+.rlegend .r2 { width: 10px; height: 10px; vertical-align: -1px; }
+.rlegend .r3 { width: 7px; height: 7px; vertical-align: 0; }
+.livecol { display: grid; gap: 12px; }
+.chtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.chtbl th { font-size: 11px; color: var(--muted); font-weight: 600; text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.chtbl td { padding: 7px 4px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-variant-numeric: tabular-nums; }
+.chtbl .r { text-align: right; }
+.chtbl tr.zero td { color: var(--muted); }
+.chtbl .sum { font-weight: 700; color: #d99a00; }
+.chtbl tr.zero .sum { color: var(--muted); font-weight: 500; }
+.cdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 0; }
+.feedcard { display: grid; gap: 8px; padding: 12px 14px; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 360px; overflow: auto; }
+.feed li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 6px 2px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size: 13px; }
+.feed time { color: var(--muted); font-family: ui-monospace, monospace; font-size: 12px; padding-top: 1px; }
+.feed .what .sub { display: block; font-size: 11px; color: var(--muted); }
+.feed li.order .what b { color: #22a447; }
+.feed .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 0 7px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); margin-left: 4px; }
+@media (max-width: 1000px) { .livetop { grid-template-columns: 1fr; } }
+.chtbl td { white-space: nowrap; } .chtbl td:first-child { white-space: normal; }

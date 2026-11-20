@@ -870,5 +870,12 @@ test("now in the shops: signs of life from the shop pages, counted per shop and 
   assert.equal(s2.pages, 2);
   assert.equal(s2.cart_lines, 2);
   assert.equal(live.sessions.find((x) => x.sid === "tab0000003").online, false);
+  // By channel: Facebook → Meta, Google (search) → Търсачки; the feed tells what happened.
+  assert.equal(live.channels.find((c) => c.id === "meta").now, 1);
+  assert.equal(live.channels.find((c) => c.id === "search").now, 1);
+  assert.equal(s1.channel, "meta");
+  const kinds = live.feed.filter((e) => e.shop === "bg" && e.kind !== "order").map((e) => e.kind).sort();
+  assert.deepEqual(kinds, ["came", "came", "came", "checkout", "filling"]);
+  assert.equal(live.feed.find((e) => e.kind === "filling").city, "Пловдив");
   assert.equal((await fetch(`${B}/api/live`)).status, 401);
 });

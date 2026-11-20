@@ -41,6 +41,13 @@
 - „Поръчал“ се смята при показване: поръчка със същия телефон (последните 9 цифри) след `first_at - 30 мин`, или създадена от „Създай поръчка“ (`leads.order_id`). Пазят се 30 дни (`purgeLeads` в синхронизацията).
 - Страница `/nezavarsheni/`: Незавършени / Поръчали / Скрити, обаждане, нова поръчка с попълнени данни, скриване. В политиката за поверителност на сайта трябва изречение за това (и за запомнянето в браузъра).
 
+## Сега в сайтовете (`/zhivo/`)
+
+- `c.js` праща на ~30 s, докато страницата е отворена и видима (и някой е мърдал през последните 30 мин), `{t:"ping"}` към `/api/collect`: `sid` (таб), `vid` (браузър, `pr_vid` в localStorage; при GPC = sid), страница, етап (`browsing` / `checkout` = телефонното поле е на екрана или URL с checkout/cart / `filling` = пише във формата / `ordered` = URL с thank/благодар/success), устройство, източник (fbclid → Meta, gclid → Google реклама, ttclid, utm_source, referrer; пази се за таба в `pr_src`), брой редове в количката, сума. При скриване/затваряне – `gone: true`. Отделен лимит `ping:<ip>` 600/час.
+- `visits` (по `shop, sid`; държава и град от `context.geo` на Netlify, без IP; `reached` = най-далечния етап) и `visit_events` (came / checkout / filling / ordered – за потока). Пазят се 2 дни (`purgeVisits` в синхронизацията).
+- `GET /api/live` (`lib/visits.mts` `liveView`): онлайн = знак в последните 75 s и не е затворил; по магазин сега и днес (души = различни `vid`), сесиите от последните N минути (с името от `leads`, ако го е написал), канали (`channelOf`: Meta, Google Ads, TikTok, Търсачки, Имейл, SMS, Viber, Кол център = поръчки по телефона, Други сайтове, Директно) и поръчките днес по канал – поръчката се връзва с посещението през реда в `leads` със същия телефон (ден преди до 10 мин след поръчката).
+- Страницата: 4 числа, кръг по канали (точка = човек; външен кръг разглежда, среден – във формата, вътрешен – пише), таблица по канали, „Какво се случва“, карти по сайтове, сесии. Обновява се на 10 s, докато табът е отпред.
+
 ## AI агентът за обаждания
 
 Отделен Netlify проект `mitko-obazhdania` (код в `poruchki-agent/`). Говори с платформата през `/api/agent/*` с `Authorization: Bearer AGENT_TOKEN` (`netlify/functions/agent.mts`, `netlify/lib/agent.mts`):
@@ -56,7 +63,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |
@@ -89,7 +96,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 47 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 48 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

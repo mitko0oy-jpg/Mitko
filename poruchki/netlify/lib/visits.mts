@@ -26,9 +26,12 @@ export function cleanPing(input: any): Ping | null {
   };
 }
 
+const RANK: Record<string, number> = { browsing: 0, checkout: 1, filling: 2, ordered: 3 };
+
 export async function savePing(shop: string, p: Ping, geo: { country?: string; city?: string }) {
-  await q(
-    `INSERT INTO visits (shop, sid, vid, page, stage, reached, device, source, country, city, cart_lines, value, left_at)
+  const [row] = await q<any>(
+    `WITH old AS (SELECT reached FROM visits WHERE shop = $1 AND sid = $2), up AS (
+     INSERT INTO visits (shop, sid, vid, page, stage, reached, device, source, country, city, cart_lines, value, left_at)
      VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, CASE WHEN $12 THEN now() END)
      ON CONFLICT (shop, sid) DO UPDATE SET
        vid = CASE WHEN excluded.vid <> '' THEN excluded.vid ELSE visits.vid END,
@@ -45,12 +48,50 @@ export async function savePing(shop: string, p: Ping, geo: { country?: string; c
        cart_lines = CASE WHEN excluded.cart_lines > 0 THEN excluded.cart_lines ELSE visits.cart_lines END,
        value = CASE WHEN excluded.value <> '' THEN excluded.value ELSE visits.value END,
        last_at = now(),
-       left_at = CASE WHEN $12 THEN now() ELSE NULL END`,
+       left_at = CASE WHEN $12 THEN now() ELSE NULL END
+     RETURNING reached, country, city, source, device)
+     SELECT (SELECT reached FROM old) AS was, up.* FROM up`,
     [shop, p.sid, p.vid, p.page, p.stage, p.device, p.source, clean(geo.country, 2).toUpperCase(), clean(geo.city, 60), p.cart, p.value, p.gone],
   );
+  if (!row) return;
+  // The live feed: a new visitor, or one who went further (form, typing, ordered).
+  const kinds = row.was == null ? ["came", ...(RANK[row.reached] > 0 ? [row.reached] : [])] : RANK[row.reached] > RANK[row.was] ? [row.reached] : [];
+  for (const kind of kinds)
+    await q("INSERT INTO visit_events (shop, sid, kind, country, city, source, device) VALUES ($1, $2, $3, $4, $5, $6, $7)", [
+      shop, p.sid, kind, row.country, row.city, row.source, row.device,
+    ]);
 }
 
-export const purgeVisits = () => q("DELETE FROM visits WHERE last_at < now() - interval '2 days'");
+/** The marketing channel of a visit, from where it came (c.js: fbclid, gclid, utm_source, referrer). */
+export const CHANNELS = [
+  ["meta", "Meta"],
+  ["google_ads", "Google Ads"],
+  ["tiktok", "TikTok"],
+  ["search", "Търсачки"],
+  ["email", "Имейл"],
+  ["sms", "SMS"],
+  ["viber", "Viber"],
+  ["calls", "Кол център"],
+  ["other", "Други сайтове"],
+  ["direct", "Директно"],
+] as const;
+export function channelOf(source: string): string {
+  const s = String(source || "").toLowerCase();
+  if (!s || s === "директно") return "direct";
+  if (/facebook|instagram|^fb|^ig|meta/.test(s)) return "meta";
+  if (/google реклама|google ads|adwords|^cpc$/.test(s)) return "google_ads";
+  if (/tiktok/.test(s)) return "tiktok";
+  if (/viber/.test(s)) return "viber";
+  if (/^sms|smsapi/.test(s)) return "sms";
+  if (/mail|newsletter|brevo|klaviyo|mailchimp|sendinblue/.test(s)) return "email";
+  if (/^(google|bing|yahoo|duckduckgo|yandex|search\.|ecosia|seznam)/.test(s)) return "search";
+  return "other";
+}
+
+export const purgeVisits = async () => {
+  await q("DELETE FROM visits WHERE last_at < now() - interval '2 days'");
+  await q("DELETE FROM visit_events WHERE at < now() - interval '2 days'");
+};
 
 // Online = a sign of life in the last 75 s (the page sends one every ~30 s) and not closed.
 const ONLINE = "v.last_at > now() - interval '75 seconds' AND v.left_at IS NULL";
@@ -99,6 +140,54 @@ export async function liveView(minutes = 15) {
       WHERE s.company_id = $1 AND o.day = (now() AT TIME ZONE 'Europe/Sofia')::date GROUP BY o.shop`,
     [company],
   );
+  // Today's orders with the channel of the visit that typed the same phone in the form (via the unfinished-order row).
+  // Phone orders (the AI agent) are the call centre.
+  const attributed = await q<any>(
+    `SELECT o.id, o.shop, o.order_no, o.total_eur::float AS total, o.ordered_at, o.city, o.source AS made, a.source
+       FROM orders o JOIN shops s ON s.id = o.shop
+       LEFT JOIN LATERAL (
+         SELECT v.source FROM leads l JOIN visits v ON v.shop = l.shop AND v.sid = l.sid
+          WHERE l.shop IN (SELECT id FROM shops WHERE company_id = $1)
+            AND right(regexp_replace(l.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
+            AND l.first_at BETWEEN o.ordered_at - interval '1 day' AND o.ordered_at + interval '10 minutes'
+          ORDER BY l.last_at DESC LIMIT 1) a ON true
+      WHERE s.company_id = $1 AND o.day = (now() AT TIME ZONE 'Europe/Sofia')::date`,
+    [company],
+  );
+  const chOfOrder = (o: any) => (o.made === "phone" ? "calls" : o.source != null ? channelOf(o.source) : "unknown");
+  const channels = new Map<string, { id: string; label: string; now: number; form: number; orders: number; sum: number }>(
+    [...CHANNELS, ["unknown", "Неизвестен"] as const].map(([id, label]) => [id, { id, label, now: 0, form: 0, orders: 0, sum: 0 }]),
+  );
+  for (const x of sessions) {
+    x.channel = channelOf(x.source);
+    if (!x.online) continue;
+    const c = channels.get(x.channel)!;
+    c.now++;
+    if (x.stage === "checkout" || x.stage === "filling") c.form++;
+  }
+  for (const o of attributed) {
+    const c = channels.get(chOfOrder(o))!;
+    c.orders++;
+    c.sum = Math.round((c.sum + (Number(o.total) || 0)) * 100) / 100;
+  }
+  // The feed: visits moving on, and today's orders (last 3 hours, newest first).
+  const events = await q<any>(
+    `SELECT e.kind, e.shop, s.label AS shop_label, e.country, e.city, e.source, e.device, e.at
+       FROM visit_events e JOIN shops s ON s.id = e.shop
+      WHERE s.company_id = $1 AND e.at > now() - interval '3 hours'
+      ORDER BY e.at DESC LIMIT 60`,
+    [company],
+  );
+  const labels = new Map(shops.map((s: any) => [s.id, s.label]));
+  const feed = [
+    ...events.map((e: any) => ({ ...e, channel: channelOf(e.source) })),
+    ...attributed
+      .filter((o: any) => Date.now() - Date.parse(o.ordered_at) < 3 * 3600e3)
+      .map((o: any) => ({ kind: "order", shop: o.shop, shop_label: labels.get(o.shop) || o.shop, city: o.city, country: "", source: o.source || "", channel: chOfOrder(o), at: o.ordered_at, order_no: o.order_no, total: o.total, id: Number(o.id) })),
+  ]
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, 50);
+
   const by = (rows: any[]) => new Map(rows.map((r) => [r.shop, r]));
   const N = by(now);
   const T = by(today);
@@ -112,5 +201,7 @@ export async function liveView(minutes = 15) {
       today: { ...(T.get(s.id) || { people: 0, visits: 0, checkout: 0, filling: 0, mobile: 0 }), orders: O.get(s.id)?.n || 0 },
     })),
     sessions,
+    channels: [...channels.values()].filter((c) => c.id !== "unknown" || c.orders > 0),
+    feed,
   };
 }
