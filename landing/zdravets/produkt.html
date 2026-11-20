@@ -1808,7 +1808,9 @@ function productTop(p, d, ctx) {
     if (p.wellness && comboReady()) PATCH_COMBOS.filter(c => c.store).forEach(c => opts.push({ kind: 'combo', key: `combo${c.n}`, n: c.n, label: `${c.n} вида по избор`, sub: `този + още ${c.n - 1} ${c.n - 1 === 1 ? 'вид' : 'вида'} пластири`, price: c.price, was: p.price * c.n, off: Math.round((1 - c.price / (p.price * c.n)) * 100), per: c.price / c.n, hot: c.n === 2 }));
   }
   const showOpts = opts.length > 1;
-  const sel = (opts.find(o => o.hot) || opts[0]).key;
+  // уелнес пластирите започват от 1 кутия (цената съвпада с тази в каталога и бутонът добавя веднага);
+  // комплектът от 2 вида остава отбелязан като най-изгоден
+  const sel = (p.wellness ? opts[0] : (opts.find(o => o.hot) || opts[0])).key;
   const others = p.wellness ? PRODUCTS.filter(x => x.wellness && x.id !== p.id) : [];
   return `
   <section class="sp-top" id="sp-top"><div class="bv-wrap sp-top__grid">
