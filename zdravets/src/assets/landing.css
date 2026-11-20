@@ -858,3 +858,38 @@
 .bvp .bv-pack li.bv-gift.bv-gift--pic::before{content:none;display:none}
 .bvp .bv-pack li.bv-gift.bv-gift--pic{display:flex;align-items:center;gap:10px}
 .bvp .bv-pack li.bv-gift.bv-gift--pic img{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none}
+
+/* ---------- началото на страницата на гела (по стария лендинг) ---------- */
+.bvp .gi{background:#fff;padding:26px 0 30px;text-align:center}
+.bvp .gi__in{display:flex;flex-direction:column;align-items:center;gap:14px}
+.bvp .gi__pill{display:inline-block;padding:8px 20px;border-radius:999px;background:#F3F1C4;color:#3A3A2A;font-size:calc(var(--fs) * .78);font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.bvp .gi__h{margin:0;font-family:Manrope,system-ui,sans-serif;font-weight:800;line-height:1.12;color:#333;font-size:clamp(30px,5.2vw,58px);text-transform:uppercase}
+.bvp .gi__h em{font-style:normal;color:#EE9B2E}
+.bvp .gi__h span,.bvp .gi__h em:last-child{display:block;text-transform:none}
+.bvp .gi__name{margin:0;font-weight:800;font-size:clamp(22px,3vw,34px);color:#5A3410}
+.bvp .gi__row{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap}
+.bvp .gi__tube{width:auto;height:clamp(170px,22vw,260px)}
+.bvp .gi__badge{display:flex;align-items:center;gap:14px;padding:14px 26px 14px 14px;border-radius:999px;background:#FFFDF6;border:2px solid #F2DDA6;box-shadow:0 10px 26px rgba(120,80,10,.14);text-align:left}
+.bvp .gi__badge img{width:84px;height:84px;object-fit:contain;flex:none}
+.bvp .gi__badge b{display:block;font-size:clamp(18px,2.2vw,28px);line-height:1.15;color:#17301A}
+.bvp .gi__badge span{display:block;font-size:clamp(15px,1.6vw,20px);font-weight:700;color:#333}
+.bvp .gi__badge strong{color:#D98A00;font-size:1.5em}
+.bvp .gi__badge i{font-style:normal;background:#F5E6B8;border-radius:999px;padding:2px 10px;font-weight:800}
+.bvp .gi__line{margin:4px 0 0;max-width:24em;font-size:clamp(19px,2.3vw,30px);font-weight:700;line-height:1.3;color:#333}
+.bvp .gi__line b{color:#2C5A2C}
+.bvp .gi__ings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;width:100%;max-width:1100px}
+.bvp .gi__ings figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.bvp .gi__ings img{width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;border-radius:18px}
+.bvp .gi__ings figcaption{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bvp .gi__ings b{font-size:clamp(15px,1.9vw,24px);font-weight:800;text-transform:uppercase;line-height:1.15}
+.bvp .gi__ings span{color:#fff;font-weight:800;font-size:clamp(12px,1.2vw,16px);text-transform:uppercase;padding:6px 14px;border-radius:10px;line-height:1.2}
+.bvp .gi__cta{margin-top:6px}
+.bvp .gi+.sp-top{padding-top:28px}
+@media(max-width:719px){
+  .bvp .gi{padding:16px 0 22px}
+  .bvp .gi__in{gap:10px}
+  .bvp .gi__row{gap:10px}
+  .bvp .gi__badge{padding:10px 16px 10px 10px;border-radius:22px}
+  .bvp .gi__badge img{width:56px;height:56px}
+  .bvp .gi__ings{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+}

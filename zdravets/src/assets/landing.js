@@ -480,7 +480,7 @@ function renderLanding(p) {
   root.removeAttribute('style'); delete root.dataset.shape; delete root.dataset.dark;
   if (theme) { const v = themeVars(theme); Object.keys(v).forEach(k => root.style.setProperty(k, v[k])); root.dataset.shape = theme.shape; if (theme.dark) root.dataset.dark = '1'; }
   const trustHtml = hero.slice(hero.indexOf('<div class="bv-trust">'));
-  const top = productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
+  const top = gelIntro(p, d) + productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
   root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
     + ingsHtml + layersHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
@@ -630,6 +630,26 @@ function galleryItems(p, d) {
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
   if (st && st.length >= 4) list.push({ thumb: st[0][2].poster, alt: 'Как се използва', html: `<div class="sp-card"><b class="sp-card__h">Как се използва</b><div class="sp-card__grid">${st.slice(0, 4).map((x, i) => tile(x[2].poster, x[0], i + 1)).join('')}</div></div>` });
   return list;
+}
+/* Началото на страницата на гела – по образеца от стария лендинг на Митко: заглавие, тубата с лентата
+   „50 ужилвания“, едно изречение и четирите съставки. Без думи за болка и лечение (козметичен продукт). */
+function gelIntro(p, d) {
+  if (p.id !== 'gel') return '';
+  const ing = ((d.ings && d.ings.items) || []).filter(x => x[3] && x[3].poster).slice(0, 4);
+  const tone = ['#B97C06', '#C2571A', '#3D7136', '#B97C06'];
+  return `
+  <section class="gi"><div class="bv-wrap gi__in">
+    <span class="gi__pill">Нова висококонцентрирана формула, проникваща в дълбочина</span>
+    <p class="gi__h">Лекота <em>за ставите</em><span>Усети разликата</span><em>още след първото нанасяне</em></p>
+    <p class="gi__name">${esc(p.shortName)}</p>
+    <div class="gi__row">
+      <img class="gi__tube" src="${BVM(BV.hero, 'vs-tuba.webp')}" alt="${esc(p.name)}" width="212" height="360" fetchpriority="high">
+      <div class="gi__badge"><img src="${BVM(BV.hero, 'hero-bee.webp')}" alt="" width="120" height="120"><div><b>Висококонцентрирана формула</b><span>равняваща се на <strong>50 ужилвания</strong> <i>в 20 г</i></span></div></div>
+    </div>
+    <p class="gi__line"><b>Малко количество</b> е достатъчно, за да проникне там, откъдето идва <b>сковаността</b>.</p>
+    ${ing.length ? `<div class="gi__ings">${ing.map((x, i) => `<figure><img src="${x[3].poster}" alt="" loading="lazy" width="400" height="400"><figcaption><b style="color:${tone[i]}">${esc(x[0])}</b><span style="background:${tone[i]}">${esc(x[1])}</span></figcaption></figure>`).join('')}</div>` : ''}
+    <a class="bv-btn bv-btn--xl gi__cta" href="#sp-top">Избери комплект <span class="bv-arr">↓</span></a>
+  </div></section>`;
 }
 function productTop(p, d, ctx) {
   const { theme, packs, reviewsOn } = ctx;
