@@ -6,8 +6,9 @@
 // Anyone else is a real incoming call and gets the normal incoming line.
 import type { Config, Context } from "@netlify/functions";
 import { env } from "../../lib/config.mjs";
-import { openStore } from "../../lib/store.mjs";
+import { openStore, getSettings } from "../../lib/store.mjs";
 import { initiationData, outboundScriptLoader } from "../../lib/callback.mjs";
+import { getLessons } from "../../lib/coach.mjs";
 
 let loader: ReturnType<typeof outboundScriptLoader> | null = null;
 
@@ -18,11 +19,23 @@ export default async (req: Request, context: Context) => {
   const store = openStore();
   loader ??= outboundScriptLoader({ apiKey: env("ELEVENLABS_API_KEY"), agentId: env("EL_AGENT_ID"), store });
   try {
-    const { response, orderKey } = await initiationData({ store, body, outboundScript: loader, ownNumber: env("ZADARMA_FROM") });
+    const lessons = await getLessons(store).catch(() => []);
+    const settings = await getSettings(store).catch(() => ({}));
+    const { response, orderKey } = await initiationData({
+      store,
+      body,
+      outboundScript: loader,
+      ownNumber: env("ZADARMA_FROM"),
+      lessons,
+      // Александра's voice: chosen in Telegram (/aleksandra 1|2|3), or from Netlify.
+      aleksandraVoiceId: settings.aleksandraVoiceId ?? env("ALEKSANDRA_VOICE_ID"),
+    });
     const matched = Object.keys(response.dynamic_variables || {}).length > 0;
     console.log(JSON.stringify({
       init: matched ? "callback" : "incoming",
-      script: Boolean(response.conversation_config_override),
+      script: Boolean(response.conversation_config_override?.agent),
+      persona: response.dynamic_variables?.persona || null,
+      lessons: lessons.length,
       orderKey,
       from: String(body?.caller_id || "").replace(/\d{4}$/, "****"), // which line Zadarma shows, without the full number
       conversation: body?.conversation_id || null,

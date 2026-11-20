@@ -54,6 +54,8 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
         conversation_config_override: {
           ...(ov.conversation_config_override || {}),
           agent: { ...agentOv, first_message: true, language: true, prompt: { ...(agentOv.prompt || {}), prompt: true } },
+          // Александра speaks with another voice (lib/persona.mjs).
+          tts: { ...(ov.conversation_config_override?.tts || {}), voice_id: true },
         },
       },
     },
@@ -65,9 +67,11 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
   const aAgent = aOv.conversation_config_override?.agent || {};
   const fetchOn = aOv.enable_conversation_initiation_client_data_from_webhook === true;
   const overridesOn = aAgent.first_message === true && aAgent.prompt?.prompt === true;
+  const voiceOn = aOv.conversation_config_override?.tts?.voice_id === true;
   const dcOk = added.every((k) => k in (after.platform_settings?.data_collection || {}));
   report.push(`${dcOk ? "✅" : "⚠️"} полета за резултата: ${added.length ? added.join(", ") : "вече ги има"}`);
   report.push(`${fetchOn ? "✅" : "⚠️"} входящият агент взима данните от webhook-а`);
   report.push(`${overridesOn ? "✅" : "⚠️"} сценарият и първото изречение може да се сменят при обаждане`);
-  return { ok: fetchOn && overridesOn && dcOk, report };
+  report.push(`${voiceOn ? "✅" : "⚠️"} гласът може да се сменя при обаждане (за Александра)`);
+  return { ok: fetchOn && overridesOn && dcOk && voiceOn, report };
 }

@@ -4,6 +4,8 @@ import { realDeps, env } from "../../lib/config.mjs";
 import { ensureTelegramWebhook } from "../../lib/telegram.mjs";
 import { syncOrders, runDueCalls, purgeOld } from "../../lib/engine.mjs";
 import { sofiaNow } from "../../lib/format.mjs";
+import { getSettings, saveSettings } from "../../lib/store.mjs";
+import { reviewPending, buildDigest, sofiaDay, DIGEST_AT } from "../../lib/coach.mjs";
 
 export default async (_req: Request, context: Context) => {
   const deps = realDeps();
@@ -21,7 +23,23 @@ export default async (_req: Request, context: Context) => {
   const t = sofiaNow(now);
   let purged = 0;
   if (t.hour === 4 && t.minute < 5) purged = await purgeOld(deps.store, now);
-  console.log(JSON.stringify({ added, ...report, purged, telegram }));
+
+  // Learning from the calls (lib/coach.mjs): review up to two finished calls per run,
+  // and once a day after the last calls send Mitko the report with proposed rules.
+  const ai = { store: deps.store, env };
+  const reviews = await reviewPending(ai, now, { max: 2 }).catch((e) => ({ error: e.message }));
+  let digest = "";
+  const today = sofiaDay(now);
+  if (t.hour * 60 + t.minute >= DIGEST_AT.hour * 60 + DIGEST_AT.minute) {
+    const settings = await getSettings(deps.store);
+    if (settings.coachDay !== today) {
+      await saveSettings(deps.store, { ...settings, coachDay: today }); // once a day, even if it fails
+      const text = await buildDigest(ai, now).catch((e) => `⚠️ Вечерният преглед не стана: ${String(e.message).slice(0, 200)}`);
+      if (text) await deps.notify(text);
+      digest = text ? "sent" : "no calls";
+    }
+  }
+  console.log(JSON.stringify({ added, ...report, purged, telegram, reviews, digest }));
 };
 
 export const config: Config = {

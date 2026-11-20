@@ -12,9 +12,12 @@ export default async (req: Request) => {
   }
   const update = await req.json().catch(() => null);
   const site = (env("URL") || "").replace(/^http:/, "https:").replace(/\/$/, "");
-  const { chatId, reply } = await handleTelegram(realDeps(), update, {
+  const deps = realDeps();
+  const { chatId, reply } = await handleTelegram(deps, update, {
     setupCode: env("TELEGRAM_SETUP_CODE"),
     fixedChatId: env("TELEGRAM_CHAT_ID"),
+    // /pregled: review today's calls now (Claude through the Netlify AI Gateway).
+    ai: { store: deps.store, env },
     // /callback_setup: point ElevenLabs at our initiation webhook (calls through Zadarma).
     setupCallback: () =>
       setupCallback({

@@ -1,6 +1,8 @@
 // Telegram commands from Mitko: стоп / пусни / статус / тест.
 import { getSettings, saveSettings } from "./store.mjs";
 import { labelFor } from "./policy.mjs";
+import { personaFromText, voiceFromText, PERSONAS, ALEKSANDRA_VOICES } from "./persona.mjs";
+import { approveLessons, dismissProposal, lessonsList, removeLesson, abStats, abText, reviewPending, buildDigest } from "./coach.mjs";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -9,10 +11,19 @@ const HELP = [
   "/stop – спира всички обаждания веднага",
   "/pusni – пуска ги отново",
   "/status – какво става в момента",
-  "/test – агентът звъни на твоя тестов номер с примерна поръчка",
+  "/test – Елена звъни на твоя тестов номер с примерна поръчка",
+  "/test 1, /test 2, /test 3 – звъни Александра с глас 1, 2 или 3 (/glasove)",
+  "/aleksandra 2 – Александра с глас 2 поема половината обаждания; /aleksandra off – само Елена",
   "/rezhim test – звъни на теб за всяка нова поръчка (тест)",
   "/rezhim live – звъни на клиентите",
   "/rezhim off – не звъни за поръчки",
+  "",
+  "Учене от разговорите:",
+  "/uroci – какво е научила",
+  "/urok_1, /urok_2… – одобри предложен урок от вечерния преглед",
+  "/mahni_1… – махни научен урок",
+  "/pregled – прегледай днешните разговори сега",
+  "/ab – Елена срещу Александра",
 ].join("\n");
 
 const SAMPLE = {
@@ -104,11 +115,60 @@ export async function handleTelegram(deps, update, opts = {}) {
       return { chatId, reply: `⚠️ Не успях да настроя ElevenLabs: ${esc(String(err.message).slice(0, 300))}` };
     }
   }
+  // Learning from the calls (lib/coach.mjs).
+  const urok = /^\/urok_(\d+)$/.exec(cmd);
+  if (urok) return { chatId, reply: await approveLessons(store, [Number(urok[1])]) };
+  if (cmd === "/uroci_vsichki") return { chatId, reply: await approveLessons(store, "all") };
+  if (cmd === "/uroci_ne") return { chatId, reply: await dismissProposal(store) };
+  if (["/uroci", "уроци"].includes(cmd)) return { chatId, reply: await lessonsList(store) };
+  const mahni = /^\/mahni_(\d+)$/.exec(cmd);
+  if (mahni) return { chatId, reply: await removeLesson(store, Number(mahni[1])) };
+  if (["/glasove", "гласове"].includes(cmd)) {
+    const cur = settings.aleksandraVoiceId;
+    return {
+      chatId,
+      reply: [
+        "<b>Гласове за Александра</b> (пробвай с /test 1, /test 2, /test 3):",
+        ...ALEKSANDRA_VOICES.map((v, i) => `${i + 1}. ${esc(v.label)}${v.id === cur ? " ✅ избран" : ""}`),
+        "",
+        cur ? "Александра поема половината обаждания. /aleksandra off – само Елена." : "Още не е избран. /aleksandra 1, 2 или 3 – пуска теста Елена срещу Александра.",
+      ].join("\n"),
+    };
+  }
+  if (["/aleksandra", "александра"].includes(cmd)) {
+    const arg = (text.split(/\s+/)[1] || "").toLowerCase();
+    if (["off", "изкл", "не", "0"].includes(arg)) {
+      await saveSettings(store, { ...settings, aleksandraVoiceId: null });
+      return { chatId, reply: "Само Елена звъни. Резултатите от теста остават в /ab." };
+    }
+    const v = voiceFromText(arg);
+    if (!v) return { chatId, reply: "Напиши /aleksandra 1, 2 или 3 (виж /glasove) или /aleksandra off." };
+    await saveSettings(store, { ...settings, aleksandraVoiceId: v.id });
+    return { chatId, reply: `✅ Александра е с гласа „${esc(v.label)}“ и поема половината обаждания по поръчки. Сравнението: /ab и във вечерния преглед.` };
+  }
+  if (cmd === "/ab") return { chatId, reply: "<b>Елена срещу Александра (последните 30 дни):</b>\n" + abText(await abStats(store)) };
+  if (cmd === "/pregled") {
+    if (!opts.ai) return { chatId, reply: "Прегледът не е наличен тук." };
+    try {
+      await reviewPending(opts.ai, new Date(), { max: 3 });
+      return { chatId, reply: (await buildDigest(opts.ai)) || "Днес още няма разговори за преглед." };
+    } catch (err) {
+      return { chatId, reply: `⚠️ Прегледът не стана: ${esc(String(err.message).slice(0, 300))}` };
+    }
+  }
   if (["/test", "тест"].includes(cmd)) {
     if (!config.testPhone) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
+    const arg = text.split(/\s+/)[1];
+    const persona = personaFromText(arg) || "elena";
+    // A test of Александра uses the asked voice, else her chosen one, else the first.
+    const voice = persona === "aleksandra" ? voiceFromText(arg) || ALEKSANDRA_VOICES.find((v) => v.id === settings.aleksandraVoiceId) || ALEKSANDRA_VOICES[0] : null;
     try {
-      await deps.call({ to: config.testPhone, variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays } });
-      return { chatId, reply: `📞 Звъня на ${config.testPhone} с примерна поръчка. След разговора ще ти пиша резултата.` };
+      await deps.call({
+        to: config.testPhone,
+        variables: { ...SAMPLE, shop_name: config.shopName, delivery_days: config.deliveryDays, persona, ...(voice ? { voice_id: voice.id } : {}) },
+      });
+      const who = voice ? `Александра (глас „${esc(voice.label)}“)` : PERSONAS[persona];
+      return { chatId, reply: `📞 ${who} звъни на ${config.testPhone} с примерна поръчка. След разговора ще ти пиша резултата.` };
     } catch (err) {
       return { chatId, reply: `⚠️ Не успях да звънна: ${esc(String(err.message).slice(0, 300))}` };
     }

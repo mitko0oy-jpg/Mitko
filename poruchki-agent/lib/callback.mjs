@@ -9,6 +9,8 @@
 //    order's variables plus the order-confirmation agent's script and first
 //    sentence. A caller with no pending call gets the normal incoming line.
 import { requestCallback } from "./zadarma.mjs";
+import { pickPersona, renamePersona } from "./persona.mjs";
+import { lessonsSection } from "./coach.mjs";
 
 // A callback that has not reached the agent in this time is no longer ours.
 export const PENDING_TTL_MIN = 15;
@@ -61,9 +63,11 @@ export async function startCallbackCall({ store, zadarma, to, variables, agentId
  * @param {object} args.body    { caller_id, called_number, agent_id, call_sid, conversation_id }
  * @param {(agentId?: string) => Promise<{prompt: string, firstMessage: string, language?: string}|null>} args.outboundScript
  *        an agent's script (read from ElevenLabs, cached); no id = the order-confirmation agent
+ * @param {{text: string}[]} [args.lessons] rules Mitko approved from the call reviews (lib/coach.mjs)
+ * @param {string} [args.aleksandraVoiceId] when set, half of the calls are made by Александра (lib/persona.mjs)
  * @returns {Promise<{response: object, orderKey: string|null}>}
  */
-export async function initiationData({ store, body, outboundScript, ownNumber = "", now = new Date() }) {
+export async function initiationData({ store, body, outboundScript, ownNumber = "", lessons = [], aleksandraVoiceId = "", now = new Date() }) {
   const inbound = { response: { type: "conversation_initiation_client_data", dynamic_variables: {} }, orderKey: null };
   const digits = phoneDigits(body?.caller_id);
   let key = digits ? pendingKey(digits) : null;
@@ -92,6 +96,13 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   });
   // ElevenLabs refuses to start if a {{variable}} in the script has no value.
   const variables = { ...(pending.variables || {}) };
+  // Which voice makes this call (an order keeps its voice on retries); it comes back with the result.
+  // A test call may ask for a specific voice (voice_id); otherwise Александра's chosen voice.
+  const voiceId = variables.voice_id || aleksandraVoiceId;
+  const persona =
+    variables.persona === "aleksandra" && voiceId ? "aleksandra" : variables.persona === "elena" ? "elena" : pickPersona(orderKey || key, { aleksandraVoiceId });
+  variables.persona = persona;
+  if (persona === "aleksandra") variables.voice_id = voiceId;
   for (const [, name] of `${script?.prompt || ""} ${script?.firstMessage || ""}`.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)) {
     if (!name.startsWith("system__") && !(name in variables)) variables[name] = "";
   }
@@ -99,11 +110,15 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   if (script?.prompt) {
     response.conversation_config_override = {
       agent: {
-        prompt: { prompt: script.prompt },
-        ...(script.firstMessage ? { first_message: script.firstMessage } : {}),
+        // Learned rules are about confirming orders: not added to another agent's script.
+        prompt: { prompt: renamePersona(script.prompt, persona) + (pending.agentId ? "" : lessonsSection(lessons)) },
+        ...(script.firstMessage ? { first_message: renamePersona(script.firstMessage, persona) } : {}),
         ...(script.language ? { language: script.language } : {}),
       },
     };
+  }
+  if (persona === "aleksandra") {
+    response.conversation_config_override = { ...(response.conversation_config_override || {}), tts: { voice_id: voiceId } };
   }
   // Remember the conversation and that the customer answered.
   if (orderKey && orderKey !== "test") {

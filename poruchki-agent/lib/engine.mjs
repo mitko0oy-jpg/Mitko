@@ -1,5 +1,6 @@
 // The calling loop: pick up new orders, call when due, apply results.
 // All I/O comes in through arguments, so this file is testable with fakes.
+import { saveReview, purgeReviews } from "./coach.mjs";
 import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
 import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN, MAX_LINE_FAULTS, LINE_FAULT_RETRY_MIN } from "./policy.mjs";
 import { readPostCall } from "./elevenlabs.mjs";
@@ -187,6 +188,8 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
   if (type === "post_call_transcription") {
     call = readPostCall(payload);
     outcome = call.outcome;
+    // Every call is kept for the evening review (lib/coach.mjs); never blocks the result.
+    await saveReview(store, call, now).catch((err) => console.error("saveReview", err.message));
   } else if (type === "call_initiation_failure") {
     outcome = data.failure_reason || "unknown";
   } else {
@@ -271,6 +274,8 @@ export async function purgeOld(store, now = new Date(), days = 14) {
       n++;
     }
   }
+  // Call transcripts for the review: kept 60 days.
+  n += await purgeReviews(store, now);
   // "seen" markers hold no personal data; they only need to outlive the 7-day order window.
   for (const { key } of (await store.list({ prefix: "seen/" })).blobs) {
     const m = await store.get(key, { type: "json" });

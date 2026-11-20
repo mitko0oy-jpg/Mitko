@@ -39,7 +39,7 @@ test("stop, resume, status and test call", async () => {
   assert.match((await handleTelegram(d, upd(1, "/pusni"), {})).reply, /пуснати/);
   assert.equal((await getSettings(d.store)).paused, false);
   const t = await handleTelegram(d, upd(1, "/test"), {});
-  assert.match(t.reply, /Звъня на \+359877000000/);
+  assert.match(t.reply, /звъни на \+359877000000/);
   assert.equal(d.calls[0].variables.order_key, "test");
   assert.equal(d.calls[0].to, "+359877000000");
   assert.match((await handleTelegram(d, upd(1, "здрасти"), {})).reply, /Команди/);
