@@ -1,12 +1,12 @@
 /* Поръчки – незавършени поръчки и „Сега в сайтовете“.
    Сложен на страниците на магазина:
-   1) праща към платформата какво клиентът е написал във формата за поръчка (име, телефон, град, адрес и
-      количката), за да можем да му се обадим, ако не я изпрати;
-   2) помни името, телефона, града и адреса в браузъра на клиента (на сайта на магазина, 90 дни): ако се върне
+   1) праща към платформата какво клиентът е написал във формата за поръчка (име, телефон, имейл, град, адрес
+      и количката), за да можем да му се обадим или пишем, ако не я изпрати;
+   2) помни името, телефона, имейла, града и адреса в браузъра на клиента (на сайта на магазина, 90 дни): ако се върне
       до формата и я остави, без да пише, пак става незавършена поръчка с тези данни;
    3) докато страницата е отворена, на ~30 s праща анонимен знак: коя страница, разглежда ли или е във
       формата, телефон или компютър, откъде е дошъл (Facebook, Google…). Без име и телефон.
-   Не чете имейл, пароли и данни за плащане. Нищо не променя на страницата.
+   Не чете пароли и данни за плащане. Нищо не променя на страницата.
    Не помни нищо дълготрайно, ако браузърът иска „без проследяване“ (Global Privacy Control). */
 (function () {
   try {
@@ -43,6 +43,7 @@
     var FIELDS = {
       name: ["name", "fullName", "firstName"],
       phone: ["shippingPhone", "billingPhone", "phone"],
+      email: ["email", "customerEmail", "shippingEmail", "billingEmail"],
       city: ["shippingCity", "billingCity", "city"],
       address: ["shippingAddress", "billingAddress", "address"],
     };
@@ -92,12 +93,13 @@
       if (noTrack) return null;
       try {
         var m = JSON.parse(store("local", "pr_me") || "null");
-        if (m && typeof m.p === "string" && m.p.replace(/\D/g, "").length >= 9 && Date.now() - m.t < DAYS90) return m;
+        if (m && ((typeof m.p === "string" && m.p.replace(/\D/g, "").length >= 9) || EMAIL.test(m.e || "")) && Date.now() - m.t < DAYS90) return m;
       } catch (e) {}
       return null;
     };
-    var remember = function (name, phone, city, address) {
-      if (!noTrack) store("local", "pr_me", JSON.stringify({ n: name, p: phone, c: city, a: address, t: Date.now() }));
+    var EMAIL = /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[a-z]{2,}$/i;
+    var remember = function (d) {
+      if (!noTrack) store("local", "pr_me", JSON.stringify({ n: d.name, p: d.phone, e: d.email, c: d.city, a: d.address, t: Date.now() }));
     };
 
     // How long the order form (its phone field) has been on screen.
@@ -123,15 +125,16 @@
     var timer = 0;
     var sendLead = function () {
       var phone = val(FIELDS.phone);
+      var email = val(FIELDS.email);
       var data;
-      if (phone.replace(/\D/g, "").length >= 9) {
-        data = { sid: sid, name: val(FIELDS.name), phone: phone, city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname };
-        remember(data.name, phone, data.city, data.address);
+      if (phone.replace(/\D/g, "").length >= 9 || EMAIL.test(email)) {
+        data = { sid: sid, name: val(FIELDS.name), phone: phone, email: EMAIL.test(email) ? email : "", city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname };
+        remember(data);
       } else {
         // Nothing typed this time: the visitor we know, if they stayed at the form a few seconds.
         var m = remembered();
         if (!m || seen() < 4000) return;
-        data = { sid: sid, name: m.n || "", phone: m.p, city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true };
+        data = { sid: sid, name: m.n || "", phone: m.p || "", email: m.e || "", city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true };
       }
       var body = JSON.stringify(data);
       if (body === lastLead) return;

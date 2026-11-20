@@ -21,7 +21,7 @@ export async function shopForOrigin(origin: string | null): Promise<string | nul
   return site ? site.id : null;
 }
 
-export type Lead = { sid: string; name: string; phone: string; city: string; address: string; cart: string[]; total: string; page: string; known: boolean };
+export type Lead = { sid: string; name: string; phone: string; email: string; city: string; address: string; cart: string[]; total: string; page: string; known: boolean };
 
 /** What the script sent, cleaned; null when there is no usable phone yet. */
 export function cleanLead(input: any): Lead | null {
@@ -29,12 +29,16 @@ export function cleanLead(input: any): Lead | null {
   if (!/^[a-z0-9]{8,40}$/i.test(sid)) return null;
   const phone = clean(input?.phone, 30);
   const digits = phone.replace(/\D/g, "");
-  if (digits.length < 9 || digits.length > 15) return null;
+  const email = clean(input?.email, 200).toLowerCase();
+  const okEmail = /^[^\s@<>]{1,64}@[^\s@<>]{1,190}\.[a-z]{2,}$/i.test(email);
+  // A phone or an e-mail to reach them by.
+  if ((digits.length < 9 || digits.length > 15) && !okEmail) return null;
   const cart = Array.isArray(input?.cart) ? input.cart.slice(0, 10).map((x: unknown) => clean(x, 160)).filter(Boolean) : [];
   return {
     sid,
     name: clean(input?.name, 120),
-    phone,
+    phone: digits.length >= 9 && digits.length <= 15 ? phone : "",
+    email: okEmail ? email : "",
     city: clean(input?.city, 80),
     address: clean(input?.address, 200),
     cart,
@@ -48,7 +52,7 @@ export function cleanLead(input: any): Lead | null {
 /** One visit is one row; later posts update it (empty fields never wipe what was typed before). */
 export async function saveLead(shop: string, l: Lead) {
   // A returning visitor who ordered in the last 3 days is only looking: not an unfinished order.
-  if (l.known) {
+  if (l.known && l.phone) {
     const recent = await one(
       `SELECT 1 FROM orders o JOIN shops s ON s.id = o.shop
         WHERE s.company_id = (SELECT company_id FROM shops WHERE id = $1)
@@ -59,30 +63,32 @@ export async function saveLead(shop: string, l: Lead) {
     if (recent) return;
   }
   await q(
-    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page, known) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10)
+    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page, known, email) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
      ON CONFLICT (shop, sid) DO UPDATE SET
        known = leads.known AND excluded.known,
+       email = CASE WHEN excluded.email <> '' THEN excluded.email ELSE leads.email END,
        name = CASE WHEN excluded.name <> '' THEN excluded.name ELSE leads.name END,
-       phone = excluded.phone,
+       phone = CASE WHEN excluded.phone <> '' THEN excluded.phone ELSE leads.phone END,
        city = CASE WHEN excluded.city <> '' THEN excluded.city ELSE leads.city END,
        address = CASE WHEN excluded.address <> '' THEN excluded.address ELSE leads.address END,
        cart = CASE WHEN jsonb_array_length(excluded.cart) > 0 THEN excluded.cart ELSE leads.cart END,
        total = CASE WHEN excluded.total <> '' THEN excluded.total ELSE leads.total END,
        page = excluded.page, hits = leads.hits + 1, last_at = now()
      WHERE leads.hits < 300`,
-    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page, l.known],
+    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page, l.known, l.email],
   );
 }
 
 // The first order with the same phone placed after the form was opened (30 min slack for clocks and retries).
-const MATCH = `LEFT JOIN LATERAL (
-    SELECT o.id, o.order_no, o.ordered_at FROM orders o
+export const MATCH = `LEFT JOIN LATERAL (
+    SELECT o.id, o.order_no, o.ordered_at, o.total_eur FROM orders o
     WHERE o.shop IN (SELECT id FROM shops WHERE company_id = (SELECT company_id FROM shops WHERE id = l.shop))
-      AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9)
+      AND ((l.phone <> '' AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))
+           OR (l.email <> '' AND lower(o.email) = l.email))
       AND o.ordered_at >= l.first_at - interval '30 minutes'
     ORDER BY o.ordered_at LIMIT 1) m ON true`;
 
-const ORDERED = "(m.id IS NOT NULL OR l.order_id IS NOT NULL)";
+export const ORDERED = "(m.id IS NOT NULL OR l.order_id IS NOT NULL)";
 // Still typing: the form was touched in the last 15 minutes.
 const TABS: Record<string, string> = {
   open: `NOT ${ORDERED} AND l.status = 'open'`,
@@ -100,10 +106,12 @@ export async function listLeads(tab: string, shop = "") {
     shopSql = ` AND l.shop = $${params.length}`;
   }
   const rows = await q<any>(
-    `SELECT l.id, l.shop, coalesce(s.label, l.shop) AS shop_label, l.name, l.phone, l.city, l.address, l.cart, l.total, l.page, l.known,
+    `SELECT l.id, l.shop, coalesce(s.label, l.shop) AS shop_label, s.domain AS shop_domain, l.name, l.phone, l.email, l.city, l.address, l.cart, l.total, l.page, l.known,
+            (SELECT json_agg(json_build_object('channel', lm.channel, 'step', lm.step, 'ok', lm.ok, 'error', lm.error, 'at', lm.at) ORDER BY lm.at DESC)
+               FROM lead_messages lm WHERE lm.lead_id = l.id) AS messages,
             l.first_at, l.last_at, l.status, l.last_at > now() - interval '15 minutes' AS typing,
             coalesce(l.order_id, m.id) AS order_id, coalesce(lo.order_no, m.order_no) AS order_no,
-            (SELECT count(*) FROM orders x WHERE ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
+            (SELECT count(*) FROM orders x WHERE l.phone <> '' AND ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
        FROM leads l LEFT JOIN shops s ON s.id = l.shop
        ${MATCH}
        LEFT JOIN orders lo ON lo.id = l.order_id

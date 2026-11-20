@@ -1,9 +1,10 @@
 // Unfinished orders: who typed a phone in a shop's order form and did not send it.
 import { api, esc, shell, when } from "./app.js";
 import { openOrderForm } from "./order-form.js";
+import { initStream, loadStream, openMessage, openReminderSettings, reminderInfo } from "./carts.js";
 
 const $ = (id) => document.getElementById(id);
-await shell("nezavarsheni");
+const me = await shell("nezavarsheni");
 
 const state = { tab: "open", shop: "", leads: [] };
 let shops = [];
@@ -36,14 +37,20 @@ function card(l) {
         : `<span class="badge returned">не завърши</span>`;
   const acts = [];
   if (!l.order_id) {
-    acts.push(`<a class="btn sm" href="tel:${esc(l.phone)}">Обади се</a>`);
+    if (l.phone) acts.push(`<a class="btn sm" href="tel:${esc(l.phone)}">Обади се</a>`);
+    if (l.phone) acts.push(`<button class="btn sm" data-act="sms" data-id="${l.id}">SMS</button>`);
+    if (l.email) acts.push(`<button class="btn sm" data-act="email" data-id="${l.id}">Имейл</button>`);
     acts.push(`<button class="btn primary sm" data-act="order" data-id="${l.id}">Създай поръчка</button>`);
     acts.push(l.status === "dismissed" ? `<button class="btn sm" data-act="restore" data-id="${l.id}">Върни</button>` : `<button class="btn sm" data-act="dismiss" data-id="${l.id}">Скрий</button>`);
   }
   return `<article class="lead">
     <div class="lead-main">
       <div class="row spread"><b>${esc(l.name || "Без име")}${l.known ? ` <span class="pill known" title="Този път не е писал нищо: данните са запомнени от предишното му посещение на сайта">върна се</span>` : ""}</b>${status}</div>
-      <div><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>${l.city ? ` · ${esc(l.city)}` : ""}${l.address ? ` · ${esc(l.address)}` : ""}</div>
+      <div>${l.phone ? `<a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ""}${l.email ? `${l.phone ? " · " : ""}<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : ""}${l.city ? ` · ${esc(l.city)}` : ""}${l.address ? ` · ${esc(l.address)}` : ""}</div>
+      ${(l.messages || []).length ? `<div class="lead-msgs">${l.messages
+        .slice(0, 4)
+        .map((m) => `<span class="${m.ok ? "ok" : "err"}" title="${esc(m.error || "")}">${m.channel === "sms" ? "SMS" : "Имейл"} ${m.ok ? "✓" : "✗"} ${since(m.at)}${m.step !== "manual" ? " · авт." : ""}</span>`)
+        .join("")}</div>` : ""}
       ${l.cart?.length ? `<ul class="lead-cart">${l.cart.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : `<div class="muted small">количката не се вижда</div>`}
       <div class="muted small">${esc(l.shop_label)} · ${since(l.last_at)} (${when(l.last_at)})${l.total ? ` · общо ${esc(l.total)}` : ""}${l.orders_before && !l.order_id ? ` · поръчвал ${l.orders_before} път${l.orders_before > 1 ? "и" : ""} преди` : ""}</div>
     </div>
@@ -53,6 +60,7 @@ function card(l) {
 
 async function load() {
   $("list").innerHTML = `<p class="muted">Зареждам…</p>`;
+  loadStream(state.shop);
   try {
     const d = await api(`/api/leads?tab=${state.tab}${state.shop ? `&shop=${encodeURIComponent(state.shop)}` : ""}`);
     state.leads = d.leads;
@@ -77,6 +85,32 @@ $("tabs").onclick = (e) => {
 };
 $("shop").onchange = () => ((state.shop = $("shop").value), load());
 $("reload").onclick = load;
+$("remSet").onclick = () => openReminderSettings(me.role === "admin").catch((e) => alert(e.message));
+reminderInfo().catch(() => null);
+// The cart stream's quick actions.
+initStream({
+  onAction: async (act, id, c) => {
+    try {
+      if (act === "sms" || act === "email") {
+        if (await openMessage(act, c)) await load();
+      } else if (act === "order") {
+        const r = await openOrderForm({ mode: "new", shops, order: { shop: c.shop, customer_name: c.name, phone: c.phone, city: c.city, address: c.address } });
+        if (r?.id) {
+          await api(`/api/leads/${id}`, { method: "POST", body: { action: "ordered", orderId: r.id } });
+          location.href = `/poruchka/?id=${r.id}`;
+        }
+      } else if (act === "dismiss") {
+        await api(`/api/leads/${id}`, { method: "POST", body: { action: "dismiss" } });
+        document.getElementById("cartpop").hidden = true;
+        await load();
+      }
+    } catch (e) {
+      alert(e.message);
+    }
+  },
+});
+// Ages change: the stream moves every minute.
+setInterval(() => document.visibilityState === "visible" && loadStream(state.shop), 60000);
 
 $("list").onclick = async (e) => {
   const b = e.target.closest("button[data-act]");
@@ -86,7 +120,9 @@ $("list").onclick = async (e) => {
   if (!l) return;
   b.disabled = true;
   try {
-    if (b.dataset.act === "order") {
+    if (b.dataset.act === "sms" || b.dataset.act === "email") {
+      if (await openMessage(b.dataset.act, l)) await load();
+    } else if (b.dataset.act === "order") {
       const r = await openOrderForm({ mode: "new", shops, order: { shop: l.shop, customer_name: l.name, phone: l.phone, city: l.city, address: l.address } });
       if (r?.id) {
         await api(`/api/leads/${id}`, { method: "POST", body: { action: "ordered", orderId: r.id } });

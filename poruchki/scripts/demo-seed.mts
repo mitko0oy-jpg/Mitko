@@ -128,6 +128,21 @@ export async function seedDemo() {
     );
     await q("INSERT INTO leads (shop, sid, name, phone, first_at, last_at) VALUES ($1, $2, '', $3, $4::timestamptz - interval '3 minutes', $4)", [o.shop, sid, o.phone, o.ordered_at]);
   }
+  // Unfinished carts over the last 72 hours (the cart stream on Незавършени).
+  const PEOPLE = ["Мария Иванова", "Георги Петров", "Елена Димитрова", "Иван Стоянов", "Zoltán Fekete", "Sándorné Balogh", "Petra Novak", "Николай Тодоров"];
+  const CARTS = [["Спрей с пчелна отрова · 1 · 12,90 €", "17,40 €"], ["Bee Venom крем 3+2 · 1 · 29,90 €", "34,40 €"], ["Пчелна отрова Пакет 3+2 · 1 · 49,90 €", "54,40 €"], ["BeeVenom 3+2 · 1 · 10 990 Ft", "12 780 Ft"]];
+  const AGES = [0.2, 0.7, 2, 3.5, 8, 14, 20, 26, 31, 38, 44, 47, 52, 58, 61, 63, 66, 69, 70.5];
+  for (const [i, h] of AGES.entries()) {
+    const shop = SHOPS[i % SHOPS.length];
+    const [line, tot] = CARTS[i % CARTS.length];
+    const name = PEOPLE[i % PEOPLE.length];
+    const r = await q<any>(
+      `INSERT INTO leads (shop, sid, name, phone, email, cart, total, page, first_at, last_at)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, '/', now() - make_interval(mins => $8 + 3), now() - make_interval(mins => $8)) RETURNING id`,
+      [shop.id, `demolead${String(i).padStart(4, "0")}`, name, i % 5 === 4 ? "" : `0889${String(500000 + i * 7919).slice(-6)}`, i % 3 === 0 ? "" : `klient${i}@example.com`, JSON.stringify([line]), tot, Math.round(h * 60)],
+    );
+    if (h > 2 && i % 2 === 0) await q("INSERT INTO lead_messages (lead_id, channel, step, text, at) VALUES ($1, 'sms', 'auto1', 'демо', now() - make_interval(mins => $2))", [r[0].id, Math.round(h * 60) - 30]);
+  }
   return `demo: ${SHOPS.length} shops, ${total} orders, login demo@local / demo-demo-demo`;
 }
 

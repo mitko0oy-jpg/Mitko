@@ -10,6 +10,7 @@ import { pullMiddleware } from "./mw.mts";
 import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
 import { purgeVisits } from "./visits.mts";
+import { runCartReminders } from "./reminders.mts";
 import { runNekChecks } from "./nekorekten.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
@@ -114,7 +115,14 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     nekorekten[company] = await withCompany(company, () => runNekChecks(deadline - 1000)).catch((e) => ({ error: e.message }));
   }
 
-  const info = { ...c, shops: shops.length, errors, mw, products, nekorekten };
+  // 6) Reminders to unfinished orders (each company that switched them on).
+  const reminders: Record<number, unknown> = {};
+  for (const company of companies) {
+    if (Date.now() > deadline - 1500) break;
+    reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
+  }
+
+  const info = { ...c, shops: shops.length, errors, mw, products, nekorekten, reminders };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

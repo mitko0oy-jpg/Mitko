@@ -9,16 +9,27 @@
   <link rel="stylesheet" href="/assets/app.css">
   <script src="/assets/theme.js"></script>
 </head>
-<body>
+<body class="wide">
   <main class="stack" id="app">
     <div class="row spread">
       <h1>Незавършени поръчки</h1>
       <div class="row">
         <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+        <button class="btn" id="remSet"><span id="autoDot" class="autodot" aria-hidden="true"></span>Напомняния</button>
         <button class="btn" id="reload">Обнови</button>
       </div>
     </div>
-    <p class="muted small" style="margin:0">Клиенти, които са написали телефона си във формата за поръчка, но не са я изпратили. Щом поръчат, отиват в „Поръчали“ сами. Пазят се 30 дни.</p>
+    <p class="muted small" style="margin:0">Клиенти, които са написали телефона или имейла си във формата за поръчка, но не са я изпратили. Щом поръчат, отиват в „Поръчали“ сами. Пазят се 30 дни.</p>
+    <section class="card stream">
+      <div class="row spread">
+        <div><b>Поток от колички</b><div class="muted small">незавършените от последните 72 часа · кръгчето е количката, по-голямо = по-скъпа</div></div>
+        <div class="sstats" id="sstats"></div>
+      </div>
+      <div class="lane" id="lane" aria-label="Количките по време"></div>
+      <div class="laneaxis"><span>0</span><span>1 ч</span><span>6 ч</span><span>24 ч</span><span class="end">72 ч</span></div>
+      <div class="zonecounts" id="zones"></div>
+      <div class="cartpop" id="cartpop" hidden></div>
+    </section>
     <section class="card">
       <div class="tabs" role="tablist" id="tabs">
         <button data-tab="open" class="on">Незавършени <span class="n"></span></button>
@@ -32,10 +43,11 @@
       <div class="stack" style="margin-top:10px">
         <p style="margin:0">В ConvertBuilder отвори сайта → настройките, където е кодът на Middleware (ред, който започва с <code>&lt;script data-platform="checkout-middleware"</code>). Постави този ред веднага след него и запази. Направи го за всеки сайт, за който искаш незавършените поръчки.</p>
         <div class="row"><code id="line" style="word-break:break-all"></code><button class="btn" id="copy">Копирай</button></div>
-        <p class="muted small" style="margin:0">Скриптът чете само име, телефон, град, адрес и количката. В политиката за поверителност на сайта добави: „Данните, които въведете във формата за поръчка, се записват, за да можем да се свържем с вас, ако поръчката не бъде завършена. Пазим ги до 30 дни.“</p>
+        <p class="muted small" style="margin:0">Скриптът чете само име, телефон, имейл, град, адрес и количката. В политиката за поверителност на сайта добави: „Данните, които въведете във формата за поръчка, се записват (и в браузъра Ви до 90 дни), за да можем да се свържем с Вас по телефон, SMS или имейл, ако поръчката не бъде завършена. Пазим ги до 30 дни. Всеки имейл съдържа линк за отписване.“</p>
       </div>
     </details>
   </main>
+  <dialog class="modal" id="dlg"></dialog>
   <script type="module" src="/assets/nezavarsheni.js"></script>
 </body>
 </html>

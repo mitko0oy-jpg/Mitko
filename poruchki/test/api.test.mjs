@@ -97,6 +97,11 @@ const courier = createServer((req, res) => {
     sent.push({ path: u.pathname, body: b });
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
+      case "/email/account":
+        return req.headers["api-key"] === "brevo-key-123" ? json({ email: "owner@example.com" }) : res.writeHead(401, { "content-type": "application/json" }).end('{"message":"Key not found"}');
+      case "/email/smtp/email":
+        if (req.headers["api-key"] !== "brevo-key-123") return res.writeHead(401).end("{}");
+        return json({ messageId: "<m1@brevo>" });
       case "/speedy/shipment/info":
         return json({ shipments: (b.shipmentIds || []).map((id) => ({ id, price: { amount: 3.17, vat: 0.63, total: 3.8, currency: "EUR" } })) });
       case "/econt/Shipments/ShipmentService.getShipmentStatuses.json":
@@ -148,6 +153,7 @@ const courier = createServer((req, res) => {
 });
 
 let server;
+let dbUrl = "";
 let cookie = "";
 async function api(p, body, method) {
   const r = await fetch(B + p, {
@@ -174,6 +180,7 @@ test.before(async () => {
       ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
       AGENT_TOKEN: "agent-token-agent-token-agent-token-0000",
       SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
+      EMAIL_API_URL: `http://127.0.0.1:${COURIER_PORT}/email`, REMINDER_HOURS: "0-24", PRINT_DB: "1",
       NEKOREKTEN_URL: `http://127.0.0.1:${COURIER_PORT}/nek`, NEKOREKTEN_KEY: "",
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
@@ -184,7 +191,11 @@ test.before(async () => {
     stdio: ["ignore", "pipe", "inherit"],
   });
   await new Promise((ok, fail) => {
-    server.stdout.on("data", (d) => String(d).includes("dev server on") && ok());
+    server.stdout.on("data", (d) => {
+      const m = /db (postgres\S+)/.exec(String(d));
+      if (m) dbUrl = m[1];
+      if (String(d).includes("dev server on")) ok();
+    });
     server.on("exit", () => fail(new Error("server exited")));
   });
 });
@@ -878,4 +889,71 @@ test("now in the shops: signs of life from the shop pages, counted per shop and 
   assert.deepEqual(kinds, ["came", "came", "came", "checkout", "filling"]);
   assert.equal(live.feed.find((e) => e.kind === "filling").city, "Пловдив");
   assert.equal((await fetch(`${B}/api/live`)).status, 401);
+});
+
+test("cart reminders: SMS and e-mail by hand, unsubscribe, automatic once per step, the cart stream", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const send = (body) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` }, body: JSON.stringify(body) });
+  // A cart with a phone and an e-mail, and one with only an e-mail.
+  await send({ sid: "cart000001", name: "Петър Петров", phone: "0888 444 333", email: "Petar@Example.com", cart: ["Спрей · 1 · 12,90 €"], total: "17,40 €", page: "/sprei" });
+  assert.equal((await send({ sid: "cart000002", name: "Ана", email: "ana@example.com", cart: ["Крем · 1 · 29,90 €"], total: "34,40 €" })).status, 204);
+  let leads = (await api("/api/leads?tab=open")).data.leads;
+  const p = leads.find((l) => l.email === "petar@example.com");
+  const a = leads.find((l) => l.email === "ana@example.com");
+  assert.ok(p && a, "an e-mail alone is enough");
+  assert.equal(a.phone, "");
+
+  // SMS by hand: the link goes to the page where they ordered.
+  const sms = await api(`/api/leads/${p.id}`, { action: "sms" });
+  assert.equal(sms.status, 200, JSON.stringify(sms.data));
+  assert.equal(sms.data.text, `Здравейте, Петър! Поръчката Ви в Тест не е завършена. Може да я завършите тук: https://127.0.0.1:${SHOP_PORT}/sprei`);
+  assert.ok(sent.some((x) => x.path === "sms" && x.body.to === "359888444333" && x.body.message.includes("/sprei")));
+  // E-mail needs Brevo: a wrong key is refused, then the right one.
+  assert.equal((await api(`/api/leads/${a.id}`, { action: "email" })).status, 400);
+  assert.equal((await api("/api/leads/email", { key: "bad-key", fromEmail: "shop@example.com" })).status, 400);
+  const em = await api("/api/leads/email", { key: "brevo-key-123", fromEmail: "shop@example.com", fromName: "Тест" });
+  assert.equal(em.data.email.configured, true);
+  assert.equal((await api(`/api/leads/${a.id}`, { action: "email", subject: "Здравейте", text: "Количката Ви чака." })).status, 200);
+  const mail = sent.filter((x) => x.path === "/email/smtp/email").at(-1).body;
+  assert.equal(mail.to[0].email, "ana@example.com");
+  assert.equal(mail.sender.email, "shop@example.com");
+  assert.match(mail.textContent, /Отпишете се: http\S+\/api\/unsub\?c=1&k=ana%40example\.com&s=/);
+  // Unsubscribe: no more.
+  const link = /(http\S+\/api\/unsub\S+)/.exec(mail.textContent)[1].replace(/^https?:\/\/[^/]+/, B);
+  assert.equal((await fetch(link)).status, 200);
+  assert.equal((await fetch(link.replace(/s=[^&]+/, "s=wrong"))).status, 400);
+  const again = await api(`/api/leads/${a.id}`, { action: "email" });
+  assert.equal(again.status, 400);
+  assert.match(again.data.message, /отписал/);
+
+  // Automatic: off by default; switched on, step 1 goes once to the carts that waited long enough.
+  const set = await api("/api/leads/reminders", { auto: true, step1: { after: 30, sms: true, email: true }, step2: { on: false } });
+  assert.equal(set.data.settings.auto, true);
+  assert.equal((await api("/api/leads/reminders", { sms: "без линк" })).status, 400, "the SMS needs {линк}");
+  await send({ sid: "cart000003", name: "Иво", phone: "0888 222 111", email: "ivo@example.com", cart: ["Пластири · 1 · 4,90 €"], total: "9,40 €" });
+  await db.query("UPDATE leads SET last_at = now() - interval '40 minutes', first_at = now() - interval '45 minutes' WHERE sid = 'cart000003'");
+  const before = sent.length;
+  assert.equal((await api("/api/settings/sync", {})).status, 200);
+  const auto = sent.slice(before);
+  assert.ok(auto.some((x) => x.path === "sms" && x.body.to === "359888222111"), "automatic SMS");
+  assert.ok(auto.some((x) => x.path === "/email/smtp/email" && x.body.to[0].email === "ivo@example.com"), "automatic e-mail");
+  const n = sent.length;
+  await api("/api/settings/sync", {});
+  assert.equal(sent.filter((x, i) => i >= n && (x.path === "sms" || x.path === "/email/smtp/email") && /222111|ivo@/.test(JSON.stringify(x.body))).length, 0, "only once");
+  leads = (await api("/api/leads?tab=open")).data.leads;
+  const ivo = leads.find((l) => l.email === "ivo@example.com");
+  assert.deepEqual(ivo.messages.map((m) => `${m.channel}:${m.step}:${m.ok}`).sort(), ["email:auto1:true", "sms:auto1:true"]);
+
+  // The stream: the open carts with their value and reminders.
+  const st = (await api("/api/leads/stream")).data;
+  const c = st.carts.find((x) => x.email === "ivo@example.com");
+  assert.equal(c.value.eur, 9.4);
+  assert.equal(c.reminders, 2);
+  assert.ok(c.hours > 0.6 && c.hours < 0.7);
+  assert.equal(st.window, 72);
+  await api("/api/leads/reminders", { auto: false });
+  await db.end();
 });

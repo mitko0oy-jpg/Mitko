@@ -14,6 +14,8 @@ const port = Number(process.argv[2] || 8888);
 
 const db = new NetlifyDB({ logger: () => {} });
 process.env.NETLIFY_DB_URL = await db.start();
+// Tests may move time in the database (e.g. make a cart older): they read this line.
+if (process.env.PRINT_DB === "1") console.log(`db ${process.env.NETLIFY_DB_URL}`);
 await db.applyMigrations(path.join(root, "netlify/database/migrations"));
 process.env.SETUP_CODE ||= "local-setup-code-0000";
 process.env.SECRET_KEY ||= "local-secret-key-local-secret-key-0000";
