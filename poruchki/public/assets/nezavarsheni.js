@@ -42,7 +42,7 @@ function card(l) {
   }
   return `<article class="lead">
     <div class="lead-main">
-      <div class="row spread"><b>${esc(l.name || "Без име")}</b>${status}</div>
+      <div class="row spread"><b>${esc(l.name || "Без име")}${l.known ? ` <span class="pill known" title="Този път не е писал нищо: данните са запомнени от предишното му посещение на сайта">върна се</span>` : ""}</b>${status}</div>
       <div><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>${l.city ? ` · ${esc(l.city)}` : ""}${l.address ? ` · ${esc(l.address)}` : ""}</div>
       ${l.cart?.length ? `<ul class="lead-cart">${l.cart.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : `<div class="muted small">количката не се вижда</div>`}
       <div class="muted small">${esc(l.shop_label)} · ${since(l.last_at)} (${when(l.last_at)})${l.total ? ` · общо ${esc(l.total)}` : ""}${l.orders_before && !l.order_id ? ` · поръчвал ${l.orders_before} път${l.orders_before > 1 ? "и" : ""} преди` : ""}</div>

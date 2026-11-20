@@ -566,6 +566,19 @@ test("unfinished orders: taken only from the shops' sites, merged per visit, mat
   assert.equal((await api("/api/leads?tab=open")).data.counts.open, 0);
   // Not for visitors.
   assert.equal((await fetch(`${B}/api/leads`)).status, 401);
+
+  // A returning visitor (data remembered by the script from an earlier visit, nothing typed now).
+  assert.equal((await send({ sid: "visit000003", name: "Иван Петров", phone: "0888 777 222", city: "Русе", cart: ["Спрей · 1 · 12,90 €"], known: true })).status, 204);
+  let back = (await api("/api/leads?tab=open")).data.leads.find((x) => x.phone === "0888 777 222");
+  assert.equal(back.known, true);
+  assert.equal(back.name, "Иван Петров");
+  // ...who then types: an ordinary unfinished order.
+  await send({ sid: "visit000003", name: "Иван Петров", phone: "0888777222" });
+  back = (await api("/api/leads?tab=open")).data.leads.find((x) => x.id === back.id);
+  assert.equal(back.known, false);
+  // Someone who ordered in the last days and only came back to look is not an unfinished order.
+  await send({ sid: "visit000004", name: "Клиент 1", phone: "0888100001", known: true });
+  assert.equal((await api("/api/leads?tab=all")).data.leads.filter((x) => x.phone === "0888100001").length, 1);
 });
 
 test("filters like Middleware: sorting, product, sent today, saved filters", async () => {

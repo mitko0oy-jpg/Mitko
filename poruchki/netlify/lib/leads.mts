@@ -21,7 +21,7 @@ export async function shopForOrigin(origin: string | null): Promise<string | nul
   return site ? site.id : null;
 }
 
-export type Lead = { sid: string; name: string; phone: string; city: string; address: string; cart: string[]; total: string; page: string };
+export type Lead = { sid: string; name: string; phone: string; city: string; address: string; cart: string[]; total: string; page: string; known: boolean };
 
 /** What the script sent, cleaned; null when there is no usable phone yet. */
 export function cleanLead(input: any): Lead | null {
@@ -40,14 +40,28 @@ export function cleanLead(input: any): Lead | null {
     cart,
     total: clean(input?.total, 40),
     page: clean(input?.page, 200),
+    // Remembered from an earlier visit (the visitor typed nothing this time).
+    known: input?.known === true,
   };
 }
 
 /** One visit is one row; later posts update it (empty fields never wipe what was typed before). */
 export async function saveLead(shop: string, l: Lead) {
+  // A returning visitor who ordered in the last 3 days is only looking: not an unfinished order.
+  if (l.known) {
+    const recent = await one(
+      `SELECT 1 FROM orders o JOIN shops s ON s.id = o.shop
+        WHERE s.company_id = (SELECT company_id FROM shops WHERE id = $1)
+          AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace($2, '\\D', '', 'g'), 9)
+          AND o.ordered_at > now() - interval '3 days' LIMIT 1`,
+      [shop, l.phone],
+    );
+    if (recent) return;
+  }
   await q(
-    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
+    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page, known) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10)
      ON CONFLICT (shop, sid) DO UPDATE SET
+       known = leads.known AND excluded.known,
        name = CASE WHEN excluded.name <> '' THEN excluded.name ELSE leads.name END,
        phone = excluded.phone,
        city = CASE WHEN excluded.city <> '' THEN excluded.city ELSE leads.city END,
@@ -56,7 +70,7 @@ export async function saveLead(shop: string, l: Lead) {
        total = CASE WHEN excluded.total <> '' THEN excluded.total ELSE leads.total END,
        page = excluded.page, hits = leads.hits + 1, last_at = now()
      WHERE leads.hits < 300`,
-    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page],
+    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page, l.known],
   );
 }
 
@@ -86,7 +100,7 @@ export async function listLeads(tab: string, shop = "") {
     shopSql = ` AND l.shop = $${params.length}`;
   }
   const rows = await q<any>(
-    `SELECT l.id, l.shop, coalesce(s.label, l.shop) AS shop_label, l.name, l.phone, l.city, l.address, l.cart, l.total, l.page,
+    `SELECT l.id, l.shop, coalesce(s.label, l.shop) AS shop_label, l.name, l.phone, l.city, l.address, l.cart, l.total, l.page, l.known,
             l.first_at, l.last_at, l.status, l.last_at > now() - interval '15 minutes' AS typing,
             coalesce(l.order_id, m.id) AS order_id, coalesce(lo.order_no, m.order_no) AS order_no,
             (SELECT count(*) FROM orders x WHERE ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
