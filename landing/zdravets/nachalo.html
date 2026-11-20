@@ -672,7 +672,7 @@ const CAT_LANDING = {
     icons: ['🌿', '🩹', '☀️', '👕', '🚫', '📅'],
     /* по начина, по който производителят представя пластирите: формулата в кръг, трите слоя, местата, Отлепи · Залепи · Смени */
     formula: { eyebrow: 'Формулата', h2: ['Какво има ', 'в един пластир'], lead: 'Растителни екстракти, аминокиселини и витамини – в тънък пластир, който залепваш сутрин и носиш до 8 часа.', ring: true },
-    ings: { eyebrow: 'Какво има в пластира?', lead: 'Съставките са по данни на производителя. Пълният състав е отпечатан върху опаковката – прочети го, преди да започнеш.' },
+    ings: { eyebrow: 'Какво има в пластира?', lead: 'Пълният състав е отпечатан върху опаковката – прочети го, преди да започнеш.' },
     layers: {
       eyebrow: 'Как е направен пластирът',
       h2: ['Три тънки слоя. ', 'Нищо излишно.'],
@@ -1844,7 +1844,7 @@ function productTop(p, d, ctx) {
       <div class="sp-badges"><span>💶 Наложен платеж</span><span>🛡️ ${CONFIG.guaranteeDays} дни гаранция</span><span>📞 <a href="tel:${CONFIG.phoneHref}">${CONFIG.phone}</a></span></div>
       <div class="sp-acc">
         <details open><summary>Описание</summary><div><p>${esc(d.lead || p.short)}</p><ul>${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul><p class="sp-muted">${esc(p.size)}</p></div></details>
-        <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">${p.wellness ? 'Съставките са по данни на производителя. ' : ''}Пълният състав е отпечатан върху опаковката.</p></div></details>
+        <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">Пълният състав е отпечатан върху опаковката.</p></div></details>
         <details><summary>Как се използва</summary><div><p>${esc(p.usage)}</p><p class="sp-muted">${p.wellness ? `${p.caution ? esc(p.caution) + ' ' : 'При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. '}Не е лекарство. Не е за деца.` : `Само за външна употреба. Не нанасяй върху наранена кожа и избягвай контакт с очите.${isBee(p) ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</p></div></details>
         <details><summary>Доставка и плащане</summary><div><ul>${CONFIG.shipping.map(m => `<li>${esc(m.label)} – <b>${fmt(m.price)}</b></li>`).join('')}</ul>${FREE_FROM ? `<p>При поръчка над <b>${fmt(FREE_FROM)}</b> доставката до офис е <b>безплатна</b>.</p>` : ''}<p>Плащаш на куриера при получаване. Пратката пристига за 1–2 работни дни.</p></div></details>
         <details><summary>Гаранция и връщане</summary><div><p>${CONFIG.guaranteeDays} дни гаранция за удовлетвореност – ако не си доволен, обади се и ти връщаме парите. Освен това по закон имаш 14 дни право на отказ.</p></div></details>
