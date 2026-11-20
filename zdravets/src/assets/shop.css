@@ -454,3 +454,56 @@ body{padding-bottom:0}
 /* тъмната лента с офертите на началната: картите вътре са бели – текстът им трябва да е тъмен */
 .bvp .hv-bf .bv-lead{color:#E9D6B8}
 .bvp .hv-bf .bv-pack{color:var(--ink,#24170B)}
+
+/* ---------- началната страница: първият екран представя бранда (зелено, златно и крем – цветовете на логото).
+   Съвсем просто: заглавие, четири едри реда „какво търсиш“, три числа и телефон. ---------- */
+.bvp .hb{background:#FBF7EE;padding:46px 0 36px;color:#1B2419}
+.bvp .hb__grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:56px;align-items:center}
+.bvp .hb__copy{display:flex;flex-direction:column;align-items:flex-start;gap:18px}
+.bvp .hb__eyebrow{padding:7px 16px;border-radius:999px;background:#E7EFDC;color:#1F3D22;font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.bvp .hb h1{margin:0;font-size:clamp(1.7rem,4.4vw,3.2rem);line-height:1.07;letter-spacing:-.02em;color:#17301A}
+.bvp .hb h1 em{display:block;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:600;color:#8A5A00;font-feature-settings:"locl" 0}
+.bvp .hb__lead{margin:0;max-width:30em;font-size:1.08rem;line-height:1.5;font-weight:500;color:#3A4637}
+.bvp .hb-btn{display:inline-flex;align-items:center;gap:10px;min-height:60px;padding:14px 30px;border-radius:999px;background:#2C5A2C;color:#fff;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 10px 24px rgba(23,48,26,.22);transition:background .2s,transform .2s}
+.bvp .hb-btn:hover{background:#1F3D22;transform:translateY(-2px)}
+.bvp .hb__lbl{margin:0 0 12px;font-size:1rem;font-weight:800;color:#17301A}
+.bvp .hb__cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.bvp .hb-cat{position:relative;display:flex;flex-direction:column;background:#fff;border:2px solid #E0D8C3;border-radius:22px;overflow:hidden;text-decoration:none;color:#17301A;transition:box-shadow .2s,transform .2s,border-color .2s}
+.bvp .hb-cat:hover,.bvp .hb-cat:focus-visible{border-color:#2C5A2C;box-shadow:0 14px 34px rgba(23,48,26,.14);transform:translateY(-3px)}
+.bvp .hb-cat img{display:block;width:100%;height:170px;object-fit:cover}
+.bvp .hb-cat__txt{display:flex;flex-direction:column;gap:3px;padding:14px 46px 16px 18px}
+.bvp .hb-cat__txt b{font-size:1.1rem;line-height:1.2;font-weight:800}
+.bvp .hb-cat__txt small{font-size:.8rem;font-weight:600;color:#4B5747}
+.bvp .hb-cat__txt i,.bvp .hb__proof i{font-style:normal}
+.bvp .hb-cat__go{position:absolute;right:16px;bottom:24px;color:#2C5A2C}
+.bvp .hb__proof{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 32px;margin-top:30px;padding:20px 28px;border-radius:22px;background:#17301A}
+.bvp .hb__proof>div{display:flex;flex-direction:column;gap:2px}
+.bvp .hb__proof b{font-size:1.5rem;line-height:1.1;font-weight:800;color:#F2C14E;white-space:nowrap}
+.bvp .hb__proof span{font-size:.86rem;font-weight:600;color:#F4ECDA}
+.bvp .hb__phone{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 24px;border-radius:999px;background:#F2C14E;color:#17301A;text-decoration:none}
+.bvp .hb__phone .hb__phone-txt{display:flex;flex-direction:column;line-height:1.15;color:#17301A}
+.bvp .hb__phone small{font-size:.74rem;font-weight:700;color:#17301A}
+.bvp .hb__phone b{font-size:1.3rem;color:#17301A}
+@media(max-width:959px){
+  .bvp .hb{padding:16px 0 24px}
+  .bvp .hb__grid{grid-template-columns:minmax(0,1fr);gap:16px}
+  .bvp .hb__copy{gap:10px}
+  .bvp .hb__lead{font-size:.9rem}
+  .bvp .hb-btn{display:none}
+  .bvp .hb__lbl{margin-bottom:8px;font-size:.95rem}
+  .bvp .hb__cats{grid-template-columns:minmax(0,1fr);gap:8px}
+  .bvp .hb-cat{flex-direction:row;align-items:center;gap:12px;min-height:74px;padding:8px 42px 8px 8px;border-radius:16px}
+  .bvp .hb-cat img{width:58px;height:58px;border-radius:12px;flex:none}
+  .bvp .hb-cat__txt{padding:0}
+  .bvp .hb-cat__txt b{font-size:.98rem}
+  .bvp .hb-cat__txt small{font-size:.74rem}
+  .bvp .hb-cat__txt i,.bvp .hb__proof i{display:none}
+  .bvp .hb-cat__go{right:12px;bottom:auto;top:50%;margin-top:-11px}
+  .bvp .hb__proof{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 0;margin-top:14px;padding:14px 8px 12px;border-radius:18px;text-align:center}
+  .bvp .hb__proof>div{align-items:center;padding:0 4px}
+  .bvp .hb__proof>div+div{border-left:1px solid #3D5A3F}
+  .bvp .hb__proof b{font-size:1.12rem}
+  .bvp .hb__proof span{font-size:.7rem;line-height:1.25}
+  .bvp .hb__phone{grid-column:1/-1;justify-content:center;margin:0 4px}
+}
+@media(prefers-reduced-motion:reduce){.bvp .hb-cat,.bvp .hb-btn{transition:none}}

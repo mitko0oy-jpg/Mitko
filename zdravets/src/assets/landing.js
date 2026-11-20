@@ -785,52 +785,44 @@ function renderHomeBv() {
   const days = CONFIG.guaranteeDays;
   const gel = P('gel');
   const look = id => productLook(P(id));
-  const stack = [['hyal', 6, 4, -6], ['beeherb', 2, 70, 5], ['vein', 78, 74, -4]];
+  // Първият екран представя бранда, не един продукт: какво е общото (нанася се, не се гълта),
+  // четирите вида грижа с едри редове и доказателствата. Цветовете са на логото – зелено, златно, крем.
+  // Трябва да е съвсем просто: купувачите са възрастни хора, а част от рекламите водят право тук.
+  const ORDERS_SENT = '3 500+'; // изпратени поръчки – числото е от Митко (20.11.2026)
+  const heroCats = [
+    ['stavi', 'hyal', 'Стави и мускули', 'Гелове, кремове и пластири'],
+    ['kraka', 'vein', 'Уморени крака', 'Свежест за уморените крака'],
+    ['koja', 'ghk', 'Грижа за кожата', 'За суха и чувствителна кожа'],
+    ['wellness', 'energy', 'Пластири за всеки ден', '30 броя – за цял месец']
+  ];
+  const CHEV = '<svg class="hb-cat__go" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  const PHONE_ICO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>';
   const hero = `
-  <section class="bv-hero hv-hero">
-    <div class="bv-hero__bg" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bg-a-2000.webp')}" alt="" width="2000" height="1125" fetchpriority="high"></div>
-    <canvas class="bv-dust" aria-hidden="true"></canvas>
-    <div class="bv-wrap bv-hero__grid">
-      <div class="bv-hero__copy">
-        <span class="bv-eyebrow bv-glass">🌿 Здравец Натура · натурална козметика</span>
-        <h1>Природна грижа, <em class="bv-accent bv-goldtext">която усещаш</em><span class="bv-h1sub">С пчелна отрова и билки – <em class="bv-accent">за стави, кожа и крака</em></span></h1>
-        <p class="bv-lead">${PRODUCTS.length} продукта с пчелна отрова, билки и натурални екстракти – всеки със своя цел. Поръчваш за минута, плащаш на куриера.</p>
-        <div class="bv-proof bv-glass"><span class="bv-stars" aria-hidden="true">★★★★★</span><strong>Истински отзиви от наши клиенти</strong></div>
-        <div class="bv-cta-row">
-          <a class="bv-btn bv-btn--xl bv-pulse" href="${bfOn() ? L.bf : '#hv-shop'}">${bfOn() ? '★ Офертите за Черен петък' : 'Разгледай продуктите'} <span class="bv-arr">→</span></a>
-          <a class="bv-btn-ghost bv-glass" href="#hv-shop">Всички продукти</a>
-        </div>
-        <div class="bv-micro"><span>Плащаш при получаване</span><span>Доставка 1–2 дни</span><span>${days} дни гаранция</span></div>
+  <section class="hb">
+    <div class="bv-wrap hb__grid">
+      <div class="hb__copy">
+        <span class="hb__eyebrow">Здравец Натура · произведено за България</span>
+        <h1>Грижа отвън. <em>Без нито едно хапче.</em></h1>
+        <p class="hb__lead">Здравецът открай време се подарява за здраве. На него кръстихме нашите гелове, кремове и пластири.</p>
+        <a class="hb-btn" href="${L.products}">Виж всички ${PRODUCTS.length} продукта <span class="bv-arr">→</span></a>
       </div>
-      <div class="bv-stage hv-stage">
-        <div class="bv-stage__inner" style="aspect-ratio:1200/1248">
-          <div class="bv-stage__glow" aria-hidden="true"></div>
-          <a href="${productUrl('gel')}" aria-label="${esc(gel.name)}"><img class="bv-stage__img" src="${BVM(BV.hero, 'hero-scene-1200.webp')}" srcset="${BVM(BV.hero, 'hero-scene-700.webp')} 700w, ${BVM(BV.hero, 'hero-scene-1200.webp')} 1200w" sizes="(min-width:960px) 600px, 92vw" alt="${esc(gel.name)}" fetchpriority="high" decoding="async"></a>
-          <span class="bv-honeydrop" aria-hidden="true"></span>
-          <span class="bv-stage__bee" aria-hidden="true"><img src="${BVM(BV.hero, 'hero-bee.webp')}" alt="" width="320" height="320" decoding="async"></span>
-        </div>
-        ${stack.map(([id, x, y, r], i) => `<a class="hv-chip" href="${productUrl(id)}" style="left:${x}%;top:${y}%;--r:${r}deg;--d:${i * 1.3}s;--pc:${look(id).a}"><img src="${look(id).img}" alt="" width="120" height="120" loading="lazy"><span>${esc(P(id).shortName)}</span></a>`).join('')}
+      <div class="hb__pick">
+        <p class="hb__lbl">Избери какво търсиш:</p>
+        <div class="hb__cats">${heroCats.map(([cat, pic, name, sub], i) => { const n = PRODUCTS.filter(x => x.cat === cat).length; return `
+          <a class="hb-cat" href="${L.products}?cat=${cat}">
+            <img src="${look(pic).img}" alt="" width="600" height="600" ${i < 2 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+            <span class="hb-cat__txt"><b>${name}</b><small>${sub}<i> · ${n} ${cat === 'wellness' ? 'вида' : 'продукта'}</i></small></span>
+            ${CHEV}
+          </a>`; }).join('')}</div>
       </div>
     </div>
-  </section>
-  <div class="bv-trust"><div class="bv-wrap bv-trust__grid">
-    <div class="bv-trust__item"><span class="bv-ico">💶</span><div><strong>Плащаш при получаване</strong>на куриера, без предплащане</div></div>
-    <div class="bv-trust__item"><span class="bv-ico">🚚</span><div><strong>1–2 работни дни</strong>Еконт или Спиди, до офис или адрес</div></div>
-    <div class="bv-trust__item"><span class="bv-ico">🛡️</span><div><strong>${days} дни гаранция</strong>не си доволен – връщаме парите</div></div>
-    <div class="bv-trust__item"><span class="bv-ico">📞</span><div><strong>${CONFIG.phone}</strong>поръчка и по телефона</div></div>
-  </div></div>`;
-
-  const catPic = { stavi: 'gel', koja: 'skin', kraka: 'vein', wellness: 'energy' };
-  const cats = `
-  <section class="hv-cats"><div class="bv-wrap">
-    <div class="bv-center"><span class="bv-eyebrow">Какво търсиш?</span><h2>Избери за какво е <em class="bv-accent">грижата</em></h2></div>
-    <div class="hv-cats__grid">${CATEGORIES.map(c => { const lk = look(catPic[c.id]); const n = PRODUCTS.filter(p => p.cat === c.id).length; return `
-      <a class="hv-cat${lk.gel ? ' is-gel' : ''}" href="${L.products}?cat=${c.id}" style="--pc:${lk.a};--pcd:${lk.d}">
-        <span class="hv-cat__img"><img src="${lk.img}" alt="" loading="lazy" width="600" height="600"></span>
-        <span class="hv-cat__txt"><small>${n} ${n === 1 ? 'продукт' : 'продукта'}</small><b>${esc(c.name)}</b><span>${esc(c.desc)}</span><i>Разгледай →</i></span>
-        <span class="bv-glare" aria-hidden="true"></span>
-      </a>`; }).join('')}</div>
-  </div></section>`;
+    <div class="bv-wrap"><div class="hb__proof">
+      <div><b>${ORDERS_SENT}</b><span>изпратени поръчки</span></div>
+      <div><b>${days} дни</b><span>гаранция<i> – връщаме парите</i></span></div>
+      <div><b>0 €</b><span>предплащане<i> – плащаш на куриера</i></span></div>
+      <a class="hb__phone" href="tel:${CONFIG.phoneHref}">${PHONE_ICO}<span class="hb__phone-txt"><small>Поръчай по телефона<i> · ${esc(CONFIG.hours)}</i></small><b>${CONFIG.phone}</b></span></a>
+    </div></div>
+  </section>`;
 
   const shop = `
   <section class="hv-shop" id="hv-shop"><div class="bv-wrap">
@@ -936,7 +928,7 @@ function renderHomeBv() {
   </div></section>`;
 
   root.classList.add('bvp');
-  root.innerHTML = GRAD + hero + cats + shop + bf + combos + story + how + reviews + assure + faq;
+  root.innerHTML = GRAD + hero + shop + bf + combos + story + how + reviews + assure + faq;
   // витрината с разделите
   const grid = $('#hv-grid', root);
   const order = PRODUCTS.slice().sort((a, b) => (b.bestseller ? 1 : 0) - (a.bestseller ? 1 : 0));
