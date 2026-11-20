@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>На живо – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="wide">
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row">
+        <h1>Сега в сайтовете</h1>
+        <span class="livebadge" id="liveBadge"><span class="pulse" aria-hidden="true"></span><span id="updated">на живо</span></span>
+      </div>
+      <div class="head-tools row">
+        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+        <select id="stage" aria-label="Статус">
+          <option value="">Всички статуси</option>
+          <option value="browsing">Разглеждат</option>
+          <option value="checkout">Във формата</option>
+          <option value="filling">Попълват</option>
+          <option value="ordered">Поръчали</option>
+        </select>
+      </div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <section>
+      <h2 class="sect">По сайтове</h2>
+      <div class="livegrid" id="shops"></div>
+    </section>
+    <section class="card" style="padding:8px 12px 12px">
+      <div class="row spread" style="padding:6px 4px 10px">
+        <div><b>Сесии</b> <span class="muted small" id="sessCount"></span></div>
+        <label class="small muted">последните
+          <select id="minutes"><option value="5">5 мин</option><option value="15" selected>15 мин</option><option value="60">1 час</option></select>
+        </label>
+      </div>
+      <div class="scroll"><table class="otbl livetbl" id="table"></table></div>
+    </section>
+    <p class="muted small">Броят се хората, чиято страница на магазина е отворена в момента (знак на всеки 30 секунди). Без имена и телефони – името се вижда само ако човекът го е написал във формата. „Във формата“ = формата за поръчка е на екрана му; „Попълват“ = пише в нея.</p>
+  </main>
+  <script type="module" src="/assets/zhivo.js"></script>
+</body>
+</html>

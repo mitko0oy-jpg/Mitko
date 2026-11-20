@@ -9,6 +9,7 @@ import { getRates, refreshRates, type Rates } from "./fx.mts";
 import { pullMiddleware } from "./mw.mts";
 import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
+import { purgeVisits } from "./visits.mts";
 import { runNekChecks } from "./nekorekten.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
@@ -98,6 +99,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
 
   // Unfinished orders are kept 30 days.
   await purgeLeads().catch((e) => console.error("purge leads", e.message));
+  await purgeVisits().catch((e) => console.error("purge visits", e.message));
 
   const companies = [...new Set(shops.map((s) => Number(s.company_id)))];
 

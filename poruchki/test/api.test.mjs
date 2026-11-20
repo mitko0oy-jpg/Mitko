@@ -843,3 +843,32 @@ test("order panel like Middleware: products with SKU, weight and picture; what t
   if (sp) assert.equal((await api(`/api/orders/${sp.id}`)).data.courier_cost, 3.8);
   assert.ok(sent.some((x) => x.path === "/speedy/shipment/info"));
 });
+
+test("now in the shops: signs of life from the shop pages, counted per shop and stage", async () => {
+  const ping = (body, origin = `http://127.0.0.1:${SHOP_PORT}`) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: origin, "x-dev-geo": encodeURIComponent("BG/Пловдив") }, body: JSON.stringify({ t: "ping", ...body }) });
+  assert.equal((await ping({ sid: "tab0000001", vid: "browser001", page: "/" }, "https://evil.example")).status, 403);
+  assert.equal((await ping({ sid: "tab0000001", vid: "browser001", page: "/", stage: "browsing", device: "mobile", source: "Facebook / Instagram" })).status, 204);
+  await ping({ sid: "tab0000002", vid: "browser002", page: "/store/checkout", stage: "filling", device: "desktop", source: "Google", cart: 2, value: "39,90 €" });
+  await ping({ sid: "tab0000002", vid: "browser002", page: "/", stage: "browsing" }); // scrolled back up: reached stays "filling"
+  await ping({ sid: "tab0000003", vid: "browser003", page: "/", stage: "checkout" });
+  await ping({ sid: "tab0000003", vid: "browser003", page: "/", stage: "checkout", gone: true }); // closed the tab
+  const live = (await api("/api/live")).data;
+  const bg = live.shops.find((s) => s.id === "bg");
+  assert.equal(bg.now.online, 2);
+  assert.equal(bg.now.browsing, 2);
+  assert.equal(bg.now.mobile, 1);
+  assert.equal(bg.today.people, 3);
+  assert.equal(bg.today.filling, 1);
+  const s1 = live.sessions.find((x) => x.sid === "tab0000001");
+  assert.equal(s1.country, "BG");
+  assert.equal(s1.city, "Пловдив");
+  assert.equal(s1.source, "Facebook / Instagram");
+  assert.equal(s1.online, true);
+  const s2 = live.sessions.find((x) => x.sid === "tab0000002");
+  assert.equal(s2.reached, "filling");
+  assert.equal(s2.pages, 2);
+  assert.equal(s2.cart_lines, 2);
+  assert.equal(live.sessions.find((x) => x.sid === "tab0000003").online, false);
+  assert.equal((await fetch(`${B}/api/live`)).status, 401);
+});

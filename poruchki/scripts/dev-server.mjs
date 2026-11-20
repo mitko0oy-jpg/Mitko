@@ -49,7 +49,9 @@ createServer(async (req, res) => {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const request = new Request(url, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks) });
-    const response = await route.handler(request, { ip: "127.0.0.1" });
+    // Netlify gives the visitor's country and city; here a test can set them with "x-dev-geo: BG/Пловдив".
+    const [cc, city] = decodeURIComponent(String(req.headers["x-dev-geo"] || "")).split("/");
+    const response = await route.handler(request, { ip: "127.0.0.1", geo: { country: { code: cc || "" }, city: city || "" } });
     const headers = {};
     response.headers.forEach((v, k) => (headers[k] = v));
     res.writeHead(response.status, headers);

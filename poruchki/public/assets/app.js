@@ -140,6 +140,7 @@ const I = (d, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="curre
 export const ICONS = {
   home: I('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
   cart: I('<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11.5l2-8H6.2"/>'),
+  live: I('<circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/>'),
   hourglass: I('<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>'),
   print: I('<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/>'),
   store: I('<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0V9M5 13v8h14v-8"/>'),
@@ -188,6 +189,7 @@ export async function shell(active) {
   const links = [
     ["/", "Табло", "tablo", ICONS.home],
     ["/poruchki/", "Поръчки", "poruchki", ICONS.cart],
+    ["/zhivo/", "На живо", "zhivo", ICONS.live],
     ["/nezavarsheni/", "Незавършени", "nezavarsheni", ICONS.hourglass],
     ["/pechat/", "Печат", "pechat", ICONS.print],
     ["/magazini/", "Магазини", "magazini", ICONS.store],

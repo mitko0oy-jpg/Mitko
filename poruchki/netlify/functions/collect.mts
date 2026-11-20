@@ -4,6 +4,7 @@ import type { Config } from "@netlify/functions";
 import { hit } from "../lib/db.mts";
 import { clientIp } from "../lib/http.mts";
 import { cleanLead, saveLead, shopForOrigin } from "../lib/leads.mts";
+import { cleanPing, savePing } from "../lib/visits.mts";
 
 const done = (status = 204) => new Response(null, { status, headers: { "cache-control": "no-store" } });
 
@@ -14,13 +15,20 @@ export default async (req: Request, ctx: any) => {
     if (!shop) return done(403);
     const text = await req.text();
     if (text.length > 4000) return done(413);
-    if (!(await hit(`collect:${clientIp(req, ctx)}`, 150, 3600))) return done(429);
-    let data: unknown;
+    let data: any;
     try {
       data = JSON.parse(text);
     } catch {
       return done(400);
     }
+    // A sign of life of an open page (Сега в сайтовете): every ~30 s per tab, so its own, higher limit.
+    if (data?.t === "ping") {
+      if (!(await hit(`ping:${clientIp(req, ctx)}`, 600, 3600))) return done(429);
+      const ping = cleanPing(data);
+      if (ping) await savePing(shop, ping, { country: ctx?.geo?.country?.code, city: ctx?.geo?.city });
+      return done(204);
+    }
+    if (!(await hit(`collect:${clientIp(req, ctx)}`, 150, 3600))) return done(429);
     const lead = cleanLead(data);
     if (lead) await saveLead(shop, lead);
     return done(204);
