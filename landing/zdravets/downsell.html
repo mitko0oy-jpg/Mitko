@@ -868,6 +868,8 @@ const THEMES = {
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
 const ZN_MEDIA = '9b01f1df86aa5fb0fd322240f5499b5365c05044';
+/* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
+const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/landing/zdravets/media/${f}`;
 const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
@@ -944,7 +946,7 @@ function storeInfo(id) {
   const bump = BUMPS.find(x => x.store === id);
   if (bump) return { name: bump.title, img: productLook(P(bump.id)).img, url: productUrl(bump.id) };
   if (id === UPSELL.store) return { name: P(UPSELL.product).name, img: productLook(P(UPSELL.product)).img };
-  if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 билкови пластира BeeHerb', img: productLook(P('beeherb')).img, gift: true };
+  if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 пластира за стави и мускули', img: GIFT_IMG, gift: true };
   const c = comboOf(id);
   if (c) return { name: c.title, img: productLook(P('apetit')).img, combo: c };
   const ic = inComboOf(id);
@@ -1112,7 +1114,7 @@ function drawCart(o) {
   body.innerHTML = `
     ${FREE_FROM ? `<div class="sp-ship"><p>${ICON.truck}<span>${left > 0 ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>'}</span></p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
-      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 билкови пластира</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
+      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
     </div>
     <div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${recs(items).slice(0, 2).map(recRow).join('')}</div>`;
   foot.innerHTML = `
@@ -1219,7 +1221,7 @@ const bfOn = () => CONFIG.bf.active && Date.now() < BF_END;
 const FREE_FROM = CONFIG.freeOfficeShippingFrom || 0;
 const freeShipFor = price => FREE_FROM > 0 && price >= FREE_FROM;
 const SHIP_FROM = Math.min(...CONFIG.shipping.filter(m => m.office).map(m => m.price));
-const GIFT_TEXT = '12 билкови пластира подарък';
+const GIFT_TEXT = '12 пластира подарък';
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
 /* ---------- font size (за по-лесно четене) ---------- */
@@ -1349,7 +1351,7 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
 
 function separateValue(b) {
   let v = b.items.reduce((s, [id, q]) => s + P(id).price * q, 0);
-  if (bfOn()) v += (b.gift || []).reduce((s, [id, q]) => s + P(id).price * q, 0);
+  // подаръкът не се брои в „редовната цена“: той е отделен продукт без цена в магазина
   if (b.freeShip && freeShipFor(b.price)) v += SHIP_FROM;
   return v;
 }
@@ -1428,7 +1430,7 @@ function bundleCard(b) {
     <h3>${esc(b.title)}</h3>
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
-    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 билкови пластира (${fmt(P('beeherb').price)})</div>` : ''}
+    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули</div>` : ''}
     <div class="pricebox"><span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
@@ -1611,7 +1613,7 @@ function renderCheckoutHelper() {
     box.innerHTML = `
       ${FREE_FROM ? `<div class="ship-progress">${toFree > 0 ? `Добави още ${fmt(toFree)} и доставката до офис е безплатна<div class="bar"><i style="width:${Math.min(100, total / FREE_FROM * 100)}%"></i></div>` : '🎉 Доставката до офис е безплатна'}</div>` : ''}
       ${up}
-      ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 билкови пластира) е в поръчката ти.</p>' : ''}`;
+      ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 пластира за стави и мускули) е в поръчката ти.</p>' : ''}`;
     $$('[data-swap]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.remove(+b.dataset.swap); await Cart.add(b3.store, 1); })));
   }
   async function run(btn, fn) {

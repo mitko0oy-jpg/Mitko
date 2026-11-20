@@ -66,7 +66,7 @@ function storeInfo(id) {
   const bump = BUMPS.find(x => x.store === id);
   if (bump) return { name: bump.title, img: productLook(P(bump.id)).img, url: productUrl(bump.id) };
   if (id === UPSELL.store) return { name: P(UPSELL.product).name, img: productLook(P(UPSELL.product)).img };
-  if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 билкови пластира BeeHerb', img: productLook(P('beeherb')).img, gift: true };
+  if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 пластира за стави и мускули', img: GIFT_IMG, gift: true };
   const c = comboOf(id);
   if (c) return { name: c.title, img: productLook(P('apetit')).img, combo: c };
   const ic = inComboOf(id);
@@ -234,7 +234,7 @@ function drawCart(o) {
   body.innerHTML = `
     ${FREE_FROM ? `<div class="sp-ship"><p>${ICON.truck}<span>${left > 0 ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>'}</span></p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
-      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 билкови пластира</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
+      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
     </div>
     <div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${recs(items).slice(0, 2).map(recRow).join('')}</div>`;
   foot.innerHTML = `

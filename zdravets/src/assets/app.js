@@ -27,7 +27,7 @@ const bfOn = () => CONFIG.bf.active && Date.now() < BF_END;
 const FREE_FROM = CONFIG.freeOfficeShippingFrom || 0;
 const freeShipFor = price => FREE_FROM > 0 && price >= FREE_FROM;
 const SHIP_FROM = Math.min(...CONFIG.shipping.filter(m => m.office).map(m => m.price));
-const GIFT_TEXT = '12 билкови пластира подарък';
+const GIFT_TEXT = '12 пластира подарък';
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
 /* ---------- font size (за по-лесно четене) ---------- */
@@ -157,7 +157,7 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
 
 function separateValue(b) {
   let v = b.items.reduce((s, [id, q]) => s + P(id).price * q, 0);
-  if (bfOn()) v += (b.gift || []).reduce((s, [id, q]) => s + P(id).price * q, 0);
+  // подаръкът не се брои в „редовната цена“: той е отделен продукт без цена в магазина
   if (b.freeShip && freeShipFor(b.price)) v += SHIP_FROM;
   return v;
 }
@@ -236,7 +236,7 @@ function bundleCard(b) {
     <h3>${esc(b.title)}</h3>
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
-    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 билкови пластира (${fmt(P('beeherb').price)})</div>` : ''}
+    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули</div>` : ''}
     <div class="pricebox"><span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
@@ -419,7 +419,7 @@ function renderCheckoutHelper() {
     box.innerHTML = `
       ${FREE_FROM ? `<div class="ship-progress">${toFree > 0 ? `Добави още ${fmt(toFree)} и доставката до офис е безплатна<div class="bar"><i style="width:${Math.min(100, total / FREE_FROM * 100)}%"></i></div>` : '🎉 Доставката до офис е безплатна'}</div>` : ''}
       ${up}
-      ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 билкови пластира) е в поръчката ти.</p>' : ''}`;
+      ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 пластира за стави и мускули) е в поръчката ти.</p>' : ''}`;
     $$('[data-swap]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.remove(+b.dataset.swap); await Cart.add(b3.store, 1); })));
   }
   async function run(btn, fn) {

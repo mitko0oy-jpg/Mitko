@@ -82,7 +82,7 @@ const isBee = p => /пчелна отрова|beevenom/i.test(p.name + ' ' + p.s
 /* офертите на продукта: комплекти от PACKS или единичната цена */
 function landingOffers(p, d) {
   const gift = bfOn(); // подаръкът на Черния петък върви с всяка поръчка без тази от 1 брой (syncGift)
-  const giftPic = productLook(P('beeherb')).img;
+  const giftPic = GIFT_IMG;
   const unit = p.price;
   const list = p.packs ? PACKS[p.packs] : [{ key: p.id, label: '1 брой', sub: p.size, store: p.store, price: p.price }];
   const best = list.reduce((a, k) => (k.price / (packQty(p, k) || 1) < a.price / (packQty(p, a) || 1) ? k : a), list[0]);
@@ -624,7 +624,7 @@ function galleryItems(p, d) {
   [p.img].concat(p.gallery || []).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
   // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
   const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
-  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: productLook(P('beeherb')).img, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><div class="sp-card__duo"><img src="${p.gallery[0]}" alt="3 гела" loading="lazy"><span>+</span><img src="${productLook(P('beeherb')).img}" alt="12 билкови пластира" loading="lazy"></div><p><b>12 билкови пластира подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><div class="sp-card__duo"><img src="${p.gallery[0]}" alt="3 гела" loading="lazy"><span>+</span><img src="${GIFT_IMG}" alt="12 пластира" loading="lazy"></div><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
   const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
   if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-card"><b class="sp-card__h">Какво има в гела</b><div class="sp-card__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
@@ -676,7 +676,7 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${productLook(P('beeherb')).img}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 билкови пластира</span>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули</span>` : ''}</span>
           <span class="sp-opt__price"><b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${others.length && comboReady() ? `<div class="sp-combo" hidden>
@@ -684,8 +684,8 @@ function productTop(p, d, ctx) {
         <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(((n) => n.charAt(0).toUpperCase() + n.slice(1))(x.shortName.replace(/^Пластири (с )?/, '').replace(/ пластири$/, '')))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
-      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${productLook(P('beeherb')).img}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 билкови пластира подарък</b> към тази поръчка – до 30 ноември</span></p>
-      <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${productLook(P('beeherb')).img}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>2 или повече</b> и получаваш <b>подарък: 12 билкови пластира</b></span></p>` : ''}
+      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 пластира за стави и мускули подарък</b> към тази поръчка – до 30 ноември</span></p>
+      <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>2 или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
       <div class="sp-ctas">
         <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
         <button class="bv-btn bv-btn--xl sp-buynow" type="button" data-sp-buy>Купи сега – плащаш при получаване</button>
@@ -854,7 +854,7 @@ function renderHomeBv() {
     <div class="bv-wrap">
       <div class="bv-center"><span class="bv-eyebrow">⚫ Черен петък · до 30 ноември</span>
         <h2>3 гела с пчелна отрова <em class="bv-accent" style="color:var(--tx,#FFC65C)">за ${fmt(B('bf3').price)}</em></h2>
-        <p class="bv-lead">+ 12 билкови пластира подарък към всеки комплект. Офертата изтича след:</p>
+        <p class="bv-lead">+ 12 пластира за стави и мускули подарък към всеки комплект. Офертата изтича след:</p>
         <div class="countdown hv-cd" data-countdown></div></div>
       <div class="bv-packs bv-packs--n4">${landingOffers(gel, LANDING.gel)}</div>
       <p class="bv-center hv-more"><a class="sp-outline sp-outline--light" href="${L.bf}">Всички оферти за Черен петък →</a></p>
