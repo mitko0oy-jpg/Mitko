@@ -867,16 +867,20 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = 'aef8622fa2f8f2c23c1a81aa80f8d69ef3d51ce1';
+const ZN_MEDIA = 'e57802bd110b9a9377b255b51105720412f2f29d';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
+/* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
+   (без старата снимка от магазина и без старото видео). */
+const CLEAN_PHOTOS = ['bvpatch', 'tibet'];
 /* Кадри „в употреба“ за галерията на всеки продукт (life-<id>.webp в media/). */
 const LIFE = { gel: ['life-gel.webp', 'life-gel-2.webp'] };
 ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk', 'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'].forEach(id => { LIFE[id] = [`life-${id}.webp`]; });
+CLEAN_PHOTOS.forEach(id => LIFE[id].push(`life-${id}-2.webp`));
 const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/landing/zdravets/media/${f}`;
 const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
-const SCENE_VIDEOS = SCENES; // всички имат и раздвижена версия
+const SCENE_VIDEOS = SCENES.filter(id => !CLEAN_PHOTOS.includes(id)); // останалите имат и раздвижена версия
 const sceneOf = id => SCENES.includes(id)
   ? { img: znM(`scene-${id}.webp`), small: znM(`scene-${id}-600.webp`), video: SCENE_VIDEOS.includes(id) ? znM(`scene-${id}.mp4`) : null }
   : null;
@@ -1180,7 +1184,7 @@ function shopCard(p) {
   return `<article class="sp-card" style="--pc:${lk.a};--pcd:${lk.d}">
     <a class="sp-card__media${lk.scene ? ' is-scene' : ''}${lk.gel ? ' is-gel' : ''}" href="${productUrl(p.id)}" aria-label="${esc(p.name)}">
       <img class="sp-card__img" src="${lk.img}" alt="${esc(p.name)}" loading="lazy" width="600" height="600">
-      ${lk.scene ? `<img class="sp-card__alt" src="${p.img}" alt="" loading="lazy" width="600" height="600">` : ''}
+      ${lk.scene && !CLEAN_PHOTOS.includes(p.id) ? `<img class="sp-card__alt" src="${p.img}" alt="" loading="lazy" width="600" height="600">` : ''}
       ${tag}
     </a>
     <div class="sp-card__body">

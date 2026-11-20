@@ -297,7 +297,7 @@ function shopCard(p) {
   return `<article class="sp-card" style="--pc:${lk.a};--pcd:${lk.d}">
     <a class="sp-card__media${lk.scene ? ' is-scene' : ''}${lk.gel ? ' is-gel' : ''}" href="${productUrl(p.id)}" aria-label="${esc(p.name)}">
       <img class="sp-card__img" src="${lk.img}" alt="${esc(p.name)}" loading="lazy" width="600" height="600">
-      ${lk.scene ? `<img class="sp-card__alt" src="${p.img}" alt="" loading="lazy" width="600" height="600">` : ''}
+      ${lk.scene && !CLEAN_PHOTOS.includes(p.id) ? `<img class="sp-card__alt" src="${p.img}" alt="" loading="lazy" width="600" height="600">` : ''}
       ${tag}
     </a>
     <div class="sp-card__body">
