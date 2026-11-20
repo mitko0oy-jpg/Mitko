@@ -893,3 +893,6 @@
   .bvp .gi__badge img{width:56px;height:56px}
   .bvp .gi__ings{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 }
+
+/* цял кадър на пакета в картата на офертата */
+.bvp .bv-pack__one{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#F5C56A}

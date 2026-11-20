@@ -97,7 +97,9 @@ function landingOffers(p, d) {
     const m = (d.packMedia && d.packMedia[k.key]) || (bundle && (bundle.img || (bundle.collage && bundle.collage[0][0]))) || (sc ? sc.small : p.img);
     // снимката трябва да показва точно това, което е в пакета: 2 гела = две туби; „Пълна грижа“ = 3 гела + спрей
     const tuba = BVM(BV.hero, 'vs-tuba.webp');
-    const duo = p.id !== 'gel' ? null : k.key === 'bf2' ? { imgs: [tuba, tuba] } : k.key === 'bfFull' && p.gallery && p.gallery[0] ? { imgs: [p.gallery[0], productLook(P('spray')).img], plus: true } : null;
+    // цял кадър на пакета (заснет с подаръка) – докато подаръкът важи; иначе сглобената снимка без подарък
+    const one = p.id !== 'gel' ? '' : k.key === 'bf2' ? znM('pack-gel-2.webp') : gift && k.key === 'bf3' ? znM('pack-gel-3.webp') : gift && k.key === 'bfFull' ? znM('pack-gel-full.webp') : '';
+    const duo = p.id !== 'gel' || one ? null : k.key === 'bfFull' && p.gallery && p.gallery[0] ? { imgs: [p.gallery[0], productLook(P('spray')).img], plus: true } : null;
     const lis = [];
     if (gift && (qty > 1 || bundle)) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
@@ -110,7 +112,7 @@ function landingOffers(p, d) {
     return `<article class="bv-pack${hot ? ' bv-pack--hot' : ''}${isBest ? ' bv-pack--best' : ''}">
       ${hot ? '<span class="bv-ribbon">⭐ Най-избиран</span>' : isBest ? '<span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>' : ''}
       ${off ? `<span class="bv-off">−${off}%</span>` : ''}
-      <div class="bv-pack__media">${duo ? `<div class="bv-pack__duo${duo.plus ? ' bv-pack__duo--plus' : ''}">${duo.imgs.map((src, i) => `${i && duo.plus ? '<span>+</span>' : ''}<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}</div>` : bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
+      <div class="bv-pack__media">${one ? `<img class="bv-pack__one" src="${one}" alt="${esc(k.label)}" width="900" height="900" loading="lazy" decoding="async">` : duo ? `<div class="bv-pack__duo${duo.plus ? ' bv-pack__duo--plus' : ''}">${duo.imgs.map((src, i) => `${i && duo.plus ? '<span>+</span>' : ''}<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}</div>` : bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
       <div class="bv-pack__body">
         <h3>${esc(k.label)}</h3>
         <p class="bv-pack__sub">${esc(String(k.sub || p.size).replace(/ · най-(избиран|изгодно)$/, ''))}</p>
@@ -621,10 +623,12 @@ function galleryItems(p, d) {
     list.push({ video: bvVid(BV.pack2, 'pack-2'), alt: '3 гела' });
   } else if (lk.video) list.push({ video: { video: lk.video, poster: lk.img }, big: lk.big, alt: p.name });
   else if (lk.scene) list.push({ img: lk.big, thumb: lk.img, alt: p.name });
+  // кадри „в употреба“ с истинската опаковка – веднага след първата снимка
+  (LIFE[p.id] || []).forEach((f, i) => list.push({ img: znM(f), thumb: znM(f), alt: `${p.name} – ${i ? 'в ръка' : 'как се използва'}` }));
   [p.img].concat(p.gallery || []).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
   // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
   const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
-  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><div class="sp-card__duo"><img src="${p.gallery[0]}" alt="3 гела" loading="lazy"><span>+</span><img src="${GIFT_IMG}" alt="12 пластира" loading="lazy"></div><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><img class="sp-card__one" src="${znM('pack-gel-3.webp')}" alt="3 гела и пакет с 12 пластира" loading="lazy"><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
   const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
   if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-card"><b class="sp-card__h">Какво има в гела</b><div class="sp-card__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);

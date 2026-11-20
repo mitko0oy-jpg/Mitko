@@ -264,9 +264,12 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '9b01f1df86aa5fb0fd322240f5499b5365c05044';
+const ZN_MEDIA = '2b81079a9402d3da33eb8afa3e71fb8747ef4d59';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
+/* Кадри „в употреба“ за галерията на всеки продукт (life-<id>.webp в media/). */
+const LIFE = { gel: ['life-gel.webp', 'life-gel-2.webp'] };
+['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk', 'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'].forEach(id => { LIFE[id] = [`life-${id}.webp`]; });
 const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/landing/zdravets/media/${f}`;
 const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];

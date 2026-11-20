@@ -533,3 +533,5 @@ body{padding-bottom:0}
 .sp-card__duo img:last-child{width:36%;object-fit:cover;aspect-ratio:1/1;border:3px solid #F4C978}
 .sp-card__duo span{font-size:2.2rem;font-weight:800;color:#C62828}
 .sp-card p{margin:0;text-align:center;font-size:.95rem;line-height:1.3}
+
+.sp-card__one{flex:1;min-height:0;width:100%;object-fit:contain;border-radius:16px}
