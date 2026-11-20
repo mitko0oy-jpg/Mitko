@@ -81,7 +81,8 @@ const isBee = p => /пчелна отрова|beevenom/i.test(p.name + ' ' + p.s
 
 /* офертите на продукта: комплекти от PACKS или единичната цена */
 function landingOffers(p, d) {
-  const gift = bfOn(); // подаръкът на Черния петък върви с всяка поръчка (syncGift)
+  const gift = bfOn(); // подаръкът на Черния петък върви с всяка поръчка без тази от 1 брой (syncGift)
+  const giftPic = productLook(P('beeherb')).img;
   const unit = p.price;
   const list = p.packs ? PACKS[p.packs] : [{ key: p.id, label: '1 брой', sub: p.size, store: p.store, price: p.price }];
   const best = list.reduce((a, k) => (k.price / (packQty(p, k) || 1) < a.price / (packQty(p, a) || 1) ? k : a), list[0]);
@@ -95,7 +96,7 @@ function landingOffers(p, d) {
     const sc = sceneOf(p.id);
     const m = (d.packMedia && d.packMedia[k.key]) || (bundle && (bundle.img || (bundle.collage && bundle.collage[0][0]))) || (sc ? sc.small : p.img);
     const lis = [];
-    if (gift) lis.push(`<li class="bv-gift"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
+    if (gift && (qty > 1 || bundle)) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
     else if (qty === 1) lis.push(`<li>${list.length > 1 ? 'За да пробваш' : esc(p.bullets[0])}</li>`);
     if (qty > 1 || bundle) lis.push(`<li>${esc(bundle ? bundle.line : `${qty} броя`)}</li>`);
@@ -256,7 +257,7 @@ function renderLanding(p) {
   const eta = `
   <section class="bv-eta"><div class="bv-wrap"><div class="bv-eta__box">
     <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span class="bv-eta-long">до 2 работни дни</span></strong>
-      <span class="bv-eta__gift">${bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} към всяка поръчка.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка над ${fmt(FREE_FROM)}.` : ''}</span></div></div>
+      <span class="bv-eta__gift">${bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} при 2 и повече броя.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка над ${fmt(FREE_FROM)}.` : ''}</span></div></div>
     <a class="bv-btn" href="${toOffers}">Избери пакет</a>
   </div></div></section>`;
 
@@ -618,6 +619,13 @@ function galleryItems(p, d) {
   } else if (lk.video) list.push({ video: { video: lk.video, poster: lk.img }, big: lk.big, alt: p.name });
   else if (lk.scene) list.push({ img: lk.big, thumb: lk.img, alt: p.name });
   [p.img].concat(p.gallery || []).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
+  // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
+  const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: productLook(P('beeherb')).img, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><div class="sp-card__duo"><img src="${p.gallery[0]}" alt="3 гела" loading="lazy"><span>+</span><img src="${productLook(P('beeherb')).img}" alt="12 билкови пластира" loading="lazy"></div><p><b>12 билкови пластира подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
+  const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
+  if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-card"><b class="sp-card__h">Какво има в гела</b><div class="sp-card__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
+  const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
+  if (st && st.length >= 4) list.push({ thumb: st[0][2].poster, alt: 'Как се използва', html: `<div class="sp-card"><b class="sp-card__h">Как се използва</b><div class="sp-card__grid">${st.slice(0, 4).map((x, i) => tile(x[2].poster, x[0], i + 1)).join('')}</div></div>` });
   return list;
 }
 function productTop(p, d, ctx) {
@@ -626,17 +634,17 @@ function productTop(p, d, ctx) {
   const g = galleryItems(p, d);
   const still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const tag = d.h1 ? `${esc(d.h1[0])}<em>${esc(d.h1[1])}</em>${esc(d.h1[2] || '')}` : '';
-  const media = (m, i) => m.video
+  const media = (m, i) => m.html ? `<div class="sp-slide is-card${i ? '' : ' on'}" data-slide="${i}">${m.html}</div>` : m.video
     ? `<div class="sp-slide${i ? '' : ' on'}" data-slide="${i}"><video ${i || still ? '' : 'autoplay '}muted loop playsinline preload="${i ? 'none' : 'auto'}" poster="${m.video.poster}" aria-label="${esc(m.alt)}"><source ${i ? 'data-src' : 'src'}="${m.video.video}" type="video/mp4"></video></div>`
     : `<div class="sp-slide${i ? '' : ' on'}${m.photo ? ' is-photo' : ''}${m.gel ? ' is-gel' : ''}" data-slide="${i}"><img src="${m.img}" alt="${esc(m.alt)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} decoding="async"></div>`;
   const opts = [];
   if (packs) packs.forEach(k => {
     const c = packCalc(p, k);
-    opts.push({ kind: 'pack', key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, bf: !!(k.bundle && B(k.bundle).bf !== false) });
+    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, bf: !!(k.bundle && B(k.bundle).bf !== false) });
   });
   else {
     opts.push({ kind: 'qty', key: 'one', label: p.wellness ? '1 кутия' : '1 брой', sub: p.size, price: p.price });
-    if (p.wellness && comboReady()) PATCH_COMBOS.filter(c => c.store).forEach(c => opts.push({ kind: 'combo', key: `combo${c.n}`, n: c.n, label: `${c.n} вида по избор`, sub: `този + още ${c.n - 1} ${c.n - 1 === 1 ? 'вид' : 'вида'} пластири`, price: c.price, was: p.price * c.n, off: Math.round((1 - c.price / (p.price * c.n)) * 100), per: c.price / c.n, hot: c.n === 2 }));
+    if (p.wellness && comboReady()) PATCH_COMBOS.filter(c => c.store).forEach(c => opts.push({ kind: 'combo', multi: true, key: `combo${c.n}`, n: c.n, label: `${c.n} вида по избор`, sub: `този + още ${c.n - 1} ${c.n - 1 === 1 ? 'вид' : 'вида'} пластири`, price: c.price, was: p.price * c.n, off: Math.round((1 - c.price / (p.price * c.n)) * 100), per: c.price / c.n, hot: c.n === 2 }));
   }
   const showOpts = opts.length > 1;
   // уелнес пластирите започват от 1 кутия (цената съвпада с тази в каталога и бутонът добавя веднага);
@@ -665,7 +673,7 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${productLook(P('beeherb')).img}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 билкови пластира</span>` : ''}</span>
           <span class="sp-opt__price"><b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${others.length && comboReady() ? `<div class="sp-combo" hidden>
@@ -673,7 +681,8 @@ function productTop(p, d, ctx) {
         <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(((n) => n.charAt(0).toUpperCase() + n.slice(1))(x.shortName.replace(/^Пластири (с )?/, '').replace(/ пластири$/, '')))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
-      ${bfOn() ? `<p class="sp-gift">🎁 <span><b>+ 12 билкови пластира подарък</b> към всяка поръчка до 30 ноември</span></p>` : ''}
+      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${productLook(P('beeherb')).img}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 билкови пластира подарък</b> към тази поръчка – до 30 ноември</span></p>
+      <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${productLook(P('beeherb')).img}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>2 или повече</b> и получаваш <b>подарък: 12 билкови пластира</b></span></p>` : ''}
       <div class="sp-ctas">
         <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
         <button class="bv-btn bv-btn--xl sp-buynow" type="button" data-sp-buy>Купи сега – плащаш при получаване</button>
@@ -736,6 +745,9 @@ function bindTop(root, p) {
     $('[data-sp-per]', top).textContent = x.per ? `${fmt(x.per)} за ${x.kind === 'combo' ? 'кутия' : 'брой'} · ` : '';
     $$('.sp-opt', top).forEach(l => l.classList.toggle('on', $('input', l).value === sel));
     const qr = $('.sp-qtyrow', top); if (qr) qr.hidden = x.kind !== 'qty';
+    const earned = !!x.multi || (x.kind === 'qty' && qty >= 2), gy = $('[data-gift-yes]', top), gn = $('[data-gift-no]', top);
+    if (gy) gy.hidden = !earned;
+    if (gn) gn.hidden = earned;
     if (combo) {
       combo.hidden = x.kind !== 'combo';
       if (x.kind === 'combo') {
@@ -839,7 +851,7 @@ function renderHomeBv() {
     <div class="bv-wrap">
       <div class="bv-center"><span class="bv-eyebrow">⚫ Черен петък · до 30 ноември</span>
         <h2>3 гела с пчелна отрова <em class="bv-accent" style="color:var(--tx,#FFC65C)">за ${fmt(B('bf3').price)}</em></h2>
-        <p class="bv-lead">+ 12 билкови пластира подарък към всяка поръчка. Офертата изтича след:</p>
+        <p class="bv-lead">+ 12 билкови пластира подарък към всеки комплект. Офертата изтича след:</p>
         <div class="countdown hv-cd" data-countdown></div></div>
       <div class="bv-packs bv-packs--n4">${landingOffers(gel, LANDING.gel)}</div>
       <p class="bv-center hv-more"><a class="sp-outline sp-outline--light" href="${L.bf}">Всички оферти за Черен петък →</a></p>

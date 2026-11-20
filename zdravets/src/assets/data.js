@@ -75,10 +75,7 @@ const PRODUCTS = [
     price: 15.90,
     img: bImg(IZ, 'ChatGPT_Image_Sep_28_2026_11_02_42_PM-2088665.png'),
     gallery: [
-      bImg(KOM, 'ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png'),
-      bImg(KOM, 'ChatGPT_Image_Sep_28_2026_09_56_05_AM-1113516.png'),
-      bImg(KOM, 'ChatGPT_Image_Sep_28_2026_09_58_52_AM-1113524.png'),
-      bImg(IZ, 'Screenshot_2026-10-15_at_21.36.48-2089417.png')
+      bImg(KOM, 'ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png')
     ],
     short: 'Концентрирана пчелна отрова с куркума, зелен чай и витамин D3 — за повече лекота и комфорт при движение.',
     bullets: [

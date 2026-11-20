@@ -88,12 +88,19 @@ const Cart = {
 const isGift = i => i.productId === CONFIG.giftStoreId;
 const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.productId)).reduce((s, i) => s + (i.quantity || 1), 0);
 
-// По време на Черния петък подаръкът е във всяка поръчка (и само заедно с друг продукт).
+// По време на Черния петък подаръкът върви с всяка поръчка БЕЗ тази от 1 брой:
+// комплект (2 и повече в един продукт от магазина) или поне 2 броя общо в количката.
+const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean));
+const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
+function giftEarned(items) {
+  const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
+  return real.some(i => MULTI_STORES.includes(i.productId)) || real.reduce((n, i) => n + (i.quantity || 1), 0) >= 2;
+}
 async function syncGift() {
   if (!CONFIG.giftStoreId || !cbReady()) return;
   const o = await Cart.get();
   const items = o.items || [];
-  const gift = items.find(isGift), others = items.some(i => !isGift(i));
+  const gift = items.find(isGift), others = giftEarned(items);
   if (bfOn() && others && !gift) await Cart.add(CONFIG.giftStoreId, 1);
   else if (gift && (!others || !bfOn())) await Cart.remove(CONFIG.giftStoreId);
   else if (gift && gift.quantity > 1) { await Cart.remove(CONFIG.giftStoreId); await Cart.add(CONFIG.giftStoreId, 1); }
@@ -336,7 +343,7 @@ function renderProduct() {
             <span class="pp-price">${fmt(k.price)}</span></label>`; }).join('')}</div>`
           : `<div class="buyrow"><span class="price big">${fmt(p.price)}</span>
              <div class="qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><input id="qty" type="number" min="1" max="20" value="1" aria-label="Количество"><button type="button" data-q="1" aria-label="Повече">+</button></div></div>`}
-        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък към всяка поръчка до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
+        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък при 2 и повече броя до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
         <div class="buybox">
           <button class="btn btn-primary btn-lg btn-block" id="buynow" type="button">Купи сега — плащаш при получаване</button>
           <button class="btn btn-outline btn-block" id="addcart" type="button">Добави в количката</button>
