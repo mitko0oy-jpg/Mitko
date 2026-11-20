@@ -2,7 +2,7 @@
   "name": "BeeVenom BG – потвърждение на поръчки",
   "language": "bg",
   "prompt_file": "beevenom-bg-prompt.md",
-  "first_message": "Здравейте! Обаждам се от {{shop_name}} – аз съм Елена, дигиталната асистентка. С {{customer_name}} ли говоря?",
+  "first_message": "Здравейте, обажда се Елена – дигиталният асистент на магазина за продукти с пчелна отрова. С {{customer_name}} ли говоря?",
   "defaults": {
     "shop_name": "магазина с пчелната отрова",
     "delivery_days": "един до два работни дни"
