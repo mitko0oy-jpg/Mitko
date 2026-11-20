@@ -801,7 +801,7 @@ function renderHomeBv() {
   <section class="hb">
     <div class="bv-wrap hb__grid">
       <div class="hb__copy">
-        <span class="hb__eyebrow">Здравец Натура · произведено за България</span>
+        <span class="hb__eyebrow"><i>Здравец Натура · </i>произведено за България</span>
         <h1>Грижа отвън. <em>Без нито едно хапче.</em></h1>
         <p class="hb__lead">Здравецът открай време се подарява за здраве. На него кръстихме нашите гелове, кремове и пластири.</p>
         <a class="hb-btn" href="${L.products}">Виж всички ${PRODUCTS.length} продукта <span class="bv-arr">→</span></a>
@@ -826,8 +826,8 @@ function renderHomeBv() {
 
   const shop = `
   <section class="hv-shop" id="hv-shop"><div class="bv-wrap">
-    <div class="bv-center"><span class="bv-eyebrow">Нашите продукти</span><h2>Всеки продукт – <em class="bv-accent">със свой характер</em></h2>
-      <p class="bv-lead">Всеки има своя страница с всичко важно: за какво е, съставки, употреба и цени.</p></div>
+    <div class="bv-center"><h2>Нашите <em class="bv-accent">продукти</em></h2>
+      <p class="bv-lead">Натисни продукт, за да видиш цената и да поръчаш.</p></div>
     <div class="sp-tabs" role="tablist">${[['all', 'Най-поръчвани']].concat(CATEGORIES.map(c => [c.id, c.name])).map(([id, n], i) => `<button type="button" role="tab" class="${i ? '' : 'on'}" data-tab="${id}" aria-selected="${!i}">${esc(n)}</button>`).join('')}</div>
     <div class="sp-grid" id="hv-grid"></div>
     <p class="bv-center hv-more"><a class="sp-outline" href="${L.products}">Виж всички ${PRODUCTS.length} продукта →</a></p>
