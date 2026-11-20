@@ -6,6 +6,7 @@ import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
 import { handleFeedbackCall } from "./feedback.mjs";
+import { NO_ANSWER_MIN } from "./callback.mjs";
 
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
 const doneKey = (key) => key.replace(/^order\//, "done/");
@@ -96,9 +97,13 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     const entry = await store.getWithMetadata(key, { type: "json" });
     if (entry === null) continue;
     const rec = entry.data;
+    // A Zadarma callback the customer did not answer never reaches ElevenLabs:
+    // if the agent was not connected within a few minutes, count it as "no answer".
+    const sinceMin = rec.callingSince ? (now - new Date(rec.callingSince)) / 60_000 : 0;
+    const unanswered = rec.route === "zadarma" && !rec.answeredAt && sinceMin > NO_ANSWER_MIN;
     // A call that never reported back: count it as "no conversation".
-    if (rec.state === "calling" && rec.callingSince && now - new Date(rec.callingSince) > STALE_CALL_MIN * 60_000) {
-      const r = applyOutcome(rec, { outcome: "no_conversation" }, now);
+    if (rec.state === "calling" && rec.callingSince && (unanswered || sinceMin > STALE_CALL_MIN)) {
+      const r = applyOutcome(rec, { outcome: unanswered ? "no-answer" : "no_conversation" }, now);
       await save(store, key, r.rec, { onlyIfMatch: entry.etag });
       if (r.notify) await notify(buildMessage(r.rec, r.label, null, { testMode }));
       report.stale++;
@@ -130,11 +135,11 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       report.skipped++;
       continue;
     }
-    const claimed = { ...rec, state: "calling", attempts: rec.attempts + 1, callingSince: now.toISOString() };
+    const claimed = { ...rec, state: "calling", attempts: rec.attempts + 1, callingSince: now.toISOString(), answeredAt: null };
     const { modified, etag: claimEtag } = await store.setJSON(key, claimed, { onlyIfMatch: etag });
     if (!modified) continue; // another run took it
     try {
-      const { conversationId } = await call({
+      const { conversationId, route } = await call({
         to: testMode ? config.testPhone : rec.phone,
         variables: {
           order_key: key,
@@ -151,6 +156,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       });
       const updated = {
         ...claimed,
+        route: route || "elevenlabs",
         conversationIds: [...(rec.conversationIds || []), conversationId].filter(Boolean),
         history: [...rec.history, { at: now.toISOString(), event: "call", attempt: claimed.attempts, conversationId }],
       };
@@ -213,7 +219,8 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
   // Zadarma's recording "These calls are only possible within the country" is transcribed as the customer.
   const announcement = /only possible within the country/i.test(call?.transcript || "");
   const silentShort = call && (call.durationSecs ?? 99) <= 8 && (announcement || !/^Клиент:/m.test(call.transcript || ""));
-  if (silentShort && deps.ringSecs && (rec.lineFaults || 0) < MAX_LINE_FAULTS) {
+  // (Not for Zadarma callbacks: the agent is only connected after the customer answered.)
+  if (silentShort && rec.route !== "zadarma" && deps.ringSecs && (rec.lineFaults || 0) < MAX_LINE_FAULTS) {
     const ring = await deps.ringSecs(conversationId).catch(() => null);
     if (ring != null && ring < 5) {
       const next = {

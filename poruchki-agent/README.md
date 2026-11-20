@@ -46,6 +46,20 @@ ConvertBuilder API не може да създава поръчки, а само
 - `ELEVENLABS_API_KEY=… EL_FEEDBACK_AGENT_ID=agent_9501m7qd1wgqe31tq2cf7r4v86m0 EL_PHONE_NUMBER_ID=phnum_0401m7cqsxpqf439twk8p463dzxw node scripts/feedback-calls.mjs <list.json>` – звъни един по един, само пон–съб 10:00–19:30. `--to +359…` е тест, `--dry` показва какво ще каже агентът.
 - Резултатите идват в Телеграм („💬 Обратна връзка“) и се пазят 60 дни в `feedback/` (кой поръча, кога да звъннем, кой не иска обаждания).
 
+## Обаждания през Zadarma (callback)
+
+Zadarma позволява на българския номер да звъни само от България. ElevenLabs звъни от сървъри в чужбина, затова изходящите през SIP trunk се спират със записа „These calls are only possible within the country“ (тикет №903425). Затова при `CALL_ROUTE=zadarma` посоката е обърната:
+
+1. Двигателят записва данните на поръчката в Blobs (`pending/<номер>`) и вика Zadarma API `/v1/request/callback/` (`lib/zadarma.mjs`, `lib/callback.mjs`): `from` = нашият номер (`ZADARMA_FROM`), `to` = клиентът със „+“ отпред (иначе централата добавя 359 втори път), `sip` = вътрешният номер (`ZADARMA_SIP`), `predicted=1` (първо звъни на клиента).
+2. Когато клиентът вдигне, Zadarma го свързва с +359 2 437 0192, а той е пренасочен към ElevenLabs. За ElevenLabs това е входящо обаждане към входящия агент.
+3. Преди агентът да проговори, ElevenLabs пита `/webhook/el-init/<TOOLS_SECRET>` кой звъни (`caller_id`). Ако има чакащо обаждане за този номер (до 15 минути), отговорът носи променливите на поръчката, сценария, първото изречение и езика на агента за потвърждение (`EL_AGENT_ID`, чете се от ElevenLabs и се пази 10 минути). Иначе е нормалната входяща линия.
+4. Резултатът идва както досега в `/webhook/elevenlabs` по `order_key`. Ако агентът не е свързан до 5 минути след обаждането, клиентът не е вдигнал („no-answer“) и агентът опитва пак по обичайния график.
+
+Еднократна настройка:
+- Zadarma: API ключ и тайна (Настройки → Интеграции и API) в `ZADARMA_KEY`, `ZADARMA_SECRET`. Тикет до поддръжката да изключат английското съобщение „моля, изчакайте“ при callback.
+- Netlify: `CALL_ROUTE=zadarma`, `ZADARMA_FROM=+35924370192`, `ZADARMA_SIP=100`, после деплой.
+- ElevenLabs: в Telegram командата `/callback_setup`. Тя насочва webhook-а за начало на разговор към сайта, разрешава на входящия агент да взима данни от него и да сменя сценария, първото изречение и езика, и добавя полетата за резултата от агента за потвърждение. Проверява какво е запазено и казва, ако нещо липсва.
+
 ## Middleware
 
 `lib/middleware.mjs` чете от публичния API на Middleware (`api.middleware.bg/v1`, ключ `MW_TOKEN`, `MW_TENANT`, магазини `MW_STORES`). Номерът на поръчката в магазина е `label` в Middleware.
@@ -73,6 +87,9 @@ ConvertBuilder API не може да създава поръчки, а само
 | `MW_TOKEN`, `MW_TENANT`, `MW_STORES` | достъп до Middleware (само четене) и id на магазина BeeVenom |
 | `MODE` | начален режим: `off`, `test` или `live`. Митко го сменя от Telegram с `/rezhim test\|live\|off` (записва се в Blobs и важи само за поръчки след командата) |
 | `TEST_PHONE` | номерът на Митко за тестовете |
+| `CALL_ROUTE` | `zadarma` (Zadarma звъни и свързва с агента) или `elevenlabs` (по подразбиране) |
+| `ZADARMA_KEY`, `ZADARMA_SECRET` | API ключ и тайна от Zadarma (тайни) |
+| `ZADARMA_FROM`, `ZADARMA_SIP` | `+35924370192` и вътрешният номер `100` |
 | `CALL_HOURS`, `CALL_HOURS_SUNDAY`, `SHOP_NAME`, `DELIVERY_DAYS` | по желание |
 
 Данните на клиентите се пазят в Netlify Blobs в региона Франкфурт (`eu-central-1`). Изтриват се 14 дни след последното обаждане.

@@ -95,6 +95,15 @@ export async function handleTelegram(deps, update, opts = {}) {
     ];
     return { chatId, reply: lines.join("\n") };
   }
+  if (cmd === "/callback_setup") {
+    if (!opts.setupCallback) return { chatId, reply: "Настройката не е налична тук." };
+    try {
+      const { ok, report } = await opts.setupCallback();
+      return { chatId, reply: [ok ? "✅ ElevenLabs е настроен за обаждания през Zadarma." : "⚠️ Настройката не е пълна:", ...report].join("\n") };
+    } catch (err) {
+      return { chatId, reply: `⚠️ Не успях да настроя ElevenLabs: ${esc(String(err.message).slice(0, 300))}` };
+    }
+  }
   if (["/test", "тест"].includes(cmd)) {
     if (!config.testPhone) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
     try {
