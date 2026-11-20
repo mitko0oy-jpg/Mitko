@@ -426,6 +426,7 @@ export async function createFor(id: number, input: any, userId: number | null) {
   const o = await loadOrder(id);
   if (o.tracking_no) throw fail(`Поръчката вече има товарителница № ${o.tracking_no}${o.tracking_source === "own" ? "" : " (от Middleware или магазина)"}.`);
   if ((o.currency || "EUR") !== "EUR") throw fail("Товарителници правим само за поръчки в евро.");
+  if (o.cb_status === "abandoned") throw fail("Това е изоставена количка: първо я потвърди (след разговор с клиента), после товарителница.");
   const def = await getDefaults();
   const d = cleanDraft(input, draftFor(o, def));
   const creds = await credsFor(d.courier);

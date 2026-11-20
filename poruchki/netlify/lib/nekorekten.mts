@@ -141,7 +141,7 @@ export async function runNekChecks(deadline: number) {
     `SELECT DISTINCT ON (right(regexp_replace(o.phone, '\\D', '', 'g'), 9)) o.phone
        FROM orders o JOIN shops s ON s.id = o.shop
        LEFT JOIN phone_checks pc ON pc.company_id = s.company_id AND pc.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
-      WHERE s.region = 'bg' AND s.company_id = ${companyId()} AND o.phone <> '' AND o.ordered_at > now() - interval '3 days' AND o.archived_at IS NULL
+      WHERE s.region = 'bg' AND s.company_id = ${companyId()} AND o.phone <> '' AND o.ordered_at > now() - interval '3 days' AND o.archived_at IS NULL AND o.stage <> 'abandoned'
         AND (pc.phone_key IS NULL OR pc.checked_at < now() - interval '30 days')
       ORDER BY right(regexp_replace(o.phone, '\\D', '', 'g'), 9), o.ordered_at DESC
       LIMIT $1`,

@@ -12,7 +12,8 @@ type Cell = { n: number; sum: number };
 
 function where(f: Filter, firstParam = 1) {
   const params: unknown[] = [f.from, f.to];
-  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active", `s.company_id = ${companyId()}`];
+  // Abandoned carts are not orders: never in the numbers.
+  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active", `s.company_id = ${companyId()}`, "o.stage <> 'abandoned'"];
   if (f.region === "bg" || f.region === "abroad") {
     params.push(f.region);
     parts.push(`s.region = $${firstParam + params.length - 1}`);
@@ -123,7 +124,7 @@ export async function summary(region?: string) {
     regionSql = ` AND s.region = $${params.length}`;
   }
   params.push(lastMonthStart);
-  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.day >= $${params.length}${regionSql}`, params);
+  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.stage <> 'abandoned' AND o.day >= $${params.length}${regionSql}`, params);
   const out: Record<string, any> = {};
   for (const [k, [from, to]] of Object.entries(periods)) {
     out[k] = { from, to, orders: row?.[`${k}_n`] || 0, sum: round(row?.[`${k}_sum`] || 0), delivered: row?.[`${k}_dn`] || 0, deliveredSum: round(row?.[`${k}_dsum`] || 0), canceled: row?.[`${k}_cn`] || 0 };

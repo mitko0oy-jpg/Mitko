@@ -14,7 +14,7 @@ import { runTracking } from "../lib/track.mts";
 import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
 import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editContact, unconfirmOrder } from "../lib/manage.mts";
 
-const ACTIVE = "o.stage IN ('new', 'prepared', 'shipped', 'at_office')";
+const ACTIVE = "o.stage IN ('abandoned', 'new', 'prepared', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 
 // "Изпратени днес": the waybill appeared today (Sofia time); sent_at is kept by a trigger.
@@ -28,8 +28,8 @@ const SORTS: Record<string, string> = {
   sent: "o.sent_at DESC NULLS LAST, o.ordered_at DESC",
   courier: "o.parcel_at DESC NULLS LAST, o.ordered_at DESC",
   parcel_asc: "o.parcel_at ASC NULLS LAST, o.ordered_at DESC",
-  stage_asc: "array_position(ARRAY['new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) ASC, o.ordered_at DESC",
-  stage_desc: "array_position(ARRAY['new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) DESC, o.ordered_at DESC",
+  stage_asc: "array_position(ARRAY['abandoned','new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) ASC, o.ordered_at DESC",
+  stage_desc: "array_position(ARRAY['abandoned','new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) DESC, o.ordered_at DESC",
   shop_asc: "s.label ASC, o.ordered_at DESC",
   shop_desc: "s.label DESC, o.ordered_at DESC",
   cour_asc: "coalesce(o.courier, o.delivery->>'courier', 'я') ASC, o.ordered_at DESC",
@@ -58,7 +58,7 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
     const tab = u.get("tab");
     if (tab === "active") parts.push(ACTIVE);
     if (tab === "done") parts.push(DONE);
-    const stages = String(u.get("stage") || "").split(",").filter((x) => (STAGES as readonly string[]).includes(x));
+    const stages = String(u.get("stage") || "").split(",").filter((x) => x === "abandoned" || (STAGES as readonly string[]).includes(x));
     if (u.get("stage") === "open") parts.push(ACTIVE);
     if (u.get("stage") === "refused") parts.push("o.parcel_status = 'refused'");
     if (stages.length) add("o.stage = ANY(?)", stages);
@@ -121,7 +121,7 @@ async function list(u: URLSearchParams) {
                   count(*) FILTER (WHERE x.stage = 'delivered')::int AS got,
                   array_remove(array_agg(DISTINCT CASE WHEN x.stage = 'returned' THEN xs.label END), NULL) AS ret_shops
              FROM orders x JOIN shops xs ON xs.id = x.shop
-            WHERE o.phone <> '' AND x.id <> o.id AND xs.company_id = s.company_id
+            WHERE o.phone <> '' AND x.id <> o.id AND xs.company_id = s.company_id AND x.stage <> 'abandoned'
               AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
          ) h ON true
         WHERE ${w.sql}

@@ -117,9 +117,11 @@ function renderHeads(d) {
 }
 
 function renderStages(d) {
-  const max = Math.max(1, ...STAGE_ORDER.map((k) => d.stages[k].n));
+  // Abandoned carts are not orders: not on the dashboard.
+  const ORDER = STAGE_ORDER.filter((k) => d.stages[k]);
+  const max = Math.max(1, ...ORDER.map((k) => d.stages[k].n));
   const link = (k) => `/poruchki/?stage=${k}&from=${state.from}&to=${state.to}${state.region ? `&region=${state.region}` : ""}${state.shop ? `&shop=${encodeURIComponent(state.shop)}` : ""}`;
-  $("stages").innerHTML = STAGE_ORDER.filter((k) => k !== "archived" || d.stages[k].n)
+  $("stages").innerHTML = ORDER.filter((k) => k !== "archived" || d.stages[k].n)
     .map((k) => {
       const c = d.stages[k];
       const share = d.orders ? Math.round((c.n / d.orders) * 100) : 0;

@@ -37,6 +37,7 @@ export const num = (n) => new Intl.NumberFormat("bg-BG").format(Number(n) || 0);
 export const pct = (x) => (x == null ? "–" : `${String(x).replace(".", ",")}%`);
 
 export const STAGES = {
+  abandoned: { label: "Изоставени", hint: "написаха данните си във формата, но не поръчаха" },
   new: { label: "Нови", hint: "още не са изпратени" },
   prepared: { label: "Изготвени", hint: "товарителница, куриерът още не я е взел" },
   shipped: { label: "Изпратени", hint: "на път към клиента" },
@@ -46,8 +47,8 @@ export const STAGES = {
   canceled: { label: "Отказани", hint: "преди изпращане" },
   archived: { label: "Архивирани", hint: "без друга информация" },
 };
-export const ONE = { new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
-export const STAGE_ORDER = ["new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
+export const ONE = { abandoned: "Изоставена", new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
+export const STAGE_ORDER = ["abandoned", "new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
 export const COURIER = { speedy: "Спиди", econt: "Еконт", gls: "GLS", boxnow: "BOX NOW", sameday: "Sameday" };
 // Courier marks (drawn here): Speedy – a red parcel cube, Econt – a blue E.
 export const CMARK = {

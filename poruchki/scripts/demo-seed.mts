@@ -3,6 +3,8 @@
 import { hashPassword } from "../netlify/lib/auth.mts";
 import { q } from "../netlify/lib/db.mts";
 import { upsertOrders } from "../netlify/lib/orders.mts";
+import { syncAbandoned } from "../netlify/lib/abandoned.mts";
+import { withCompany } from "../netlify/lib/tenant.mts";
 
 const SHOPS = [
   { id: "bg", label: "BeeVenom BG", region: "bg", currency: "EUR", perDay: 6, products: [["BeeVenom Care Gel", 15.9], ["Bee Venom крем за стави 3+2", 29.9], ["Пластири с пчелна отрова", 4.9]] },
@@ -143,6 +145,8 @@ export async function seedDemo() {
     );
     if (h > 2 && i % 2 === 0) await q("INSERT INTO lead_messages (lead_id, channel, step, text, at) VALUES ($1, 'sms', 'auto1', 'демо', now() - make_interval(mins => $2))", [r[0].id, Math.round(h * 60) - 30]);
   }
+  // The carts with a phone also show in the orders list as "Изоставена".
+  await withCompany(1, () => syncAbandoned(200));
   return `demo: ${SHOPS.length} shops, ${total} orders, login demo@local / demo-demo-demo`;
 }
 

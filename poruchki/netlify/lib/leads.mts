@@ -82,7 +82,7 @@ export async function saveLead(shop: string, l: Lead) {
 // The first order with the same phone placed after the form was opened (30 min slack for clocks and retries).
 export const MATCH = `LEFT JOIN LATERAL (
     SELECT o.id, o.order_no, o.ordered_at, o.total_eur FROM orders o
-    WHERE o.shop IN (SELECT id FROM shops WHERE company_id = (SELECT company_id FROM shops WHERE id = l.shop))
+    WHERE o.shop IN (SELECT id FROM shops WHERE company_id = (SELECT company_id FROM shops WHERE id = l.shop)) AND o.stage <> 'abandoned'
       AND ((l.phone <> '' AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))
            OR (l.email <> '' AND lower(o.email) = l.email))
       AND o.ordered_at >= l.first_at - interval '30 minutes'
@@ -111,7 +111,7 @@ export async function listLeads(tab: string, shop = "") {
                FROM lead_messages lm WHERE lm.lead_id = l.id) AS messages,
             l.first_at, l.last_at, l.status, l.last_at > now() - interval '15 minutes' AS typing,
             coalesce(l.order_id, m.id) AS order_id, coalesce(lo.order_no, m.order_no) AS order_no,
-            (SELECT count(*) FROM orders x WHERE l.phone <> '' AND ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
+            (SELECT count(*) FROM orders x WHERE l.phone <> '' AND x.stage <> 'abandoned' AND ${inCompany("x.shop")} AND right(regexp_replace(x.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))::int AS orders_before
        FROM leads l LEFT JOIN shops s ON s.id = l.shop
        ${MATCH}
        LEFT JOIN orders lo ON lo.id = l.order_id

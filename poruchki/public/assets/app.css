@@ -865,7 +865,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 @media (max-width: 1299px) and (min-width: 761px) { .otbl td, .otbl th { padding-left: 4px; padding-right: 4px; } }
 .side .tgl { grid-template-columns: 34px minmax(0, 1fr) 40px; }
 .side .tgl .badge { padding: 4px 4px; }
-@media (min-width: 761px) { .otbl td.c-client { min-width: 176px; } }
+@media (min-width: 761px) { .otbl td.c-client { min-width: 174px; } }
 .side .tgl .badge { letter-spacing: -0.015em; }
 
 /* Middleware's softer blue for names, phones and links; buttons a touch deeper in the same hue (white text stays readable) */
@@ -1017,3 +1017,4 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 .modal textarea { width: 100%; font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); color: var(--text); }
 @media (max-width: 700px) { .lane { height: 240px; } .lane .ztag { font-size: 10px; padding: 1px 6px; left: 4px; } .cartpop { width: min(320px, calc(100vw - 48px)); } .zonecounts { font-size: 12px; } }
 .modal .remstep input[type="number"] { width: 84px !important; flex: none; }
+.badge.abandoned { --h: #8a7fc4; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }

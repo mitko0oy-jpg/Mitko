@@ -957,3 +957,53 @@ test("cart reminders: SMS and e-mail by hand, unsubscribe, automatic once per st
   await api("/api/leads/reminders", { auto: false });
   await db.end();
 });
+
+test("abandoned carts in the orders list (Изоставена): made by the sync, confirmed into an order, archived when the client orders", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const send = (body) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` }, body: JSON.stringify(body) });
+  await send({ sid: "aband00001", name: "Росица Петрова", phone: "0876 751 695", cart: ["Спрей с пчелна отрова · 2 · 25,80 €"], total: "30,30 €" });
+  await send({ sid: "aband00002", name: "Донка Славчева", phone: "0885 965 671", cart: ["Крем · 1 · 29,90 €"], total: "34,40 €" });
+  await send({ sid: "aband00003", name: "Нов", phone: "0885 111 999", cart: [] }); // still typing: not yet
+  await db.query("UPDATE leads SET last_at = now() - interval '25 minutes', first_at = now() - interval '30 minutes' WHERE sid IN ('aband00001', 'aband00002')");
+  const statsBefore = (await api("/api/stats/summary")).data;
+  assert.equal((await api("/api/settings/sync", {})).status, 200);
+
+  const list = (await api("/api/orders?tab=&stage=abandoned")).data;
+  const r = list.orders.find((o) => o.phone === "0876 751 695");
+  const d = list.orders.find((o) => o.phone === "0885 965 671");
+  assert.ok(r && d, JSON.stringify(list.orders.map((o) => o.phone)));
+  assert.ok(!list.orders.some((o) => o.phone === "0885 111 999"));
+  assert.equal(r.stage, "abandoned");
+  assert.match(r.order_no, /^И\d+$/);
+  assert.equal(r.total, 30.3);
+  assert.equal(r.shipping, 4.5);
+  assert.deepEqual(r.items, ["2 × Спрей с пчелна отрова"]);
+  assert.ok((await api("/api/orders?tab=active")).data.orders.some((o) => o.id === r.id), "in the active tab, like Middleware");
+  assert.equal(list.facets.stages.abandoned, list.total);
+  // Not orders: not in the numbers; no waybill before it is confirmed.
+  assert.deepEqual((await api("/api/stats/summary")).data.periods, statsBefore.periods);
+  assert.equal((await api("/api/waybills/create", { orderId: r.id, draft: {} })).status, 400);
+  // The sync does not make it twice.
+  await api("/api/settings/sync", {});
+  assert.equal((await api("/api/orders?tab=&stage=abandoned")).data.orders.filter((o) => o.phone === "0876 751 695").length, 1);
+
+  // Confirmed after a call: a real order, and the cart counts as ordered.
+  assert.equal((await api(`/api/orders/${r.id}/confirm`, {})).status, 200);
+  const now = (await api(`/api/orders/${r.id}`)).data;
+  assert.equal(now.stage, "new");
+  assert.ok(now.confirmed_at);
+  const ordered = (await api("/api/leads?tab=ordered")).data.leads;
+  assert.ok(ordered.some((l) => l.phone === "0876 751 695"));
+
+  // The other one orders by herself: the abandoned row goes to the archive.
+  const own = await api("/api/orders", { shop: "bg", name: "Донка Славчева", phone: "0885965671", city: "София", delivery: { courier: "econt", type: "office", officeId: "1234", officeName: "София Осогово" }, items: [{ name: "Крем", qty: 1, price: 29.9 }] });
+  assert.equal(own.status, 200);
+  await api("/api/settings/sync", {});
+  const gone = (await api(`/api/orders/${d.id}`)).data;
+  assert.ok(gone.archived_at, "archived");
+  assert.ok(gone.events.some((e) => /поръча сам/.test(e.text)));
+  await db.end();
+});
