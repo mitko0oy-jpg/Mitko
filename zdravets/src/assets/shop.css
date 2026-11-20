@@ -461,7 +461,7 @@ body{padding-bottom:0}
 .bvp .hb__grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:56px;align-items:center}
 .bvp .hb__copy{display:flex;flex-direction:column;align-items:flex-start;gap:18px}
 .bvp .hb__eyebrow{padding:7px 16px;border-radius:999px;background:#E7EFDC;color:#1F3D22;font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-.bvp .hb h1{margin:0;font-size:clamp(1.7rem,4.4vw,3.2rem);line-height:1.07;letter-spacing:-.02em;color:#17301A}
+.bvp .hb h1{margin:0;font-size:clamp(1.7rem,3.4vw,2.9rem);line-height:1.07;letter-spacing:-.02em;color:#17301A}
 .bvp .hb h1 em{display:block;font-family:"Lora",Georgia,serif;font-style:italic;font-weight:600;color:#8A5A00;font-feature-settings:"locl" 0}
 .bvp .hb__lead{margin:0;max-width:30em;font-size:1.08rem;line-height:1.5;font-weight:500;color:#3A4637}
 .bvp .hb-btn{display:inline-flex;align-items:center;gap:10px;min-height:60px;padding:14px 30px;border-radius:999px;background:#2C5A2C;color:#fff;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 10px 24px rgba(23,48,26,.22);transition:background .2s,transform .2s}
@@ -470,11 +470,12 @@ body{padding-bottom:0}
 .bvp .hb__cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .bvp .hb-cat{position:relative;display:flex;flex-direction:column;background:#fff;border:2px solid #E0D8C3;border-radius:22px;overflow:hidden;text-decoration:none;color:#17301A;transition:box-shadow .2s,transform .2s,border-color .2s}
 .bvp .hb-cat:hover,.bvp .hb-cat:focus-visible{border-color:#2C5A2C;box-shadow:0 14px 34px rgba(23,48,26,.14);transform:translateY(-3px)}
-.bvp .hb-cat img{display:block;width:100%;height:170px;object-fit:cover}
+.bvp .hb-cat img{display:block;width:100%;height:180px;object-fit:cover}
 .bvp .hb-cat__txt{display:flex;flex-direction:column;gap:3px;padding:14px 46px 16px 18px}
 .bvp .hb-cat__txt b{font-size:1.1rem;line-height:1.2;font-weight:800}
 .bvp .hb-cat__txt small{font-size:.8rem;font-weight:600;color:#4B5747}
-.bvp .hb-cat__txt i,.bvp .hb__proof i{font-style:normal}
+.bvp .hb-cat__txt i{font-style:normal;font-size:.78rem;font-weight:800;color:#2C5A2C}
+.bvp .hb__proof i{font-style:normal}
 .bvp .hb-cat__go{position:absolute;right:16px;bottom:24px;color:#2C5A2C}
 .bvp .hb__proof{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 32px;margin-top:30px;padding:20px 28px;border-radius:22px;background:#17301A}
 .bvp .hb__proof>div{display:flex;flex-direction:column;gap:2px}
@@ -506,4 +507,5 @@ body{padding-bottom:0}
   .bvp .hb__proof span{font-size:.7rem;line-height:1.25}
   .bvp .hb__phone{grid-column:1/-1;justify-content:center;margin:0 4px}
 }
+@media(min-width:960px){.bvp .hb h1 em{white-space:nowrap}}
 @media(prefers-reduced-motion:reduce){.bvp .hb-cat,.bvp .hb-btn{transition:none}}

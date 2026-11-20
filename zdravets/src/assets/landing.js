@@ -811,7 +811,7 @@ function renderHomeBv() {
         <div class="hb__cats">${heroCats.map(([cat, pic, name, sub], i) => { const n = PRODUCTS.filter(x => x.cat === cat).length; return `
           <a class="hb-cat" href="${L.products}?cat=${cat}">
             <img src="${look(pic).img}" alt="" width="600" height="600" ${i < 2 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
-            <span class="hb-cat__txt"><b>${name}</b><small>${sub}<i> · ${n} ${cat === 'wellness' ? 'вида' : 'продукта'}</i></small></span>
+            <span class="hb-cat__txt"><b>${name}</b><small>${sub}</small><i>${n} ${cat === 'wellness' ? 'вида' : 'продукта'}</i></span>
             ${CHEV}
           </a>`; }).join('')}</div>
       </div>
