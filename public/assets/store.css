@@ -646,3 +646,106 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
   .mt-glyph{font-size:66px;right:14px}
 }
 @media (prefers-reduced-motion:reduce){.mt-sym span,.mt-fan img,.in>.mt .mt-card,.in>.mt .mt-glyph,.mt-ico svg *{animation:none!important}}
+
+/* ---------- math page: how a card works – the real card flips while the four steps light up in turn (14 s) ---------- */
+.how{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:clamp(28px,5vw,72px);align-items:center;margin-top:clamp(30px,4vw,48px);--cyc:14s}
+.how-stage{position:relative;display:grid;place-items:center;min-height:clamp(400px,42vw,540px)}
+.how-stage::before{content:"";position:absolute;inset:4% 2%;border-radius:48px;background:radial-gradient(closest-side,rgba(14,124,119,.2),transparent 75%)}
+.how-card{position:relative;z-index:1;width:min(310px,64%);aspect-ratio:10/14;perspective:1600px;animation:mtBob 7s ease-in-out infinite}
+.how-flip{position:absolute;inset:0;transform-style:preserve-3d}
+.how-face{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:16px;background:#fff;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:0 34px 70px -28px rgba(23,41,74,.55)}
+.how-face.back{transform:rotateY(180deg)}
+.how-tag{position:absolute;z-index:3;padding:10px 16px;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;font-size:15px;line-height:1.2;box-shadow:0 14px 30px -12px rgba(23,41,74,.55);opacity:0}
+.how-tag.t1{left:0;top:12%}
+.how-tag.t3{right:-2%;top:22%;background:var(--accent)}
+.how-tag.t4{right:2%;bottom:12%;background:#D25A24}
+.how-note{position:absolute;z-index:2;left:-2%;bottom:4%;width:min(240px,50%);aspect-ratio:22/15;border-radius:6px;rotate:-7deg;opacity:0;
+  background:repeating-linear-gradient(#fff 0 31px,#cfe0ef 31px 32px) 0 6px/100% 100%,#fff;box-shadow:0 22px 44px -20px rgba(23,41,74,.5)}
+.how-note::before{content:"";position:absolute;left:16px;top:0;bottom:0;width:2px;background:rgba(224,96,58,.45)}
+.how-note svg{position:absolute;inset:0;width:100%;height:100%}
+.how-note .w{stroke:#2A3E66;stroke-width:3}
+.how-note .w4{stroke-width:4}
+.how-pencil{inset:auto auto -14px 54%!important;width:58px!important;height:58px!important;rotate:8deg}
+.how-steps{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.hs{position:relative;overflow:hidden;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;padding:20px 22px;border-radius:22px;background:rgba(255,255,255,.45)}
+.hs-n{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:var(--surface);color:var(--accent);font:italic 700 25px/1 var(--serif);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.hs h3{margin:6px 0 6px;font-size:21px;letter-spacing:-.015em}
+.hs p{margin:0;color:var(--muted);font-size:17px;line-height:1.45}
+.hs i{position:absolute;left:0;bottom:0;width:100%;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transform:scaleX(0);transform-origin:left}
+.how.in .how-flip{animation:howFlip var(--cyc) cubic-bezier(.65,0,.35,1) infinite}
+.how.in .how-tag.t1{animation:howT1 var(--cyc) ease infinite}
+.how.in .how-tag.t3{animation:howT3 var(--cyc) ease infinite}
+.how.in .how-tag.t4{animation:howT4 var(--cyc) ease infinite}
+.how.in .how-note{animation:howNote var(--cyc) cubic-bezier(.22,1,.36,1) infinite}
+.how.in .how-note .w{stroke-dasharray:240;animation:howWrite var(--cyc) linear infinite}
+.how.in .how-note .w2{animation-name:howWrite2}.how.in .how-note .w3{animation-name:howWrite3}.how.in .how-note .w4{animation-name:howWrite4}
+.how.in .how-pencil{animation:howPencil var(--cyc) ease-in-out infinite}
+.how.in .hs{animation:hsOn var(--cyc) linear infinite;animation-delay:var(--dl)}
+.how.in .hs-n{animation:hsNum var(--cyc) linear infinite;animation-delay:var(--dl)}
+.how.in .hs i{animation:hsBar var(--cyc) linear infinite;animation-delay:var(--dl)}
+.how:hover *{animation-play-state:paused!important}
+@keyframes howFlip{0%,44%{transform:rotateY(0)}50%,94%{transform:rotateY(180deg)}100%{transform:rotateY(360deg)}}
+@keyframes howT1{0%{opacity:0;transform:translateY(10px)}5%,21%{opacity:1;transform:none}25%,100%{opacity:0;transform:translateY(-6px)}}
+@keyframes howT3{0%,51%{opacity:0;transform:translateY(10px)}55%,71%{opacity:1;transform:none}75%,100%{opacity:0;transform:translateY(-6px)}}
+@keyframes howT4{0%,76%{opacity:0;transform:translateY(10px)}80%,95%{opacity:1;transform:none}99%,100%{opacity:0}}
+@keyframes howNote{0%,25%{opacity:0;transform:translate(-24px,24px)}30%,46%{opacity:1;transform:none}50%,100%{opacity:0;transform:translate(-12px,12px)}}
+@keyframes howWrite{0%,29%{stroke-dashoffset:240}34%,100%{stroke-dashoffset:0}}
+@keyframes howWrite2{0%,33%{stroke-dashoffset:240}38%,100%{stroke-dashoffset:0}}
+@keyframes howWrite3{0%,37%{stroke-dashoffset:240}42%,100%{stroke-dashoffset:0}}
+@keyframes howWrite4{0%,42%{stroke-dashoffset:240}45%,100%{stroke-dashoffset:0}}
+@keyframes howPencil{0%,29%{transform:translate(-90px,-60px)}34%{transform:translate(-20px,-60px)}38%{transform:translate(-80px,-30px)}42%{transform:translate(-10px,-2px)}46%,100%{transform:translate(0,0)}}
+@keyframes hsOn{0%,23%{background:#fff;box-shadow:0 18px 40px -26px rgba(23,41,74,.45)}27%,100%{background:rgba(255,255,255,.45);box-shadow:none}}
+@keyframes hsNum{0%,23%{background:var(--accent);color:#fff}27%,100%{background:var(--surface);color:var(--accent)}}
+@keyframes hsBar{0%{transform:scaleX(0)}24%{transform:scaleX(1)}25%,100%{transform:scaleX(0)}}
+@media (max-width:900px){.how{grid-template-columns:1fr}.how-stage{min-height:380px}.how-card{width:min(250px,62%)}.how-tag{font-size:14px;padding:8px 13px}.how-note{width:min(200px,52%)}}
+@media (prefers-reduced-motion:reduce){.how-card,.how-flip,.how-tag,.how-note,.how-note *,.hs,.hs *{animation:none!important}.how-tag.t1{opacity:1}}
+
+/* ---------- math page: why these are not ordinary cards – the method in four parts and a side-by-side ---------- */
+.u-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:clamp(30px,4vw,48px)}
+.u-p{position:relative;display:flex;flex-direction:column;padding:26px 24px;border-radius:24px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),0 20px 44px -34px rgba(23,41,74,.5)}
+.u-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.u-ico{display:grid;place-items:center;width:62px;height:62px;border-radius:18px;background:var(--accent-soft);color:var(--accent)}
+.u-p:nth-child(even) .u-ico{background:rgba(240,122,62,.13);color:#D25A24}
+.u-ico svg{width:40px;height:40px;overflow:visible}
+.u-ico svg *{transform-box:view-box}
+.u-n{font:italic 700 44px/1 var(--serif);color:color-mix(in srgb,var(--accent) 22%,transparent)}
+.u-p h3{margin:0 0 8px;font-size:21px;line-height:1.2;letter-spacing:-.015em}
+.u-p p{margin:0;color:var(--muted);font-size:17px;line-height:1.45}
+.u-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:auto;padding-top:16px}
+.u-flow span{padding:6px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:13.5px}
+.u-flow b{color:var(--muted);font-size:14px}
+.u-days{display:grid;gap:8px;margin-top:auto;padding-top:16px}
+.u-days span{position:relative;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:var(--surface-2);font-weight:700;font-size:15px}
+.u-days b{margin-left:auto;color:#D25A24;font-weight:800}
+.u-days i{width:10px;height:10px;border-radius:50%;background:color-mix(in srgb,var(--accent) 30%,transparent)}
+/* slow motion once on screen */
+.u-p.in .u-t1,.u-p.in .u-t2{stroke-dasharray:16;animation:icTick 4s ease-in-out infinite}
+.u-p.in .u-t2{animation-delay:.7s}
+.u-p.in .u-c2{animation:uFan 5s ease-in-out infinite}
+.u-p.in .u-c3{animation:uFan 5s ease-in-out infinite;animation-delay:-.4s}
+.u-p.in .u-rot{transform-origin:24px 24px;animation:icHand 9s linear infinite}
+.u-p.in .u-bl{animation:icBlink 2.4s ease-in-out infinite}
+.u-p.in .u-flow span{animation:uStep 6s ease-in-out infinite}
+.u-p.in .u-flow span:nth-of-type(2){animation-delay:1.5s}.u-p.in .u-flow span:nth-of-type(3){animation-delay:3s}.u-p.in .u-flow span:nth-of-type(4){animation-delay:4.5s}
+.u-p.in .u-days i{animation:uDot 6s ease-in-out infinite}
+.u-p.in .u-days .d2 i{animation-delay:2s}.u-p.in .u-days .d3 i{animation-delay:4s}
+@keyframes uFan{50%{transform:translate(3px,-3px) rotate(4deg)}}
+@keyframes uStep{0%,30%,100%{background:var(--accent-soft);color:var(--accent)}8%,22%{background:var(--accent);color:#fff}}
+@keyframes uDot{0%,40%,100%{background:color-mix(in srgb,var(--accent) 30%,transparent);box-shadow:none}10%,30%{background:#D25A24;box-shadow:0 0 0 5px rgba(210,90,36,.18)}}
+/* side by side */
+.u-cmp{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:16px;margin-top:clamp(22px,3vw,34px)}
+.u-col{padding:28px 28px 24px;border-radius:26px}
+.u-col ul{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.u-col li{display:flex;gap:12px;align-items:flex-start;font-size:17px;line-height:1.4}
+.u-col li svg{flex:none;width:24px;height:24px;margin-top:1px;padding:3px;border-radius:50%}
+.u-h{display:flex;align-items:center;gap:10px;margin:0 0 18px;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.u-col.bad{background:rgba(23,41,74,.05);color:#5A6274}
+.u-col.bad li svg{color:#8A90A0;background:rgba(23,41,74,.08)}
+.u-col.good{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 2px var(--accent),0 30px 60px -34px rgba(14,124,119,.6)}
+.u-col.good li svg{color:#fff;background:var(--accent)}
+.u-col.good li span{font-weight:600}
+@media (max-width:1100px){.u-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.u-cmp{grid-template-columns:1fr}.u-col.good{order:-1}}
+@media (max-width:560px){.u-grid{grid-template-columns:1fr}.u-col{padding:22px 20px}}
+@media (prefers-reduced-motion:reduce){.u-p *{animation:none!important}}
+.u-h .pill{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
