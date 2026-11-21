@@ -18,6 +18,8 @@ const LINKS = { ...CFG.LINKS, ...(SET.links || {}), ...(local ? CFG.LOCAL : {}) 
 const CHECKOUT = { ...CFG.CHECKOUT, ...(SET.checkout || {}) };
 const DELIVERY_FROM = SET.delivery > 0 ? Math.round(SET.delivery * 100) : CFG.DELIVERY_FROM;
 const { DECKS, CONTACT, COMPANY, MAX_DECKS } = CFG;
+// the edubel.bg prices that differ from the catalog (a block's own price settings still win in shop.js)
+for (const [k, v] of Object.entries(CFG.PRICES || {})) if (PACKAGES[k] && v > 0) PACKAGES[k].price = v;
 
 const host = ROOT || document.body;
 const main = $("main", host);

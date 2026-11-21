@@ -21,6 +21,6 @@ export const DOS = {
     "dos-lit:telche": "/igra-literaturni-dosieta/poruchka-dosieta-karti",
   },
   // delivery with the book alone, from this price to an office
-  delivery: 450,
+  delivery: 490,
   store: "/",
 };

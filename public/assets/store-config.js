@@ -1,5 +1,5 @@
 // The card store (edubel.bg on ConvertBuilder): pages, checkouts and what the cart shows.
-// Prices are not here: they come from shop-catalog.js (PACKAGES, REGULAR), the same as on edubel.site.
+// Prices come from shop-catalog.js (PACKAGES, REGULAR), the same as on edubel.site, except PRICES below.
 // Inside a ConvertBuilder block, window.EB_LANDING.store can override any of these settings.
 import { TRN } from "./trenazhor-config.js";
 
@@ -54,9 +54,13 @@ export const CHECKOUT = {
   duo: "/komplekt/poruchka-komplekt",
 };
 
+// The package prices on edubel.bg that differ from shop-catalog.js (euro cents); edubel.site keeps its own.
+// Two decks: 27,90 € for the first and 16,90 € for the second. Must match the products in ConvertBuilder.
+export const PRICES = { "lit-2": 4480, "ezik-2": 4480, duo: 4480 };
+
 // Delivery with one deck (euro cents), as in the ConvertBuilder checkout: from this price to an office.
 // Two decks ship free.
-export const DELIVERY_FROM = 450;
+export const DELIVERY_FROM = 490;
 
 export const CONTACT = {
   phone: "0893 42 52 92",

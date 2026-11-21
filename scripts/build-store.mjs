@@ -9,7 +9,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM, DIGITAL } from "../public/assets/store-config.js";
+import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM, DIGITAL, PRICES } from "../public/assets/store-config.js";
 import { PACKAGES, REGULAR } from "../public/assets/shop-catalog.js";
 import { DOS } from "../public/assets/dosieta-config.js";
 import { TRN } from "../public/assets/trenazhor-config.js";
@@ -197,7 +197,7 @@ const settings = (page) => page.kind === "trn" ? trnSettings(page) : page.kind =
 window.EB_LANDING = {
   // Цени в евро без доставката. Трябва да са същите като в продуктите в ConvertBuilder.
   // "redovna" е редовната цена на едно тесте – показва се зачеркната (при две тестета – двойна).
-  prices: ${JSON.stringify({ "lit-1": euroVal(PACKAGES["lit-1"].price), "lit-2": euroVal(PACKAGES["lit-2"].price), "ezik-1": euroVal(PACKAGES["ezik-1"].price), "ezik-2": euroVal(PACKAGES["ezik-2"].price), duo: euroVal(PACKAGES.duo.price), redovna: euroVal(REGULAR) }).replace(/,/g, ", ")},
+  prices: ${JSON.stringify({ ...Object.fromEntries(["lit-1", "lit-2", "ezik-1", "ezik-2", "duo"].map((k) => [k, euroVal(PRICES[k] || PACKAGES[k].price)])), redovna: euroVal(REGULAR) }).replace(/,/g, ", ")},
   store: {
     // Страницата с поръчката (checkout) в ConvertBuilder за всеки комплект в количката.
     checkout: ${JSON.stringify(CHECKOUT, null, 1).replace(/\n\s*/g, " ")},
