@@ -749,3 +749,22 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
 @media (max-width:560px){.u-grid{grid-template-columns:1fr}.u-col{padding:22px 20px}}
 @media (prefers-reduced-motion:reduce){.u-p *{animation:none!important}}
 .u-h .pill{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+
+/* ---------- product gallery with a math backdrop: graph paper, a compass circle, a triangle, a parabola and drifting symbols ---------- */
+.gal-deco{position:absolute;inset:0;pointer-events:none;color:#0E7C77;
+  background-image:radial-gradient(closest-side,rgba(255,255,255,.85),rgba(255,255,255,0) 82%),
+    linear-gradient(rgba(14,124,119,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(14,124,119,.12) 1px,transparent 1px),
+    linear-gradient(rgba(14,124,119,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(14,124,119,.055) 1px,transparent 1px);
+  background-size:78% 78%,100px 100px,100px 100px,20px 20px,20px 20px;background-position:center,-1px -1px,-1px -1px,-1px -1px,-1px -1px;background-repeat:no-repeat,repeat,repeat,repeat,repeat}
+.gal-deco svg{position:absolute;inset:0;width:100%;height:100%;stroke:rgba(14,124,119,.34);stroke-width:2.4}
+.gal-deco .gd-t{fill:rgba(14,124,119,.55);stroke:none;font:italic 700 22px var(--serif)}
+.gal-deco .gd-f{fill:rgba(23,41,74,.32);stroke:none;font:italic 700 28px var(--serif)}
+.gal-deco .gd-par{stroke:rgba(240,122,62,.6);stroke-width:3;stroke-dasharray:420;stroke-dashoffset:420;animation:gdDraw 2.6s cubic-bezier(.22,1,.36,1) .6s forwards}
+.gal-deco .gd-comp{transform-box:view-box;transform-origin:118px 128px;animation:icHand 60s linear infinite}
+.gal-deco .gd-tri{animation:mtBob 9s ease-in-out infinite}
+.gd-s{position:absolute;left:var(--x);top:var(--y);font:italic 700 var(--s)/1 var(--serif);rotate:var(--r);animation:mtFloat 14s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
+.gd-s.t{color:rgba(14,124,119,.36)}
+.gd-s.c{color:rgba(240,122,62,.42)}
+@keyframes gdDraw{to{stroke-dashoffset:0}}
+@media (max-width:600px){.gd-s{font-size:calc(var(--s) * .7)}.gal-deco .gd-f{font-size:24px}}
+@media (prefers-reduced-motion:reduce){.gal-deco *{animation:none!important}.gal-deco .gd-par{stroke-dashoffset:0}}
