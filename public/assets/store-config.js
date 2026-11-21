@@ -34,9 +34,11 @@ export const LOCAL = {
 
 // The digital products (the page LINKS.digitalni). Each one has its own checkout in ConvertBuilder,
 // paid by card: the PDF comes to the buyer's e-mail as a download link right after the payment, the
-// trainer as a personal code. Prices are euro cents and must match the products in ConvertBuilder.
+// trainer as a personal code. The mock exam also comes printed (probnaPrint), sent by courier. Prices are euro cents and must match the products in ConvertBuilder.
 export const DIGITAL = {
   probna: { title: "Пробна матура НВО – PDF", price: 990, checkout: "/digitalni/poruchka-probna-matura" },
+  // the same mock exam printed and sent by courier (paid on delivery or by card)
+  probnaPrint: { title: "Пробна матура НВО – книжна", price: 1490, checkout: "/digitalni/poruchka-probna-matura-knizhna" },
   karti90: { title: "90 интерактивни карти по литература", price: 790, checkout: "/digitalni/poruchka-90-karti" },
   v200: { title: "200 въпроса по БЕЛ – интерактивно приложение", price: 990, checkout: "/digitalni/poruchka-200-vaprosa" },
   ...Object.fromEntries(Object.entries(TRN.plans).map(([k, p]) => [`trn-${k}`, { title: `НВО тренажор – ${p.title}`, price: p.price, checkout: TRN.checkout[k] }])),

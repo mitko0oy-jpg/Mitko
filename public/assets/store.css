@@ -500,6 +500,14 @@ body[data-deck="lit"]{--muted:#46524A}
 .dig-plan.best span{color:rgba(255,255,255,.75)}
 .dig-plan.best small{color:#F3D98B}
 .dig-flag{position:absolute;font-style:normal;top:-11px;left:50%;translate:-50% 0;padding:3px 10px;border-radius:999px;background:linear-gradient(135deg,#F7E2A2,#D8B25C 50%,#B8862C);color:#231705;font-size:11.5px;font-weight:800;white-space:nowrap}
+.dig-vars{position:relative;z-index:2;display:grid;gap:8px;margin-top:auto;padding-top:18px}
+.dig-var{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-radius:16px;background:var(--accent);color:var(--accent-ink,#fff);text-decoration:none;box-shadow:0 12px 22px -14px var(--accent);transition:transform .4s var(--spring),filter .3s var(--ease)}
+.dig-var+.dig-var{background:var(--bg);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.dig-var:hover{transform:translateY(-2px);filter:brightness(1.04)}
+.dig-var span{display:flex;flex-direction:column;gap:2px;line-height:1.2}
+.dig-var b{font-size:16px}
+.dig-var small{font-size:12.5px;font-weight:600;opacity:.85}
+.dig-var em{flex:none;font-style:normal;font-size:21px;font-weight:800;letter-spacing:-.02em}
 .dig-note{margin:16px 0 0;font-size:14.5px;color:var(--muted)}
 .dig-note a{color:var(--ink);font-weight:800}
 .dig-link{position:relative;z-index:2;display:inline-block;margin-top:14px;font-weight:800;color:var(--ink)}
