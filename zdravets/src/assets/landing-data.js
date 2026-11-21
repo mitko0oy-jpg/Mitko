@@ -264,7 +264,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '87251bb20c0bc46900a46df76d0a1dbdd5fb94f6';
+const ZN_MEDIA = '058ecd0aea019eba0831909560de3883c42c5423';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
@@ -286,7 +286,11 @@ const ZONES = [
   { id: 'suha-koja', name: 'Суха кожа', sub: 'Балсам с телешка лой и мед', img: 'life-ghk', ids: ['ghk'] },
   { id: 'vseki-den', name: 'Пластири за всеки ден', sub: '8 вида – по един пластир на ден', img: 'life-stress', ids: ['energy', 'stress', 'apetit', 'berberin', 'nad', 'focus', 'mood', 'love'] }
 ];
-const zoneImg = z => znM(`${z.img}-600.webp`);const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
+const zoneImg = z => znM(`${z.img}-600.webp`);
+/* Снимки на пакетите – всяка показва точния брой (pack-<продукт>-<брой>.webp в media/). */
+const PACK_IMG = { bf2: 'pack-gel-2.webp', bf5: 'pack-gel-5.webp', skin2: 'pack-skin-2.webp' };
+['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'nail', 'ghk'].forEach(id => { PACK_IMG[`${id}2`] = `pack-${id}-2.webp`; PACK_IMG[`${id}3`] = `pack-${id}-3.webp`; });
+BUNDLES.forEach(b => { if (b.media) b.img = znM(b.media); });const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
 const SCENE_VIDEOS = SCENES.filter(id => !CLEAN_PHOTOS.includes(id)); // останалите имат и раздвижена версия
 const sceneOf = id => SCENES.includes(id)

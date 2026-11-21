@@ -103,8 +103,9 @@ function landingOffers(p, d) {
     // снимката трябва да показва точно това, което е в пакета: 2 гела = две туби; „Пълна грижа“ = 3 гела + спрей
     const tuba = BVM(BV.hero, 'vs-tuba.webp');
     // цял кадър на пакета (заснет с подаръка) – докато подаръкът важи; иначе сглобената снимка без подарък
-    const one = p.id !== 'gel' ? '' : k.key === 'bf2' ? znM('pack-gel-2.webp') : gift && k.key === 'bf3' ? znM('pack-gel-3.webp') : gift && k.key === 'bfFull' ? znM('pack-gel-full.webp') : '';
-    const duo = p.id !== 'gel' || one ? null : k.key === 'bfFull' && p.gallery && p.gallery[0] ? { imgs: [p.gallery[0], productLook(P('spray')).img], plus: true } : null;
+    // снимката показва точния брой: 2/3/5 гела, 2/3 спрея и т.н. (3 гела с подаръка – докато важи)
+    const one = gift && k.key === 'bf3' ? znM('pack-gel-3.webp') : PACK_IMG[k.key] ? znM(PACK_IMG[k.key]) : '';
+    const duo = null;
     const lis = [];
     if (gift && (qty > 1 || bundle)) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
@@ -662,6 +663,15 @@ function gelIntro(p, d) {
     <a class="bv-btn bv-btn--xl gi__cta" href="#sp-top">Избери комплект <span class="bv-arr">↓</span></a>
   </div></section>`;
 }
+/* „Добави и друг продукт“ – падащо меню с останалите продукти (по раздели); добавя се заедно с избрания пакет. */
+function addonSelect(p) {
+  const groups = CATEGORIES.map(c => {
+    const list = PRODUCTS.filter(x => x.cat === c.id && x.id !== p.id);
+    return list.length ? `<optgroup label="${esc(c.name)}">${list.map(x => `<option value="${x.store}">${esc(x.shortName)} – ${fmt(x.price)}</option>`).join('')}</optgroup>` : '';
+  }).join('');
+  return `<label class="sp-addon"><span class="sp-lbl">Добави и друг продукт към поръчката</span>
+    <select data-addon aria-label="Добави и друг продукт"><option value="">– не, благодаря –</option>${groups}</select></label>`;
+}
 function productTop(p, d, ctx) {
   const { theme, packs, reviewsOn } = ctx;
   const cat = catOf(p);
@@ -674,7 +684,7 @@ function productTop(p, d, ctx) {
   const opts = [];
   if (packs) packs.forEach(k => {
     const c = packCalc(p, k);
-    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, prev: bfOn() ? k.prev || 0 : 0, bf: !!(k.bundle && B(k.bundle).bf !== false) });
+    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, flag: k.flag || '', prev: bfOn() ? k.prev || 0 : 0, bf: !!(k.bundle && B(k.bundle).bf !== false) });
   });
   else {
     opts.push({ kind: 'qty', key: 'one', label: p.wellness ? '1 кутия' : '1 брой', sub: p.size, price: p.price });
@@ -707,7 +717,7 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули</span>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули</span>` : ''}</span>
           <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${packs ? bfTimer() : ''}
@@ -716,6 +726,7 @@ function productTop(p, d, ctx) {
         <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(((n) => n.charAt(0).toUpperCase() + n.slice(1))(x.shortName.replace(/^Пластири (с )?/, '').replace(/ пластири$/, '')))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
+      ${addonSelect(p)}
       ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 пластира за стави и мускули подарък</b> към тази поръчка – до 30 ноември</span></p>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>2 или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
       <div class="sp-ctas">
@@ -806,8 +817,9 @@ function bindTop(root, p) {
   }));
   const act = (goNow, btn) => {
     const x = o();
-    if (x.kind === 'pack') return addFlow({ store: x.store, qty: 1, go: goNow, btn, value: x.price, contentId: x.key, bf: x.bf });
-    if (x.kind === 'qty') return addFlow({ store: p.store, qty, go: goNow, btn, value: p.price * qty, contentId: p.id });
+    const ad = +(($('[data-addon]', top) || {}).value || 0), extra = ad ? [ad] : [];
+    if (x.kind === 'pack') return addFlow({ store: x.store, qty: 1, go: goNow, btn, value: x.price, contentId: x.key, bf: x.bf, extra });
+    if (x.kind === 'qty') return addFlow({ store: p.store, qty, go: goNow, btn, value: p.price * qty, contentId: p.id, extra });
     if (picks.length < x.n - 1) { combo.scrollIntoView({ behavior: 'smooth', block: 'center' }); combo.classList.add('shake'); setTimeout(() => combo.classList.remove('shake'), 600); return; }
     return addCombo(x.n, [p.id].concat(picks), { go: goNow, btn });
   };

@@ -14,7 +14,7 @@
         <li>До офис на Еконт — <b data-ship="econt-office"></b></li>
         <li>До офис на Спиди — <b data-ship="speedy-office"></b></li>
         <li>До адрес — <b data-ship="address"></b></li>
-        <li data-free-ship>При поръчка от <b data-free-from></b> (например комплекта „Пълна грижа“) доставката до офис е <b>безплатна</b>.</li>
+        <li data-free-ship>При поръчка от <b data-free-from></b> (например 5 гела или 3 спрея) доставката до офис е <b>безплатна</b>.</li>
         <li>Поръчката се потвърждава по телефона – обажда се Александра, нашият дигитален асистент. Ако искаш да промениш или добавиш нещо, кажи ѝ. Изпращаме до 1 работен ден след потвърждението, а куриерът доставя за 1–2 работни дни.</li>
       </ul>
       <h2>Плащане</h2>
@@ -150,7 +150,8 @@ const PRODUCTS = [
       ['Ментол', 'Дава приятно освежаващо усещане'],
       ['Магнезий и алантоин', 'Подхранват и успокояват кожата']
     ],
-    usage: 'Разклати и напръскай от около 10 см върху желаната зона. Разнеси леко. Използвай до 3 пъти на ден.'
+    usage: 'Разклати и напръскай от около 10 см върху желаната зона. Разнеси леко. Използвай до 3 пъти на ден.',
+    packs: 'spray'
   },
   {
     id: 'hyal', store: 11, cat: 'stavi', bestseller: true,
@@ -171,7 +172,8 @@ const PRODUCTS = [
       ['Мента', 'Освежава'],
       ['Джинджифил', 'Затоплящ растителен екстракт']
     ],
-    usage: 'Нанеси малко количество и масажирай до попиване. Идеален вечер след гела или самостоятелно 1–2 пъти на ден.'
+    usage: 'Нанеси малко количество и масажирай до попиване. Идеален вечер след гела или самостоятелно 1–2 пъти на ден.',
+    packs: 'hyal'
   },
   {
     id: 'beeherb', store: 6, cat: 'stavi', bestseller: true,
@@ -192,7 +194,8 @@ const PRODUCTS = [
       ['Джинджифил и лют червен пипер', 'Дават затоплящо усещане'],
       ['Шафранка и нотоженшен', 'Растителни екстракти от източната традиция']
     ],
-    usage: 'Постави пластира върху чиста и суха кожа. Носи до 8 часа, след което го махни. Не поставяй върху наранена кожа.'
+    usage: 'Постави пластира върху чиста и суха кожа. Носи до 8 часа, след което го махни. Не поставяй върху наранена кожа.',
+    packs: 'beeherb'
   },
   {
     id: 'bvpatch', store: 7, cat: 'stavi',
@@ -209,7 +212,8 @@ const PRODUCTS = [
       'Подходящи за ежедневна употреба'
     ],
     ingredients: [['Пчелна отрова', 'Основната съставка'], ['Растителни екстракти', 'Допълват формулата']],
-    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена или раздразнена кожа.'
+    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена или раздразнена кожа.',
+    packs: 'bvpatch'
   },
   {
     id: 'tibet', store: 8, cat: 'stavi',
@@ -226,7 +230,8 @@ const PRODUCTS = [
       'Удобни за ежедневна употреба'
     ],
     ingredients: [['Животински отрови (6 вида)', 'Традиционна тибетска рецептура'], ['Растителни екстракти', 'Допълват усещането за топлина']],
-    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена кожа и при чувствителност към съставките.'
+    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена кожа и при чувствителност към съставките.',
+    packs: 'tibet'
   },
   {
     id: 'vein', store: 9, cat: 'kraka', bestseller: true,
@@ -261,7 +266,8 @@ const PRODUCTS = [
       'Бързо попива, лесен за нанасяне'
     ],
     ingredients: [['Пчелна отрова', 'Активна съставка'], ['Растителни масла', 'Подхранват нокътя и кожата']],
-    usage: 'Напръскай върху чист и сух нокът и кожата около него 2 пъти на ден. Остави да попие.'
+    usage: 'Напръскай върху чист и сух нокът и кожата около него 2 пъти на ден. Остави да попие.',
+    packs: 'nail'
   },
   {
     id: 'skin', store: 4, cat: 'koja', bestseller: true,
@@ -305,7 +311,8 @@ const PRODUCTS = [
       ['Телешка лой', 'Богата и подхранваща — като в старите рецепти'],
       ['Мед', 'Хидратира и омекотява']
     ],
-    usage: 'Затопли малко количество между пръстите и нанеси върху сухите участъци 1–2 пъти на ден.'
+    usage: 'Затопли малко количество между пръстите и нанеси върху сухите участъци 1–2 пъти на ден.',
+    packs: 'ghk'
   },
   {
     id: 'apetit', store: 13, cat: 'wellness', wellness: true,
@@ -497,22 +504,31 @@ const BUNDLES = [
     img: bImg(KOM, 'ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png')
   },
   {
-    id: 'bfFull', store: 27, tier: 'Пълна грижа', badge: 'Безплатна доставка',
-    title: 'Комплект „Пълна грижа“',
-    items: [['gel', 3], ['spray', 1]],
+    id: 'bf5', store: 43, tier: 'Най-изгодно', badge: 'Безплатна доставка',
+    title: '5 гела за стави',
+    items: [['gel', 5]],
     gift: [['beeherb', 1]],
     price: 34.90,
-    prev: 36.90,
-    perUnit: 'Гел сутрин и вечер, спрей — навън и за гърба',
-    line: '3 гела + Спрей за стави',
-    note: 'Чудесен подарък и за близък човек',
+    perUnit: '6,98\u00a0€ за гел',
+    line: '5 гела по 20 г',
+    note: 'Най-ниската цена за гел – и за близък човек',
     freeShip: true,
-    collage: [
-      [bImg(KOM, 'ChatGPT_Image_Sep_28_2026_11_46_13_PM-1049171.png'), '3 гела BeeVenom'],
-      [zImg('ChatGPT_Image_Jul_15_2026_10_08_12_AM-4099320.png'), 'Спрей за стави BeeVenom'],
-      [zImg('ChatGPT_Image_Jul_15_2026_10_52_00_AM-4101946.png'), 'Билкови пластири BeeHerb']
-    ]
+    media: 'pack-gel-5.webp'
   },
+  /* Комплект „Грижа за тялото“ – по образеца на beevenombg.eu/trio */
+  {
+    id: 'trio', store: 59, tier: 'Грижа за тялото', badge: '3 продукта',
+    title: 'Комплект „Грижа за тялото“',
+    items: [['gel', 1], ['vein', 1], ['skin', 1]],
+    gift: [['beeherb', 1]],
+    price: 17.90,
+    perUnit: '5,97\u00a0€ на продукт',
+    line: 'Гел за стави + крем за вени + крем за кожа',
+    note: 'Стави, крака и кожа – в един пакет',
+    freeShip: false,
+    media: 'pack-trio.webp'
+  },
+
   /* Не е от Черния петък — пакет на страницата на крема за кожа */
   {
     id: 'skin3', store: 28, bf: false, tier: 'Най-изгоден',
@@ -549,11 +565,47 @@ const PACKS = {
     { key: 'gel1', label: '1 гел', sub: 'За да опиташ', store: 24, price: 15.90 },
     { key: 'bf2', label: '2 гела', sub: '9,95\u00a0€ за гел', bundle: 'bf2', store: 25, price: 19.90, prev: 22.90 },
     { key: 'bf3', label: '3 гела', sub: '7,63\u00a0€ за гел · най-избиран', bundle: 'bf3', store: 26, price: 22.90, prev: 24.90, featured: true },
-    { key: 'bfFull', label: 'Пълна грижа: 3 гела + спрей', sub: 'Гел сутрин и вечер, спрей навън', bundle: 'bfFull', store: 27, price: 34.90, prev: 36.90 }
+    { key: 'bf5', label: '5 гела', sub: '6,98\u00a0€ за гел', bundle: 'bf5', store: 43, price: 34.90, flag: 'Безплатна доставка' }
   ],
   skin: [
     { key: 'skin1', label: '1 крем', sub: 'За да опиташ', store: 4, price: 9.90 },
+    { key: 'skin2', label: '2 крема', sub: '8,95\u00a0€ за крем', store: 54, price: 17.90 },
     { key: 'skin3', label: '3 крема', sub: '8,30\u00a0€ за крем · най-изгодно', bundle: 'skin3', store: 28, price: 24.90, featured: true }
+  ],
+  spray: [
+    { key: 'spray1', label: '1 спрей', sub: 'За да опиташ', store: 5, price: 17.90 },
+    { key: 'spray2', label: '2 спрея', sub: '13,95\u00a0€ за спрей', store: 44, price: 27.90 },
+    { key: 'spray3', label: '3 спрея', sub: '11,63\u00a0€ за спрей · най-изгодно', store: 45, price: 34.90, featured: true, flag: 'Безплатна доставка' }
+  ],
+  hyal: [
+    { key: 'hyal1', label: '1 крем', sub: 'За да опиташ', store: 11, price: 19.90 },
+    { key: 'hyal2', label: '2 крема', sub: '14,95\u00a0€ за крем', store: 55, price: 29.90 },
+    { key: 'hyal3', label: '3 крема', sub: '13,30\u00a0€ за крем · най-изгодно', store: 56, price: 39.90, featured: true, flag: 'Безплатна доставка' }
+  ],
+  beeherb: [
+    { key: 'beeherb1', label: '1 кутия', sub: 'За да опиташ', store: 6, price: 9.90 },
+    { key: 'beeherb2', label: '2 кутии', sub: '8,95\u00a0€ за кутия', store: 46, price: 17.90 },
+    { key: 'beeherb3', label: '3 кутии', sub: '8,30\u00a0€ за кутия · най-изгодно', store: 47, price: 24.90, featured: true }
+  ],
+  bvpatch: [
+    { key: 'bvpatch1', label: '1 кутия', sub: 'За да опиташ', store: 7, price: 9.90 },
+    { key: 'bvpatch2', label: '2 кутии', sub: '8,95\u00a0€ за кутия', store: 48, price: 17.90 },
+    { key: 'bvpatch3', label: '3 кутии', sub: '8,30\u00a0€ за кутия · най-изгодно', store: 49, price: 24.90, featured: true }
+  ],
+  tibet: [
+    { key: 'tibet1', label: '1 кутия', sub: 'За да опиташ', store: 8, price: 9.90 },
+    { key: 'tibet2', label: '2 кутии', sub: '8,95\u00a0€ за кутия', store: 50, price: 17.90 },
+    { key: 'tibet3', label: '3 кутии', sub: '8,30\u00a0€ за кутия · най-изгодно', store: 51, price: 24.90, featured: true }
+  ],
+  nail: [
+    { key: 'nail1', label: '1 спрей', sub: 'За да опиташ', store: 12, price: 9.90 },
+    { key: 'nail2', label: '2 спрея', sub: '8,95\u00a0€ за спрей', store: 52, price: 17.90 },
+    { key: 'nail3', label: '3 спрея', sub: '8,30\u00a0€ за спрей · най-изгодно', store: 53, price: 24.90, featured: true }
+  ],
+  ghk: [
+    { key: 'ghk1', label: '1 балсам', sub: 'За да опиташ', store: 10, price: 19.90 },
+    { key: 'ghk2', label: '2 балсама', sub: '14,95\u00a0€ за балсам', store: 57, price: 29.90 },
+    { key: 'ghk3', label: '3 балсама', sub: '13,30\u00a0€ за балсам · най-изгодно', store: 58, price: 39.90, featured: true, flag: 'Безплатна доставка' }
   ],
   vein: [
     { key: 'vein1', label: '1 крем', sub: 'За да опиташ', store: 9, price: 12.90 },
@@ -870,7 +922,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '87251bb20c0bc46900a46df76d0a1dbdd5fb94f6';
+const ZN_MEDIA = '058ecd0aea019eba0831909560de3883c42c5423';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
@@ -892,7 +944,11 @@ const ZONES = [
   { id: 'suha-koja', name: 'Суха кожа', sub: 'Балсам с телешка лой и мед', img: 'life-ghk', ids: ['ghk'] },
   { id: 'vseki-den', name: 'Пластири за всеки ден', sub: '8 вида – по един пластир на ден', img: 'life-stress', ids: ['energy', 'stress', 'apetit', 'berberin', 'nad', 'focus', 'mood', 'love'] }
 ];
-const zoneImg = z => znM(`${z.img}-600.webp`);const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
+const zoneImg = z => znM(`${z.img}-600.webp`);
+/* Снимки на пакетите – всяка показва точния брой (pack-<продукт>-<брой>.webp в media/). */
+const PACK_IMG = { bf2: 'pack-gel-2.webp', bf5: 'pack-gel-5.webp', skin2: 'pack-skin-2.webp' };
+['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'nail', 'ghk'].forEach(id => { PACK_IMG[`${id}2`] = `pack-${id}-2.webp`; PACK_IMG[`${id}3`] = `pack-${id}-3.webp`; });
+BUNDLES.forEach(b => { if (b.media) b.img = znM(b.media); });const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
 const SCENE_VIDEOS = SCENES.filter(id => !CLEAN_PHOTOS.includes(id)); // останалите имат и раздвижена версия
 const sceneOf = id => SCENES.includes(id)
@@ -1305,7 +1361,8 @@ const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.prod
 
 // По време на Черния петък подаръкът върви с всяка поръчка БЕЗ тази от 1 брой:
 // комплект (2 и повече в един продукт от магазина) или поне 2 броя общо в количката.
-const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean));
+const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean))
+  .concat(BUNDLES.filter(b => b.items.reduce((s, [, n]) => s + n, 0) > 1).map(b => b.store)); // комплектът „Грижа за тялото“ също носи подаръка
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
@@ -1456,7 +1513,7 @@ function bundleCard(b) {
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>
-    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'bfFull' ? 'пълната грижа' : esc(b.title.replace(' за стави', ''))} →</button>
+    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'trio' ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
   </div>`;
 }
 
@@ -1628,7 +1685,7 @@ function renderCheckoutHelper() {
     // по-изгоден комплект: 1 гел или 2 гела → 3 гела
     let up = '';
     const gel1 = P('gel').store, b2 = B('bf2').store, b3 = B('bf3');
-    if (!ids.includes(b3.store) && !ids.includes(B('bfFull').store)) {
+    if (!ids.includes(b3.store) && !ids.includes(B('bf5').store)) {
       const from = ids.includes(b2) ? B('bf2') : (ids.includes(gel1) ? { store: gel1, price: P('gel').price, title: '1 гел' } : null);
       if (from) up = `<div class="box upgrade"><div><h2>По-изгодно: 3 гела за ${fmt(b3.price)}</h2>
         <p>Вместо ${esc(from.title.replace(' за стави', ''))} за ${fmt(from.price)} вземи <b>3 гела</b> — само <b>+${fmt(b3.price - from.price)}</b>, около 6 седмици грижа без прекъсване.</p></div>

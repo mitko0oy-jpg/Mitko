@@ -90,7 +90,8 @@ const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.prod
 
 // По време на Черния петък подаръкът върви с всяка поръчка БЕЗ тази от 1 брой:
 // комплект (2 и повече в един продукт от магазина) или поне 2 броя общо в количката.
-const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean));
+const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean))
+  .concat(BUNDLES.filter(b => b.items.reduce((s, [, n]) => s + n, 0) > 1).map(b => b.store)); // комплектът „Грижа за тялото“ също носи подаръка
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
@@ -241,7 +242,7 @@ function bundleCard(b) {
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>
-    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'bfFull' ? 'пълната грижа' : esc(b.title.replace(' за стави', ''))} →</button>
+    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'trio' ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
   </div>`;
 }
 
@@ -413,7 +414,7 @@ function renderCheckoutHelper() {
     // по-изгоден комплект: 1 гел или 2 гела → 3 гела
     let up = '';
     const gel1 = P('gel').store, b2 = B('bf2').store, b3 = B('bf3');
-    if (!ids.includes(b3.store) && !ids.includes(B('bfFull').store)) {
+    if (!ids.includes(b3.store) && !ids.includes(B('bf5').store)) {
       const from = ids.includes(b2) ? B('bf2') : (ids.includes(gel1) ? { store: gel1, price: P('gel').price, title: '1 гел' } : null);
       if (from) up = `<div class="box upgrade"><div><h2>По-изгодно: 3 гела за ${fmt(b3.price)}</h2>
         <p>Вместо ${esc(from.title.replace(' за стави', ''))} за ${fmt(from.price)} вземи <b>3 гела</b> — само <b>+${fmt(b3.price - from.price)}</b>, около 6 седмици грижа без прекъсване.</p></div>
