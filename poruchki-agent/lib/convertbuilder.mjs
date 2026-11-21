@@ -71,6 +71,20 @@ export function convertBuilder({ sites, env, fetchImpl = fetch }) {
       const r = await cb(site, `/orders/${apiId}`);
       return r?.item || r || null;
     },
+    /** An order by its shop number, searched in the 2 days around `around` (ISO date). */
+    async findByNumber(siteId, orderNo, around) {
+      const site = active.find((s) => s.id === siteId);
+      const t = Math.floor(new Date(around).getTime() / 1000);
+      if (!site || !t) return null;
+      const q = { created_at_min: t - 2 * 86400, created_at_max: t + 2 * 86400, limit: PAGE };
+      for (let skip = 0; skip < 1000; skip += PAGE) {
+        const page = await cb(site, "/orders", { ...q, skip });
+        const o = (page.items || []).find((x) => String(x.invoiceNo ?? x.id) === String(orderNo));
+        if (o) return o;
+        if (skip + PAGE >= (page.totalCount || 0) || !(page.items || []).length) break;
+      }
+      return null;
+    },
     /** False when Mitko already shipped, cancelled or archived the order. */
     async isStillPending(rec) {
       const site = active.find((s) => s.id === rec.site);

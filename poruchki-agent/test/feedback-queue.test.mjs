@@ -42,7 +42,7 @@ function deps(store = memoryStore()) {
     calls,
     messages,
     config: { sites: ["bg"], testPhone: "+359877000000" },
-    mw: { lookup: async (_site, label) => (MW[label] ? { ...MW[label] } : null) },
+    mw: { findOrder: async (_site, label) => (MW[label] ? { ...MW[label] } : null) },
     cb: { getOrder: async (_site, id) => CB[id] || null },
     call: async (c) => {
       calls.push(c);
@@ -162,6 +162,14 @@ test("the queue does not call on Sunday, outside 10:00–19:30, when stopped or 
   await d.store.setJSON("meta/settings", { ...(await d.store.get("meta/settings", { type: "json" })), paused: true });
   assert.equal((await runFeedbackQueue(d, T0)).feedback, "paused");
   assert.equal(d.calls.length, 0);
+});
+
+test("without ConvertBuilder's id from Middleware, the order is found by its number and date", async () => {
+  const d = deps();
+  MW[1700] = { status: "completed", statusText: "доставена е", externalId: null, createdAt: "2026-07-14T09:00:00Z" };
+  d.cb.findByNumber = async (_site, no, around) => (no === "1700" && around ? CB["cb-1649"] : null);
+  assert.match(await prepareFeedback(d, "1700", T0), /1 клиент готов[\s\S]*#1700 · Мария/);
+  delete MW[1700];
 });
 
 test("a customer we already talked to is not queued again", async () => {

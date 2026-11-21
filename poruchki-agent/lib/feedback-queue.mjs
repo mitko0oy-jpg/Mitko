@@ -20,6 +20,7 @@ const MAX_ORDERS = 20;
 const RESULT_WAIT_MIN = 30;
 
 const recKey = (label) => `fb-${label}`;
+const clients = (n) => (n === 1 ? "1 клиент" : `${n} клиента`);
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const STATUS_BG = {
   ready: "⏳ чака /obratna_start",
@@ -42,11 +43,12 @@ export function parseLabels(text) {
  */
 export async function loadFeedbackOrder(deps, site, label) {
   try {
-    const mw = await deps.mw.lookup(site, label);
+    const mw = await deps.mw.findOrder(site, label);
     if (!mw) return { label, error: "няма я в Middleware" };
     if (mw.status !== "completed") return { label, error: `не е доставена (${mw.statusText})` };
-    if (!mw.externalId) return { label, error: "Middleware не дава връзка към ConvertBuilder" };
-    const o = await deps.cb.getOrder(site, mw.externalId);
+    // ConvertBuilder's copy: by its id from Middleware, else by the number around the order date.
+    let o = mw.externalId ? await deps.cb.getOrder(site, mw.externalId).catch(() => null) : null;
+    if (!o && mw.createdAt && deps.cb.findByNumber) o = await deps.cb.findByNumber(site, label, mw.createdAt);
     if (!o) return { label, error: "няма я в ConvertBuilder" };
     const ship = o.shippingAddress || {};
     const bill = o.billingAddress || {};
@@ -101,7 +103,7 @@ export async function prepareFeedback(deps, text, now = new Date()) {
     ok.push(line(r, feedbackVariables(r, now)));
   }
   return [
-    `<b>Обратна връзка – ${ok.length} клиента готови</b>`,
+    `<b>Обратна връзка – ${clients(ok.length)} ${ok.length === 1 ? "готов" : "готови"}</b>`,
     ...ok,
     ...(skipped.length ? ["", "Пропуснати:", ...skipped] : []),
     "",
@@ -158,7 +160,7 @@ export async function startFeedback(deps, now = new Date()) {
   await saveSettings(deps.store, { ...settings, feedbackOn: true, feedbackReported: false });
   const t = sofiaNow(now);
   const open = t.weekday !== 0 && inCallingHours(FEEDBACK_HOURS, now);
-  return `▶️ Обратна връзка: ${n} клиента на опашката. Звъня по един на всеки ~5 минути${open ? ", започвам до 5 минути." : " – от понеделник до събота, 10:00–19:30."}\n/obratna_stop спира, /obratna_status показва докъде сме.`;
+  return `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня по един на всеки ~5 минути${open ? ", започвам до 5 минути." : " – от понеделник до събота, 10:00–19:30."}\n/obratna_stop спира, /obratna_status показва докъде сме.`;
 }
 
 /** /obratna_stop */

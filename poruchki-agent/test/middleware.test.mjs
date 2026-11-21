@@ -49,3 +49,24 @@ test("find_order tells the real courier status from Middleware", async () => {
   const r2 = await findOrders(cb, "0888123456");
   assert.equal(r2.orders[0].status, "приета е и още не е изпратена");
 });
+
+test("findOrder: exact shop number, archived orders first, same filters as Middleware's own list", async () => {
+  const seen = [];
+  const f = async (url) => {
+    seen.push(new URL(url));
+    const archived = new URL(url).searchParams.get("filter[is_archived]") === "1";
+    // The search matches other numbers too (a phone with 981 in it).
+    const data = archived ? [{ id: "x", label: "1981", status_key: "cancelled" }, { id: "m981", label: "981", status_key: "completed", external_id: 4242, ordered_at: "2026-07-31T15:57:01Z" }] : [];
+    return new Response(JSON.stringify({ data }), { status: 200 });
+  };
+  const mw = middleware({ env, fetchImpl: f });
+  const o = await mw.findOrder("bg", 981);
+  assert.equal(o.id, "m981");
+  assert.equal(o.externalId, 4242);
+  assert.equal(o.statusText, "доставена е");
+  assert.equal(seen[0].searchParams.get("filter[is_archived]"), "1");
+  assert.equal(seen[0].searchParams.get("filter[store.id]"), "store-bg");
+  assert.equal(seen[0].searchParams.get("filter[query]"), "981");
+  assert.equal(await mw.findOrder("bg", 77), null);
+  assert.equal(seen.at(-1).searchParams.get("filter[is_archived]"), "0", "then the active ones");
+});

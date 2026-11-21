@@ -59,9 +59,43 @@ export function middleware({ env, fetchImpl = fetch }) {
     };
   }
 
+  /**
+   * An order by its shop number, also among archived ones (old orders are archived).
+   * Same filters as Middleware's own order list: store.id, is_archived, query.
+   */
+  async function findOrder(site, orderNo) {
+    const storeId = stores[site];
+    if (!enabled || !storeId || orderNo == null) return null;
+    const want = String(orderNo);
+    for (const archived of ["1", "0"]) {
+      const q = new URLSearchParams({
+        "filter[is_archived]": archived,
+        "filter[store.id]": storeId,
+        "filter[query]": want,
+        include: "fulfillment",
+        per_page: "25",
+      });
+      const d = await get(`/orders?${q}`);
+      // The search also matches phones and other numbers: only the exact order number counts.
+      const o = (d.data || []).find((x) => String(x.label ?? "") === want);
+      if (o) {
+        return {
+          id: o.id,
+          externalId: o.external_id ?? null,
+          createdAt: o.ordered_at || o.created_at || null,
+          status: o.status_key,
+          statusText: MW_STATUS_BG[o.status_key] || o.status_key,
+          archived: archived === "1",
+        };
+      }
+    }
+    return null;
+  }
+
   return {
     enabled,
     lookup,
+    findOrder,
     /** False when the team already confirmed the order in Middleware or it is no longer waiting. */
     async stillOpen(rec) {
       try {
