@@ -13,6 +13,7 @@
 | `komplekt.html` | Комплект литература + език | `/komplekt` |
 | `produkti.html` | Всички продукти | `/produkti` |
 | `digitalni.html` | Дигитални продукти – PDF файловете и тренажора, плащане с карта (още не е в менюто) | `/digitalni-produkti` |
+| `digitalni-blagodarim.html` | Благодарим след поръчка на PDF (линкът за сваляне е на имейла) | стъпката след поръчките във фунията `/digitalni` |
 | `menu.html` / `dolu.html` | Само менюто (най-горе) / само долната част (най-долу) на страници, направени отделно | `/cheren-petak`, `/karti-po-matematika/predvaritelna-poruchka`, правните |
 | `literaturni-dosieta.html` | Литературни досиета (отделна лендинг страница) | `/igra-literaturni-dosieta` |
 | `prilozhenie.html` | Приложението Еду БЕЛ (отделна лендинг страница) | `/prilozhenie-trenazhor-za-nvo` |
@@ -62,9 +63,9 @@
 
 | Продукт | Поръчка (checkout) | Продукт в ConvertBuilder | Цена |
 |---|---|---|---|
-| Пробна матура НВО – PDF | `/digitalni-produkti/poruchka-probna-matura` | Пробна матура за НВО - дигитален формат (pm-1-v2) | 9,90 € |
-| 90 интерактивни карти | `/digitalni-produkti/poruchka-90-karti` | 90 литературни карти за НВО (90k_1_v1) | 7,90 € |
-| 200 въпроса по БЕЛ | `/digitalni-produkti/poruchka-200-vaprosa` | 200 въпроса по БЕЛ – интерактивно PDF приложение (200v-1-v1) | 9,90 € |
+| Пробна матура НВО – PDF | `/digitalni/poruchka-probna-matura` | Пробна матура за НВО - дигитален формат (pm-1-v2) | 9,90 € |
+| 90 интерактивни карти | `/digitalni/poruchka-90-karti` | 90 литературни карти за НВО (90k_1_v1) | 7,90 € |
+| 200 въпроса по БЕЛ | `/digitalni/poruchka-200-vaprosa` | 200 въпроса по БЕЛ – интерактивно PDF приложение (200v-1-v1) | 9,90 € |
 
 ## Поръчките (тренажорът)
 
