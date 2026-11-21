@@ -780,3 +780,40 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
 .opt-img[data-n="3"] img:nth-child(3){left:76%;rotate:11deg}
 .opt:hover .opt-img img,.opt input:checked+.opt-box .opt-img img{transform:translateY(-3px)}
 @media (max-width:560px){.opt-box{gap:10px;padding:14px 14px}.opt-img{width:54px;height:50px}.opt-img img{height:46px}.opt-img[data-n="3"] img{height:40px}}
+
+/* ---------- home: the three boxes open (the two-box scene of edubel.site, in thirds) ---------- */
+.trio-open .stage{width:min(1320px,98vw)}
+.trio-open .duo-half{width:33.34%}
+.trio-open .duo-half.c{left:33.33%;z-index:2}
+.trio-open .stage-box{height:clamp(150px,36%,270px)}
+.trio-open .fan-card{width:clamp(84px,30%,158px);margin-left:calc(clamp(84px,30%,158px) / -2);bottom:15%}
+.trio-open .stage{--spread:.85}
+.trio-open .float-badge.mat-badge b{color:#0E7C77}
+@media (max-width:760px){
+  .trio-open .stage{--spread:.55}
+  .trio-open .stage-box{height:min(17svh,128px)}
+  .trio-open .fan-card{width:min(17vw,11svh);margin-left:calc(min(17vw,11svh) / -2);bottom:19%}
+  .trio-open .duo-half .fan-card:first-child,.trio-open .duo-half .fan-card:nth-child(4){display:none}
+  .trio-open .stage>.float-badge{display:none!important}
+}
+
+/* ---------- home: the chooser with math and all three decks ---------- */
+.ch-boxes .cb-mat{display:none;animation-delay:-1.8s}
+.chooser[data-pick="mat"] .cb-lit,.chooser[data-pick="mat"] .cb-ezik{display:none}
+.chooser[data-pick="mat"] .cb-mat{display:block;rotate:0deg;margin:0}
+.chooser[data-pick="trio"] .cb-mat{display:block;position:relative;z-index:1;margin:0 -30px}
+.chooser[data-pick="trio"] .ch-boxes img{height:178px}
+.chooser[data-pick="trio"] .cb-lit{margin-right:0}
+@media (max-width:860px){.chooser[data-pick="trio"] .ch-boxes img{height:140px}}
+
+/* ---------- home: what is in each box – three columns ---------- */
+.trio-compare .compare td:first-child{width:14%}
+.trio-compare .compare thead th:nth-child(4){color:#0E7C77}
+.trio-compare .compare td:nth-child(4){background:color-mix(in srgb,#0E7C77 5%,transparent)}
+.trio-compare .compare td[data-label="Математика"]::before{color:#0E7C77}
+.compare-note{max-width:62ch;margin:22px auto 0;text-align:center;color:var(--muted);font-size:17px}
+
+/* ---------- home: the wall has a third row (math) ---------- */
+.wall-row.r3 .marquee-track{animation-duration:78s}
+/* the chooser must not grow past a phone screen (a long price + button row widened its column) */
+@media (max-width:860px){.chooser{grid-template-columns:minmax(0,1fr)}.ch-cta{flex-wrap:wrap}}

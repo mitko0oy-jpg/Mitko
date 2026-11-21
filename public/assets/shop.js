@@ -357,6 +357,9 @@ const PICKS = {
   lit: { title: "Карти по литература", desc: "22-те творби за НВО в 40 карти: резюме, герои, цитати, образи и въпроси за самопроверка.", pkg: "lit-1", c: "#1E5A42" },
   ezik: { title: "Карти по български език", desc: "20 карти с правила и 20 с упражнения: граматика, правопис и пунктуация – тема по тема.", pkg: "ezik-1", c: "#E0561D" },
   duo: { title: "Двете тестета заедно", desc: "80 карти за цялата подготовка по БЕЛ – литература и български език, с безплатна доставка.", pkg: "duo", c: "#D8B25C" },
+  // edubel.bg only: its catalogue has these packages (store.js adds them before this file runs)
+  mat: { title: "Карти по математика", desc: "50 карти: отпред правилото и задача, отзад пълното решение стъпка по стъпка – от входящия тест до изпита.", pkg: "mat-1", c: "#0E7C77" },
+  trio: { title: "Трите тестета заедно", desc: "130 карти – литература, български език и математика. Подготовка за двата изпита на НВО в една пратка, с безплатна доставка.", pkg: "trio", c: "#D8B25C" },
 };
 for (const ch of $$("[data-chooser]")) {
   const btns = $$("button[data-pick]", ch);
@@ -389,7 +392,7 @@ for (const ch of $$("[data-chooser]")) {
       else pick(b.dataset.pick);
     });
   }
-  pick("duo");
+  pick(btns.find((b) => b.getAttribute("aria-pressed") === "true" && PICKS[b.dataset.pick])?.dataset.pick || "duo");
 }
 
 /* ---------- upsell page: our buttons press the builder's upsell button placed under the block ---------- */
