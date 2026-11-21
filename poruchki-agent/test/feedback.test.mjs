@@ -20,19 +20,21 @@ test("addressBG uses the vocative for women and the first name when unsure", () 
   assert.equal(addressBG("Nikolinka Shtereva"), "госпожо Щерева");
 });
 
-test("feedbackVariables: 2+1 buyers get the 3-pack first, 3+2 buyers the 5-pack", () => {
+test("feedbackVariables: everyone hears three for the price of one first, five if they want more", () => {
   const base = { label: "1000", name: "Мария Иванова", city: "Ловеч", deliveredAt: "2026-11-04T10:00:00Z", address: "До офис speedy[1]: ЛОВЕЧ - ЦЕНТЪР ул. Търговска No 1" };
   const a = feedbackVariables({ ...base, items: [{ name: "BeeVenom Care Gel 2+1 броя", q: 1 }] }, NOW);
   assert.equal(a.main_pack, "3");
-  assert.equal(a.main_offer, "пакет от три гела за 15 евро и 90 цента, и подарък дванайсет билкови лепенки");
+  assert.equal(a.main_offer, "три гела на цената на един – 15 евро и 90 цента, и подарък дванайсет билкови лепенки");
   assert.equal(a.main_total, "20 евро и 40 цента");
+  assert.equal(a.alt_offer, "пет гела за 19 евро и 90 цента – в сайта са 29 евро и 90 цента – и пак подарък дванайсет билкови лепенки");
   assert.equal(a.alt_total, "24 евро и 40 цента");
+  assert.equal(a.site_one_price, "15 евро и 90 цента");
   assert.equal(a.delivered_ago, "преди около две седмици");
   assert.equal(a.delivery_text, "до офис на Спиди „Ловеч – Център“");
   assert.equal(a.order_key, "fb-1000");
   const b = feedbackVariables({ ...base, address: "ул. Роза 5", items: [{ name: "Пчелна отрова Пакет 3+2 бр.", q: 1 }] }, NOW);
-  assert.equal(b.main_pack, "5");
-  assert.equal(b.main_total, "24 евро и 40 цента");
+  assert.equal(b.main_pack, "3", "a 3+2 buyer also starts with three");
+  assert.equal(b.bought_text, "гела с пчелна отрова – пакета 3 плюс 2, пет туби");
   assert.equal(b.delivery_text, "до адреса Ви в Ловеч");
 });
 
@@ -58,7 +60,7 @@ test("a feedback call result is saved and sent to Mitko with the new order", asy
   assert.equal(r.feedback, "feedback/fb-1000");
   assert.equal((await store.get("feedback/fb-1000", { type: "json" })).reorderPack, "5");
   assert.match(messages[0], /ПОРЪЧА ОТНОВО/);
-  assert.match(messages[0], /пакет от пет гела.*24 евро и 40 цента/);
+  assert.match(messages[0], /пет гела за 19 евро и 90 цента.*24 евро и 40 цента/);
   assert.match(messages[0], /⭐ 5\/5/);
 });
 

@@ -1,14 +1,16 @@
 // Feedback calls: after delivery (2–3 weeks, or months later for older
 // customers) the agent asks how the customer is doing with the gel and, if
 // they are happy, offers a repeat order.
-// The offer follows what they bought: one tube or 2+1 → the 3-pack first,
-// 3+2 → the 5-pack first; the other pack is the alternative.
+// Everyone hears the 3-pack first („три гела на цената на един“); the 5-pack
+// only if they want more.
 // Both packs come with 12 herbal patches („лепенки“) as a gift.
 import { formalNameBG, moneyBG } from "./format.mjs";
 import { officeName } from "./convertbuilder.mjs";
 
 export const FEEDBACK_OFFER = {
   delivery: 4.5,
+  // Prices on beevenombg.eu (13.11.2026), said as the reference: one gel = the price of three for customers.
+  site: { one: 15.9, five: 29.9 },
   packs: {
     3: { qty: 3, words: "три", price: 15.9, gift: "дванайсет билкови лепенки" },
     5: { qty: 5, words: "пет", price: 19.9, gift: "дванайсет билкови лепенки" },
@@ -86,8 +88,15 @@ export function deliveredAgo({ deliveredAt, orderedAt }, now) {
 
 function offerText(pack, o = FEEDBACK_OFFER) {
   const p = o.packs[pack];
+  // Said as value against the shop's own price (bonus-pack framing), not as a list of numbers.
+  const text =
+    pack === 3 && p.price === o.site.one
+      ? `три гела на цената на един – ${moneyBG(p.price)}, и подарък ${p.gift}`
+      : pack === 5
+        ? `пет гела за ${moneyBG(p.price)} – в сайта са ${moneyBG(o.site.five)} – и пак подарък ${p.gift}`
+        : `${p.words} гела за ${moneyBG(p.price)}, и подарък ${p.gift}`;
   return {
-    offer: `пакет от ${p.words} гела за ${moneyBG(p.price)}, и подарък ${p.gift}`,
+    offer: text,
     total: moneyBG(p.price + o.delivery),
     totalNum: Math.round((p.price + o.delivery) * 100) / 100,
   };
@@ -99,8 +108,9 @@ function offerText(pack, o = FEEDBACK_OFFER) {
  */
 export function feedbackVariables(order, now = new Date()) {
   const tubes = gelTubes(order.items);
-  const main = tubes >= 5 ? 5 : 3;
-  const alt = main === 5 ? 3 : 5;
+  // Everyone hears the three-pack first („три на цената на един“); five only if they want more.
+  const main = 3;
+  const alt = 5;
   const m = offerText(main);
   const a = offerText(alt);
   const office = officeName(order.address).replace(/\s*\([^)]*\)/g, "");
@@ -121,6 +131,7 @@ export function feedbackVariables(order, now = new Date()) {
     alt_offer: a.offer,
     alt_total: a.total,
     delivery_fee: moneyBG(FEEDBACK_OFFER.delivery),
+    site_one_price: moneyBG(FEEDBACK_OFFER.site.one),
   };
 }
 
