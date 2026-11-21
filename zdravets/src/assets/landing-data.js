@@ -227,7 +227,7 @@ const LANDING = {
   tibet: { eyebrow: '🔥 Тибетска рецептура', h1: ['Приятна топлина ', 'за дълги часове', ''], h1sub: ['Шест вида отрови и билки ', 'в тънък пластир'] },
   vein: { eyebrow: '🌰 С конски кестен', h1: ['Леки и свежи ', 'крака', ' след дълъг ден'], h1sub: ['Вечерен ритуал ', 'от глезена нагоре'] },
   nail: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Здрав вид на ноктите ', 'без усилие', ''], h1sub: ['Два пъти на ден – ', 'напръскай и готово'], bee: true },
-  skin: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Спокойна и мека ', 'кожа', ' всеки ден'], h1sub: ['Пчелна отрова и чаено дърво ', 'за суха и раздразнена кожа'], bee: true },
+  skin: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Спокойна и мека ', 'кожа', ' всеки ден'], h1sub: ['Пчелна отрова и чаено дърво ', 'за проблемна кожа'], bee: true },
   ghk: { eyebrow: '✨ Меден пептид GHK-Cu', h1: ['Подхранване за ', 'сухата и зрялата кожа', ''], h1sub: ['Меден пептид, лой и мед – ', 'като в старите рецепти'] },
   apetit: { eyebrow: '🍏 Пластири „Апетит“', h1: ['Малка помощ към ', 'балансираното хранене', ''], h1sub: ['Един пластир сутрин – ', 'и продължаваш деня си'] },
   berberin: { eyebrow: '🌿 Берберин в пластир', h1: ['Берберин ', 'без нито една таблетка', ''], h1sub: ['Залепваш сутрин – ', 'носиш до 8 часа'] },
@@ -264,7 +264,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '45a348b2cacd5e9315986cc4261edd8f562c735e';
+const ZN_MEDIA = '87251bb20c0bc46900a46df76d0a1dbdd5fb94f6';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
@@ -280,10 +280,10 @@ const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/lan
    Снимката е кадър „в употреба“; продуктите са подредени – първият е основният за зоната. */
 const ZONES = [
   { id: 'koleni', name: 'Колене и стави', sub: 'Гел с пчелна отрова, крем и пластири', img: 'life-gel', ids: ['gel', 'hyal', 'beeherb', 'spray', 'tibet', 'bvpatch'] },
-  { id: 'grab', name: 'Гръб и кръст', sub: 'Пластири и гел с пчелна отрова', img: 'life-bvpatch', ids: ['bvpatch', 'tibet', 'gel', 'spray', 'beeherb'] },
-  { id: 'ramene', name: 'Рамене и врат', sub: 'Спрей без допир, пластири и гел', img: 'life-spray', ids: ['spray', 'tibet', 'gel', 'bvpatch'] },
+  { id: 'grab', name: 'Гръб, рамене и врат', sub: 'Пластири, спрей без допир и гел', img: 'life-bvpatch', ids: ['bvpatch', 'tibet', 'spray', 'gel', 'beeherb'] },
   { id: 'kraka', name: 'Уморени крака', sub: 'Крем за краката и спрей за ноктите', img: 'life-vein', ids: ['vein', 'nail'] },
-  { id: 'koja', name: 'Суха кожа', sub: 'Крем и балсам за суха и чувствителна кожа', img: 'life-skin', ids: ['skin', 'ghk'] },
+  { id: 'problemna-koja', name: 'Проблемна кожа', sub: 'Крем с пчелна отрова и чаено дърво', img: 'life-skin', ids: ['skin'] },
+  { id: 'suha-koja', name: 'Суха кожа', sub: 'Балсам с телешка лой и мед', img: 'life-ghk', ids: ['ghk'] },
   { id: 'vseki-den', name: 'Пластири за всеки ден', sub: '8 вида – по един пластир на ден', img: 'life-stress', ids: ['energy', 'stress', 'apetit', 'berberin', 'nad', 'focus', 'mood', 'love'] }
 ];
 const zoneImg = z => znM(`${z.img}-600.webp`);const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
