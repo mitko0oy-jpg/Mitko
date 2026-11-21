@@ -458,7 +458,7 @@ body{padding-bottom:0}
 /* ---------- началната страница: първият екран представя бранда (зелено, златно и крем – цветовете на логото).
    Съвсем просто: заглавие, четири едри реда „какво търсиш“, три числа и телефон. ---------- */
 .bvp .hb{background:#FBF7EE;padding:46px 0 36px;color:#1B2419}
-.bvp .hb__grid{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.5fr);gap:44px;align-items:center}
+.bvp .hb__grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:40px;align-items:center}
 .bvp .hb__copy{display:flex;flex-direction:column;align-items:flex-start;gap:18px}
 .bvp .hb__eyebrow{padding:7px 16px;border-radius:999px;background:#E7EFDC;color:#1F3D22;font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 .bvp .hb__eyebrow i{font-style:normal}
