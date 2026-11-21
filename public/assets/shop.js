@@ -370,7 +370,8 @@ for (const ch of $$("[data-chooser]")) {
     ch.style.setProperty("--pick-c", p.c);
     for (const b of btns) b.setAttribute("aria-pressed", String(b.dataset.pick === k));
     $(".ch-title", ch).textContent = p.title;
-    $(".ch-desc", ch).textContent = p.desc;
+    // a package without free delivery (edubel.bg sets it by the number of decks) drops the promise from the text
+    $(".ch-desc", ch).textContent = PACKAGES[p.pkg]?.freeShip === false ? p.desc.replace(/, с безплатна доставка/, "") : p.desc;
     const price = $(".ch-price", ch);
     price.dataset.price = p.pkg;
     price.textContent = euro(PACKAGES[p.pkg].price);

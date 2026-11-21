@@ -25,8 +25,10 @@ for (const [k, v] of Object.entries(CFG.PRICES || {})) if (PACKAGES[k] && v > 0)
 // Their price goes by the number of decks (CFG.LADDER); a deck marked "plain" has no struck-through price.
 const KEYS = CFG.DECK_KEYS;
 // delivery is free from this many decks; the words for it ("при 2 и 3 тестета" / "при 3 тестета")
-const FREE = Math.max(1, Number(SET.freeShipDecks) || CFG.FREE_SHIP_DECKS || 2);
-const FREE_WORDS = FREE >= MAX_DECKS ? `при ${MAX_DECKS} тестета` : `при ${Array.from({ length: MAX_DECKS - FREE + 1 }, (_, i) => FREE + i).join(" и ")} тестета`;
+const LATER = CFG.FREE_SHIP_LATER;
+const FREE = Math.max(1, Number(SET.freeShipDecks) || (LATER && Date.now() >= Date.parse(LATER.from) ? LATER.decks : CFG.FREE_SHIP_DECKS) || 2);
+const FREE_NUMS = Array.from({ length: Math.max(1, MAX_DECKS - FREE + 1) }, (_, i) => Math.min(FREE, MAX_DECKS) + i);
+const FREE_WORDS = `при ${FREE_NUMS.join(" и ")} тестета`;
 const PKG_CART = {};
 for (let a = 0; a <= MAX_DECKS; a++) for (let b = 0; a + b <= MAX_DECKS; b++) for (let m = 0; a + b + m <= MAX_DECKS; m++) {
   const c = { lit: a, ezik: b, mat: m };
@@ -133,7 +135,7 @@ const MENU = [
   ["lit", "Карти по литература", "Най-продавани · 22 творби в 40 карти", "kutiya-literatura.webp"],
   ["ezik", "Карти по български език", "20 правила + 20 упражнения", "kutiya-ezik.webp"],
   ["mat", "Карти по математика", "Ново · 50 карти за 5.–7. клас", "kutiya-matematika.webp"],
-  ["duo", "Комплект: литература + език", "80 карти · безплатна доставка", "kutiya-ezik.webp"],
+  ["duo", "Комплект: литература + език", FREE <= 2 ? "80 карти · безплатна доставка" : "80 карти · 2 кутии", "kutiya-ezik.webp"],
   ["dosieta", "Литературни досиета", "книга-игра · 24 досиета", "dosieta/korica-hd.webp"],
   ["trenazhor", "НВО тренажор", "200 задачи онлайн · 1, 6 или 12 месеца", "trener/m-hi.webp"],
   ["produkti", "Всички продукти", "всичко на едно място", "trener/i-karti.webp"],
@@ -364,6 +366,11 @@ if (cartDlg) document.addEventListener("click", (e) => {
 
 /* ---------- links between the store pages follow the settings ---------- */
 for (const a of $$("[data-store]")) a.href = href(a.dataset.store, a.hash || "");
+
+// Texts that follow the free-delivery threshold: <span data-free="или">2 или 3</span> gets the deck counts,
+// [data-free-duo] is about free delivery with two decks – without it the text in the attribute stays, or nothing.
+for (const el of $$("[data-free]")) el.textContent = FREE_NUMS.join(` ${el.dataset.free || "и"} `);
+if (FREE > 2) for (const el of $$("[data-free-duo]")) el.dataset.freeDuo ? (el.textContent = el.dataset.freeDuo) : el.remove();
 
 /* ---------- digital products: each button opens that product's own checkout ---------- */
 const DIG = Object.fromEntries(Object.entries(CFG.DIGITAL).map(([k, d]) => {

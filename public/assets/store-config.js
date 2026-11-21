@@ -117,6 +117,9 @@ export const DELIVERY_FROM = 490;
 // From how many decks the delivery is free (as the free-delivery threshold of the ConvertBuilder store):
 // 2 → "при 2 и 3 тестета", 3 → "при 3 тестета". Change it together with the store's shipping settings.
 export const FREE_SHIP_DECKS = 2;
+// A planned change of the above: from this moment the site says FREE_SHIP_LATER.decks by itself
+// (texts, cart, package flags). The store's shipping threshold in ConvertBuilder is changed by hand.
+export const FREE_SHIP_LATER = { from: "2026-11-23T00:00:00+02:00", decks: 3 };
 
 export const CONTACT = {
   phone: "0893 42 52 92",
