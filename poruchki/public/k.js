@@ -559,16 +559,22 @@
 
   // Без избран офис поръчката не тръгва: спираме бутона и показваме защо.
   function guard(e) {
-    if (!current || (current.type !== "office" && current.type !== "address")) return;
     var t = e.target;
     var btn = t && t.closest && t.closest(".next-prev-buttons button, .next-prev-buttons a, button[type=submit], .payment-step-wrapper .btn-submit");
     if (e.type === "click" && !btn) return;
+    // точно преди поръчката: какво е избрано в касата СЕГА (касата може да е сменила метода сама),
+    // иначе офисът от падащото меню може да тръгне с метод „до адрес“
+    try {
+      sync();
+    } catch (err) {}
+    if (!current || (current.type !== "office" && current.type !== "address")) return;
     if (current.type === "address") {
       // до адрес: град от списъка, пощенски код и улица – иначе куриерът връща грешка за адреса
-      if (!places) return; // списъкът не е зареден – не спираме поръчката
+      // без зареден списък проверяваме само, че има град и улица
       var c = field("shippingCity"), z = field("shippingZipCode"), a = field("shippingAddress");
-      var msg = !c || !placeOk(c.value, "0000") ? "Избери града или селото от списъка – напиши първите букви и натисни върху него."
-        : z && !/^\d{4}$/.test(z.value.trim()) ? "Напиши пощенския код (4 цифри) – или избери града от списъка и кодът ще се попълни сам."
+      var msg = !c || !c.value.trim() ? "Напиши града или селото – и го избери от списъка, когато се появи."
+        : !placeOk(c.value, "0000") ? "Избери града или селото от списъка – напиши първите букви и натисни върху него."
+        : z && places && !/^\d{4}$/.test(z.value.trim()) ? "Напиши пощенския код (4 цифри) – или избери града от списъка и кодът ще се попълни сам."
         : a && a.value.trim().length < 4 ? "Напиши улица и номер (или квартал, блок, вход, апартамент)."
         : "";
       if (!msg) return;
@@ -607,7 +613,7 @@
         cfg = c;
         sync();
         document.addEventListener("change", function (e) {
-          if (e.target && e.target.name === "shippingOption") later();
+          if (e.target && e.target.name === "shippingOption") sync();
         });
         document.addEventListener("click", guard, true);
         document.addEventListener("submit", guard, true);
