@@ -24,8 +24,10 @@ export const UPSELL = { title: "Карти по литература", price: 19
 // shown struck through next to each price ("was"): once per deck in the package. With no regular
 // price (0) a package is compared with buying its decks one by one, and the upsell with lit-1.
 export const REGULAR = 3990;
+// Decks sold at one price, with no regular price of their own: they count at their price (edubel.bg adds them).
+export const PLAIN = new Set();
 export function setRegular(reg) {
-  for (const p of Object.values(PACKAGES)) p.was = p.boxes.reduce((sum, b) => sum + (reg || PACKAGES[`${b}-1`].price), 0);
+  for (const p of Object.values(PACKAGES)) p.was = p.boxes.reduce((sum, b) => sum + (PLAIN.has(b) ? PACKAGES[`${b}-1`].price : reg || PACKAGES[`${b}-1`].price), 0);
   UPSELL.was = reg || PACKAGES["lit-1"].price;
 }
 setRegular(REGULAR);

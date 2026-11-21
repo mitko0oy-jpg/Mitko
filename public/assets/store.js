@@ -2,9 +2,9 @@
 // the product page buy box and the quick "add" buttons. Runs before shop.js (see store-main.js), so
 // the header is already on the page when shop.js wires the scroll effects and, inside a ConvertBuilder
 // block, moves the fixed bars under <body>.
-// The cart holds at most two decks; every cart is one package of shop-catalog.js, and "Към поръчката"
-// opens that package's checkout page in ConvertBuilder.
-import { PACKAGES, euro } from "/assets/shop-catalog.js";
+// The cart holds up to three decks in any mix; every cart is one package (the old five of
+// shop-catalog.js and the mixes of store-config.js), and "Към поръчката" opens that package's checkout.
+import { PACKAGES, PLAIN, REGULAR, setRegular, euro } from "/assets/shop-catalog.js";
 import * as CFG from "/assets/store-config.js";
 import { ROOT } from "/assets/eb-root.js";
 
@@ -20,6 +20,27 @@ const DELIVERY_FROM = SET.delivery > 0 ? Math.round(SET.delivery * 100) : CFG.DE
 const { DECKS, CONTACT, COMPANY, MAX_DECKS } = CFG;
 // the edubel.bg prices that differ from the catalog (a block's own price settings still win in shop.js)
 for (const [k, v] of Object.entries(CFG.PRICES || {})) if (PACKAGES[k] && v > 0) PACKAGES[k].price = v;
+
+// Every mix of up to three decks is a package: the old five come from the catalog, the rest are added here.
+// Their price goes by the number of decks (CFG.LADDER); a deck marked "plain" has no struck-through price.
+const KEYS = CFG.DECK_KEYS;
+const PKG_CART = {};
+for (let a = 0; a <= MAX_DECKS; a++) for (let b = 0; a + b <= MAX_DECKS; b++) for (let m = 0; a + b + m <= MAX_DECKS; m++) {
+  const c = { lit: a, ezik: b, mat: m };
+  const k = CFG.comboKey(c);
+  if (!k) continue;
+  PKG_CART[k] = c;
+  if (!PACKAGES[k]) PACKAGES[k] = { title: CFG.COMBOS[k] || k, boxes: KEYS.flatMap((d) => Array(c[d]).fill(d)), freeShip: a + b + m >= 2 };
+}
+for (const [k, d] of Object.entries(DECKS)) if (d.plain) PLAIN.add(k);
+const ladder = (n) => (n === 1 ? PACKAGES["lit-1"].price : n === 2 ? PACKAGES.duo.price : CFG.LADDER[n] || 0);
+// the added packages follow the price steps; again after shop.js has applied the block's prices
+const syncCombos = () => {
+  for (const k of Object.keys(CFG.COMBOS)) PACKAGES[k].price = ladder(PACKAGES[k].boxes.length);
+};
+syncCombos();
+setRegular(REGULAR);
+const KASA = SET.kasa || CFG.KASA;
 
 const host = ROOT || document.body;
 const main = $("main", host);
@@ -40,35 +61,37 @@ const ICON = {
 };
 const LOGO = `<img class="logo" src="${esc(main?.dataset.logo || "/assets/logo.png")}" alt="Еду БЕЛ" width="220" height="160">`;
 
-/* ---------- cart: {lit, ezik} in localStorage; at most two decks ---------- */
+/* ---------- cart: {lit, ezik, mat} in localStorage; up to three decks ---------- */
 const KEY = "eb-cart";
-const PKG_CART = { "lit-1": { lit: 1, ezik: 0 }, "lit-2": { lit: 2, ezik: 0 }, "ezik-1": { lit: 0, ezik: 1 }, "ezik-2": { lit: 0, ezik: 2 }, duo: { lit: 1, ezik: 1 } };
 const n0 = (v) => Math.max(0, Math.min(MAX_DECKS, Math.floor(Number(v) || 0)));
+const count = (c = cart) => KEYS.reduce((s, k) => s + (c[k] || 0), 0);
+const blank = () => Object.fromEntries(KEYS.map((k) => [k, 0]));
 function load() {
   try {
     const c = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (c && n0(c.lit) + n0(c.ezik) <= MAX_DECKS) return { lit: n0(c.lit), ezik: n0(c.ezik) };
+    const v = c && Object.fromEntries(KEYS.map((k) => [k, n0(c[k])]));
+    if (v && count(v) <= MAX_DECKS) return v;
   } catch {}
-  return { lit: 0, ezik: 0 };
+  return blank();
 }
 let cart = load();
 let notice = "";
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch {}
 };
-const count = (c = cart) => c.lit + c.ezik;
-const pkgOf = (c = cart) => (c.lit && c.ezik ? "duo" : c.lit ? `lit-${c.lit}` : c.ezik ? `ezik-${c.ezik}` : null);
-const checkoutOf = (pkg) => CHECKOUT[pkg] || CHECKOUT["lit-1"];
-const one = () => PACKAGES["lit-1"].price;
+const pkgOf = (c = cart) => CFG.comboKey(c);
+// a package with a checkout of its own goes there; any other mix goes to the store's cart checkout
+const checkoutOf = (pkg) => CHECKOUT[pkg] || `${KASA}?p=${encodeURIComponent(pkg)}`;
+const single = (k) => PACKAGES[`${k}-1`];
 
-// A package goes into the cart; past two decks the cart becomes just that package.
+// A package goes into the cart; past three decks the cart becomes just that package.
 function add(pkg) {
   const p = PKG_CART[pkg];
   if (!p) return;
-  const next = { lit: cart.lit + p.lit, ezik: cart.ezik + p.ezik };
+  const next = Object.fromEntries(KEYS.map((k) => [k, cart[k] + p[k]]));
   notice = "";
   if (count(next) > MAX_DECKS) {
-    if (count()) notice = "В една поръчка влизат до 2 тестета – оставихме това, което избра сега.";
+    if (count()) notice = `В една поръчка влизат до ${MAX_DECKS} тестета – оставихме това, което избрахте сега.`;
     cart = { ...p };
   } else cart = next;
   save();
@@ -76,8 +99,8 @@ function add(pkg) {
   openCart();
 }
 function setQty(deck, n) {
-  const other = deck === "lit" ? cart.ezik : cart.lit;
-  cart = { ...cart, [deck]: Math.max(0, Math.min(MAX_DECKS - other, n)) };
+  const others = count() - cart[deck];
+  cart = { ...cart, [deck]: Math.max(0, Math.min(MAX_DECKS - others, n)) };
   notice = "";
   save();
   render();
@@ -91,6 +114,7 @@ const SHELL = main?.dataset.shell || "both";
 const NAV = [
   ["lit", "Литература", "hit"],
   ["ezik", "Български език"],
+  ["mat", "Математика", "new"],
   ["duo", "Комплект"],
   ["dosieta", "Досиета"],
   ["trenazhor", "Тренажор"],
@@ -98,12 +122,13 @@ const NAV = [
 ];
 const href = (key, hash = "") => esc((LINKS[key] || "/") + hash);
 const navItem = ([key, label, mark]) =>
-  `<li><a href="${href(key)}"${key === PAGE ? ' aria-current="page"' : ""}>${label}${mark ? '<span class="nav-hit">хит</span>' : ""}</a></li>`;
+  `<li><a href="${href(key)}"${key === PAGE ? ' aria-current="page"' : ""}>${label}${mark === "hit" ? '<span class="nav-hit">хит</span>' : mark === "new" ? '<span class="nav-hit nav-new">ново</span>' : ""}</a></li>`;
 const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3.5l1.6 4.2-2.2 1.4a11 11 0 0 0 6.5 6.5l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5C10.6 20 4 13.4 3.5 5.6A1.5 1.5 0 0 1 5 4z"/></svg>';
 const VIBER_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6c-5.2 0-8.6 2.7-8.6 7.6 0 2.8 1.1 4.8 3 6v3.5l3.1-2.6c.8.2 1.6.2 2.5.2 5.2 0 8.6-2.6 8.6-7.1S17.2 2.6 12 2.6z" fill="currentColor"/></svg>';
 const MENU = [
   ["lit", "Карти по литература", "Най-продавани · 22 творби в 40 карти", "kutiya-literatura.webp"],
   ["ezik", "Карти по български език", "20 правила + 20 упражнения", "kutiya-ezik.webp"],
+  ["mat", "Карти по математика", "Ново · 50 карти за 5.–7. клас", "kutiya-matematika.webp"],
   ["duo", "Комплект: литература + език", "80 карти · безплатна доставка", "kutiya-ezik.webp"],
   ["dosieta", "Литературни досиета", "книга-игра · 24 досиета", "dosieta/korica-hd.webp"],
   ["trenazhor", "НВО тренажор", "200 задачи онлайн · 1, 6 или 12 месеца", "trener/m-hi.webp"],
@@ -153,7 +178,7 @@ if (SHELL !== "footer") host.insertAdjacentHTML(
   <div class="cart-foot">
     <dl class="cart-sum">
       <div><dt>Междинна сума</dt><dd class="s-sub"></dd></div>
-      <div class="s-disc-row"><dt>Отстъпка за 2 тестета</dt><dd class="s-disc"></dd></div>
+      <div class="s-disc-row"><dt class="s-disc-t">Отстъпка</dt><dd class="s-disc"></dd></div>
       <div><dt>Доставка</dt><dd class="s-ship"></dd></div>
       <div class="tot"><dt>Общо</dt><dd class="s-tot"></dd></div>
     </dl>
@@ -182,7 +207,7 @@ if (SHELL !== "header") host.insertAdjacentHTML(
         <p>Образователни карти, книга-игра и онлайн тренажор по български език и литература за 5., 6. и 7. клас. Създадени от преподавател по БЕЛ и оценител на НВО.</p>
         <ul class="sf-chips"><li>Еконт</li><li>Спиди</li><li>Наложен платеж</li></ul>
       </div>
-      <div><h4>Продукти</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li><li><a href="${href("dosieta")}">Литературни досиета</a></li><li><a href="${href("trenazhor")}">НВО тренажор</a></li><li><a href="${href("produkti")}">Всички продукти</a></li></ul></div>
+      <div><h4>Продукти</h4><ul><li><a href="${href("lit")}">Карти по литература</a></li><li><a href="${href("ezik")}">Карти по български език</a></li><li><a href="${href("mat")}">Карти по математика</a></li><li><a href="${href("duo")}">Комплект: литература + език</a></li><li><a href="${href("dosieta")}">Литературни досиета</a></li><li><a href="${href("trenazhor")}">НВО тренажор</a></li><li><a href="${href("produkti")}">Всички продукти</a></li></ul></div>
       <div><h4>За кого</h4><ul><li><a href="${href("home")}">За родители и баби и дядовци</a></li><li><a href="${href("shkoli")}">За учители и училища</a></li><li><a href="${href("shkoli")}">За читалища и библиотеки</a></li></ul><h4 class="sf-h2">Помощ</h4><ul><li><a href="${href("delivery")}">Доставка и връщане</a></li><li><a href="${href("terms")}">Общи условия</a></li><li><a href="${href("privacy")}">Поверителност</a></li><li><a href="${href("cookies")}">Бисквитки</a></li></ul></div>
       <div><h4>Контакт</h4><ul><li><a href="tel:${CONTACT.tel}">${CONTACT.phone}</a></li><li><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></li><li><a href="${esc(CONTACT.viber)}" target="_blank" rel="noopener">Viber канал на Еду БЕЛ</a></li></ul></div>
     </div>
@@ -233,6 +258,7 @@ cartDlg.addEventListener("click", (e) => {
 
 function render() {
   if (!cartDlg) return;
+  syncCombos();
   const n = count();
   badge.hidden = !n;
   badge.textContent = n;
@@ -240,14 +266,15 @@ function render() {
   cartDlg.classList.toggle("is-empty", !n);
   const pkg = pkgOf();
   const p = pkg ? PACKAGES[pkg] : null;
-  const sub = n * one();
+  const sub = KEYS.reduce((s, k) => s + cart[k] * single(k).price, 0);
   const disc = p ? sub - p.price : 0;
 
-  $(".cart-items", cartDlg).innerHTML = ["lit", "ezik"]
+  $(".cart-items", cartDlg).innerHTML = KEYS
     .filter((k) => cart[k])
     .map((k) => {
       const d = DECKS[k];
-      const room = count() < MAX_DECKS;
+      const one = single(k);
+      const room = n < MAX_DECKS;
       return `<li class="ci">
         <a class="ci-img" href="${href(k)}"><img src="${esc(MEDIA + d.img)}" alt="" loading="lazy"></a>
         <div class="ci-main">
@@ -259,40 +286,47 @@ function render() {
             <button type="button" data-qty="${k}:1" aria-label="Още едно"${room ? "" : " disabled"}>${ICON.plus}</button>
           </div>
         </div>
-        <div class="ci-price"><s>${euro(cart[k] * PACKAGES["lit-1"].was)}</s><b>${euro(cart[k] * one())}</b></div>
+        <div class="ci-price">${one.was > one.price ? `<s>${euro(cart[k] * one.was)}</s>` : ""}<b>${euro(cart[k] * one.price)}</b></div>
       </li>`;
     })
     .join("");
 
-  // one deck: offer the other one – two decks cost the price of the package with free delivery
+  // room for one more deck: offer the kinds not yet in the cart at the next price step
   const up = $(".cart-up", cartDlg);
-  if (n === 1) {
-    const other = cart.lit ? "ezik" : "lit";
-    const d = DECKS[other];
-    const extra = PACKAGES.duo.price - one();
-    up.innerHTML = `<div class="up">
+  if (n && n < MAX_DECKS) {
+    const extra = ladder(n + 1) - ladder(n);
+    const one = single("lit").price;
+    const what = n === 1 ? "второ" : "трето";
+    const why = n === 1 ? `Само ${euro(extra)} вместо ${euro(one)} + безплатна доставка` : `Само ${euro(extra)} вместо ${euro(one)} – трите за ${euro(ladder(3))}`;
+    up.innerHTML = KEYS.filter((k) => !cart[k])
+      .map((k) => {
+        const d = DECKS[k];
+        return `<div class="up">
       <img src="${esc(MEDIA + d.img)}" alt="" loading="lazy">
-      <div><p class="up-k">Добави второ тесте</p><b>${esc(d.title)}</b><small>Само ${euro(extra)} вместо ${euro(one())} + безплатна доставка</small></div>
-      <button class="btn btn-dark btn-sm" type="button" data-up="${other}">+ ${euro(extra)}</button>
+      <div><p class="up-k">Добави ${what} тесте${d.isNew ? " · ново" : ""}</p><b>${esc(d.title)}</b><small>${why}</small></div>
+      <button class="btn btn-dark btn-sm" type="button" data-up="${k}">+ ${euro(extra)}</button>
     </div>`;
+      })
+      .join("");
   } else up.innerHTML = "";
 
   const msg = $(".meter-msg", cartDlg);
   const bar = $(".meter span", cartDlg);
   if (n >= 2) {
-    msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестяваш ${euro(disc)} от цената.</span>`;
+    msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестявате ${euro(disc)} от цената.${n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : ""}</span>`;
     bar.style.width = "100%";
   } else if (n === 1) {
-    msg.innerHTML = `<span>Добави още <b>1 тесте</b> – второто е за ${euro(PACKAGES.duo.price - one())} и доставката става <b>безплатна</b>.</span>`;
+    msg.innerHTML = `<span>Добавете още <b>1 тесте</b> – второто е за ${euro(ladder(2) - ladder(1))} и доставката става <b>безплатна</b>.</span>`;
     bar.style.width = "50%";
   } else {
-    msg.innerHTML = "<span>Две тестета в поръчката – <b>безплатна доставка</b>.</span>";
+    msg.innerHTML = `<span>Две тестета в поръчката – <b>безплатна доставка</b>. Три – за ${euro(ladder(3))}.</span>`;
     bar.style.width = "0%";
   }
   $(".cart-meter", cartDlg).classList.toggle("done", n >= 2);
 
   $(".s-sub", cartDlg).textContent = euro(sub);
   $(".s-disc-row", cartDlg).hidden = !(disc > 0);
+  $(".s-disc-t", cartDlg).textContent = `Отстъпка за ${n} тестета`;
   $(".s-disc", cartDlg).textContent = `−${euro(disc)}`;
   $(".s-ship", cartDlg).textContent = n >= 2 ? "Безплатна" : `от ${euro(DELIVERY_FROM)}`;
   $(".s-tot", cartDlg).textContent = p ? euro(p.price) : euro(0);
@@ -340,6 +374,7 @@ for (const pdp of $$("[data-pdp]")) {
   const picked = () => opts.find((o) => o.checked)?.value || opts[0]?.value;
   const buybar = $(".buybar");
   function update() {
+    syncCombos();
     const k = picked();
     const p = PACKAGES[k];
     if (!p) return;

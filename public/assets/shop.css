@@ -36,6 +36,15 @@ body[data-deck="lit"]{
 }
 /* the words in italics in the headings are in deep gold */
 body[data-deck="lit"] :is(.h2,.display) .accent{color:#9C7224}
+/* math deck: fresh mint and white, deep teal buttons, navy ink, coral for the details */
+body[data-deck="mat"]{
+  --bg:#F2F7F5; --bg-2:#DDEDE8; --surface:#FFFFFF; --surface-2:#F3F9F7;
+  --ink:#17294A; --muted:#4D5A6C; --line:rgba(23,41,74,.12);
+  --accent:#0E7C77; --accent-2:#F07A3E; --accent-ink:#FFFFFF; --accent-soft:rgba(14,124,119,.1);
+  --glass:rgba(244,250,248,.8);
+  color-scheme:light;
+}
+body[data-deck="mat"] :is(.h2,.display) .accent{color:#0E7C77}
 body[data-deck="hub"]{
   --bg:#F8F3EA; --bg-2:#EFE6D6; --surface:#FFFDF8; --surface-2:#FBF5EA;
   --accent:#E0561D; --accent-2:#F39340;

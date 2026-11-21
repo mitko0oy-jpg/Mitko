@@ -9,7 +9,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM, DIGITAL, PRICES } from "../public/assets/store-config.js";
+import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM, DIGITAL, PRICES, KASA } from "../public/assets/store-config.js";
 import { PACKAGES, REGULAR } from "../public/assets/shop-catalog.js";
 import { DOS } from "../public/assets/dosieta-config.js";
 import { TRN } from "../public/assets/trenazhor-config.js";
@@ -30,11 +30,14 @@ const PAGES = [
   { src: "magazin/literatura", out: "literatura.html", name: "Карти по литература", url: LINKS.lit },
   { src: "magazin/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език", url: LINKS.ezik },
   { src: "magazin/komplekt", out: "komplekt.html", name: "Комплект: литература + език", url: LINKS.duo },
+  { src: "magazin/matematika", out: "matematika.html", name: "Карти по математика", url: LINKS.mat },
   { src: "magazin/produkti", out: "produkti.html", name: "Всички продукти", url: LINKS.produkti },
   { src: "magazin/digitalni", out: "digitalni.html", name: "Дигитални продукти", url: LINKS.digitalni, kind: "dig" },
   // only the shared header, or only the footer, for pages built elsewhere (Черен петък, legal pages)
   { src: "magazin/menu", out: "menu.html", name: "Само менюто (горе)", url: "най-горе на страници, направени отделно" },
   { src: "magazin/dolu", out: "dolu.html", name: "Само долната част", url: "най-долу на страници, направени отделно" },
+  // the cart checkout: the header + the block that puts the chosen mix of decks into the store's cart
+  { src: "magazin/poruchka", out: "poruchka.html", name: "Поръчка – количка", url: `${KASA} (над елемента „Чекаут на количка“)` },
   { src: "dosieta", out: "literaturni-dosieta.html", name: "Литературни досиета", url: LINKS.dosieta, kind: "dos" },
   { src: "prilozhenie", out: "prilozhenie.html", name: "Приложението Еду БЕЛ", url: LINKS.app, kind: "app" },
   { src: "trenazhor", out: "nvo-trenazhor.html", name: "НВО тренажор по БЕЛ", url: LINKS.trenazhor, kind: "trn" },
@@ -201,6 +204,8 @@ window.EB_LANDING = {
   store: {
     // Страницата с поръчката (checkout) в ConvertBuilder за всеки комплект в количката.
     checkout: ${JSON.stringify(CHECKOUT, null, 1).replace(/\n\s*/g, " ")},
+    // Поръчката с количката на магазина – за всяка друга комбинация от тестета.
+    kasa: "${KASA}",
     // Адресите на страниците в сайта.
     links: ${JSON.stringify(LINKS, null, 1).replace(/\n\s*/g, " ")},
     // Доставка с едно тесте (от … €). Две тестета са с безплатна доставка.

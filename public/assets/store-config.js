@@ -17,7 +17,9 @@ export const LINKS = {
   dosieta: "/igra-literaturni-dosieta",
   app: "/prilozhenie-trenazhor-za-nvo",
   trenazhor: "/prilozhenie-trenazhor-za-nvo/nvo-trenazhor",
-  matematika: "/karti-po-matematika/predvaritelna-poruchka",
+  // the math cards (the page of the deck; "matematika" is the older name of the same link)
+  mat: "/karti-po-matematika",
+  matematika: "/karti-po-matematika",
   // the digital products (PDF files and the trainer), paid by card
   digitalni: "/digitalni-produkti",
   // legal pages
@@ -28,7 +30,7 @@ export const LINKS = {
 };
 export const LOCAL = {
   home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/",
-  produkti: "/magazin/produkti/", shkoli: "/magazin/#uchilishta",
+  produkti: "/magazin/produkti/", shkoli: "/magazin/#uchilishta", mat: "/magazin/matematika/", matematika: "/magazin/matematika/",
   dosieta: "/dosieta/", app: "/prilozhenie/", trenazhor: "/trenazhor/", digitalni: "/magazin/digitalni/",
 };
 
@@ -44,15 +46,67 @@ export const DIGITAL = {
   ...Object.fromEntries(Object.entries(TRN.plans).map(([k, p]) => [`trn-${k}`, { title: `НВО тренажор – ${p.title}`, price: p.price, checkout: TRN.checkout[k] }])),
 };
 
-// The checkout page in ConvertBuilder for each package. The cart holds at most two decks,
-// so every cart is one of these five packages.
+// The three decks, in this order in package keys and titles.
+export const DECK_KEYS = ["lit", "ezik", "mat"];
+
+// The cart holds up to three decks in any mix. The price goes by the number of decks (euro cents):
+// 27,90 € for the first, +16,90 € for the second, +14,90 € for the third; two or three ship free.
+// The first and second step follow the "lit-1" and "duo" prices; LADDER[3] is the price of three.
+export const LADDER = [0, 2790, 4480, 5970];
+
+// The package of a cart ({lit, ezik, mat} counts): one key per mix, the first five as before.
+// One kind: "lit-1", "mat-2", "ezik-3"; two kinds of one each: "duo" (lit + ezik), "lit-mat", "ezik-mat";
+// three decks of two kinds: the double one first ("lit2-mat"); one of each: "trio".
+export function comboKey(c) {
+  const n = DECK_KEYS.reduce((s, k) => s + (c[k] || 0), 0);
+  if (!n) return null;
+  const kinds = DECK_KEYS.filter((k) => c[k]).sort((a, b) => c[b] - c[a] || DECK_KEYS.indexOf(a) - DECK_KEYS.indexOf(b));
+  if (kinds.length === 1) return `${kinds[0]}-${n}`;
+  if (kinds.length === 3) return "trio";
+  if (n === 2) return kinds.join("-") === "lit-ezik" ? "duo" : kinds.join("-");
+  return `${kinds[0]}2-${kinds[1]}`;
+}
+
+// Every package past the old five: its name (as the product in ConvertBuilder).
+export const COMBOS = {
+  "mat-1": "Карти по математика",
+  "mat-2": "Карти по математика × 2",
+  "lit-mat": "Литература + Математика",
+  "ezik-mat": "Български език + Математика",
+  trio: "Литература + Български език + Математика",
+  "lit-3": "Карти по литература × 3",
+  "ezik-3": "Карти по български език × 3",
+  "mat-3": "Карти по математика × 3",
+  "lit2-ezik": "2 × Литература + Български език",
+  "lit2-mat": "2 × Литература + Математика",
+  "ezik2-lit": "2 × Български език + Литература",
+  "ezik2-mat": "2 × Български език + Математика",
+  "mat2-lit": "2 × Математика + Литература",
+  "mat2-ezik": "2 × Математика + Български език",
+};
+
+// The checkout page in ConvertBuilder of a package that has its own (with its offers after the order).
 export const CHECKOUT = {
   "lit-1": "/nvo/poruchka-literatura",
   "lit-2": "/nvo/poruchka-literatura-2",
   "ezik-1": "/karti-po-b-lgarski/poruchka-ezik",
   "ezik-2": "/karti-po-b-lgarski/poruchka-ezik-2",
   duo: "/komplekt/poruchka-komplekt",
+  "mat-1": "/karti-po-matematika/poruchka-matematika",
+  trio: "/karti-po-matematika/poruchka-3-testeta",
 };
+
+// Every other package goes to one checkout that sells the cart of the ConvertBuilder store
+// ("Чекаут на количка"): KASA?p=<package>. Its block puts the package's product in that cart:
+// KASA_STORE holds the product number in the store for each package, KASA_KEY the free answer key
+// that goes with the Bulgarian-language cards.
+export const KASA = "/komplekt/poruchka";
+export const KASA_STORE = {
+  "lit-mat": 48, "ezik-mat": 49, "mat-2": 54,
+  "lit-3": 56, "ezik-3": 57, "mat-3": 55,
+  "lit2-ezik": 58, "lit2-mat": 52, "ezik2-lit": 59, "ezik2-mat": 53, "mat2-lit": 50, "mat2-ezik": 51,
+};
+export const KASA_KEY = 25;
 
 // The package prices on edubel.bg that differ from shop-catalog.js (euro cents); edubel.site keeps its own.
 // Two decks: 27,90 € for the first and 16,90 € for the second. Must match the products in ConvertBuilder.
@@ -70,11 +124,13 @@ export const CONTACT = {
 };
 export const COMPANY = "ДД Димитров 26 ЕООД · ЕИК 208651506";
 
-// The two decks: what the cart, the product cards and the menu show.
+// The decks: what the cart, the product cards and the menu show. "plain": sold at one price, with no
+// regular price struck through.
 export const DECKS = {
   lit: { title: "Карти по литература", short: "Литература", sub: "40 карти · 22 творби за НВО", img: "kutiya-literatura.webp" },
   ezik: { title: "Карти по български език", short: "Български език", sub: "40 карти · 20 правила + 20 упражнения", img: "kutiya-ezik.webp" },
+  mat: { title: "Карти по математика", short: "Математика", sub: "50 карти · 5.–7. клас", img: "kutiya-matematika.webp", plain: true, isNew: true },
 };
 
-// The most decks in one order: the checkouts sell one or two decks.
-export const MAX_DECKS = 2;
+// The most decks in one order.
+export const MAX_DECKS = 3;
