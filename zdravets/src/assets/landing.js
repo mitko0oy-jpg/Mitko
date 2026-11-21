@@ -628,11 +628,11 @@ function galleryItems(p, d) {
   (CLEAN_PHOTOS.includes(p.id) ? [] : [p.img].concat(p.gallery || [])).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
   // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
   const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
-  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-card sp-card--gift"><b class="sp-card__h">Комплект + подарък</b><img class="sp-card__one" src="${znM('pack-gel-3.webp')}" alt="3 гела и пакет с 12 пластира" loading="lazy"><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-gc sp-gc--gift"><b class="sp-gc__h">Комплект + подарък</b><img class="sp-gc__one" src="${znM('pack-gel-3.webp')}" alt="3 гела и пакет с 12 пластира" loading="lazy"><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
   const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
-  if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-card"><b class="sp-card__h">Какво има в гела</b><div class="sp-card__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
+  if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-gc"><b class="sp-gc__h">Какво има в гела</b><div class="sp-gc__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
-  if (st && st.length >= 4) list.push({ thumb: st[0][2].poster, alt: 'Как се използва', html: `<div class="sp-card"><b class="sp-card__h">Как се използва</b><div class="sp-card__grid">${st.slice(0, 4).map((x, i) => tile(x[2].poster, x[0], i + 1)).join('')}</div></div>` });
+  if (st && st.length >= 4) list.push({ thumb: st[0][2].poster, alt: 'Как се използва', html: `<div class="sp-gc"><b class="sp-gc__h">Как се използва</b><div class="sp-gc__grid">${st.slice(0, 4).map((x, i) => tile(x[2].poster, x[0], i + 1)).join('')}</div></div>` });
   return list;
 }
 /* Началото на страницата на гела – по образеца от стария лендинг на Митко: заглавие, тубата с лентата
