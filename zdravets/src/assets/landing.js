@@ -277,7 +277,7 @@ function renderLanding(p) {
     <div class="bv-sits">${sits.items.map(([t, m]) => typeof m === 'string' && !/^https?:/.test(m)
       ? `<figure class="bv-sit bv-sit--ico"><div class="bv-sit__ico" aria-hidden="true">${m}</div><p>${esc(t)}</p></figure>`
       : `<figure class="bv-sit"><div class="bv-sit__img">${bvMedia(m, t, 640, 480)}</div><p>${esc(t)}</p></figure>`).join('')}</div>
-    <div class="bv-sits-foot"><a class="bv-btn" href="${toOffers}">${esc(sits.cta)} ${arr}</a></div>
+    <div class="bv-sits-foot"><a class="bv-btn" href="${toOffers}">${esc(sits.cta)} ${arr}</a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 Поръчай по телефона: ${CONFIG.phone}</a></div>
   </div></section>` : '';
 
   // --- „Един крем. Много приложения“ (по старата страница на крема): иконка, заглавие, кратко обяснение
@@ -415,7 +415,7 @@ function renderLanding(p) {
         <div class="bv-vs__t bv-rv" ${dl}><span class="bv-vs__no" aria-hidden="true">✕</span><span>${esc(t)}</span></div>`;
       }).join('')}
     </div>
-    <div class="bv-vs__cta"><a class="bv-btn" href="${toOffers}">Избери своя пакет ${arr}</a><span class="bv-small">Плащаш при получаване · ${days} дни гаранция</span></div>
+    <div class="bv-vs__cta"><a class="bv-btn" href="${toOffers}">Избери своя пакет ${arr}</a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 Поръчай по телефона: ${CONFIG.phone}</a><span class="bv-small">Плащаш при получаване · ${days} дни гаранция</span></div>
   </div></section>` : '';
 
   // --- как се използва
