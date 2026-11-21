@@ -632,7 +632,6 @@ function renderCheckoutHelper() {
     if (e.isTrusted && t && t.name === 'shippingOption' && t.closest('label')) shipKind = kindOf(t.closest('label').textContent);
   }, true);
   function fixShipping() {
-    if (CONFIG.middleware) return; // с Middleware доставката (куриер, офис от падащо меню) се рисува от неговия скрипт
     const wrap = document.querySelector('.payment-step-wrapper [data-role="shipping-methods"]');
     if (!wrap) return;
     const rows = [...wrap.querySelectorAll('label')].map(l => {
@@ -667,12 +666,13 @@ function renderCheckoutHelper() {
     });
   }
 
-  // Middleware (както на beevenombg.eu): офисите на Еконт и Спиди от падащо меню, поръчката отива и в Middleware
-  if (CONFIG.middleware && !document.querySelector('script[data-platform="checkout-middleware"]')) {
-    const mw = document.createElement('script');
-    mw.src = CONFIG.middleware; mw.defer = true;
-    mw.dataset.platform = 'checkout-middleware'; mw.dataset.module = 'convert-builder';
-    document.body.appendChild(mw);
+  // OrderDesk (като „Линк за връзка“ в Middleware): при „До офис“ търсачка с офисите на Еконт и Спиди,
+  // изборът се записва в полето за адрес и товарителницата отива точно до този офис
+  if (CONFIG.kasa && CONFIG.kasa.src && !document.querySelector('script[src$="/k.js"]')) {
+    const k = document.createElement('script');
+    k.src = CONFIG.kasa.src; k.defer = true;
+    k.setAttribute('data-shop', CONFIG.kasa.shop);
+    document.body.appendChild(k);
   }
   async function start() {
     if (!cbReady()) { setTimeout(start, 300); return; }
