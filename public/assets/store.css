@@ -888,3 +888,10 @@ dialog.pv:not([open]){display:none}
 .pv-zoom .pv-img{width:220%;max-width:none;cursor:zoom-out}
 @media (min-width:761px){.pv-zoom .pv-img{width:1500px}}
 .pv-tip{display:block;font-weight:500;font-size:12.5px;opacity:.75}
+/* the page opens at half the size and whole on the screen; a click makes it big (the former size) */
+.pv-scroll{display:flex}
+.pv-img{margin:auto}
+@media (min-width:761px){
+  .pv-img{width:min(100%,490px,calc((100dvh - 110px) * .704))}
+  .pv-zoom .pv-img{width:min(100%,980px)}
+}
