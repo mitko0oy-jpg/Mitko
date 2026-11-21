@@ -182,7 +182,7 @@ async function kasaDialog(id) {
   const paint = () => {
     d.innerHTML = `<form method="dialog" class="mh"><h2>Чекаут настройки – ${esc(shop.label)}</h2><button class="iconbtn" value="close" aria-label="Затвори">✕</button></form>
       <div class="mb">
-        <div class="tabs" role="tablist"><button type="button" data-t="couriers" class="${tab === "couriers" ? "on" : ""}">Куриери</button><button type="button" data-t="checkout" class="${tab === "checkout" ? "on" : ""}">Чекаут</button></div>
+        <div class="tabs" role="tablist" style="min-height:40px;flex:none"><button type="button" data-t="couriers" class="${tab === "couriers" ? "on" : ""}">Куриери</button><button type="button" data-t="checkout" class="${tab === "checkout" ? "on" : ""}">Чекаут</button></div>
         ${tab === "couriers" ? couriers() : checkout()}
         <p class="err small" id="kErr"></p>
       </div>
