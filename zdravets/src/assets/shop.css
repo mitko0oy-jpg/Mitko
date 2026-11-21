@@ -535,3 +535,12 @@ body{padding-bottom:0}
 .sp-gc p{margin:0;text-align:center;font-size:.95rem;line-height:1.3}
 
 .sp-gc__one{flex:1;min-height:0;width:100%;object-fit:contain;border-radius:16px}
+
+/* Черен петък: предишна цена, задраскана с голям Х, и мигащият знак (и на страницата „Черен петък“) */
+.xprice{position:relative;display:inline-block;padding:0 .12em;font-weight:800;color:#5B4A38;line-height:1.1;white-space:nowrap}
+.xprice::before,.xprice::after{content:"";position:absolute;left:-6%;right:-6%;top:50%;height:.13em;min-height:3px;margin-top:-.065em;background:#D62828;border-radius:3px}
+.xprice::before{transform:rotate(22deg)}
+.xprice::after{transform:rotate(-22deg)}
+.bf-blink{display:inline-block;padding:4px 11px;border-radius:999px;background:#111;color:#FFC65C;font-size:.72em;font-weight:900;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;box-shadow:0 0 0 2px #FFC65C inset;animation:bf-blink 1.1s ease-in-out infinite}
+@keyframes bf-blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.96)}}
+@media(prefers-reduced-motion:reduce){.bf-blink{animation:none}}

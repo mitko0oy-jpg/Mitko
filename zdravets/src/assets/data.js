@@ -14,8 +14,10 @@ const CONFIG = {
   brand: 'Здравец Натура',
   phone: '0988 88 05 07',
   phoneHref: '+359988880507',
-  hours: 'Пон – Пет: 9:00 – 18:00 ч.',
-  email: 'info@zdravets.eu',
+  hours: 'Денонощно, всеки ден',
+  // Телефонът се вдига от Стела – дигиталният асистент: приема поръчки и проверява поръчка.
+  phoneBot: 'Стела – нашият дигитален асистент',
+  email: 'zdravecnatura@gmail.com',
   company: '„ДД Димитров 26“ ЕООД',
   eik: '208651506',
   address: 'гр. София, ж.к. Зона Б-5, бл. 5, вх. А, ап. 39',
@@ -27,7 +29,7 @@ const CONFIG = {
     { id: 'address',       label: 'До адрес (с куриер)', price: 5.90, office: false }
   ],
   // Безплатна доставка до офис от тази сума (0 = без). Трябва да съвпада с правилото в ConvertBuilder.
-  freeOfficeShippingFrom: 35,
+  freeOfficeShippingFrom: 34.90,
 
   // Черен петък — реален краен срок (часовникът не се рестартира)
   bf: {
@@ -434,8 +436,9 @@ const BUNDLES = [
     title: '2 гела за стави',
     items: [['gel', 2]],
     gift: [['beeherb', 1]],
-    price: 22.90,
-    perUnit: '11,45\u00a0€ за гел',
+    price: 19.90,
+    prev: 22.90, // цената до 21.11. – показва се задраскана с Х
+    perUnit: '9,95\u00a0€ за гел',
     line: '2 гела по 20 г',
     note: 'Около 4 седмици грижа за една зона',
     freeShip: false,
@@ -449,8 +452,9 @@ const BUNDLES = [
     title: '3 гела за стави',
     items: [['gel', 3]],
     gift: [['beeherb', 1]],
-    price: 24.90,
-    perUnit: '8,30\u00a0€ за гел · третият гел е само +2\u00a0€',
+    price: 22.90,
+    prev: 24.90,
+    perUnit: '7,63\u00a0€ за гел · третият гел е само +3\u00a0€',
     line: '3 гела по 20 г',
     note: 'Около 6 седмици грижа без прекъсване',
     freeShip: false,
@@ -462,7 +466,8 @@ const BUNDLES = [
     title: 'Комплект „Пълна грижа“',
     items: [['gel', 3], ['spray', 1]],
     gift: [['beeherb', 1]],
-    price: 36.90,
+    price: 34.90,
+    prev: 36.90,
     perUnit: 'Гел сутрин и вечер, спрей — навън и за гърба',
     line: '3 гела + Спрей за стави',
     note: 'Чудесен подарък и за близък човек',
@@ -507,9 +512,9 @@ const UPSELL = { product: 'hyal', store: 29, price: 7.90, downsellPrice: 5.90 };
 const PACKS = {
   gel: [
     { key: 'gel1', label: '1 гел', sub: 'За да опиташ', store: 24, price: 15.90 },
-    { key: 'bf2', label: '2 гела', sub: '11,45\u00a0€ за гел', bundle: 'bf2', store: 25, price: 22.90 },
-    { key: 'bf3', label: '3 гела', sub: '8,30\u00a0€ за гел · най-избиран', bundle: 'bf3', store: 26, price: 24.90, featured: true },
-    { key: 'bfFull', label: 'Пълна грижа: 3 гела + спрей', sub: 'Гел сутрин и вечер, спрей навън', bundle: 'bfFull', store: 27, price: 36.90 }
+    { key: 'bf2', label: '2 гела', sub: '9,95\u00a0€ за гел', bundle: 'bf2', store: 25, price: 19.90, prev: 22.90 },
+    { key: 'bf3', label: '3 гела', sub: '7,63\u00a0€ за гел · най-избиран', bundle: 'bf3', store: 26, price: 22.90, prev: 24.90, featured: true },
+    { key: 'bfFull', label: 'Пълна грижа: 3 гела + спрей', sub: 'Гел сутрин и вечер, спрей навън', bundle: 'bfFull', store: 27, price: 34.90, prev: 36.90 }
   ],
   skin: [
     { key: 'skin1', label: '1 крем', sub: 'За да опиташ', store: 4, price: 9.90 },

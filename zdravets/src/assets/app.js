@@ -187,7 +187,7 @@ function renderFooter() {
     <div><span>💶</span><b>Плащаш при получаване</b><small>Без карта и без предплащане</small></div>
     <div><span>🚚</span><b>Доставка 1–2 работни дни</b><small>Еконт и Спиди${FREE_FROM ? ` · безплатно над ${fmt(FREE_FROM)}` : ''}</small></div>
     <div><span>🛡️</span><b>${CONFIG.guaranteeDays} дни гаранция</b><small>Не си доволен – връщаме парите</small></div>
-    <div><span>📞</span><b>Жив човек насреща</b><small>${CONFIG.phone} · ${esc(CONFIG.hours)}</small></div>
+    <div><span>📞</span><b>Обади се денонощно</b><small>${CONFIG.phone} · без почивен ден. Отговаря ${esc(CONFIG.phoneBot)} – приема поръчки и проверява поръчка.</small></div>
   </div></section>
   <footer class="sp-footer"><div class="wrap">
     <div class="sp-footer__cols">
@@ -200,7 +200,7 @@ function renderFooter() {
     </div>
     <div class="sp-footer__pay"><span>💶 Наложен платеж</span><span>📦 Еконт</span><span>📦 Спиди</span><span>🔒 Без данни за карта</span></div>
     <div class="sp-footer__legal">
-      <p>${CONFIG.company} · ЕИК ${CONFIG.eik} · ${CONFIG.address} · <a href="mailto:${CONFIG.email}">${CONFIG.email}</a> · Надзорен орган: Комисия за защита на потребителите.</p>
+      <p><a href="mailto:${CONFIG.email}">${CONFIG.email}</a> · <a href="${L.terms}">Данни за търговеца – в Общите условия</a> · Надзорен орган: Комисия за защита на потребителите.</p>
       <p>Продуктите на този сайт не са лекарства и не са предназначени за диагностика, лечение или профилактика на заболявания. Гелът, кремовете и спреевете са козметични продукти по смисъла на Регламент (ЕО) № 1223/2009. При здравословен проблем се консултирайте с лекар или фармацевт. Индивидуалното усещане може да се различава.</p>
       <p>© ${new Date().getFullYear()} Здравец Натура</p>
     </div>
@@ -237,7 +237,7 @@ function bundleCard(b) {
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
     ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули</div>` : ''}
-    <div class="pricebox"><span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
+    <div class="pricebox">${b.prev && bfOn() ? `<span class="bf-blink">Черен петък</span> <span class="xprice">${fmt(b.prev)}</span> ` : ''}<span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>

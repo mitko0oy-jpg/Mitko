@@ -80,6 +80,11 @@ function guaranteeSeal(days) {
 const isBee = p => /пчелна отрова|beevenom/i.test(p.name + ' ' + p.short);
 
 /* офертите на продукта: комплекти от PACKS или единичната цена */
+/* Черен петък: предишната цена, задраскана с голям Х, мигащ знак и таймер под офертите. */
+const xPrice = v => v ? `<span class="xprice" aria-label="Предишна цена ${fmt(v)}">${fmt(v)}</span>` : '';
+const BF_BLINK = '<span class="bf-blink">Черен петък</span>';
+const bfTimer = () => bfOn() ? `<p class="bf-timer"><span class="bf-timer__ico" aria-hidden="true">⏳</span><span>Офертите важат <b>до 30 ноември</b> или до изчерпване на наличностите.<br>Остават: <b class="bf-timer__left" data-cd-mini></b></span></p>` : '';
+
 function landingOffers(p, d) {
   const gift = bfOn(); // подаръкът на Черния петък върви с всяка поръчка без тази от 1 брой (syncGift)
   const giftPic = GIFT_IMG;
@@ -117,6 +122,7 @@ function landingOffers(p, d) {
         <h3>${esc(k.label)}</h3>
         <p class="bv-pack__sub">${esc(String(k.sub || p.size).replace(/ · най-(избиран|изгодно)$/, ''))}</p>
         <ul>${lis.join('')}</ul>
+        ${bfOn() && k.prev ? `<div class="bv-prev">${BF_BLINK}${xPrice(k.prev)}</div>` : ''}
         <div class="bv-price"><b${off ? ` data-from="${regular.toFixed(2)}"` : ''}>${fmt(k.price)}</b>${off ? `<s>${fmt(regular)}</s>` : ''}</div>
         <p class="bv-unit">${per}</p>
         <button class="bv-btn${hot ? ' bv-pulse' : ''}" type="button" data-bv-buy="${k.store}" data-bv-key="${esc(k.key)}">Избирам този пакет</button>
@@ -311,7 +317,7 @@ function renderLanding(p) {
       <div class="bv-assure">
         <div class="bv-card"><h3><span class="bv-ico">🔬</span>Качество и сигурност</h3><ul class="bv-qual">
           <li>Пълният състав е отпечатан върху опаковката</li><li>Произведено за България</li>
-          <li>Обаждаме се да потвърдим всяка поръчка</li><li>Изпращаме до 1–2 работни дни от България</li></ul></div>
+          <li>Александра, нашият дигитален асистент, се обажда да потвърди поръчката – кажи ѝ, ако искаш да промениш нещо</li><li>Изпращаме до 1–2 работни дни от България</li></ul></div>
         <div class="bv-card bv-guar">${guaranteeSeal(days)}<div><h3 style="margin-bottom:6px">${days} дни гаранция</h3>
           <p>Пробвай продукта. Ако не си доволен – обади се и ти връщаме парите. Решаваме всеки случай бързо и по човешки.</p></div></div>
       </div>
@@ -335,6 +341,7 @@ function renderLanding(p) {
         <p class="bv-lead">${packs ? 'Повечето клиенти избират комплект – стига за по-дълго, а цената на брой пада.' : 'Плащаш при получаване, а ако не си доволен – връщаме парите.'}</p>
       </div>
       <div class="bv-packs bv-packs--n${packs ? packs.length : 1}${packs ? '' : ' bv-packs--one'}">${landingOffers(p, d)}</div>
+      ${packs ? bfTimer() : ''}
       <div class="bv-pay"><span>🔒 Без данни за карта в сайта</span><span>💶 Наложен платеж</span><span>🛡️ ${days} дни гаранция</span></div>
     </div>
   </section>`;
@@ -446,7 +453,7 @@ function renderLanding(p) {
       ['Трябва ли да плащам предварително?', 'Не. Плащаш с наложен платеж – на куриера при получаване. Не въвеждаш данни за карта в сайта.'],
       ['Колко струва доставката и кога пристига?', `Изпращаме с Еконт и Спиди: до офис от ${fmt(SHIP_FROM)}, до адрес ${fmt(Math.max(...CONFIG.shipping.map(m => m.price)))}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пратката обикновено пристига за 1–2 работни дни.`],
       ['Ами ако не съм доволен?', `Имаш ${days} дни гаранция – обади се на ${CONFIG.phone} и ще ти върнем парите. Освен това по закон имаш 14 дни право на отказ.`],
-      ['Мога ли да поръчам по телефона?', `Да – обади се на ${CONFIG.phone} (${CONFIG.hours}). Ще приемем поръчката и ще отговорим на въпросите ти.`]
+      ['Мога ли да поръчам по телефона?', `Да – обади се на ${CONFIG.phone} по всяко време, денонощно и без почивен ден. Отговаря ${CONFIG.phoneBot}: при нея можеш да поръчаш или да провериш поръчка.`]
     ]]
   ];
   const faq = `
@@ -667,7 +674,7 @@ function productTop(p, d, ctx) {
   const opts = [];
   if (packs) packs.forEach(k => {
     const c = packCalc(p, k);
-    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, bf: !!(k.bundle && B(k.bundle).bf !== false) });
+    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, prev: bfOn() ? k.prev || 0 : 0, bf: !!(k.bundle && B(k.bundle).bf !== false) });
   });
   else {
     opts.push({ kind: 'qty', key: 'one', label: p.wellness ? '1 кутия' : '1 брой', sub: p.size, price: p.price });
@@ -691,7 +698,7 @@ function productTop(p, d, ctx) {
       <h1 class="sp-title">${esc(p.name)}</h1>
       ${tag ? `<p class="sp-tagline">${tag}</p>` : ''}
       ${reviewsOn ? '<a class="sp-rating" href="#bv-otzivi"><span class="bv-stars" aria-hidden="true">★★★★★</span> Истински отзиви от клиенти</a>' : ''}
-      <div class="sp-price"><b data-sp-price></b><s data-sp-was></s><span class="sp-off" data-sp-off></span></div>
+      <div class="sp-price"><span class="xprice" data-sp-prev hidden></span><b data-sp-price></b><s data-sp-was></s><span class="sp-off" data-sp-off></span></div>
       <p class="sp-price__note"><span data-sp-per></span>С ДДС · плащаш при получаване</p>
       <p class="sp-short">${esc(p.short)}</p>
       <ul class="sp-bullets">${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
@@ -701,8 +708,9 @@ function productTop(p, d, ctx) {
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
           <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${bfOn() && o.multi ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули</span>` : ''}</span>
-          <span class="sp-opt__price"><b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
+          <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
+      ${packs ? bfTimer() : ''}
       ${others.length && comboReady() ? `<div class="sp-combo" hidden>
         <p class="sp-lbl"><span data-combo-need></span></p>
         <div class="sp-combo__grid">${others.map(x => `<button type="button" class="sp-pick" data-pick="${x.id}" aria-pressed="false" style="--pc:${productLook(x).a}"><img src="${productLook(x).img}" alt="" loading="lazy" width="96" height="96"><span>${esc(((n) => n.charAt(0).toUpperCase() + n.slice(1))(x.shortName.replace(/^Пластири (с )?/, '').replace(/ пластири$/, '')))}</span><i aria-hidden="true">✓</i></button>`).join('')}</div>
@@ -767,6 +775,7 @@ function bindTop(root, p) {
     const price = x.kind === 'qty' ? x.price * qty : x.price;
     $('[data-sp-price]', top).textContent = fmt(price);
     $('[data-sp-was]', top).textContent = x.was ? fmt(x.was) : '';
+    const pv = $('[data-sp-prev]', top); if (pv) { pv.textContent = x.prev ? fmt(x.prev) : ''; pv.hidden = !x.prev; }
     $('[data-sp-off]', top).textContent = x.off ? `−${x.off}%` : '';
     $('[data-sp-off]', top).hidden = !x.off;
     $('[data-sp-per]', top).textContent = x.per ? `${fmt(x.per)} за ${x.kind === 'combo' ? 'кутия' : 'брой'} · ` : '';
@@ -904,14 +913,14 @@ function renderHomeBv() {
     </div>
   </section>`;
 
-  const steps = [['Избираш продукт', 'Натискаш „Добави в количката“ или „Купи сега“ на продукта или комплекта.'], ['Пишеш име и телефон', 'Само няколко полета. Обаждаме се, за да потвърдим поръчката.'], ['Плащаш на куриера', 'Пратката пристига за 1–2 работни дни. Плащаш, когато я получиш.']];
+  const steps = [['Избираш продукт', 'Натискаш „Добави в количката“ или „Купи сега“ на продукта или комплекта.'], ['Пишеш име и телефон', 'Само няколко полета. Обажда се Александра – нашият дигитален асистент, за да потвърди поръчката. Ако искаш да промениш или добавиш нещо, кажи ѝ.'], ['Плащаш на куриера', 'Пратката пристига за 1–2 работни дни. Плащаш, когато я получиш.']];
   const how = `
   <section class="bv-how" style="background:var(--honey-50)"><div class="bv-wrap">
     <div class="bv-center"><span class="bv-eyebrow">Лесно е</span><h2>3 стъпки. <em class="bv-accent">Без регистрация и без карта.</em></h2></div>
     <ol class="bv-hsteps bv-hsteps--plain">${steps.map(([h, t], i) => `<li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:${(i * .6).toFixed(1)}s">${i + 1}</span><div class="bv-hstep__body"><h3>${esc(h)}</h3><p>${esc(t)}</p></div><span class="bv-glare" aria-hidden="true"></span></li>`).join('')}</ol>
     <div class="bv-callbar" style="margin-top:34px">
       <div><small>Не обичаш да поръчваш онлайн?</small><a href="tel:${CONFIG.phoneHref}">📞 ${CONFIG.phone}</a></div>
-      <div><small>${esc(CONFIG.hours)}</small><strong>Обади се – ще запишем поръчката вместо теб</strong></div>
+      <div><small>${esc(CONFIG.hours)} · отговаря Стела, дигитален асистент</small><strong>Обади се – Стела ще запише поръчката вместо теб</strong></div>
     </div>
   </div></section>`;
 
@@ -934,14 +943,14 @@ function renderHomeBv() {
     <div class="bv-wrap"><div class="bv-assure" style="margin-top:0">
       <div class="bv-card"><h3><span class="bv-ico">🔬</span>Качество и сигурност</h3><ul class="bv-qual">
         <li>Пълният състав е отпечатан върху всяка опаковка</li><li>Произведено за България</li>
-        <li>Обаждаме се да потвърдим всяка поръчка</li><li>Изпращаме до 1–2 работни дни от България</li></ul></div>
+        <li>Александра, нашият дигитален асистент, се обажда да потвърди поръчката – кажи ѝ, ако искаш да промениш нещо</li><li>Изпращаме до 1–2 работни дни от България</li></ul></div>
       <div class="bv-card bv-guar">${guaranteeSeal(days)}<div><h3 style="margin-bottom:6px">Пробвай без риск</h3>
         <p>Ако в рамките на ${days} дни продуктът не ти хареса, обади се и ще ти върнем парите. Без излишни въпроси.</p></div></div>
     </div></div>
   </section>`;
 
   const qa = [
-    ['Как да направя поръчка?', `Натисни „Добави в количката“ или „Купи сега“, напиши име, телефон и офис или адрес. Можеш да поръчаш и по телефона на ${CONFIG.phone} (${CONFIG.hours}).`],
+    ['Как да направя поръчка?', `Натисни „Добави в количката“ или „Купи сега“, напиши име, телефон и офис или адрес. Можеш да поръчаш и по телефона на ${CONFIG.phone} – денонощно, без почивен ден (отговаря Стела, нашият дигитален асистент).`],
     ['Как се плаща?', 'Плащаш на куриера, когато получиш пратката (наложен платеж). Не ти трябва карта и не плащаш нищо предварително.'],
     ['Колко струва доставката и кога ще пристигне?', `${CONFIG.shipping.map(m => `${m.label} – ${fmt(m.price)}`).join(', ')}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пристига за 1–2 работни дни.`],
     ['Мога ли да върна продукт?', `Да. Имаш ${days} дни гаранция за удовлетвореност и законово право да върнеш продукта в 14-дневен срок.`],
