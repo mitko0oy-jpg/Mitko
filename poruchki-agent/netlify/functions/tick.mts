@@ -7,6 +7,7 @@ import { runFeedbackQueue } from "../../lib/feedback-queue.mjs";
 import { sofiaNow } from "../../lib/format.mjs";
 import { getSettings, saveSettings } from "../../lib/store.mjs";
 import { reviewPending, buildDigest, sofiaDay, DIGEST_AT } from "../../lib/coach.mjs";
+import { salesReviewPending } from "../../lib/sales-coach.mjs";
 
 export default async (_req: Request, context: Context) => {
   const deps = realDeps();
@@ -31,6 +32,8 @@ export default async (_req: Request, context: Context) => {
   // and once a day after the last calls send Mitko the report with proposed rules.
   const ai = { store: deps.store, env };
   const reviews = await reviewPending(ai, now, { max: 2 }).catch((e) => ({ error: e.message }));
+  // Every feedback call without a sale: why, and one proposed rule for Mitko (lib/sales-coach.mjs).
+  const sales = await salesReviewPending({ ...ai, notify: deps.notify }, now, { max: 1 }).catch((e) => ({ error: e.message }));
   let digest = "";
   const today = sofiaDay(now);
   if (t.hour * 60 + t.minute >= DIGEST_AT.hour * 60 + DIGEST_AT.minute) {
@@ -42,7 +45,7 @@ export default async (_req: Request, context: Context) => {
       digest = text ? "sent" : "no calls";
     }
   }
-  console.log(JSON.stringify({ added, ...report, ...feedback, purged, telegram, reviews, digest }));
+  console.log(JSON.stringify({ added, ...report, ...feedback, purged, telegram, reviews, sales, digest }));
 };
 
 export const config: Config = {

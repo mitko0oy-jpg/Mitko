@@ -40,9 +40,11 @@ export async function saveReview(store, call, now = new Date()) {
     at: now.toISOString(),
     conversationId: call.conversationId,
     kind: reviewKind(v),
+    orderNo: v.order_number || "",
     persona: v.persona || "elena",
     voice: v.voice_id || "",
-    outcome: call.outcome || "",
+    // Feedback calls: their own outcome (the incoming agent collects it as fb_outcome).
+    outcome: String((v.campaign === "feedback" && (call.fields?.fb_outcome || call.fields?.outcome)) || call.outcome || "").toLowerCase(),
     upsell: call.upsell || "",
     durationSecs: call.durationSecs ?? null,
     failedChecks: call.failedChecks || [],

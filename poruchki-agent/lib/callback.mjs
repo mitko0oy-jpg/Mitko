@@ -12,6 +12,7 @@ import { requestCallback } from "./zadarma.mjs";
 import { pickPersona, renamePersona } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
 import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
+import { fbRulesSection } from "./sales-coach.mjs";
 
 // Scripts that live in git (scripts/build-scripts.mjs) instead of an ElevenLabs agent.
 const BUNDLED = { feedback: FEEDBACK_SCRIPT };
@@ -69,10 +70,11 @@ export async function startCallbackCall({ store, zadarma, to, variables, agentId
  * @param {(agentId?: string) => Promise<{prompt: string, firstMessage: string, language?: string}|null>} args.outboundScript
  *        an agent's script (read from ElevenLabs, cached); no id = the order-confirmation agent
  * @param {{text: string}[]} [args.lessons] rules Mitko approved from the call reviews (lib/coach.mjs)
+ * @param {{text: string}[]} [args.feedbackRules] rules Mitko approved after feedback calls (lib/sales-coach.mjs)
  * @param {string} [args.aleksandraVoiceId] when set, half of the calls are made by Александра (lib/persona.mjs)
  * @returns {Promise<{response: object, orderKey: string|null}>}
  */
-export async function initiationData({ store, body, outboundScript, ownNumber = "", lessons = [], aleksandraVoiceId = "", now = new Date() }) {
+export async function initiationData({ store, body, outboundScript, ownNumber = "", lessons = [], feedbackRules = [], aleksandraVoiceId = "", now = new Date() }) {
   const inbound = { response: { type: "conversation_initiation_client_data", dynamic_variables: {} }, orderKey: null };
   const digits = phoneDigits(body?.caller_id);
   let key = digits ? pendingKey(digits) : null;
@@ -119,7 +121,8 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
     response.conversation_config_override = {
       agent: {
         // Learned rules are about confirming orders: not added to another agent's script.
-        prompt: { prompt: renamePersona(script.prompt, persona) + (pending.agentId || bundled ? "" : lessonsSection(lessons)) },
+        // Each script gets the rules learned for it: order rules, or the feedback rules Mitko approved.
+        prompt: { prompt: renamePersona(script.prompt, persona) + (bundled ? fbRulesSection(feedbackRules) : pending.agentId ? "" : lessonsSection(lessons)) },
         ...(script.firstMessage ? { first_message: renamePersona(script.firstMessage, persona) } : {}),
         ...(script.language ? { language: script.language } : {}),
       },

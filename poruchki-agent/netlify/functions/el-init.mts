@@ -9,6 +9,7 @@ import { env } from "../../lib/config.mjs";
 import { openStore, getSettings } from "../../lib/store.mjs";
 import { initiationData, outboundScriptLoader } from "../../lib/callback.mjs";
 import { getLessons } from "../../lib/coach.mjs";
+import { getFbRules } from "../../lib/sales-coach.mjs";
 
 let loader: ReturnType<typeof outboundScriptLoader> | null = null;
 
@@ -20,6 +21,7 @@ export default async (req: Request, context: Context) => {
   loader ??= outboundScriptLoader({ apiKey: env("ELEVENLABS_API_KEY"), agentId: env("EL_AGENT_ID"), store });
   try {
     const lessons = await getLessons(store).catch(() => []);
+    const feedbackRules = await getFbRules(store).catch(() => []);
     const settings = await getSettings(store).catch(() => ({}));
     const { response, orderKey } = await initiationData({
       store,
@@ -27,6 +29,7 @@ export default async (req: Request, context: Context) => {
       outboundScript: loader,
       ownNumber: env("ZADARMA_FROM"),
       lessons,
+      feedbackRules,
       // Александра's voice: chosen in Telegram (/aleksandra 1|2|3), or from Netlify.
       aleksandraVoiceId: settings.aleksandraVoiceId ?? env("ALEKSANDRA_VOICE_ID"),
     });

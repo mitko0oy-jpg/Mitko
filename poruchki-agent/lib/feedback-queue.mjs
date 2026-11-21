@@ -13,6 +13,7 @@ import { feedbackVariables } from "./feedback.mjs";
 import { normalizePhoneBG, sofiaNow, inCallingHours } from "./format.mjs";
 import { getSettings, saveSettings } from "./store.mjs";
 import { PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
+import { salesStats, salesText } from "./sales-coach.mjs";
 
 export const FEEDBACK_HOURS = "10:00-19:30"; // Monday to Saturday
 export const MAX_TRIES = 2; // not answered → once more, an hour later
@@ -189,6 +190,8 @@ export async function feedbackStatus(deps) {
   const settings = await getSettings(deps.store);
   return [
     `<b>Обратна връзка</b> – ${settings.feedbackOn ? "▶️ звъни" : "⏸ спряна"}`,
+    salesText(await salesStats(deps.store)),
+    "",
     ...all.slice(-25).map(({ rec }) => `#${esc(rec.label)} ${esc(String(rec.order.name || "").split(/\s+/)[0])} – ${STATUS_BG[rec.status] || esc(rec.status)}${rec.outcome ? ` (${esc(rec.outcome)})` : ""}`),
   ].join("\n");
 }
@@ -239,7 +242,7 @@ export async function runFeedbackQueue(deps, now = new Date()) {
       await saveSettings(store, { ...settings, feedbackOn: false, feedbackReported: true });
       const finished = fresh.filter((r) => ["done", "no_answer", "failed"].includes(r.rec.status));
       const talked = finished.filter((r) => r.rec.status === "done").length;
-      await deps.notify(`✅ <b>Обратна връзка – готово</b>\nГоворихме: ${talked} · Не вдигнаха: ${finished.filter((r) => r.rec.status === "no_answer").length}\nПодробности: /obratna_status`);
+      await deps.notify(`✅ <b>Обратна връзка – готово</b>\nГоворихме: ${talked} · Не вдигнаха: ${finished.filter((r) => r.rec.status === "no_answer").length}\n${salesText(await salesStats(store, now))}\nПодробности: /obratna_status · Научени правила: /pravila`);
     }
     return { feedback: "nothing to call" };
   }
