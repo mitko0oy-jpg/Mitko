@@ -58,9 +58,20 @@ const GRAD = '<svg class="bv-defs" width="0" height="0" aria-hidden="true" focus
 
 const hTxt = a => a ? `${esc(a[0] || '')}${a[1] ? `<em class="bv-accent">${esc(a[1])}</em>` : ''}${esc(a[2] || '')}` : '';
 const arr = '<span class="bv-arr">→</span>';
+// поток HLS (видеата от ConvertBuilder): Safari го пуска сам, другите браузъри – с hls.js от jsDelivr (зарежда се веднъж)
+let hlsLib = null;
+function attachHls(v) {
+  const url = v.dataset.hls;
+  const go = () => { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); };
+  if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = url; go(); return; }
+  hlsLib = hlsLib || new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js'; s.onload = () => ok(window.Hls); s.onerror = no; document.head.appendChild(s); });
+  hlsLib.then(Hls => { if (!Hls || !Hls.isSupported()) return; const h = new Hls({ capLevelToPlayerSize: true }); h.loadSource(url); h.attachMedia(v); h.on(Hls.Events.MANIFEST_PARSED, go); }).catch(() => {});
+}
 function bvMedia(m, alt, w, h, cls = 'bv-loop') {
   if (!m) return '';
   if (typeof m === 'string') return `<img class="${cls}" src="${m}" alt="${esc(alt)}" width="${w}" height="${h}" loading="lazy" decoding="async">`;
+  // видео от ConvertBuilder (поток HLS): зарежда се с hls.js, когато наближи (в Safari – направо)
+  if (m.hls) return `<video class="${cls}" muted loop playsinline preload="none" width="${w}" height="${h}"${m.poster ? ` poster="${m.poster}"` : ''} aria-label="${esc(alt)}" data-hls="${m.hls}"></video>`;
   return `<video class="${cls}" muted loop playsinline preload="none" width="${w}" height="${h}" poster="${m.poster}" aria-label="${esc(alt)}"><source data-src="${m.video}" type="video/mp4"></video>`;
 }
 function seal(big, small, ring, id) {
@@ -277,6 +288,8 @@ function renderLanding(p) {
     <h2>${hTxt(uses.h2)}</h2>
     ${uses.lead ? `<p class="bv-lead">${esc(uses.lead)}</p>` : ''}
     <div class="bv-sits bv-uses__grid">${uses.items.map(([ic, t, s]) => `<figure class="bv-sit bv-sit--ico"><div class="bv-sit__ico" aria-hidden="true">${ic}</div><p><b>${esc(t)}</b>${s ? `<span class="bv-uses__s">${esc(s)}</span>` : ''}</p></figure>`).join('')}</div>
+    ${uses.banner ? `<figure class="bv-banner"><img src="${uses.banner}" alt="${esc(uses.bannerAlt || '')}" loading="lazy" decoding="async"></figure>` : ''}
+    ${uses.note ? `<p class="bv-uses__note">${esc(uses.note)}</p>` : ''}
     <div class="bv-sits-foot"><a class="bv-btn" href="${toOffers}">Избери пакет ${arr}</a></div>
   </div></section>` : '';
 
@@ -507,7 +520,7 @@ function renderLanding(p) {
   const trustHtml = hero.slice(hero.indexOf('<div class="bv-trust">'));
   const top = gelIntro(p, d) + productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
   root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
-    + ingsHtml + usesHtml + layersHtml + vs + howHtml + tlHtml + revHtml
+    + ingsHtml + (d.ingBanner ? `<section class="bv-situ"><div class="bv-wrap"><figure class="bv-banner"><img src="${d.ingBanner}" alt="Активните съставки" loading="lazy" decoding="async"></figure></div></section>` : '') + usesHtml + layersHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
     + faq + final;
   bindTop(root, p);
@@ -581,7 +594,7 @@ function bvEffects(root) {
     let loaded = false;
     if (reduce && v.classList.contains('bv-loop')) return;
     new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting && !loaded) { const ss = $$('source[data-src]', v); if (ss.length) { ss.forEach(s => { s.src = s.getAttribute('data-src'); }); v.load(); } loaded = true; }
+      if (e.isIntersecting && !loaded) { if (v.dataset.hls) attachHls(v); const ss = $$('source[data-src]', v); if (ss.length) { ss.forEach(s => { s.src = s.getAttribute('data-src'); }); v.load(); } loaded = true; }
       if (reduce) return;
       if (e.isIntersecting) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); } else v.pause();
     }), { rootMargin: '300px 0px' }).observe(v);
