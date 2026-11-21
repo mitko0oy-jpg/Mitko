@@ -43,6 +43,9 @@ const CONFIG = {
   // Безплатна доставка до офис от тази сума (0 = без). Трябва да съвпада с правилото в ConvertBuilder.
   freeOfficeShippingFrom: 34.90,
 
+  // Microsoft Clarity (записи на посещенията и топлинни карти) – номерът на проекта „Здравец Натура“; '' = изключено.
+  clarity: 'zh516a8p0m',
+
   // Черен петък — реален краен срок (часовникът не се рестартира)
   bf: {
     active: true,
@@ -2324,7 +2327,30 @@ function applyFs(i) {
 }
 applyFs(local.get('zn_fs', 0));
 
-function track(ev, data) { try { if (window.fbq) window.fbq('track', ev, data || {}); } catch (e) {} }
+/* ---------- Microsoft Clarity: записи на посещенията и топлинни карти ----------
+   Зарежда се веднъж на страница (и при няколко блока). Без банер за бисквитки Clarity работи за посетителите
+   от ЕС без бисквитки: всяка отворена страница е отделен запис. Написаното в полетата Clarity не записва. */
+(function clarityTag() {
+  const id = CONFIG.clarity;
+  if (!id || window.__znClarity) return;
+  window.__znClarity = 1;
+  if (typeof window.clarity === 'function') return; // вече е сложен (напр. в настройките на сайта)
+  try {
+    window.clarity = function () { (window.clarity.q = window.clarity.q || []).push(arguments); };
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.clarity.ms/tag/' + id;
+    document.head.appendChild(s);
+  } catch (e) {}
+})();
+// събитие в Clarity – по него се филтрират записите (напр. „кой е добавил в количката“)
+function mark(ev) { try { if (window.clarity) window.clarity('event', ev); } catch (e) {} }
+
+const CLARITY_EVENTS = { ViewContent: 'product_view', InitiateCheckout: 'checkout' };
+function track(ev, data) {
+  try { if (window.fbq) window.fbq('track', ev, data || {}); } catch (e) {}
+  if (CLARITY_EVENTS[ev]) mark(CLARITY_EVENTS[ev]);
+}
 
 /* ---------- магазинът на ConvertBuilder ---------- */
 const W = () => window.WebPlatform;
@@ -2429,6 +2455,7 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
     }
     if (!skip) await Cart.add(store, qty);
     for (const x of extra) await Cart.add(x, 1);
+    mark('add_to_cart');
     await syncGift();
     if (go) { location.href = L.checkout; return; }
     busy = false;
@@ -2830,6 +2857,7 @@ function renderCheckoutHelper() {
 }
 
 function renderThanks() {
+  mark('order_done');
   // номерът и сумата идват от магазина (последната поръчка от този браузър)
   const el = $('#order-no');
   (function wait(n) {
