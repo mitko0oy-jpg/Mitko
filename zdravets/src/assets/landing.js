@@ -828,12 +828,6 @@ function renderHomeBv() {
   // четирите вида грижа с едри редове и доказателствата. Цветовете са на логото – зелено, златно, крем.
   // Трябва да е съвсем просто: купувачите са възрастни хора, а част от рекламите водят право тук.
   const ORDERS_SENT = '3 500+'; // изпратени поръчки – числото е от Митко (20.11.2026)
-  const heroCats = [
-    ['stavi', 'hyal', 'Стави и мускули', 'Гелове, кремове и пластири'],
-    ['kraka', 'vein', 'Уморени крака', 'Свежест за уморените крака'],
-    ['koja', 'ghk', 'Грижа за кожата', 'За суха и чувствителна кожа'],
-    ['wellness', 'energy', 'Пластири за всеки ден', '30 броя – за цял месец']
-  ];
   const CHEV = '<svg class="hb-cat__go" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   const PHONE_ICO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>';
   const hero = `
@@ -846,13 +840,13 @@ function renderHomeBv() {
         <a class="hb-btn" href="${L.products}">Виж всички ${PRODUCTS.length} продукта <span class="bv-arr">→</span></a>
       </div>
       <div class="hb__pick">
-        <p class="hb__lbl">Избери какво търсиш:</p>
-        <div class="hb__cats">${heroCats.map(([cat, pic, name, sub], i) => { const n = PRODUCTS.filter(x => x.cat === cat).length; return `
-          <a class="hb-cat" href="${L.products}?cat=${cat}">
-            <img src="${look(pic).img}" alt="" width="600" height="600" ${i < 2 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
-            <span class="hb-cat__txt"><b>${name}</b><small>${sub}</small><i>${n} ${cat === 'wellness' ? 'вида' : 'продукта'}</i></span>
+        <p class="hb__lbl">Къде търсиш грижа? <span>Натисни снимката</span></p>
+        <div class="hb__cats">${ZONES.map((z, i) => `
+          <a class="hb-cat" href="${L.products}?zone=${z.id}">
+            <img src="${zoneImg(z)}" alt="" width="600" height="600" ${i < 3 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+            <span class="hb-cat__txt"><b>${z.name}</b><small>${z.sub}</small></span>
             ${CHEV}
-          </a>`; }).join('')}</div>
+          </a>`).join('')}</div>
       </div>
     </div>
     <div class="bv-wrap"><div class="hb__proof">

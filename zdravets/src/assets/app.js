@@ -281,24 +281,28 @@ function renderBF() {
 
 function renderProducts() {
   const q = new URLSearchParams(location.search);
-  let cat = q.get('cat') || 'all', sort = 'pop';
+  // ?zone= идва от зоните на началната страница (ZONES в landing-data.js)
+  const zone = typeof ZONES !== 'undefined' ? ZONES.find(z => z.id === q.get('zone')) : null;
+  let cat = zone ? 'zone' : q.get('cat') || 'all', sort = 'pop';
   const term = (q.get('q') || '').trim().toLowerCase();
   const chips = $('#chips'), grid = $('#grid');
   const order = PRODUCTS.map((p, i) => [p, i]);
   const draw = () => {
-    chips.innerHTML = [['all', 'Всички']].concat(CATEGORIES.map(c => [c.id, c.name])).map(([id, n]) => `<button class="${cat === id ? 'on' : ''}" data-cat="${id}" type="button" role="tab" aria-selected="${cat === id}">${n}</button>`).join('');
-    let list = order.filter(([p]) => (cat === 'all' || p.cat === cat) && (!term || [p.name, p.short].join(' ').toLowerCase().includes(term)));
-    if (sort === 'pop') list.sort((a, b) => ((b[0].bestseller ? 1 : 0) - (a[0].bestseller ? 1 : 0)) || a[1] - b[1]);
+    chips.innerHTML = (zone ? [['zone', zone.name]] : []).concat([['all', 'Всички']], CATEGORIES.map(c => [c.id, c.name])).map(([id, n]) => `<button class="${cat === id ? 'on' : ''}" data-cat="${id}" type="button" role="tab" aria-selected="${cat === id}">${n}</button>`).join('');
+    let list = order.filter(([p]) => (cat === 'all' || (cat === 'zone' ? zone.ids.includes(p.id) : p.cat === cat)) && (!term || [p.name, p.short].join(' ').toLowerCase().includes(term)));
+    if (sort === 'pop' && cat === 'zone') list.sort((a, b) => zone.ids.indexOf(a[0].id) - zone.ids.indexOf(b[0].id));
+    else if (sort === 'pop') list.sort((a, b) => ((b[0].bestseller ? 1 : 0) - (a[0].bestseller ? 1 : 0)) || a[1] - b[1]);
     if (sort === 'asc') list.sort((a, b) => fromPrice(a[0]) - fromPrice(b[0]));
     if (sort === 'desc') list.sort((a, b) => fromPrice(b[0]) - fromPrice(a[0]));
     grid.innerHTML = list.map(([p]) => productCard(p)).join('');
     $('#found').textContent = `${list.length} ${list.length === 1 ? 'продукт' : 'продукта'}`;
-    $$('[data-cat]', chips).forEach(b => b.addEventListener('click', () => { cat = b.dataset.cat; history.replaceState(null, '', cat === 'all' ? L.products : `${L.products}?cat=${cat}`); draw(); }));
+    $$('[data-cat]', chips).forEach(b => b.addEventListener('click', () => { cat = b.dataset.cat; history.replaceState(null, '', cat === 'zone' ? `${L.products}?zone=${zone.id}` : cat === 'all' ? L.products : `${L.products}?cat=${cat}`); draw(); }));
     bindAddButtons(grid);
     const c = CATEGORIES.find(x => x.id === cat);
-    $('#cat-title').textContent = term ? `Търсене: „${q.get('q')}“` : c ? c.name : 'Всички продукти';
-    $('#crumb').textContent = c ? c.name : 'Продукти';
-    $('#cat-desc').textContent = c ? c.desc + '. Плащаш при получаване.' : 'Натурална козметика и пластири с пчелна отрова и билки. Плащаш при получаване.';
+    const zn = cat === 'zone';
+    $('#cat-title').textContent = term ? `Търсене: „${q.get('q')}“` : zn ? zone.name : c ? c.name : 'Всички продукти';
+    $('#crumb').textContent = zn ? zone.name : c ? c.name : 'Продукти';
+    $('#cat-desc').textContent = zn ? `${zone.sub}. Първият е най-поръчваният. Плащаш при получаване.` : c ? c.desc + '. Плащаш при получаване.' : 'Натурална козметика и пластири с пчелна отрова и билки. Плащаш при получаване.';
   };
   $('#sort').addEventListener('change', e => { sort = e.target.value; draw(); });
   draw();

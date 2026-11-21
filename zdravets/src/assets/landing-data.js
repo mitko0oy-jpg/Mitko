@@ -264,7 +264,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = 'e57802bd110b9a9377b255b51105720412f2f29d';
+const ZN_MEDIA = '45a348b2cacd5e9315986cc4261edd8f562c735e';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
@@ -275,7 +275,18 @@ const LIFE = { gel: ['life-gel.webp', 'life-gel-2.webp'] };
 ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk', 'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'].forEach(id => { LIFE[id] = [`life-${id}.webp`]; });
 CLEAN_PHOTOS.forEach(id => LIFE[id].push(`life-${id}-2.webp`));
 const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/landing/zdravets/media/${f}`;
-const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
+
+/* Зоните на тялото – първият екран на началната страница и филтърът ?zone= на „Всички продукти“.
+   Снимката е кадър „в употреба“; продуктите са подредени – първият е основният за зоната. */
+const ZONES = [
+  { id: 'koleni', name: 'Колене и стави', sub: 'Гел с пчелна отрова, крем и пластири', img: 'life-gel', ids: ['gel', 'hyal', 'beeherb', 'spray', 'tibet', 'bvpatch'] },
+  { id: 'grab', name: 'Гръб и кръст', sub: 'Пластири и гел с пчелна отрова', img: 'life-bvpatch', ids: ['bvpatch', 'tibet', 'gel', 'spray', 'beeherb'] },
+  { id: 'ramene', name: 'Рамене и врат', sub: 'Спрей без допир, пластири и гел', img: 'life-spray', ids: ['spray', 'tibet', 'gel', 'bvpatch'] },
+  { id: 'kraka', name: 'Уморени крака', sub: 'Крем за краката и спрей за ноктите', img: 'life-vein', ids: ['vein', 'nail'] },
+  { id: 'koja', name: 'Суха кожа', sub: 'Крем и балсам за суха и чувствителна кожа', img: 'life-skin', ids: ['skin', 'ghk'] },
+  { id: 'vseki-den', name: 'Пластири за всеки ден', sub: '8 вида – по един пластир на ден', img: 'life-stress', ids: ['energy', 'stress', 'apetit', 'berberin', 'nad', 'focus', 'mood', 'love'] }
+];
+const zoneImg = z => znM(`${z.img}-600.webp`);const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
 const SCENE_VIDEOS = SCENES.filter(id => !CLEAN_PHOTOS.includes(id)); // останалите имат и раздвижена версия
 const sceneOf = id => SCENES.includes(id)
