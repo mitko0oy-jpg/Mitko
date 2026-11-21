@@ -1,6 +1,6 @@
 // Wire the engine to the real services, from environment variables.
 import { openStore, getSettings } from "./store.mjs";
-import { startCall, ringSeconds } from "./elevenlabs.mjs";
+import { startCall, ringSeconds, conversationState } from "./elevenlabs.mjs";
 import { sendTelegram } from "./telegram.mjs";
 import { convertBuilder } from "./convertbuilder.mjs";
 import { middleware } from "./middleware.mjs";
@@ -79,6 +79,7 @@ export function realDeps() {
     cb: { ...shop, isStillPending: async (rec) => (await shop.isStillPending(rec)) && (await mw.stillOpen(rec)) },
     call: realCall(store),
     ringSecs: (conversationId) => ringSeconds({ apiKey: env("ELEVENLABS_API_KEY"), conversationId }),
+    conversationState: (conversationId) => conversationState({ apiKey: env("ELEVENLABS_API_KEY"), conversationId }),
     notify: telegramNotify(store),
     config,
   };

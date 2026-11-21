@@ -102,6 +102,21 @@ export function readPostCall(payload) {
  * the call a few seconds later; such a call never reached the customer.
  * @returns {Promise<number|null>}
  */
+/**
+ * Where a conversation stands: { status: "in-progress" | "processing" | "done" | "failed", secs, messages }.
+ * A callback the customer dropped while it was connecting ends as "done" with 0 seconds
+ * and no post-call webhook ever comes for it.
+ */
+export async function conversationState({ apiKey, conversationId, fetchImpl = fetch }) {
+  const res = await fetchImpl(`https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`, {
+    headers: { "xi-api-key": apiKey },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`ElevenLabs conversation ${conversationId}: ${res.status}`);
+  const d = await res.json();
+  return { status: String(d.status || ""), secs: Number(d.metadata?.call_duration_secs) || 0, messages: (d.transcript || []).length };
+}
+
 export async function ringSeconds({ apiKey, conversationId, fetchImpl = fetch }) {
   if (!apiKey || !conversationId) return null;
   const res = await fetchImpl(`${API}/v1/convai/conversations/${conversationId}/sip-messages`, { headers: { "xi-api-key": apiKey } });

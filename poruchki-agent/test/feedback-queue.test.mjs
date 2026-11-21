@@ -225,3 +225,31 @@ test("a test call's result does not start the queue", async () => {
   await handleWebhook(d, { type: "post_call_transcription", data: { conversation_id: "c", conversation_initiation_client_data: { dynamic_variables: { campaign: "feedback", test: "yes", order_key: "test" } }, analysis: {}, transcript: [] } }, T0);
   assert.equal(d.calls.length, 0);
 });
+
+test("a call dropped while connecting (no conversation, no result) counts as not answered", async () => {
+  const d = deps();
+  d.conversationState = async () => ({ status: "done", secs: 0, messages: 0 });
+  await prepareFeedback(d, "1649 1641", T0);
+  await startFeedback(d, T0);
+  await runFeedbackQueue(d, T0); // calls 1649
+  await d.store.setJSON("pending/359888123456", { variables: d.calls[0].variables, script: "feedback", at: T0.toISOString() });
+  await initiationData({ store: d.store, body: { caller_id: "+442045775777", conversation_id: "conv_nocall" }, outboundScript: async () => null, now: min(0.5) });
+  assert.ok((await d.store.get("fb-1649", { type: "json" })).answeredAt);
+  // 5 minutes later ElevenLabs says "done, 0 seconds": back on the queue, the next one is called.
+  assert.match((await runFeedbackQueue(d, min(5))).feedback, /calling #1641/);
+  const rec = await d.store.get("fb-1649", { type: "json" });
+  assert.equal(rec.status, "waiting");
+});
+
+test("a real conversation still going on is waited for", async () => {
+  const d = deps();
+  d.conversationState = async () => ({ status: "in-progress", secs: 0, messages: 4 });
+  await prepareFeedback(d, "1649 1641", T0);
+  await startFeedback(d, T0);
+  await runFeedbackQueue(d, T0);
+  await d.store.setJSON("pending/359888123456", { variables: d.calls[0].variables, script: "feedback", at: T0.toISOString() });
+  await initiationData({ store: d.store, body: { caller_id: "+442045775777", conversation_id: "conv_talk" }, outboundScript: async () => null, now: min(0.5) });
+  assert.equal((await runFeedbackQueue(d, min(5))).feedback, "call in progress");
+  // A lost result does not block the queue for long.
+  assert.match((await runFeedbackQueue(d, min(16))).feedback, /calling #1641/);
+});

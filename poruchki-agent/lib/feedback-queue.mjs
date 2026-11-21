@@ -21,8 +21,10 @@ export const RETRY_AFTER_MIN = 60;
 // (The tick runs every 5 minutes, so this is checked at the first run after it.)
 export const FB_NO_ANSWER_MIN = 2;
 const MAX_ORDERS = 20;
-// Answered, but no result arrived (the webhook got lost): stop waiting.
-const RESULT_WAIT_MIN = 30;
+// Connected, but no result yet: after this, ask ElevenLabs how the conversation ended.
+const CHECK_AFTER_MIN = 2;
+// Never wait longer than this for a result (a real call lasts 2–5 minutes).
+const RESULT_WAIT_MIN = 15;
 
 const recKey = (label) => `fb-${label}`;
 const clients = (n) => (n === 1 ? "1 клиент" : `${n} клиента`);
@@ -207,7 +209,15 @@ export async function runFeedbackQueue(deps, now = new Date()) {
   for (const r of all) {
     if (r.rec.status !== "calling") continue;
     const mins = (now - new Date(r.rec.startedAt)) / 60_000;
-    if (r.rec.answeredAt) {
+    let answered = Boolean(r.rec.answeredAt);
+    if (answered && mins > CHECK_AFTER_MIN && deps.conversationState) {
+      // The customer may have dropped the call while it was connecting: ElevenLabs then
+      // ends the conversation with 0 seconds and sends no result. That is a missed call.
+      const conv = (r.rec.conversationIds || []).at(-1);
+      const st = conv ? await deps.conversationState(conv).catch(() => null) : null;
+      if (st && ["done", "failed"].includes(st.status) && !st.secs && !st.messages) answered = false;
+    }
+    if (answered) {
       if (mins > RESULT_WAIT_MIN) await update(store, r, { status: "done", outcome: r.rec.outcome || "no_result", finishedAt: now.toISOString() });
       else busy = true;
     } else if (mins > FB_NO_ANSWER_MIN) {
