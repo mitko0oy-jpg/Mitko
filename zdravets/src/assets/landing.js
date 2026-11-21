@@ -350,15 +350,15 @@ function renderLanding(p) {
   // --- съставки
   const ingD = d.ings && d.ings.items ? d.ings : null;
   const ingMeta = ingD || d.ings || c.ings || null;
-  const ingItems = ingD ? ingD.items : ings.map(([n, t], i) => [n, i ? '' : 'Основна съставка', t, null, !i]);
+  const ingItems = ingD ? ingD.items : ings.map(([n, t], i) => { const [, tag, m] = p.wellness ? [0, '', null] : ingCard(n); return [n, i ? tag : 'Основна съставка', t, m, !i]; });
   const ingsHtml = ingItems.length ? `
   <section id="bv-sastav"><div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">${esc(ingMeta && ingMeta.eyebrow ? ingMeta.eyebrow : 'Какво съдържа?')}</span>
-      <h2>${ingD ? hTxt(ingD.h2) : `${ingItems.length === 1 ? 'Съставката' : `${ingItems.length} съставки`}, <em class="bv-accent">подбрани с грижа</em>`}</h2>
+      <h2>${ingD ? hTxt(ingD.h2) : (ingItems.length === 1 ? 'Съставката, <em class="bv-accent">подбрана с грижа</em>' : `${ingItems.length} съставки, <em class="bv-accent">подбрани с грижа</em>`)}</h2>
       <p class="bv-lead">${esc(ingMeta && ingMeta.lead ? ingMeta.lead : 'Пълният състав е отпечатан върху опаковката.')}</p>
     </div>
-    <div class="bv-ings${ingItems.some(x => x[3]) ? '' : ' bv-ings--plain'}">${ingItems.map(([n, tag, t, m, main]) => `
+    <div class="bv-ings bv-ings--n${ingItems.length}${ingItems.some(x => x[3]) ? '' : ' bv-ings--plain'}">${ingItems.map(([n, tag, t, m, main]) => `
       <article class="bv-ing${main ? ' bv-ing--main' : ''}">
         ${m ? `<div class="bv-ing__img">${bvMedia(m, n, 600, 480)}</div>` : `<div class="bv-ing__ico" aria-hidden="true">${ingIcon(n)}</div>`}
         <div class="bv-ing__body">${tag ? `<span class="bv-ing__tag${main ? ' bv-ing__tag--main' : ''}">${esc(tag)}</span>` : ''}<h3>${esc(n)}</h3><p>${esc(t)}</p></div>

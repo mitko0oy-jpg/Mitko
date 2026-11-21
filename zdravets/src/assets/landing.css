@@ -312,6 +312,7 @@
 
 /* ---------- ingredients ---------- */
 .bvp .bv-ings{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:36px}
+.bvp .bv-ings--n1{grid-template-columns:minmax(0,320px);justify-content:center}
 .bvp .bv-ing{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
 .bvp .bv-ing__img{aspect-ratio:5/4;overflow:hidden;background:#fff}
 .bvp .bv-ing{transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
@@ -599,6 +600,9 @@
 
   .bvp .bv-sits{grid-template-columns:repeat(3,1fr);gap:18px}
   .bvp .bv-ings{grid-template-columns:repeat(4,1fr)}
+  .bvp .bv-ings--n1{grid-template-columns:minmax(0,290px)}
+  .bvp .bv-ings--n2{grid-template-columns:repeat(2,minmax(0,290px));justify-content:center}
+  .bvp .bv-ings--n3{grid-template-columns:repeat(3,minmax(0,290px));justify-content:center}
   .bvp .bv-tl{grid-template-columns:repeat(4,1fr)}
   .bvp .bv-packs{grid-template-columns:repeat(3,1fr)}
   .bvp .bv-pack--hot{translate:0 -12px}

@@ -805,6 +805,40 @@ const ING_ICON = [[/кофеин/i, '☕'], [/гуарана|мукуна/i, '�
   [/мед\b|^мед/i, '🍯'], [/масл/i, '🫒'], [/берберин/i, '🌿'], [/nad/i, '⚡'], [/растителн/i, '🍃']];
 const ingIcon = name => (ING_ICON.find(([re]) => re.test(name)) || [0, '🌿'])[1];
 
+/* Снимките на съставките в раздела „Какво съдържа?“ – като картите на гела в beeevenom.eu.
+   Файловете са landing/zdravets/media/ing-<име>.webp (600×480); ZN_ING е commit-ът с тях.
+   Пчелната отрова, куркумата, зеленият чай и D3 са тези на гела. Първото съвпадение печели.
+   Уелнес пластирите (p.wellness) не ползват тези снимки – там съставките са други. */
+const ZN_ING = '6eba95687c65f072568234d63afc011f02c0db3b';
+const znIng = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_ING}/landing/zdravets/media/ing-${f}.webp`;
+const ING_CARD = [
+  [/пчел/i, 'Основна съставка', bvVid(BV.ings, 'ing-pchela')],
+  [/куркум/i, 'Успокоява', bvVid(BV.ings, 'ing-kurkuma')],
+  [/зелен чай/i, 'Пази кожата', bvVid(BV.ings, 'ing-chai')],
+  [/витамин d/i, 'Подхранва', bvVid(BV.ings, 'ing-d3')],
+  [/животинск/i, 'Тибетска рецепта', znIng('tibet')],
+  [/арник/i, 'Успокоява', znIng('arnika')],
+  [/ментол/i, 'Освежава', znIng('mentol')],
+  [/магнез|алантоин/i, 'Грижа за кожата', znIng('magnezii')],
+  [/хиалурон/i, 'Хидратира', znIng('hialuron')],
+  [/мента/i, 'Освежава', znIng('menta')],
+  [/пипер/i, 'Затопля', znIng('piper')],
+  [/джинджиф/i, 'Затопля', znIng('djindjifil')],
+  [/пелин/i, 'Българска билка', znIng('pelin')],
+  [/шафран|нотожен/i, 'Източна традиция', znIng('shafranka')],
+  [/кестен/i, 'Свежест за краката', znIng('kesten')],
+  [/чаено дърво/i, 'Почиства', znIng('chaeno')],
+  [/биота/i, 'Подхранва', znIng('biota')],
+  [/ghk|пептид/i, 'Зряла кожа', znIng('ghk')],
+  [/лой/i, 'Подхранва', znIng('loi')],
+  [/^мед$/i, 'Омекотява', znIng('med')],
+  [/масл/i, 'Подхранва', znIng('masla')],
+  [/берберин/i, 'Растителна съставка', znIng('berberin')],
+  [/nad/i, 'В клетките', znIng('nad')],
+  [/растителн/i, 'Допълва формулата', znIng('ekstrakti')]
+];
+const ingCard = name => ING_CARD.find(([re]) => re.test(name)) || [0, '', null];
+
 /* ---------- по категория ---------- */
 const CAT_LANDING = {
   stavi: {
