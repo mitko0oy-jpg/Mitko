@@ -817,3 +817,17 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
 .wall-row.r3 .marquee-track{animation-duration:78s}
 /* the chooser must not grow past a phone screen (a long price + button row widened its column) */
 @media (max-width:860px){.chooser{grid-template-columns:minmax(0,1fr)}.ch-cta{flex-wrap:wrap}}
+
+/* ---------- komplekt: the math deck card (full row) and the three-deck deal ---------- */
+.deck-card.mat{--glow:#3FB8A8;grid-column:1/-1;animation-delay:-1.8s}
+.deck-card.mat .dc-inner{background:radial-gradient(120% 90% at 18% 15%,#F1FAF8,#D3EEE9 58%,#B5E1D9);color:#10302E}
+.deck-card.mat .dc-nums b{color:#0E7C77}
+.deck-card.mat .dc-buy{background:#0E7C77;color:#fff}
+@media (min-width:901px){.deck-card.mat .dc-inner{grid-template-columns:.8fr 1.2fr}.deck-card.mat .dc-visual{height:300px}}
+.trio-deal{margin-top:14px}
+.trio-deal .dd-boxes{width:104px}
+.trio-deal .dd-boxes img:first-child{left:0}
+.trio-deal .dd-boxes .dd-mid{left:50%;translate:-50% 0;z-index:1;height:60px}
+/* the bottom buy bar keeps its button whole when the set name is long */
+.buybar>div{min-width:0;flex:1 1 auto}
+.buybar .btn{flex:none}

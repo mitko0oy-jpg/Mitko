@@ -410,6 +410,21 @@ for (const pdp of $$("[data-pdp]")) {
       el.textContent = `Спестяваш ${euro(p.was - p.price)}`;
     }
     for (const el of $$("[data-pdp-ship]", pdp)) el.innerHTML = p.freeShip ? `${ICON.truck}<b>Безплатна доставка</b> с този комплект` : `${ICON.truck}Доставка от ${euro(DELIVERY_FROM)} · <b>безплатна</b> ${FREE_WORDS}`;
+    // a page with several kinds of sets (komplekt) names the chosen one in its title, text and eyebrow
+    const lab = opts.find((o) => o.checked)?.closest(".opt");
+    if (lab?.dataset.title) {
+      const [t1, t2] = lab.dataset.title.split("|");
+      const h = $(".buy-title", pdp);
+      if (h) h.innerHTML = `${esc(t1)}${t2 ? ` <span class="serif gold-text">${esc(t2)}</span>` : ""}`;
+      const sub = $(".buy-sub", pdp);
+      if (sub && lab.dataset.sub) sub.textContent = lab.dataset.sub + (p.freeShip ? " С безплатна доставка." : "");
+      for (const el of $$("[data-pdp-k]", document)) if (lab.dataset.k) el.textContent = lab.dataset.k;
+    }
+    for (const el of $$(".gal-badge[data-off]", pdp)) {
+      el.dataset.off = k;
+      el.hidden = !(p.was > p.price);
+      if (!el.hidden) el.textContent = `−${Math.round((1 - p.price / p.was) * 100)}%`;
+    }
     for (const el of $$("[data-pdp-add]", document)) el.dataset.add = k;
     if (buybar) $("[data-add]", buybar)?.setAttribute("data-add", k);
     const buy = $("[data-pdp-buy]", pdp);
