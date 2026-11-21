@@ -2,7 +2,7 @@
   "name": "BeeVenom BG – обратна връзка и повторна поръчка",
   "language": "bg",
   "prompt_file": "feedback-bg-prompt.md",
-  "first_message": "Здравейте, {{customer_name}}! Обажда се Елена – дигиталният асистент на магазина за продукти с пчелна отрова. Звъня само да чуя как сте с гела.",
+  "first_message": "Здравейте, {{customer_name}}! Обажда се Елена – дигиталният асистент на магазина за продукти с пчелна отрова. Звъня Ви за обратна връзка – доволни ли бяхте от гела с пчелна отрова за ставите?",
   "disable_first_message_interruptions": true,
   "turn": {
     "turn_eagerness": "patient",
