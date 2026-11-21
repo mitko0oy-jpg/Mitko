@@ -919,3 +919,6 @@
 .bvp .sp-addon select{width:100%;min-height:56px;padding:12px 44px 12px 16px;border:2px solid #E0D8C3;border-radius:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%232C5A2C' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;font:inherit;font-size:1rem;font-weight:700;color:#1B2419;appearance:none;-webkit-appearance:none;cursor:pointer}
 .bvp .sp-addon select:focus{outline:3px solid #F2C14E;outline-offset:2px;border-color:#2C5A2C}
 .bvp .sp-opt__ship{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:#E7EFDC;color:#1F3D22;font-size:.78rem;font-weight:800}
+
+/* „Поотделно: 3 × 15,90 € + пластири 14,90 € = …“ в картата на пакета */
+.bvp .bv-pack li.bv-calc{color:#6B5A48;font-size:.92em;line-height:1.45}

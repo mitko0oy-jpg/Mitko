@@ -28,6 +28,9 @@ const FREE_FROM = CONFIG.freeOfficeShippingFrom || 0;
 const freeShipFor = price => FREE_FROM > 0 && price >= FREE_FROM;
 const SHIP_FROM = Math.min(...CONFIG.shipping.filter(m => m.office).map(m => m.price));
 const GIFT_TEXT = '12 пластира подарък';
+// подаръкът (тъмните пластири Sumifun) се продава и отделно – стойността му се показва задраскана до подаръка
+const GIFT_VALUE = (PRODUCTS.find(x => x.id === 'sumifun') || {}).price || 0;
+const giftWas = () => GIFT_VALUE ? ` <s class="gift-was">${fmt(GIFT_VALUE)}</s>` : '';
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
 /* ---------- font size (за по-лесно четене) ---------- */
@@ -189,12 +192,14 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
   if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.innerHTML = label; }
 }
 
-function separateValue(b) {
-  let v = b.items.reduce((s, [id, q]) => s + P(id).price * q, 0);
-  // подаръкът не се брои в „редовната цена“: той е отделен продукт без цена в магазина
-  if (b.freeShip && freeShipFor(b.price)) v += SHIP_FROM;
-  return v;
+// „Поотделно“: продуктите по редовна цена + подаръкът (пластирите се продават отделно) + доставката, ако е безплатна
+function separateParts(b) {
+  const items = b.items.reduce((s, [id, q]) => s + P(id).price * q, 0);
+  const gift = bfOn() && b.gift && b.gift.length ? GIFT_VALUE : 0;
+  const ship = b.freeShip && freeShipFor(b.price) ? SHIP_FROM : 0;
+  return { items, gift, ship, total: items + gift + ship };
 }
+function separateValue(b) { return separateParts(b).total; }
 
 /* ---------- countdown ---------- */
 function tickCountdowns() {
@@ -270,10 +275,10 @@ function bundleCard(b) {
     <h3>${esc(b.title)}</h3>
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
-    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули</div>` : ''}
+    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули${giftWas()}</div>` : ''}
     <div class="pricebox">${b.prev && bfOn() ? `<span class="bf-blink">Черен петък</span> <span class="xprice">${fmt(b.prev)}</span> ` : ''}<span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
-    <div class="compare">Поотделно: ${fmt(sep)} · <b>спестяваш ${fmt(save)}</b></div>
+    <div class="compare">Поотделно: ${(sp => [`продуктите ${fmt(sp.items)}`, sp.gift ? `пластирите ${fmt(sp.gift)}` : '', sp.ship ? `доставка ${fmt(sp.ship)}` : ''].filter(Boolean).join(' + ') + (sp.gift || sp.ship ? ` = ${fmt(sp.total)}` : ''))(separateParts(b))} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>
     <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'trio' ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
   </div>`;

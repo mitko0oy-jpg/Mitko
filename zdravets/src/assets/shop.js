@@ -234,7 +234,7 @@ function drawCart(o) {
   body.innerHTML = `
     ${FREE_FROM ? `<div class="sp-ship"><p>${ICON.truck}<span>${left > 0 ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>'}</span></p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
-      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към всяка поръчка</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">0,00 €</span></div></div></div>` : ''}
+      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas()} 0,00 €</span></div></div></div>` : ''}
     </div>
     <div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${recs(items).slice(0, 2).map(recRow).join('')}</div>`;
   foot.innerHTML = `

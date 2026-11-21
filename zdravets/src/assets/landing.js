@@ -94,7 +94,10 @@ function landingOffers(p, d) {
   return list.map(k => {
     const bundle = k.bundle ? B(k.bundle) : null;
     const qty = packQty(p, k);
-    const regular = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : unit * qty;
+    const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : unit * qty;
+    // „поотделно“ = продуктите + пластирите (ако носи подаръка) + доставката (ако е безплатна)
+    const giftV = gift && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0, shipV = freeShipFor(k.price) ? SHIP_FROM : 0;
+    const regular = items + giftV + shipV;
     const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
     const hot = !!k.featured && list.length > 1;
     const isBest = !hot && list.length > 2 && k === best;
@@ -107,10 +110,11 @@ function landingOffers(p, d) {
     const one = gift && k.key === 'bf3' ? znM('pack-gel-3.webp') : PACK_IMG[k.key] ? znM(PACK_IMG[k.key]) : '';
     const duo = null;
     const lis = [];
-    if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b> – подарък до 30 ноември</span></li>`);
+    if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b>${giftWas()} – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
     else if (qty === 1) lis.push(`<li>${list.length > 1 ? 'За да пробваш' : esc(p.bullets[0])}</li>`);
     if (qty > 1 || bundle) lis.push(`<li>${esc(bundle ? bundle.line : `${qty} броя`)}</li>`);
+    if (giftV || shipV) lis.push(`<li class="bv-calc">Поотделно: ${qty > 1 ? `${qty} × ${fmt(unit)}` : fmt(items)}${giftV ? ` + пластири ${fmt(giftV)}` : ''}${shipV ? ` + доставка ${fmt(shipV)}` : ''} = ${fmt(regular)}</li>`);
     if (off) lis.push(`<li class="bv-save">Спестяваш ${fmt(regular - k.price)}</li>`);
     else lis.push(`<li>${CONFIG.guaranteeDays} дни гаранция</li>`);
     if (freeShipFor(k.price)) lis.push('<li class="bv-save">Безплатна доставка до офис</li>');
@@ -123,7 +127,7 @@ function landingOffers(p, d) {
         <h3>${esc(k.label)}</h3>
         <p class="bv-pack__sub">${esc(String(k.sub || p.size).replace(/ · най-(избиран|изгодно)$/, ''))}</p>
         <ul>${lis.join('')}</ul>
-        ${bfOn() && k.prev ? `<div class="bv-prev">${BF_BLINK}${xPrice(k.prev)}</div>` : ''}
+        ${bfOn() && (k.prev || k.bfTag) ? `<div class="bv-prev">${BF_BLINK}${k.prev ? xPrice(k.prev) : ''}</div>` : ''}
         <div class="bv-price"><b${off ? ` data-from="${regular.toFixed(2)}"` : ''}>${fmt(k.price)}</b>${off ? `<s>${fmt(regular)}</s>` : ''}</div>
         <p class="bv-unit">${per}</p>
         <button class="bv-btn${hot ? ' bv-pulse' : ''}" type="button" data-bv-buy="${k.store}" data-bv-key="${esc(k.key)}">Избирам този пакет</button>
@@ -619,7 +623,9 @@ function bvEffects(root) {
 function packCalc(p, k) {
   const bundle = k.bundle ? B(k.bundle) : null;
   const qty = packQty(p, k);
-  const regular = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : p.price * qty;
+  const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : p.price * qty;
+  // както в офертите: + пластирите, ако носи подаръка, + доставката, ако е безплатна
+  const regular = items + (bfOn() && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0) + (freeShipFor(k.price) ? SHIP_FROM : 0);
   const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
   return { bundle, qty, regular, off };
 }
@@ -636,7 +642,7 @@ function galleryItems(p, d) {
   (CLEAN_PHOTOS.includes(p.id) ? [] : [p.img].concat(p.gallery || [])).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
   // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
   const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
-  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-gc sp-gc--gift"><b class="sp-gc__h">Комплект + подарък</b><img class="sp-gc__one" src="${znM('pack-gel-3.webp')}" alt="3 гела и пакет с 12 пластира" loading="lazy"><p><b>12 пластира за стави и мускули подарък</b> при 2 и повече гела – до 30 ноември</p></div>` });
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-gc sp-gc--gift"><b class="sp-gc__h">Комплект + подарък</b><img class="sp-gc__one" src="${znM('pack-gel-3.webp')}" alt="3 гела и пакет с 12 пластира" loading="lazy"><p><b>12 пластира за стави и мускули подарък</b>${giftWas()} при ${GIFT_FROM} и повече гела – до 30 ноември</p></div>` });
   const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
   if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-gc"><b class="sp-gc__h">Какво има в гела</b><div class="sp-gc__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
@@ -684,7 +690,7 @@ function productTop(p, d, ctx) {
   const opts = [];
   if (packs) packs.forEach(k => {
     const c = packCalc(p, k);
-    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, flag: k.flag || '', prev: bfOn() ? k.prev || 0 : 0, bf: !!(k.bundle && B(k.bundle).bf !== false), units: unitsOf(k.store) });
+    opts.push({ kind: 'pack', multi: c.qty > 1 || !!c.bundle, key: k.key, label: k.label, sub: String(k.sub || '').replace(/ · най-(избиран|изгодно)$/, ''), price: k.price, was: c.off ? c.regular : 0, off: c.off, per: c.qty > 1 ? k.price / c.qty : 0, hot: !!k.featured, store: k.store, flag: k.flag || '', prev: bfOn() ? k.prev || 0 : 0, bft: bfOn() && !!k.bfTag, bf: !!(k.bundle && B(k.bundle).bf !== false), units: unitsOf(k.store) });
   });
   else {
     opts.push({ kind: 'qty', key: 'one', label: p.wellness ? '1 кутия' : '1 брой', sub: p.size, price: p.price });
@@ -717,8 +723,8 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули</span>` : ''}</span>
-          <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули${giftWas()}</span>` : ''}</span>
+          <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : o.bft ? `<span class="sp-opt__bf">${BF_BLINK}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${packs ? bfTimer() : ''}
       ${others.length && comboReady() ? `<div class="sp-combo" hidden>
@@ -727,7 +733,7 @@ function productTop(p, d, ctx) {
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
       ${addonSelect(p)}
-      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 пластира за стави и мускули подарък</b> към тази поръчка – до 30 ноември</span></p>
+      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 пластира за стави и мускули подарък</b>${giftWas()} към тази поръчка – до 30 ноември</span></p>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${GIFT_FROM} или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
       <div class="sp-ctas">
         <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
