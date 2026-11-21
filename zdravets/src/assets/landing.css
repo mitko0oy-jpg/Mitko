@@ -922,3 +922,8 @@
 
 /* „Поотделно: 3 × 15,90 € + пластири 14,90 € = …“ в картата на пакета */
 .bvp .bv-pack li.bv-calc{color:#6B5A48;font-size:.92em;line-height:1.45}
+
+/* „Един крем. Много приложения“ – 8 карти: 2 колони на телефон, 4 на компютър */
+.bvp .bv-uses__grid .bv-sit--ico p b{display:block}
+.bvp .bv-uses__s{display:block;margin-top:6px;font-weight:400;color:var(--muted,#6B5A48);font-size:.92em;line-height:1.45}
+@media (min-width:1000px){.bvp .bv-uses__grid{grid-template-columns:repeat(4,1fr)}}

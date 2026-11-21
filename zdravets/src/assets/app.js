@@ -12,6 +12,8 @@ const $$ = (s, r = ROOT) => [...r.querySelectorAll(s)];
 const fmt = n => n.toFixed(2).replace('.', ',') + ' €';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const P = id => PRODUCTS.find(p => p.id === id);
+// стари адреси на продукти (?p=…) → новия номер; пластирите за стави бяха с бранд в адреса
+const PID_ALIAS = { sumifun: 'plastiri' };
 const B = id => BUNDLES.find(b => b.id === id);
 const L = CONFIG.links;
 // всеки продукт е на своя страница (PRODUCT_PAGES в data.js); без такава – общата /produkt?p=
@@ -28,8 +30,8 @@ const FREE_FROM = CONFIG.freeOfficeShippingFrom || 0;
 const freeShipFor = price => FREE_FROM > 0 && price >= FREE_FROM;
 const SHIP_FROM = Math.min(...CONFIG.shipping.filter(m => m.office).map(m => m.price));
 const GIFT_TEXT = '12 пластира подарък';
-// подаръкът (тъмните пластири Sumifun) се продава и отделно – стойността му се показва задраскана до подаръка
-const GIFT_VALUE = (PRODUCTS.find(x => x.id === 'sumifun') || {}).price || 0;
+// подаръкът (тъмните пластири за стави) се продава и отделно – стойността му се показва задраскана до подаръка
+const GIFT_VALUE = (PRODUCTS.find(x => x.id === 'plastiri') || {}).price || 0;
 const giftWas = () => GIFT_VALUE ? ` <s class="gift-was">${fmt(GIFT_VALUE)}</s>` : '';
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
@@ -349,7 +351,7 @@ function renderProducts() {
 
 function renderProduct() {
   const q = new URLSearchParams(location.search);
-  const p = P(q.get('p')) || productFromPath() || P('gel');
+  const p = P(PID_ALIAS[q.get('p')] || q.get('p')) || productFromPath() || P('gel');
   document.title = `${p.name} | Здравец Натура`;
   // дългата страница в стила на beeevenom.eu (landing.js)
   if (renderLanding) {

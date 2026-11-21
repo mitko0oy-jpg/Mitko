@@ -547,3 +547,8 @@ body{padding-bottom:0}
 
 /* стойността на подаръка (пластирите се продават и отделно) – задраскана до подаръка */
 .gift-was{color:#7A6A58;font-weight:700;text-decoration:line-through;text-decoration-color:#C0392B;text-decoration-thickness:2px;margin-left:.2em;white-space:nowrap}
+
+/* „Комплект + подарък“ в галерията на гела: 3 гела + пликът с пластирите (без бранд) */
+.sp-gc__pair{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:8px}
+.sp-gc__pair img{width:44%;aspect-ratio:1;object-fit:cover;border-radius:16px}
+.sp-gc__pair b{font-size:2em;line-height:1;color:#B8860B}
