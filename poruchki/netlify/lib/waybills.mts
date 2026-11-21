@@ -368,6 +368,35 @@ async function econtAll(creds: Creds) {
   return cached.list;
 }
 
+/** Every Speedy office in Bulgaria, kept a day (the shops' office picker loads them all at once). */
+async function speedyAll(creds: Creds) {
+  let cached = await getSetting<{ at: number; list: any[]; v?: number }>("speedy_offices");
+  if (!cached || cached.v !== 1 || Date.now() - cached.at > 24 * 3600000) {
+    const d = await speedy("/location/office", creds, { countryId: 100 });
+    const list = (d?.offices || []).map((o: any) => ({
+      id: String(o.id),
+      name: String(o.name || ""),
+      address: String(o.address?.fullAddressString || ""),
+      city: String(o.address?.siteName || ""),
+      automat: o.type === "APT",
+    }));
+    if (!list.length && cached) return cached.list; // keep yesterday's list rather than an empty one
+    cached = { at: Date.now(), list, v: 1 };
+    await setSetting("speedy_offices", cached);
+  }
+  return cached.list;
+}
+
+/**
+ * The offices (not automats) for the office picker on the shops' order forms: [id, city, name, address].
+ * The form writes the choice as "До офис econt[код]: …" / "До офис speedy[id]: …" – what parseOffice reads.
+ */
+export async function publicOffices(courier: "speedy" | "econt"): Promise<string[][]> {
+  const creds = await credsFor(courier);
+  const list = courier === "econt" ? await econtAll(creds) : await speedyAll(creds);
+  return list.filter((o: any) => !o.automat && o.id).map((o: any) => [o.id, o.city, o.name, o.address]);
+}
+
 export async function econtOffices(creds: Creds, query: string, limit = 30) {
   const list = await econtAll(creds);
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
