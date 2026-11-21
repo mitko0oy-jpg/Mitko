@@ -22,7 +22,9 @@
   var cfg = null;
   var offices = {}; // "econt" / "econt+a" → списък
   var loading = {};
-  var current = null; // { courier, kind, label, conf }
+  var current = null; // { courier, type, conf, label }
+  var places = null; // градовете и селата с пощенския код: { p: [име, код, област], n }
+  var placesLoading = null;
   var STORE = "odk_pick_" + SHOP;
 
   // ---------- помощни ----------
@@ -121,7 +123,11 @@
       ".odk-change{margin-left:auto;flex:none;border:2px solid #3d7136;background:#fff;color:#2c5a2c;border-radius:999px;padding:7px 14px;font:700 15px Arial,sans-serif;cursor:pointer}" +
       ".odk-err{display:none;margin-top:8px;padding:10px 12px;border-radius:10px;background:#fff1ef;border:1px solid #f3c2bc;color:#8a1c12;font-weight:700}" +
       ".odk-box.need .odk-err{display:block}.odk-box.need{border-color:#b3261e}" +
-      ".odk-hide{display:none!important}";
+      ".odk-hide{display:none!important}" +
+      ".odk-cities{clear:both;width:100%;margin:4px 0 10px;max-height:300px;overflow:auto;border:2px solid #3d7136;border-radius:12px;background:#fff;padding:6px;box-sizing:border-box;font:16px/1.4 Arial,sans-serif;color:#1b2419;text-align:left}" +
+      ".odk-cities .odk-opt{margin:0 0 4px}" +
+      ".odk-cities .odk-hint{padding:6px 8px}" +
+      "#odk-addr-err{display:block;clear:both;margin:4px 0 10px}";
     document.head.appendChild(s);
   }
 
@@ -311,8 +317,193 @@
   function choose(sel, o, quiet) {
     setVal(field("shippingAddress"), officeText(o, sel.courier));
     var c = field("shippingCity");
-    if (c && o[1]) setVal(c, titleCase(o[1]));
+    if (c && o[1]) {
+      setVal(c, titleCase(o[1]));
+      c.dataset.odkOffice = "1"; // градът е от офиса – при „до адрес“ го чистим
+    }
+    var z = field("shippingZipCode");
+    if (z) setVal(z, "");
     if (!quiet) store({ courier: sel.courier, o: o });
+  }
+
+  // ---------- до адрес: град и пощенски код от списък, после улицата ----------
+  function loadPlaces() {
+    if (places) return Promise.resolve(places);
+    if (!placesLoading)
+      placesLoading = fetch(BASE + "/api/offices/places", { credentials: "omit" })
+        .then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          var list = (d && d.places) || [];
+          if (!list.length) throw new Error("empty");
+          places = list.map(function (p) {
+            return { p: p, n: norm(p[0]) };
+          });
+          return places;
+        })
+        .catch(function (e) {
+          placesLoading = null;
+          throw e;
+        });
+    return placesLoading;
+  }
+
+  function findPlaces(q) {
+    if (!places) return [];
+    var t = norm(q);
+    if (!t) return [];
+    if (/^\d{4}$/.test(t))
+      return places.filter(function (x) {
+        return x.p[1] === t;
+      });
+    var alt = /[a-z]/.test(t) ? toCyr(t) : "";
+    var out = [];
+    for (var i = 0; i < places.length; i++) {
+      var x = places[i];
+      var s = x.n === t || x.n === alt ? 0 : x.n.indexOf(t) === 0 || (alt && x.n.indexOf(alt) === 0) ? 1 : x.n.indexOf(t) > 0 || (alt && x.n.indexOf(alt) > 0) ? 2 : -1;
+      if (s >= 0) out.push({ x: x, s: s });
+    }
+    out.sort(function (a, b) {
+      return a.s - b.s || a.x.n.length - b.x.n.length || (a.x.n < b.x.n ? -1 : 1);
+    });
+    return out.slice(0, 12).map(function (r) {
+      return r.x;
+    });
+  }
+
+  // известен ли е градът с този пощенски код (тогава куриерът го намира без грешка)
+  function placeOk(city, zip) {
+    if (!places) return true;
+    var n = norm(city);
+    for (var i = 0; i < places.length; i++) if (places[i].n === n) return /^\d{4}$/.test(String(zip || "").trim());
+    return false;
+  }
+
+  function cityList(items, hint) {
+    var el = document.getElementById("odk-cities");
+    if (!items && !hint) {
+      if (el) el.remove();
+      return;
+    }
+    var c = field("shippingCity");
+    var row = c && (c.closest(".input-row") || c);
+    if (!row) return;
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "odk-cities";
+      el.className = "odk-cities";
+      el.setAttribute("role", "listbox");
+    }
+    if (el.previousElementSibling !== row) row.insertAdjacentElement("afterend", el);
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="odk-hint">' + esc(hint || "Няма такъв град или село. Провери как е написано.") + "</div>";
+      return;
+    }
+    el.innerHTML = items
+      .map(function (x, i) {
+        return '<button type="button" class="odk-opt" role="option" data-i="' + i + '"><b>' + esc(x.p[0]) + "</b><span>" + esc((x.p[2] ? "обл. " + x.p[2] + " · " : "") + "пощенски код " + x.p[1]) + "</span></button>";
+      })
+      .join("");
+    var btns = el.querySelectorAll(".odk-opt");
+    for (var i = 0; i < btns.length; i++)
+      btns[i].onmousedown = btns[i].onclick = (function (p) {
+        return function (e) {
+          e.preventDefault();
+          pickPlace(p);
+        };
+      })(items[i].p);
+  }
+
+  function pickPlace(p) {
+    setVal(field("shippingCity"), p[0]);
+    var z = field("shippingZipCode");
+    if (z) setVal(z, p[1]);
+    cityList(null);
+    addrErr("");
+    var a = field("shippingAddress");
+    if (a && !a.value) setTimeout(function () { a.focus(); }, 50);
+  }
+
+  function addrErr(text) {
+    var el = document.getElementById("odk-addr-err");
+    if (!text) {
+      if (el) el.remove();
+      return;
+    }
+    var a = field("shippingAddress");
+    if (!a) return;
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "odk-addr-err";
+      el.className = "odk-err";
+    }
+    el.textContent = text;
+    if (el.previousElementSibling !== a) a.insertAdjacentElement("afterend", el);
+    if (el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function addressMode() {
+    var a = field("shippingAddress");
+    var c = field("shippingCity");
+    var z = field("shippingZipCode");
+    if (!c) return;
+    var row = c.closest(".input-row");
+    // първо град и пощенски код, после улицата (както ги иска куриерът)
+    if (row && a && a.parentNode === row.parentNode && a.compareDocumentPosition(row) & 4) row.parentNode.insertBefore(row, a);
+    if (z && z.placeholder !== "Пощенски код") z.placeholder = "Пощенски код";
+    if (c.__odk) return;
+    c.__odk = true;
+    c.setAttribute("autocomplete", "off");
+    var show = function () {
+      if (!current || current.type !== "address") return;
+      loadPlaces().then(
+        function () {
+          var v = c.value.trim();
+          if (!v) return cityList(null);
+          var found = findPlaces(v);
+          // точно избран град (име + код) – списъкът не трябва
+          for (var i = 0; i < found.length; i++) if (found[i].n === norm(v) && z && z.value === found[i].p[1]) return cityList(null);
+          cityList(found);
+        },
+        function () {
+          cityList(null);
+        },
+      );
+    };
+    c.addEventListener("input", function () {
+      delete c.dataset.odkOffice;
+      if (z && z.value) setVal(z, ""); // друг град – друг код
+      show();
+    });
+    c.addEventListener("focus", show);
+    c.addEventListener("blur", function () {
+      setTimeout(function () { cityList(null); }, 250);
+    });
+    c.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var first = document.querySelector("#odk-cities .odk-opt");
+      if (first) {
+        e.preventDefault();
+        first.onclick(e);
+      }
+    });
+    if (z) {
+      z.setAttribute("inputmode", "numeric");
+      z.setAttribute("autocomplete", "postal-code");
+      z.addEventListener("input", function () {
+        var v = z.value.replace(/\D/g, "").slice(0, 4);
+        if (v !== z.value) setVal(z, v);
+        if (v.length !== 4 || !current || current.type !== "address") return;
+        loadPlaces().then(function () {
+          var found = findPlaces(v);
+          if (found.length === 1 && norm(c.value) !== found[0].n) pickPlace(found[0].p);
+          else if (found.length > 1 && !placeOk(c.value, v)) cityList(found);
+        });
+      });
+    }
+    loadPlaces().catch(function () {});
   }
 
   function sync() {
@@ -324,13 +515,22 @@
     var b = document.getElementById("odk-box");
     var a = field("shippingAddress");
     if (!sel || sel.type !== "office") {
-      // адрес (или друго): нашият избор на офис не важи
-      current = null;
+      // адрес (или друго): нашият избор на офис не важи – и градът от офиса
+      current = sel && sel.type === "address" ? sel : null;
       if (b) b.remove();
       addrFields(false);
       if (a && /^До офис (econt|speedy)\[/i.test(a.value)) setVal(a, "");
+      var cc = field("shippingCity");
+      if (current && cc && cc.dataset.odkOffice) {
+        setVal(cc, "");
+        delete cc.dataset.odkOffice;
+      }
+      if (current) addressMode();
+      else cityList(null);
       return;
     }
+    cityList(null);
+    addrErr("");
     current = sel;
     var key = sel.courier + (sel.conf.automats ? "+a" : "");
     if (a && /^До офис (econt|speedy)\[/i.test(a.value) && a.value.toLowerCase().indexOf("до офис " + sel.courier + "[") !== 0) setVal(a, "");
@@ -356,10 +556,24 @@
 
   // Без избран офис поръчката не тръгва: спираме бутона и показваме защо.
   function guard(e) {
-    if (!current || current.type !== "office") return;
+    if (!current || (current.type !== "office" && current.type !== "address")) return;
     var t = e.target;
     var btn = t && t.closest && t.closest(".next-prev-buttons button, .next-prev-buttons a, button[type=submit], .payment-step-wrapper .btn-submit");
     if (e.type === "click" && !btn) return;
+    if (current.type === "address") {
+      // до адрес: град от списъка, пощенски код и улица – иначе куриерът връща грешка за адреса
+      if (!places) return; // списъкът не е зареден – не спираме поръчката
+      var c = field("shippingCity"), z = field("shippingZipCode"), a = field("shippingAddress");
+      var msg = !c || !placeOk(c.value, "0000") ? "Избери града или селото от списъка – напиши първите букви и натисни върху него."
+        : z && !/^\d{4}$/.test(z.value.trim()) ? "Напиши пощенския код (4 цифри) – или избери града от списъка и кодът ще се попълни сам."
+        : a && a.value.trim().length < 4 ? "Напиши улица и номер (или квартал, блок, вход, апартамент)."
+        : "";
+      if (!msg) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      addrErr(msg);
+      return;
+    }
     var a = field("shippingAddress");
     if (a && /^До офис (econt|speedy)\[/i.test(a.value)) return;
     if (!offices[current.courier + (current.conf.automats ? "+a" : "")]) return; // списъкът не е зареден – полето е видимо

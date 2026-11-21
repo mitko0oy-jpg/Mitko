@@ -400,6 +400,33 @@ export async function publicOffices(courier: "speedy" | "econt", automats = fals
     .map((o: any) => (o.automat ? [o.id, o.city, o.name, o.address, "a"] : [o.id, o.city, o.name, o.address]));
 }
 
+/**
+ * The towns and villages of Bulgaria with their post code, for the address fields of the shops' order forms (/k.js):
+ * [name, post code, region]. From Econt's list (one post code per place), kept a week – it rarely changes.
+ * Speedy finds the same place by name + post code (speedySite), so the waybill goes through without an error.
+ */
+export async function publicPlaces(): Promise<string[][]> {
+  let cached = await getSetting<{ at: number; list: string[][]; v?: number }>("econt_cities");
+  if (!cached || cached.v !== 1 || Date.now() - cached.at > 7 * 24 * 3600000) {
+    const d = await econt("/Nomenclatures/NomenclaturesService.getCities.json", await credsFor("econt"), { countryCode: "BGR" });
+    const seen = new Set<string>();
+    const list: string[][] = [];
+    for (const c of d?.cities || []) {
+      const name = String(c?.name || "").trim();
+      const code = String(c?.postCode || "").trim();
+      const region = String(c?.regionName || "").trim();
+      const key = `${name}|${code}`;
+      if (!name || !/^\d{4}$/.test(code) || seen.has(key)) continue;
+      seen.add(key);
+      list.push([name, code, region]);
+    }
+    if (!list.length && cached) return cached.list; // keep last week's list rather than an empty one
+    cached = { at: Date.now(), list, v: 1 };
+    await setSetting("econt_cities", cached);
+  }
+  return cached.list;
+}
+
 export async function econtOffices(creds: Creds, query: string, limit = 30) {
   const list = await econtAll(creds);
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);

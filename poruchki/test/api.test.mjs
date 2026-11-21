@@ -138,6 +138,14 @@ const courier = createServer((req, res) => {
             { id: 2, text: "Отказа на място", createDate: "2026-09-01T10:15:00+03:00" },
           ], count: 2 });
         return json({ items: [], count: 0 });
+      case "/econt/Nomenclatures/NomenclaturesService.getCities.json":
+        return json({ cities: [
+          { id: 41, name: "София", postCode: "1000", regionName: "София" },
+          { id: 56, name: "Пловдив", postCode: "4000", regionName: "Пловдив" },
+          { id: 900, name: "Бяла", postCode: "7100", regionName: "Русе" },
+          { id: 901, name: "Бяла", postCode: "9101", regionName: "Варна" },
+          { id: 902, name: "Без код", postCode: "", regionName: "" },
+        ] });
       case "/econt/Nomenclatures/NomenclaturesService.getOffices.json":
         return json({ offices: [
           { code: "1234", name: "София Осогово", address: { fullAddress: "гр. София, ул. Осогово 2", city: { name: "София" } }, isAPS: false },
@@ -1121,6 +1129,10 @@ test("checkout settings like Middleware: the link, couriers for /k.js, seen on t
   assert.equal((await fetch(B + "/api/kasa/nosuchshop")).status, 404);
   // Refused without login.
   assert.equal((await fetch(B + "/api/kasa/bg/settings")).status, 401);
+  // Towns and villages with their post code for "до адрес" (the ones without a code are left out).
+  const pl = await fetch(B + "/api/offices/places");
+  assert.equal(pl.headers.get("access-control-allow-origin"), "*");
+  assert.deepEqual((await pl.json()).places, [["София", "1000", "София"], ["Пловдив", "4000", "Пловдив"], ["Бяла", "7100", "Русе"], ["Бяла", "9101", "Варна"]]);
   // The script itself is served.
   const js = await fetch(B + "/k.js");
   assert.equal(js.status, 200);
