@@ -1496,7 +1496,7 @@ function renderBF() {
 function renderProducts() {
   const q = new URLSearchParams(location.search);
   // ?zone= идва от зоните на началната страница (ZONES в landing-data.js)
-  const zone = typeof ZONES !== 'undefined' ? ZONES.find(z => z.id === q.get('zone')) : null;
+  const zone = ZONES.find(z => z.id === q.get('zone')); // landing-data.js е на всяка страница
   let cat = zone ? 'zone' : q.get('cat') || 'all', sort = 'pop';
   const term = (q.get('q') || '').trim().toLowerCase();
   const chips = $('#chips'), grid = $('#grid');
