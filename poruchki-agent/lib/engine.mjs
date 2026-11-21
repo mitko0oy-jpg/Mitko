@@ -6,6 +6,7 @@ import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN, MAX_LINE_FAULTS, 
 import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
+import { reportBody } from "./platform.mjs";
 import { handleFeedbackCall } from "./feedback.mjs";
 import { runFeedbackQueue } from "./feedback-queue.mjs";
 import { NO_ANSWER_MIN } from "./callback.mjs";
@@ -13,6 +14,30 @@ import { NO_ANSWER_MIN } from "./callback.mjs";
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
 const doneKey = (key) => key.replace(/^order\//, "done/");
 const FINISHED = new Set(["done", "gave_up", "needs_mitko", "skipped"]);
+
+/** Tell OrderDesk about a call (best effort: an OrderDesk hiccup never stops the calls). */
+async function toPlatform(deps, what, ...args) {
+  if (!deps.platform?.enabled) return null;
+  try {
+    return await deps.platform[what](...args);
+  } catch (err) {
+    console.error(`platform ${what} failed`, err.message);
+    return { platformError: String(err.message).slice(0, 200) };
+  }
+}
+
+const escHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** The line about the waybill OrderDesk made after a confirmation (or why it did not). */
+export function waybillLine(res) {
+  if (res?.waybill?.number) {
+    const courier = res.waybill.courier === "speedy" ? "Спиди" : "Еконт";
+    return `📦 Товарителница ${courier} № <b>${escHtml(res.waybill.number)}</b> – готова за печат в OrderDesk.`;
+  }
+  if (res?.waybillError) return `⚠️ Товарителницата не се създаде автоматично: ${escHtml(res.waybillError)}. Направи я в OrderDesk.`;
+  if (res?.platformError) return `⚠️ OrderDesk не отговори (${escHtml(res.platformError)}) – потвърди и направи товарителницата ръчно.`;
+  return "";
+}
 
 /** Write the record; finished orders move from order/ to done/. */
 async function save(store, key, rec, opts) {
@@ -69,6 +94,10 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
       totalText: moneyBG(o.total),
       upsell: upsellFor(o),
       deliveryText: o.deliveryText || "",
+      // For OrderDesk: its id, and the lines and delivery so an extra box can be added to the order.
+      platformId: o.platformId ?? null,
+      items: o.items || [],
+      shipping: o.shipping ?? null,
       state: phone ? "queued" : "needs_mitko",
       attempts: 0,
       nextAttemptAt: now.toISOString(),
@@ -107,6 +136,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     if (rec.state === "calling" && rec.callingSince && (unanswered || sinceMin > STALE_CALL_MIN)) {
       const r = applyOutcome(rec, { outcome: unanswered ? "no-answer" : "no_conversation" }, now);
       await save(store, key, r.rec, { onlyIfMatch: entry.etag });
+      if (!testMode) await toPlatform(deps, "report", rec, reportBody(rec, r.rec, null, r.rec.lastOutcome));
       if (r.notify) await notify(buildMessage(r.rec, r.label, null, { testMode }));
       report.stale++;
       continue;
@@ -164,6 +194,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       };
       await store.setJSON(key, updated, { onlyIfMatch: claimEtag });
       if (conversationId) await store.setJSON(`conv/${conversationId}`, { key });
+      if (!testMode) await toPlatform(deps, "calling", claimed);
       report.started++;
     } catch (err) {
       const transient = err.status === 429 || err.status >= 500;
@@ -251,7 +282,12 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
   const r = applyOutcome(rec, { outcome }, now);
   if (call) r.rec.lastSummary = call.summary;
   await save(store, key, r.rec, { onlyIfMatch: entry.etag });
-  if (r.notify) await notify(buildMessage(r.rec, r.label, call, { testMode }));
+  // OrderDesk writes the comment, confirms, adds the extra box and makes the waybill.
+  const pr = testMode ? null : await toPlatform(deps, "report", rec, reportBody(rec, r.rec, call, r.rec.lastOutcome));
+  if (r.notify) {
+    const extra = r.rec.lastOutcome === "confirmed" || pr?.platformError ? waybillLine(pr) : "";
+    await notify(buildMessage(r.rec, r.label, call, { testMode }) + (extra ? `\n${extra}` : ""));
+  }
   return { key, state: r.rec.state };
 }
 

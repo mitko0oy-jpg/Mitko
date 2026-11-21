@@ -5,6 +5,7 @@ import { sendTelegram } from "./telegram.mjs";
 import { convertBuilder } from "./convertbuilder.mjs";
 import { middleware } from "./middleware.mjs";
 import { startCallbackCall } from "./callback.mjs";
+import { platform } from "./platform.mjs";
 
 const env = (k, d = "") => (globalThis.Netlify?.env.get(k) ?? process.env[k] ?? d);
 
@@ -72,11 +73,29 @@ export function realDeps() {
   const store = openStore();
   const shop = convertBuilder({ sites: config.sites, env });
   const mw = middleware({ env });
+  // OrderDesk (PLATFORM_URL, PLATFORM_TOKEN): where the orders live now. The agent takes the orders to call
+  // from it and reports every call; after a confirmation OrderDesk confirms the order and makes the waybill.
+  const plat = platform({ env });
   return {
     store,
     mw,
-    // Call only if the order is still pending in ConvertBuilder AND nobody confirmed or shipped it in Middleware.
-    cb: { ...shop, isStillPending: async (rec) => (await shop.isStillPending(rec)) && (await mw.stillOpen(rec)) },
+    platform: plat,
+    cb: plat.enabled
+      ? {
+          ...shop,
+          // If OrderDesk does not answer, fall back to ConvertBuilder for the shops the agent has keys for.
+          fetchNewOrders: async (args) => {
+            try {
+              return await plat.fetchNewOrders({ ...args, sites: config.sites });
+            } catch (err) {
+              console.error("platform unavailable, reading ConvertBuilder", err.message);
+              return shop.fetchNewOrders(args);
+            }
+          },
+          isStillPending: async (rec) => (rec.platformId ? await plat.isStillPending(rec) : await shop.isStillPending(rec)) && (await mw.stillOpen(rec)),
+        }
+      : // Call only if the order is still pending in ConvertBuilder AND nobody confirmed or shipped it in Middleware.
+        { ...shop, isStillPending: async (rec) => (await shop.isStillPending(rec)) && (await mw.stillOpen(rec)) },
     call: realCall(store),
     ringSecs: (conversationId) => ringSeconds({ apiKey: env("ELEVENLABS_API_KEY"), conversationId }),
     conversationState: (conversationId) => conversationState({ apiKey: env("ELEVENLABS_API_KEY"), conversationId }),
