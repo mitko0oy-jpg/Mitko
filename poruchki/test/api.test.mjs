@@ -1006,6 +1006,7 @@ test("abandoned carts in the orders list (Изоставена): made by the syn
   assert.ok(gone.archived_at, "archived");
   assert.ok(gone.events.some((e) => /поръча сам/.test(e.text)));
   await db.end();
+});
 
 test("warehouse: value and days left, a package takes 5, deliveries at the average cost, count and write-off", async () => {
   const r = await api("/api/stock", { name: "Гел с пчелна отрова", grp: "BeeVenom", qty: 100, unit_cost: 1.15, links: [{ product: "BeeVenom Care Gel", units: 1 }] });
