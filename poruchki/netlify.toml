@@ -27,6 +27,12 @@
   [headers.values]
     Cache-Control = "public, max-age=300"
 
+# The office picker for the shops' checkout (see Магазини → Чекаут настройки).
+[[headers]]
+  for = "/k.js"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
 [[headers]]
   for = "/fonts/*"
   [headers.values]

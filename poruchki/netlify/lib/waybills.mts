@@ -388,13 +388,16 @@ async function speedyAll(creds: Creds) {
 }
 
 /**
- * The offices (not automats) for the office picker on the shops' order forms: [id, city, name, address].
+ * The offices for the office picker on the shops' order forms (/k.js): [id, city, name, address],
+ * automats only when asked, as [id, city, name, address, "a"].
  * The form writes the choice as "До офис econt[код]: …" / "До офис speedy[id]: …" – what parseOffice reads.
  */
-export async function publicOffices(courier: "speedy" | "econt"): Promise<string[][]> {
+export async function publicOffices(courier: "speedy" | "econt", automats = false): Promise<string[][]> {
   const creds = await credsFor(courier);
   const list = courier === "econt" ? await econtAll(creds) : await speedyAll(creds);
-  return list.filter((o: any) => !o.automat && o.id).map((o: any) => [o.id, o.city, o.name, o.address]);
+  return list
+    .filter((o: any) => o.id && (automats || !o.automat))
+    .map((o: any) => (o.automat ? [o.id, o.city, o.name, o.address, "a"] : [o.id, o.city, o.name, o.address]));
 }
 
 export async function econtOffices(creds: Creds, query: string, limit = 30) {

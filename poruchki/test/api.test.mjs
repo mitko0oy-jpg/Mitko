@@ -1085,3 +1085,44 @@ test("public office list for the shops' order forms: offices only, any shop may 
   assert.deepEqual(speedy.map((o) => o[0]), ["141", "5"]); // no automat
   assert.equal((await fetch(B + "/api/offices/dhl")).status, 404);
 });
+
+test("checkout settings like Middleware: the link, couriers for /k.js, seen on the shop's site", async () => {
+  // The automats only when asked.
+  const apt = (await (await fetch(B + "/api/offices/speedy?apt=1")).json()).offices;
+  assert.deepEqual(apt.find((o) => o[0] === "900"), ["900", "СОФИЯ", "АВТОМАТ СОФИЯ", "гр. СОФИЯ ул. Тест", "a"]);
+  // Defaults: every courier on, nothing seen yet.
+  const s0 = (await api("/api/kasa/bg/settings")).data;
+  assert.equal(s0.settings.active, true);
+  assert.deepEqual(s0.settings.couriers.map((c) => c.kind), ["econt-office", "speedy-office", "speedy-address", "econt-address"]);
+  assert.equal(s0.seen, null);
+  // Saved: Econt address off, Speedy with automats and a text; junk is cleaned.
+  const saved = (await api("/api/kasa/bg/settings", {
+    active: true,
+    note: "Плащаш при получаване <b>",
+    couriers: [
+      { kind: "speedy-office", on: true, automats: true, text: "1–2 дни", title: "" },
+      { kind: "econt-address", on: false },
+      { kind: "speedy-address", automats: true },
+      { kind: "dhl", on: true },
+    ],
+  })).data.settings;
+  assert.equal(saved.note, "Плащаш при получаване b");
+  assert.equal(saved.couriers.find((c) => c.kind === "speedy-address").automats, false); // only offices have automats
+  assert.equal(saved.couriers.length, 4);
+  // Public for the script: only what is on, nothing secret; read from the shop's own site marks it as seen.
+  const pub = await fetch(B + "/api/kasa/bg?p=/kasa", { headers: { Origin: `http://127.0.0.1:${SHOP_PORT}` } });
+  assert.equal(pub.status, 200);
+  assert.equal(pub.headers.get("access-control-allow-origin"), `http://127.0.0.1:${SHOP_PORT}`);
+  const cfg = await pub.json();
+  assert.deepEqual(cfg.couriers.map((c) => c.kind), ["econt-office", "speedy-office", "speedy-address"]);
+  assert.equal(cfg.couriers[1].automats, true);
+  const seen = (await api("/api/kasa/bg/settings")).data.seen;
+  assert.equal(seen.page, "/kasa");
+  assert.equal((await fetch(B + "/api/kasa/nosuchshop")).status, 404);
+  // Refused without login.
+  assert.equal((await fetch(B + "/api/kasa/bg/settings")).status, 401);
+  // The script itself is served.
+  const js = await fetch(B + "/k.js");
+  assert.equal(js.status, 200);
+  assert.match(await js.text(), /До офис/);
+});
