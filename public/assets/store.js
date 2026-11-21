@@ -24,13 +24,17 @@ for (const [k, v] of Object.entries(CFG.PRICES || {})) if (PACKAGES[k] && v > 0)
 // Every mix of up to three decks is a package: the old five come from the catalog, the rest are added here.
 // Their price goes by the number of decks (CFG.LADDER); a deck marked "plain" has no struck-through price.
 const KEYS = CFG.DECK_KEYS;
+// delivery is free from this many decks; the words for it ("при 2 и 3 тестета" / "при 3 тестета")
+const FREE = Math.max(1, Number(SET.freeShipDecks) || CFG.FREE_SHIP_DECKS || 2);
+const FREE_WORDS = FREE >= MAX_DECKS ? `при ${MAX_DECKS} тестета` : `при ${Array.from({ length: MAX_DECKS - FREE + 1 }, (_, i) => FREE + i).join(" и ")} тестета`;
 const PKG_CART = {};
 for (let a = 0; a <= MAX_DECKS; a++) for (let b = 0; a + b <= MAX_DECKS; b++) for (let m = 0; a + b + m <= MAX_DECKS; m++) {
   const c = { lit: a, ezik: b, mat: m };
   const k = CFG.comboKey(c);
   if (!k) continue;
   PKG_CART[k] = c;
-  if (!PACKAGES[k]) PACKAGES[k] = { title: CFG.COMBOS[k] || k, boxes: KEYS.flatMap((d) => Array(c[d]).fill(d)), freeShip: a + b + m >= 2 };
+  if (!PACKAGES[k]) PACKAGES[k] = { title: CFG.COMBOS[k] || k, boxes: KEYS.flatMap((d) => Array(c[d]).fill(d)) };
+  PACKAGES[k].freeShip = a + b + m >= FREE;
 }
 for (const [k, d] of Object.entries(DECKS)) if (d.plain) PLAIN.add(k);
 const ladder = (n) => (n === 1 ? PACKAGES["lit-1"].price : n === 2 ? PACKAGES.duo.price : CFG.LADDER[n] || 0);
@@ -140,7 +144,7 @@ if (SHELL !== "footer") host.insertAdjacentHTML(
   "afterbegin",
   `<nav class="nav snav" aria-label="Основна навигация">
   <div class="ann"><div class="ann-in">
-    <span>${ICON.truck}Безплатна доставка при 2 тестета</span>
+    <span>${ICON.truck}Безплатна доставка ${FREE_WORDS}</span>
     <span>${ICON.cash}Плащане при получаване</span>
     <span>${ICON.eye}Преглед преди плащане · изпращаме до 1–2 работни дни</span>
   </div></div>
@@ -297,7 +301,7 @@ function render() {
     const extra = ladder(n + 1) - ladder(n);
     const one = single("lit").price;
     const what = n === 1 ? "второ" : "трето";
-    const why = n === 1 ? `Само ${euro(extra)} вместо ${euro(one)} + безплатна доставка` : `Само ${euro(extra)} вместо ${euro(one)} – трите за ${euro(ladder(3))}`;
+    const why = `Само ${euro(extra)} вместо ${euro(one)}${n + 1 >= FREE && n < FREE ? " + безплатна доставка" : n === 2 ? ` – трите за ${euro(ladder(3))}` : ""}`;
     up.innerHTML = KEYS.filter((k) => !cart[k])
       .map((k) => {
         const d = DECKS[k];
@@ -312,23 +316,24 @@ function render() {
 
   const msg = $(".meter-msg", cartDlg);
   const bar = $(".meter span", cartDlg);
-  if (n >= 2) {
+  const left = FREE - n;
+  if (n >= FREE) {
     msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестявате ${euro(disc)} от цената.${n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : ""}</span>`;
     bar.style.width = "100%";
-  } else if (n === 1) {
-    msg.innerHTML = `<span>Добавете още <b>1 тесте</b> – второто е за ${euro(ladder(2) - ladder(1))} и доставката става <b>безплатна</b>.</span>`;
-    bar.style.width = "50%";
+  } else if (n) {
+    msg.innerHTML = `<span>Добавете още <b>${left === 1 ? "1 тесте" : `${left} тестета`}</b> – ${n === 1 ? `второто е за ${euro(ladder(2) - ladder(1))}` : `третото е за ${euro(ladder(3) - ladder(2))}`} и доставката става <b>безплатна</b>.</span>`;
+    bar.style.width = `${Math.round((n / FREE) * 100)}%`;
   } else {
-    msg.innerHTML = `<span>Две тестета в поръчката – <b>безплатна доставка</b>. Три – за ${euro(ladder(3))}.</span>`;
+    msg.innerHTML = `<span>Безплатна доставка ${FREE_WORDS}. Три тестета – за ${euro(ladder(3))}.</span>`;
     bar.style.width = "0%";
   }
-  $(".cart-meter", cartDlg).classList.toggle("done", n >= 2);
+  $(".cart-meter", cartDlg).classList.toggle("done", n >= FREE);
 
   $(".s-sub", cartDlg).textContent = euro(sub);
   $(".s-disc-row", cartDlg).hidden = !(disc > 0);
   $(".s-disc-t", cartDlg).textContent = `Отстъпка за ${n} тестета`;
   $(".s-disc", cartDlg).textContent = `−${euro(disc)}`;
-  $(".s-ship", cartDlg).textContent = n >= 2 ? "Безплатна" : `от ${euro(DELIVERY_FROM)}`;
+  $(".s-ship", cartDlg).textContent = n >= FREE ? "Безплатна" : `от ${euro(DELIVERY_FROM)}`;
   $(".s-tot", cartDlg).textContent = p ? euro(p.price) : euro(0);
   const go = $(".cart-go", cartDlg);
   go.href = pkg ? checkoutOf(pkg) : "#";
@@ -371,6 +376,16 @@ for (const el of $$("[data-dig-price]")) if (DIG[el.dataset.digPrice]) el.textCo
 /* ---------- product page: gallery, package options, add / buy now ---------- */
 for (const pdp of $$("[data-pdp]")) {
   const opts = $$('input[name="pkg"]', pdp);
+  // each option shows its boxes; its "Безплатна доставка" flag follows the free-delivery threshold
+  for (const o of opts) {
+    const p = PACKAGES[o.value];
+    const box = o.closest(".opt")?.querySelector(".opt-box");
+    if (!p || !box) continue;
+    if (!box.querySelector(".opt-img"))
+      $(".opt-t", box)?.insertAdjacentHTML("beforebegin", `<span class="opt-img" data-n="${p.boxes.length}" aria-hidden="true">${p.boxes.map((b) => `<img src="${esc(MEDIA + DECKS[b].img)}" alt="" loading="lazy">`).join("")}</span>`);
+    const flag = $(".opt-flag", box);
+    if (flag && /доставка/i.test(flag.textContent) && !p.freeShip) flag.remove();
+  }
   const picked = () => opts.find((o) => o.checked)?.value || opts[0]?.value;
   const buybar = $(".buybar");
   function update() {
@@ -387,7 +402,7 @@ for (const pdp of $$("[data-pdp]")) {
       el.hidden = !(p.was > p.price);
       el.textContent = `Спестяваш ${euro(p.was - p.price)}`;
     }
-    for (const el of $$("[data-pdp-ship]", pdp)) el.innerHTML = p.freeShip ? `${ICON.truck}<b>Безплатна доставка</b> с този комплект` : `${ICON.truck}Доставка от ${euro(DELIVERY_FROM)} · <b>безплатна</b> при 2 тестета`;
+    for (const el of $$("[data-pdp-ship]", pdp)) el.innerHTML = p.freeShip ? `${ICON.truck}<b>Безплатна доставка</b> с този комплект` : `${ICON.truck}Доставка от ${euro(DELIVERY_FROM)} · <b>безплатна</b> ${FREE_WORDS}`;
     for (const el of $$("[data-pdp-add]", document)) el.dataset.add = k;
     if (buybar) $("[data-add]", buybar)?.setAttribute("data-add", k);
     const buy = $("[data-pdp-buy]", pdp);

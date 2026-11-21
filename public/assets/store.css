@@ -768,3 +768,15 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
 @keyframes gdDraw{to{stroke-dashoffset:0}}
 @media (max-width:600px){.gd-s{font-size:calc(var(--s) * .7)}.gal-deco .gd-f{font-size:24px}}
 @media (prefers-reduced-motion:reduce){.gal-deco *{animation:none!important}.gal-deco .gd-par{stroke-dashoffset:0}}
+
+/* ---------- package options: a picture of the boxes in each ---------- */
+.opt-img{position:relative;flex:none;width:66px;height:58px}
+.opt-img img{position:absolute;bottom:0;left:50%;height:54px;width:auto;translate:-50% 0;filter:drop-shadow(0 6px 8px rgba(23,41,74,.22));transition:transform .4s cubic-bezier(.22,1,.36,1)}
+.opt-img[data-n="2"] img:nth-child(1){left:36%;rotate:-8deg}
+.opt-img[data-n="2"] img:nth-child(2){left:64%;rotate:6deg}
+.opt-img[data-n="3"] img{height:48px}
+.opt-img[data-n="3"] img:nth-child(1){left:24%;rotate:-11deg}
+.opt-img[data-n="3"] img:nth-child(2){left:50%;z-index:1;bottom:3px}
+.opt-img[data-n="3"] img:nth-child(3){left:76%;rotate:11deg}
+.opt:hover .opt-img img,.opt input:checked+.opt-box .opt-img img{transform:translateY(-3px)}
+@media (max-width:560px){.opt-box{gap:10px;padding:14px 14px}.opt-img{width:54px;height:50px}.opt-img img{height:46px}.opt-img[data-n="3"] img{height:40px}}

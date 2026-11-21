@@ -113,8 +113,10 @@ export const KASA_KEY = 25;
 export const PRICES = { "lit-2": 4480, "ezik-2": 4480, duo: 4480 };
 
 // Delivery with one deck (euro cents), as in the ConvertBuilder checkout: from this price to an office.
-// Two decks ship free.
 export const DELIVERY_FROM = 490;
+// From how many decks the delivery is free (as the free-delivery threshold of the ConvertBuilder store):
+// 2 → "при 2 и 3 тестета", 3 → "при 3 тестета". Change it together with the store's shipping settings.
+export const FREE_SHIP_DECKS = 2;
 
 export const CONTACT = {
   phone: "0893 42 52 92",
