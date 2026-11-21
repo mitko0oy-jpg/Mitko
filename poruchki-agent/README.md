@@ -47,7 +47,7 @@ ConvertBuilder API не може да създава поръчки, а само
 От Телеграм:
 - `/obratna 1649 1641 …` – чете поръчките (Middleware: доставена ли е и id в ConvertBuilder; ConvertBuilder: име, телефон, адрес, продукти) и ги показва. Пропуска недоставените и тези, с които вече сме говорили.
 - `/obratna_test 1649` – същото обаждане, но до тестовия номер.
-- `/obratna_start` – tick звъни по един (пон–съб 10:00–19:30), само когато няма друго обаждане в ход. Невдигнал → още веднъж след час. Накрая обобщение.
+- `/obratna_start` – tick звъни по един (пон–съб 10:00–19:30), само когато няма друго обаждане в ход. `CALLS_PAUSED` в Netlify спира само обажданията за поръчки; тези спират с `/obratna_stop` или `/stop`. Невдигнал → още веднъж след час. Накрая обобщение.
 - `/obratna_stop`, `/obratna_status`.
 
 Старият път (ElevenLabs звъни сам, спира се от Zadarma): `ELEVENLABS_API_KEY=… EL_FEEDBACK_AGENT_ID=agent_9501m7qd1wgqe31tq2cf7r4v86m0 EL_PHONE_NUMBER_ID=phnum_0401m7cqsxpqf439twk8p463dzxw node scripts/feedback-calls.mjs <list.json>`.

@@ -160,7 +160,12 @@ export async function startFeedback(deps, now = new Date()) {
   await saveSettings(deps.store, { ...settings, feedbackOn: true, feedbackReported: false });
   const t = sofiaNow(now);
   const open = t.weekday !== 0 && inCallingHours(FEEDBACK_HOURS, now);
-  return `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня по един на всеки ~5 минути${open ? ", започвам до 5 минути." : " – от понеделник до събота, 10:00–19:30."}\n/obratna_stop спира, /obratna_status показва докъде сме.`;
+  const lines = [
+    `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня по един на всеки ~5 минути${open ? ", започвам до 5 минути." : " – от понеделник до събота, 10:00–19:30."}`,
+    "/obratna_stop спира, /obratna_status показва докъде сме.",
+  ];
+  if (settings.paused) lines.push("⚠️ Обажданията са на пауза (/stop) – напиши /pusni, за да тръгнат.");
+  return lines.join("\n");
 }
 
 /** /obratna_stop */
@@ -226,7 +231,9 @@ export async function runFeedbackQueue(deps, now = new Date()) {
 
   // 3. Start the next call, if we may.
   if (!settings.feedbackOn) return { feedback: "stopped" };
-  if (settings.paused || deps.config.pausedByEnv) return { feedback: "paused" };
+  // /stop in Telegram stops these too. CALLS_PAUSED in Netlify is only for the order calls:
+  // feedback calls start only when Mitko writes /obratna_start.
+  if (settings.paused) return { feedback: "paused" };
   const t = sofiaNow(now);
   if (t.weekday === 0 || !inCallingHours(FEEDBACK_HOURS, now)) return { feedback: "outside hours" };
   if (busy) return { feedback: "call in progress" };

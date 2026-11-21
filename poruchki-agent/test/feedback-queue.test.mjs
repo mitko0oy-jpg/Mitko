@@ -164,6 +164,15 @@ test("the queue does not call on Sunday, outside 10:00–19:30, when stopped or 
   assert.equal(d.calls.length, 0);
 });
 
+test("CALLS_PAUSED in Netlify keeps the order calls stopped, but not the feedback calls Mitko started", async () => {
+  const d = deps();
+  d.config.pausedByEnv = true;
+  await prepareFeedback(d, "1649", T0);
+  await startFeedback(d, T0);
+  assert.match((await runFeedbackQueue(d, T0)).feedback, /calling #1649/);
+  assert.equal(d.calls[0].to, "+359888123456");
+});
+
 test("without ConvertBuilder's id from Middleware, the order is found by its number and date", async () => {
   const d = deps();
   MW[1700] = { status: "completed", statusText: "доставена е", externalId: null, createdAt: "2026-07-14T09:00:00Z" };
