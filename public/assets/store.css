@@ -564,3 +564,85 @@ body[data-deck="lit"]{--muted:#46524A}
 .pv-note a{color:var(--accent);font-weight:800}
 @media (max-width:560px){.pvoices-short{grid-template-columns:1fr}.pv,.pv-big{padding:22px 20px 18px}.pv blockquote,.pv-big blockquote{font-size:19px}}
 a[href^="tel:"]{white-space:nowrap}
+
+/* ---------- math page: the 10 sections – a dark band with floating symbols, icons that move and real cards ---------- */
+.mtopics{overflow:hidden;color:#fff;background:radial-gradient(900px 520px at 88% 8%,rgba(14,124,119,.62),transparent 62%),radial-gradient(760px 520px at 0% 100%,rgba(240,122,62,.24),transparent 60%),#13233E}
+.mtopics>.container{position:relative;z-index:1}
+.mtopics .kicker{color:#FFB48A}
+.mtopics .h2{color:#fff}
+body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
+.mtopics .lede{color:rgba(255,255,255,.84)}
+.mt-sym{position:absolute;inset:0;pointer-events:none;z-index:0}
+.mt-sym span{position:absolute;left:var(--x);top:var(--y);font:italic 700 var(--s)/1 var(--serif);color:rgba(255,255,255,.075);rotate:var(--r);animation:mtFloat var(--t) ease-in-out infinite alternate;animation-delay:calc(var(--i) * -2.3s)}
+@keyframes mtFloat{to{transform:translate(10px,-28px) rotate(10deg)}}
+.mt-head{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:clamp(20px,4vw,50px);align-items:center;margin-bottom:clamp(26px,4vw,44px)}
+.mt-head .section-head{margin-bottom:0}
+.mt-fan{position:relative;height:clamp(230px,24vw,320px)}
+.mt-fan img{position:absolute;top:50%;left:50%;width:clamp(120px,11vw,160px);aspect-ratio:10/14;object-fit:cover;border-radius:12px;background:#fff;box-shadow:0 26px 50px -16px rgba(0,0,0,.65);animation:mtBob 8s ease-in-out infinite}
+.mt-fan .f1{translate:-125% -46%;rotate:-13deg;animation-delay:-2s}
+.mt-fan .f3{translate:25% -46%;rotate:13deg;animation-delay:-5s}
+.mt-fan .f2{translate:-50% -54%;z-index:2}
+@keyframes mtBob{50%{transform:translateY(-10px)}}
+.mt-route{display:flex;align-items:center;gap:14px;margin:0 0 clamp(18px,2.4vw,26px);font-weight:800;font-size:15px;letter-spacing:.02em;color:rgba(255,255,255,.88)}
+.mt-route i{position:relative;flex:1;height:4px;border-radius:4px;background:rgba(255,255,255,.16)}
+.mt-route b{position:absolute;inset:0 auto 0 0;width:0;border-radius:4px;background:linear-gradient(90deg,#86E0D3,#FFB48A);transition:width 2.8s cubic-bezier(.22,1,.36,1) .3s}
+.mt-route b::after{content:"";position:absolute;right:-7px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#FFB48A;box-shadow:0 0 0 6px rgba(255,180,138,.25)}
+.mt-route.in b{width:100%}
+.mt-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+.mt{position:relative;isolation:isolate;overflow:hidden;height:100%;min-height:340px;padding:24px 22px;border-radius:24px;background:#fff;color:var(--ink);box-shadow:0 20px 44px -26px rgba(0,0,0,.6);transition:transform .5s cubic-bezier(.22,1,.36,1),box-shadow .5s}
+.mt:hover{transform:translateY(-6px);box-shadow:0 30px 60px -26px rgba(0,0,0,.7)}
+.mt-n{display:block;font:italic 700 16px/1 var(--serif);color:var(--accent)}
+.mt-ico{display:grid;place-items:center;width:60px;height:60px;margin:14px 0 16px;border-radius:18px;background:var(--accent-soft);color:var(--accent)}
+.mt-grid li:nth-child(even) .mt-ico{background:rgba(240,122,62,.13);color:#D25A24}
+.mt-ico svg{width:38px;height:38px;overflow:visible}
+.mt h3{margin:0 0 6px;font-size:20px;line-height:1.2;letter-spacing:-.015em}
+.mt p{margin:0;color:var(--muted);font-size:16px;line-height:1.4}
+.mt-card{position:absolute;right:-8px;bottom:-64px;z-index:-1;width:50%;aspect-ratio:10/14;object-fit:cover;border-radius:10px;rotate:9deg;box-shadow:0 16px 30px -12px rgba(0,0,0,.4);transition:translate .7s cubic-bezier(.22,1,.36,1),rotate .7s cubic-bezier(.22,1,.36,1)}
+.mt:hover .mt-card{translate:-6px -34px;rotate:2deg}
+.mt-glyph{position:absolute;right:16px;bottom:-6px;z-index:-1;font:italic 700 92px/1 var(--serif);color:color-mix(in srgb,var(--accent) 18%,transparent);transition:translate .7s cubic-bezier(.22,1,.36,1)}
+.mt-grid li:nth-child(even) .mt-glyph{color:rgba(240,122,62,.2)}
+.mt:hover .mt-glyph{translate:0 -12px}
+.in>.mt .mt-card,.in>.mt .mt-glyph{animation:mtBob 7s ease-in-out infinite;animation-delay:calc(var(--d,0) * -1.3s)}
+/* the icons move slowly once the tile is on screen */
+.mt-ico svg *{transform-box:view-box}
+.in>.mt .a-pulse{transform-origin:22px 26px;animation:icPulse 3.2s ease-in-out infinite}
+.in>.mt .a-pulse.b{transform-origin:35px 35px;animation-delay:-1.6s}
+.in>.mt .mt-ico .a-pulse[cx="13"]{transform-origin:13px 13px}
+.in>.mt .a-arrow{animation:icArrow 3.2s cubic-bezier(.22,1,.36,1) infinite}
+.in>.mt .a-op{animation:icOp 4.8s ease-in-out infinite;opacity:.35}
+.in>.mt .a-op.a2{animation-delay:1.2s}.in>.mt .a-op.a3{animation-delay:2.4s}.in>.mt .a-op.a4{animation-delay:3.6s}
+.in>.mt .a-draw{stroke-dasharray:110;animation:icDraw 4.5s ease-in-out infinite}
+.in>.mt .a-blink{animation:icBlink 2.6s ease-in-out infinite}
+.in>.mt .a-road{stroke-dasharray:6 6;animation:icRoad 1.2s linear infinite}
+.in>.mt .a-car{animation:icCar 2.4s ease-in-out infinite}
+.in>.mt .a-bar{transform-origin:0 41px;animation:icBar 3.6s ease-in-out infinite}
+.in>.mt .a-bar.b2{animation-delay:-1.2s}.in>.mt .a-bar.b3{animation-delay:-2.4s}
+.in>.mt .a-tick{stroke-dasharray:16;stroke-dashoffset:16;animation:icTick 4.5s ease-in-out infinite}
+.in>.mt .a-tick.t2{animation-delay:.6s}.in>.mt .a-tick.t3{animation-delay:1.2s}
+.in>.mt .a-lens{animation:icLens 4s ease-in-out infinite}
+.in>.mt .a-x{animation:icBlink 2s ease-in-out infinite}
+.in>.mt .a-hand{transform-origin:24px 27px;animation:icHand 6s linear infinite}
+@keyframes icPulse{50%{transform:scale(1.1);opacity:.55}}
+@keyframes icArrow{0%,15%{transform:translate(8px,-8px);opacity:0}45%,85%{transform:none;opacity:1}100%{opacity:0}}
+@keyframes icOp{0%,40%,100%{opacity:.35}15%,25%{opacity:1}}
+@keyframes icDraw{0%{stroke-dashoffset:110}45%,75%{stroke-dashoffset:0}100%{stroke-dashoffset:-110}}
+@keyframes icBlink{50%{opacity:.15}}
+@keyframes icRoad{to{stroke-dashoffset:-12}}
+@keyframes icCar{50%{transform:translate(3px,-1.5px)}}
+@keyframes icBar{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}
+@keyframes icTick{0%{stroke-dashoffset:16}25%,80%{stroke-dashoffset:0}100%{stroke-dashoffset:16}}
+@keyframes icLens{50%{transform:translateX(14px)}}
+@keyframes icHand{to{transform:rotate(360deg)}}
+@media (max-width:1180px){.mt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mt{min-height:300px}.mt-card{width:38%;bottom:-70px}}
+@media (max-width:900px){.mt-head{grid-template-columns:1fr}.mt-fan{order:-1;height:220px}.mt-fan img{width:118px}}
+@media (max-width:600px){
+  .mt-grid{grid-template-columns:1fr;gap:12px}
+  .mt{min-height:0;padding:20px 120px 20px 20px;display:grid;grid-template-columns:auto 1fr;column-gap:16px;align-items:center}
+  .mt-n{grid-column:1/-1;margin-bottom:10px}
+  .mt-ico{grid-row:span 2;margin:0}
+  .mt h3{font-size:19px;align-self:end}
+  .mt p{grid-column:2;align-self:start;font-size:16px}
+  .mt-card{width:104px;right:-10px;bottom:-40px}
+  .mt-glyph{font-size:66px;right:14px}
+}
+@media (prefers-reduced-motion:reduce){.mt-sym span,.mt-fan img,.in>.mt .mt-card,.in>.mt .mt-glyph,.mt-ico svg *{animation:none!important}}
