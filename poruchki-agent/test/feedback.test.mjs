@@ -24,11 +24,12 @@ test("feedbackVariables: everyone hears three for the price of one first, five i
   const base = { label: "1000", name: "Мария Иванова", city: "Ловеч", deliveredAt: "2026-11-04T10:00:00Z", address: "До офис speedy[1]: ЛОВЕЧ - ЦЕНТЪР ул. Търговска No 1" };
   const a = feedbackVariables({ ...base, items: [{ name: "BeeVenom Care Gel 2+1 броя", q: 1 }] }, NOW);
   assert.equal(a.main_pack, "3");
-  assert.equal(a.main_offer, "три гела на цената на един – 15 евро и 90 цента, и подарък дванайсет билкови лепенки");
+  assert.equal(a.main_offer, "три гела на цената на един – 15 евро и 90 цента");
   assert.equal(a.main_total, "20 евро и 40 цента");
-  assert.equal(a.alt_offer, "пет гела за 19 евро и 90 цента – в сайта са 29 евро и 90 цента – и пак подарък дванайсет билкови лепенки");
+  assert.equal(a.alt_offer, "пет гела за 19 евро и 90 цента");
   assert.equal(a.alt_total, "24 евро и 40 цента");
   assert.equal(a.site_one_price, "15 евро и 90 цента");
+  assert.equal(a.gift_text, "дванайсет билкови лепенки");
   assert.equal(a.delivered_ago, "преди около две седмици");
   assert.equal(a.delivery_text, "до офис на Спиди „Ловеч – Център“");
   assert.equal(a.order_key, "fb-1000");

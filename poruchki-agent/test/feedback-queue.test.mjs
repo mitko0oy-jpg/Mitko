@@ -95,7 +95,7 @@ test("/obratna_test calls Mitko's phone with that customer's data and the feedba
   assert.equal(d.calls[0].variables.test, "yes");
   assert.equal(d.calls[0].variables.customer_name, "госпожо Петрова");
   assert.equal(d.calls[0].variables.delivered_ago, "през юли");
-  assert.equal(d.calls[0].variables.main_offer, "три гела на цената на един – 15 евро и 90 цента, и подарък дванайсет билкови лепенки");
+  assert.equal(d.calls[0].variables.main_offer, "три гела на цената на един – 15 евро и 90 цента");
 });
 
 test("the queue: one call at a time, no answer → once more an hour later, answered → done", async () => {
@@ -137,7 +137,7 @@ test("the queue: one call at a time, no answer → once more an hour later, answ
   }, min(13));
   assert.equal((await d.store.get("fb-1641", { type: "json" })).status, "done");
   assert.match(d.messages.find((m) => /ПОРЪЧА ОТНОВО/.test(m)) || "", /ПОРЪЧА ОТНОВО/);
-  assert.match(d.messages.find((m) => /ПОРЪЧА ОТНОВО/.test(m)), /три гела на цената на един.*20 евро и 40 цента/);
+  assert.match(d.messages.find((m) => /ПОРЪЧА ОТНОВО/.test(m)), /три гела на цената на един – 15 евро и 90 цента \+ подарък дванайсет билкови лепенки · общо 20 евро и 40 цента/);
   // 1649 waits for its retry hour, so the result did not start another call.
   assert.equal(d.calls.length, 2);
 

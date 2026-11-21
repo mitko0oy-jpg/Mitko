@@ -1,8 +1,8 @@
 // Feedback calls: after delivery (2–3 weeks, or months later for older
 // customers) the agent asks how the customer is doing with the gel and, if
 // they are happy, offers a repeat order.
-// Everyone hears the 3-pack first („три гела на цената на един“); the 5-pack
-// only if they want more.
+// The offer is two choices in one sentence („три гела на цената на един“ or
+// five; 12 patches with both): two options sell better than one.
 // Both packs come with 12 herbal patches („лепенки“) as a gift.
 import { formalNameBG, moneyBG } from "./format.mjs";
 import { officeName } from "./convertbuilder.mjs";
@@ -89,12 +89,8 @@ export function deliveredAgo({ deliveredAt, orderedAt }, now) {
 function offerText(pack, o = FEEDBACK_OFFER) {
   const p = o.packs[pack];
   // Said as value against the shop's own price (bonus-pack framing), not as a list of numbers.
-  const text =
-    pack === 3 && p.price === o.site.one
-      ? `три гела на цената на един – ${moneyBG(p.price)}, и подарък ${p.gift}`
-      : pack === 5
-        ? `пет гела за ${moneyBG(p.price)} – в сайта са ${moneyBG(o.site.five)} – и пак подарък ${p.gift}`
-        : `${p.words} гела за ${moneyBG(p.price)}, и подарък ${p.gift}`;
+  // The gift is said once for both packs (gift_text), so each offer is short.
+  const text = pack === 3 && p.price === o.site.one ? `три гела на цената на един – ${moneyBG(p.price)}` : `${p.words} гела за ${moneyBG(p.price)}`;
   return {
     offer: text,
     total: moneyBG(p.price + o.delivery),
@@ -108,7 +104,7 @@ function offerText(pack, o = FEEDBACK_OFFER) {
  */
 export function feedbackVariables(order, now = new Date()) {
   const tubes = gelTubes(order.items);
-  // Everyone hears the three-pack first („три на цената на един“); five only if they want more.
+  // Three first („три на цената на един“), five as the second choice.
   const main = 3;
   const alt = 5;
   const m = offerText(main);
@@ -132,6 +128,7 @@ export function feedbackVariables(order, now = new Date()) {
     alt_total: a.total,
     delivery_fee: moneyBG(FEEDBACK_OFFER.delivery),
     site_one_price: moneyBG(FEEDBACK_OFFER.site.one),
+    gift_text: FEEDBACK_OFFER.packs[3].gift,
   };
 }
 
@@ -205,7 +202,7 @@ export function feedbackMessage(call) {
   const pack = String(f.reorder_pack || "").match(/[35]/)?.[0];
   if (pack) {
     const offer = pack === v.main_pack ? { o: v.main_offer, t: v.main_total } : { o: v.alt_offer, t: v.alt_total };
-    lines.push(`🛒 <b>Нова поръчка: ${esc(offer.o)} · общо ${esc(offer.t)} с доставката</b>`);
+    lines.push(`🛒 <b>Нова поръчка: ${esc(offer.o)} + подарък ${esc(v.gift_text || "лепенки")} · общо ${esc(offer.t)} с доставката</b>`);
     lines.push(`🚚 ${esc(f.delivery_change || v.delivery_text)}${f.delivery_change ? " (НОВО)" : ""}`);
     lines.push("Въведи я в Middleware.");
   }
