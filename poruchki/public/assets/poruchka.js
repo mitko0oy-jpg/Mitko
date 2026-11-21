@@ -26,7 +26,8 @@ function progress(o) {
   for (let i = 0; i <= at; i++) reached.add(order[i]);
   if (at >= 0) reached.add("confirmed");
   if (o.stage === "delivered") reached.add("at_office");
-  return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}">${l}</li>`).join("")}</ol>`;
+  const cur = [...STEPS].reverse().find(([k]) => reached.has(k))?.[0];
+  return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}${k === cur ? " cur" : ""}">${l}</li>`).join("")}</ol>`;
 }
 const CB_STATUS = { pending: "нова", shipped: "изпратена", completed: "завършена", canceled: "отказана", archived: "архивирана" };
 

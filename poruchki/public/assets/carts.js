@@ -81,7 +81,7 @@ export function renderStream() {
   const max = Math.max(1, ...carts.map((c) => c.value.eur));
   const zoneTop = ZONES.map((z, i) => {
     const mine = carts.filter((c) => zoneOf(c.hours) === z);
-    return `<div class="zone" style="left:${i * 25}%"><span class="ztag" style="--z:${z.color}">${z.label} · ${mine.length} · ${eur(mine.reduce((n, c) => n + c.value.eur, 0))}</span></div>`;
+    return `<div class="zone" style="left:${i * 25}%"><span class="ztag" style="--z:${z.color}">${z.label} · ${mine.length}<span class="zm"> · ${eur(mine.reduce((n, c) => n + c.value.eur, 0))}</span></span></div>`;
   }).join("");
   $("lane").innerHTML =
     zoneTop +

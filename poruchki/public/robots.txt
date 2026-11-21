@@ -1,2 +1,15 @@
+# Not for search engines. Chat apps may read the page title and picture to show a link preview.
+User-agent: facebookexternalhit
+User-agent: Facebot
+User-agent: Twitterbot
+User-agent: TelegramBot
+User-agent: WhatsApp
+User-agent: Viber
+User-agent: Slackbot-LinkExpanding
+User-agent: LinkedInBot
+User-agent: Discordbot
+User-agent: SkypeUriPreview
+Allow: /
+
 User-agent: *
 Disallow: /

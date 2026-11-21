@@ -1,10 +1,24 @@
 {
+  "id": "/",
   "name": "OrderDesk",
   "short_name": "OrderDesk",
+  "description": "Поръчките от всички магазини, товарителници, склад и незавършени колички на едно място.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f4f4f1",
-  "theme_color": "#4f46e5",
+  "theme_color": "#ffffff",
   "lang": "bg",
-  "icons": [{ "src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Поръчки", "url": "/poruchki/", "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Незавършени", "url": "/nezavarsheni/", "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Склад", "url": "/sklad/", "icons": [{ "src": "/assets/icon-192.png", "sizes": "192x192" }] }
+  ]
 }

@@ -132,6 +132,7 @@ function themeButton(btn) {
     }
     if (next === "auto") document.documentElement.removeAttribute("data-theme");
     else document.documentElement.setAttribute("data-theme", next);
+    window.odThemeColor?.();
     draw();
   };
   draw();
@@ -151,6 +152,7 @@ export const ICONS = {
   users: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
   gear: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   bell: I('<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>'),
+  more: I('<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>'),
   logo: `<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="odg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#odg)"/><path d="M15 23.5l16-8 16 8v18.5l-16 8-16-8z" fill="none" stroke="#fff" stroke-width="3.8" stroke-linejoin="round"/><path d="M15 23.5l16 8 16-8M31 31.5v18.5" fill="none" stroke="#fff" stroke-width="3.8" stroke-linejoin="round" opacity=".6"/><circle cx="46" cy="45" r="10" fill="#fff"/><path d="M41.5 45.2l3.2 3.2 6-6.6" fill="none" stroke="#6d28d9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 };
 
@@ -224,6 +226,7 @@ export async function shell(active) {
     </div>
     <nav class="nav" aria-label="Меню">${links.map(([h, t, k, ic]) => `<a href="${h}" class="${k === here ? "on" : ""}">${ic}<span>${t}</span></a>`).join("")}</nav>`;
   document.body.prepend(top);
+  phoneMenu(links, here);
   themeButton(top.querySelector("#themeBtn"));
   popup(top.querySelector("#userBtn"), top.querySelector("#userMenu"));
   popup(top.querySelector("#bellBtn"), top.querySelector("#bellMenu"));
@@ -239,6 +242,53 @@ export async function shell(active) {
     });
   bell(top);
   return u;
+}
+
+/** On a phone: the main pages in a bar at the bottom (like an app), the rest under „Още“. */
+const PHONE_MAIN = ["tablo", "poruchki", "nezavarsheni", "zhivo"];
+const PHONE_SHORT = { nezavarsheni: "Колички" };
+function phoneMenu(links, here) {
+  const main = links.filter(([, , k]) => PHONE_MAIN.includes(k));
+  const more = links.filter(([, , k]) => !PHONE_MAIN.includes(k));
+  const cur = more.find(([, , k]) => k === here);
+  const bar = document.createElement("nav");
+  bar.className = "tabbar";
+  bar.setAttribute("aria-label", "Меню");
+  bar.innerHTML =
+    main.map(([h, t, k, ic]) => `<a href="${h}" class="tab${k === here ? " on" : ""}" data-k="${k}" title="${t}"${k === here ? ' aria-current="page"' : ""}>${ic}<span>${PHONE_SHORT[k] || t}</span><b class="tdot" hidden></b></a>`).join("") +
+    `<button type="button" class="tab${cur ? " on" : ""}" id="moreBtn" aria-expanded="false" aria-controls="moreSheet"${cur ? ` title="${esc(cur[1])}"` : ""}>${ICONS.more}<span>Още</span></button>`;
+  const sheet = document.createElement("div");
+  sheet.className = "sheet";
+  sheet.id = "moreSheet";
+  sheet.hidden = true;
+  sheet.innerHTML = `<div class="sheet-back"></div><div class="sheet-card" role="dialog" aria-label="Още"><div class="sheet-grip"></div>
+    <div class="sheet-grid">${more.map(([h, t, k, ic]) => `<a href="${h}" class="sheet-item${k === here ? " on" : ""}">${ic}<span>${t}</span></a>`).join("")}</div></div>`;
+  document.body.append(bar, sheet);
+  labelTables();
+  const btn = bar.querySelector("#moreBtn");
+  const show = (open) => {
+    sheet.hidden = !open;
+    btn.setAttribute("aria-expanded", String(open));
+  };
+  btn.onclick = () => show(sheet.hidden);
+  sheet.querySelector(".sheet-back").onclick = () => show(false);
+  sheet.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => show(false)));
+  document.addEventListener("keydown", (e) => e.key === "Escape" && show(false));
+}
+
+/** Phone: the simple tables (people, shops, couriers) become cards, so each cell gets its column title (data-label). */
+function labelTables() {
+  const label = (t) => {
+    const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+    t.querySelectorAll("tbody tr").forEach((tr) =>
+      [...tr.children].forEach((td, i) => {
+        if (heads[i] && td.dataset.label !== heads[i]) td.dataset.label = heads[i];
+      }),
+    );
+  };
+  const all = () => document.querySelectorAll("table.shopsTbl").forEach(label);
+  all();
+  new MutationObserver(all).observe(document.body, { childList: true, subtree: true });
 }
 
 /** What is waiting: unconfirmed orders, AI calls that need a person, unfinished orders, labels to print. */
@@ -260,6 +310,15 @@ async function bell(top) {
   const dot = top.querySelector("#bellN");
   dot.hidden = !n;
   dot.textContent = n > 99 ? "99+" : String(n);
+  // The same numbers on the phone's bottom bar.
+  const tabDot = (k, v) => {
+    const d = document.querySelector(`.tabbar [data-k="${k}"] .tdot`);
+    if (!d) return;
+    d.hidden = !v;
+    d.textContent = v > 99 ? "99+" : String(v || "");
+  };
+  tabDot("poruchki", (a.ai || 0) + (a.unconfirmed || 0));
+  tabDot("nezavarsheni", a.leads || 0);
   top.querySelector("#bellMenu").innerHTML =
     lines.filter(([k]) => k).map(([k, t, h]) => `<a href="${h}"><b>${num(k)}</b> ${t}</a>`).join("") || `<div class="muted small">Няма нищо, което да чака.</div>`;
 }
