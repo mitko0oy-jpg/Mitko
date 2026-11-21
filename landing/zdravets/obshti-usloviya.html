@@ -71,8 +71,9 @@ const CONFIG = {
     end:   '2026-11-30T23:59:59+02:00',
     label: 'Черен петък'
   },
-  // Подаръкът към всяка поръчка по време на Черния петък (продукт в магазина, 0 €)
+  // Подаръкът по време на Черния петък – към поръчка от giftFrom броя нагоре (продукт в магазина, 0 €)
   giftStoreId: 32,
+  giftFrom: 3, // подаръкът е за поръчка от 3 и повече броя (2 броя – без подарък)
 
   guaranteeDays: 30,
 
@@ -202,15 +203,17 @@ const PRODUCTS = [
     size: '8 пластира в кутия',
     price: 9.90,
     img: zImg('ChatGPT_Image_Jul_15_2026_11_12_47_AM-4103189.png'),
-    short: 'С пчелна отрова и натурални екстракти за продължително усещане за комфорт и повече свобода при движение.',
+    short: 'С пчелна отрова, ментол и капсаицин — свежест и приятна топлина, които действат 6–8 часа.',
     bullets: [
       'Подходящи за стави и мускули',
       'Прилепват плътно и са удобни за носене',
       'Продължително действие',
       'Подходящи за ежедневна употреба'
     ],
-    ingredients: [['Пчелна отрова', 'Основната съставка'], ['Растителни екстракти', 'Допълват формулата']],
-    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена или раздразнена кожа.',
+    // съставът е от етикета на кутията; ingPlain: съставките са с иконки (за ментола и капсаицина няма снимки само с тях)
+    ingredients: [['Пчелна отрова', 'Основната съставка на серията BeeVenom'], ['Ментол', 'Усещане за свежест'], ['Капсаицин', 'Приятно затоплящо усещане']],
+    ingPlain: true,
+    usage: 'Постави върху чиста и суха кожа и остави да действа 6–8 часа. Не превързвай стегнато и не използвай с грейка. Не поставяй върху наранена или раздразнена кожа и избягвай контакт с очите.',
     packs: 'bvpatch'
   },
   {
@@ -220,15 +223,17 @@ const PRODUCTS = [
     size: '8 пластира в кутия',
     price: 9.90,
     img: zImg('ChatGPT_Image_Jul_15_2026_11_37_37_AM-4104674.png'),
-    short: 'С 6 вида животински отрови и растителни екстракти — приятно затоплящо усещане за дълги часове.',
+    short: 'Активна формула с ментол, камфор и капсаицин, допълнена с билка плаун и далечно инфрачервен магнитен прах — силно усещане за топлина и свежест.',
     bullets: [
       'Подходящи за колене, кръст, рамене, лакти и врат',
       'Продължително затоплящо усещане',
       'Лесни за поставяне',
       'Удобни за ежедневна употреба'
     ],
-    ingredients: [['Животински отрови (6 вида)', 'Традиционна тибетска рецептура'], ['Растителни екстракти', 'Допълват усещането за топлина']],
-    usage: 'Постави върху чиста и суха кожа. Носи до 8 часа. Не поставяй върху наранена кожа и при чувствителност към съставките.',
+    // съставът е от етикета на кутията
+    ingredients: [['Ментол', 'Усещане за свежест'], ['Камфор', 'Свежест и топлина'], ['Капсаицин', 'Приятно затоплящо усещане'], ['Билка плаун (Clubmoss)', 'Растителна съставка'], ['Далечно инфрачервен магнитен прах', 'Допълва действието на пластира']],
+    ingPlain: true,
+    usage: 'Постави 1 пластир на ден върху чиста и суха кожа и остави да действа до 8 часа. Не поставяй върху наранена кожа и при чувствителност към съставките. Не е подходящ за деца, при бременност и при поставен пейсмейкър.',
     packs: 'tibet'
   },
   {
@@ -271,12 +276,13 @@ const PRODUCTS = [
     id: 'skin', store: 4, cat: 'koja', bestseller: true,
     name: 'BeeVenom Крем за проблемна кожа',
     shortName: 'Крем BeeVenom за кожа',
-    size: '30 г',
-    price: 9.90,
+    size: '30 г · концентрирана формула',
+    price: 15.90,
     img: zImg('hf_20260705_171626_c9c736e2-07b9-4d0a-aa48-e1b04b2a5cad-3272004.png'),
-    short: 'Пчелна отрова, масло от чаено дърво, арника и биота ориенталис — успокоява, подхранва и хидратира проблемната кожа.',
+    short: 'Концентрирана формула с пчелна отрова, масло от чаено дърво, арника и биота ориенталис — успокоява, подхранва и хидратира проблемната кожа.',
     bullets: [
       'За проблемна, чувствителна и раздразнена кожа',
+      'Концентрирана формула с пчелна отрова',
       'Подпомага успокояването на кожата',
       'Дълбока хидратация и комфорт',
       'Лека формула с бързо попиване'
@@ -470,12 +476,14 @@ const PRODUCTS = [
    items: какво влиза; gift: подаръкът по време на Черния петък (пластирите).
    freeShip: показва „безплатна доставка“, ако цената е над прага в CONFIG.
    store = продуктът-комплект в магазина на ConvertBuilder (скрит от списъка). */
+// „5 крема за кожа“ – скритият продукт в магазина на ConvertBuilder
+const SKIN5_STORE = 60;
 const BUNDLES = [
   {
     id: 'bf2', store: 25, tier: 'Старт', badge: '',
     title: '2 гела за стави',
     items: [['gel', 2]],
-    gift: [['beeherb', 1]],
+    gift: [], // подаръкът е от 3 броя нагоре
     price: 19.90,
     prev: 22.90, // цената до 21.11. – показва се задраскана с Х
     perUnit: '9,95\u00a0€ за гел',
@@ -529,16 +537,28 @@ const BUNDLES = [
 
   /* Не е от Черния петък — пакет на страницата на крема за кожа */
   {
-    id: 'skin3', store: 28, bf: false, tier: 'Най-изгоден',
+    id: 'skin3', store: 28, bf: false, tier: 'Най-избиран',
     title: '3 крема BeeVenom за кожа',
     items: [['skin', 3]],
     gift: [],
-    price: 24.90,
-    perUnit: '8,30\u00a0€ за крем',
+    price: 22.90,
+    perUnit: '7,63\u00a0€ за крем',
     line: '3 крема по 30 г',
     note: 'За продължителна грижа',
     freeShip: false,
-    img: zImg('hf_20260705_171626_c9c736e2-07b9-4d0a-aa48-e1b04b2a5cad-3272004.png')
+    media: 'pack-skin-3.webp'
+  },
+  {
+    id: 'skin5', store: SKIN5_STORE, bf: false, tier: 'Най-изгодно',
+    title: '5 крема BeeVenom за кожа',
+    items: [['skin', 5]],
+    gift: [],
+    price: 34.90,
+    perUnit: '6,98\u00a0€ за крем',
+    line: '5 крема по 30 г',
+    note: 'Най-ниската цена за крем – и за близък човек',
+    freeShip: true,
+    media: 'pack-skin-5.webp'
   }
 ];
 
@@ -556,7 +576,7 @@ const BUMPS = [
 const UPSELL = { product: 'hyal', store: 29, price: 7.90, downsellPrice: 5.90 };
 
 /* ---------- ПАКЕТИ НА ПРОДУКТОВАТА СТРАНИЦА ----------
-   store = продуктът в магазина на ConvertBuilder. По време на Черния петък към всяка поръчка
+   store = продуктът в магазина на ConvertBuilder. По време на Черния петък към поръчка от 3 и повече броя
    се добавя подаръкът (12 билкови пластира) – текстът за него се показва сам.            */
 const PACKS = {
   gel: [
@@ -566,9 +586,11 @@ const PACKS = {
     { key: 'bf5', label: '5 гела', sub: '6,98\u00a0€ за гел', bundle: 'bf5', store: 43, price: 34.90, flag: 'Безплатна доставка' }
   ],
   skin: [
-    { key: 'skin1', label: '1 крем', sub: 'За да опиташ', store: 4, price: 9.90 },
-    { key: 'skin2', label: '2 крема', sub: '8,95\u00a0€ за крем', store: 54, price: 17.90 },
-    { key: 'skin3', label: '3 крема', sub: '8,30\u00a0€ за крем · най-изгодно', bundle: 'skin3', store: 28, price: 24.90, featured: true }
+    { key: 'skin1', label: '1 крем', sub: 'За да опиташ', store: 4, price: 15.90 },
+    { key: 'skin2', label: '2 крема', sub: '9,95\u00a0€ за крем', store: 54, price: 19.90 },
+    // 3 крема: цената реално пада от 24,90 (до 21.11.) – затова се показва задраскана; при 1 и 2 крема цената се вдигна
+    { key: 'skin3', label: '3 крема', sub: '7,63\u00a0€ за крем · най-избиран', bundle: 'skin3', store: 28, price: 22.90, prev: 24.90, featured: true },
+    { key: 'skin5', label: '5 крема', sub: '6,98\u00a0€ за крем', bundle: 'skin5', store: SKIN5_STORE, price: 34.90, flag: 'Безплатна доставка' }
   ],
   spray: [
     { key: 'spray1', label: '1 спрей', sub: 'За да опиташ', store: 5, price: 17.90 },
@@ -674,7 +696,7 @@ const BV = {
 const bvVid = (commit, name) => ({ poster: BVM(commit, name + '.jpg'), video: BVM(commit, name + '.mp4') });
 
 /* иконки на съставките по ключова дума */
-const ING_ICON = [[/кофеин/i, '☕'], [/гуарана|мукуна/i, '🫘'], [/женшен|мака\b|^мака/i, '🫚'], [/аланин|цитрулин|глутамин|цистеин|nac/i, '🧬'],
+const ING_ICON = [[/камфор/i, '🌳'], [/капсаицин/i, '🌶️'], [/плаун/i, '🌱'], [/магнит/i, '🧲'], [/кофеин/i, '☕'], [/гуарана|мукуна/i, '🫘'], [/женшен|мака\b|^мака/i, '🫚'], [/аланин|цитрулин|глутамин|цистеин|nac/i, '🧬'],
   [/личи/i, '🍒'], [/магноли/i, '🌸'], [/от нар|^нар/i, '🍎'], [/канел/i, '🪵'], [/nmn/i, '⚡'], [/ресвератрол/i, '🍇'],
   [/кордицепс|грива|гъба/i, '🍄'], [/теанин/i, '🍵'], [/5-htp|грифони/i, '🌱'], [/родиол/i, '🏵️'], [/дамиана/i, '🌿'], [/ашваганд/i, '🌱'],
   [/пчел/i, '🐝'], [/куркум/i, '🟠'], [/чай/i, '🍵'], [/витамин/i, '☀️'], [/арник/i, '🌼'], [/мент/i, '🌿'],
@@ -914,10 +936,10 @@ const LANDING = {
   hyal: { eyebrow: '💧 Хиалуронова грижа', h1: ['Вечерна грижа за ', 'кожата около ставите', ''], h1sub: ['Хидратира и ', 'освежава още при нанасяне'] },
   beeherb: { eyebrow: '🌿 Билкови пластири BeeHerb', h1: ['Постави го и ', 'забрави', ' за 8 часа'], h1sub: ['Билкова топлина ', 'за колене, кръст и рамене'] },
   bvpatch: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Пчелна отрова ', 'в удобен пластир', ''], h1sub: ['Залепваш го и ', 'го носиш до 8 часа'], bg: true, bee: true },
-  tibet: { eyebrow: '🔥 Тибетска рецептура', h1: ['Приятна топлина ', 'за дълги часове', ''], h1sub: ['Шест вида отрови и билки ', 'в тънък пластир'] },
+  tibet: { eyebrow: '🔥 Тибетска рецептура', h1: ['Приятна топлина ', 'за дълги часове', ''], h1sub: ['Ментол, камфор, капсаицин и билка плаун ', 'в тънък пластир'] },
   vein: { eyebrow: '🌰 С конски кестен', h1: ['Леки и свежи ', 'крака', ' след дълъг ден'], h1sub: ['Вечерен ритуал ', 'от глезена нагоре'] },
   nail: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Здрав вид на ноктите ', 'без усилие', ''], h1sub: ['Два пъти на ден – ', 'напръскай и готово'], bee: true },
-  skin: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Спокойна и мека ', 'кожа', ' всеки ден'], h1sub: ['Пчелна отрова и чаено дърво ', 'за проблемна кожа'], bee: true },
+  skin: { eyebrow: '🐝 Серията BeeVenom с пчелна отрова', h1: ['Спокойна и мека ', 'кожа', ' всеки ден'], h1sub: ['Концентрирана формула с пчелна отрова ', 'за проблемна кожа'], bee: true },
   ghk: { eyebrow: '✨ Меден пептид GHK-Cu', h1: ['Подхранване за ', 'сухата и зрялата кожа', ''], h1sub: ['Меден пептид, лой и мед – ', 'като в старите рецепти'] },
   apetit: { eyebrow: '🍏 Пластири „Апетит“', h1: ['Малка помощ към ', 'балансираното хранене', ''], h1sub: ['Един пластир сутрин – ', 'и продължаваш деня си'] },
   berberin: { eyebrow: '🌿 Берберин в пластир', h1: ['Берберин ', 'без нито една таблетка', ''], h1sub: ['Залепваш сутрин – ', 'носиш до 8 часа'] },
@@ -954,7 +976,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '8eb9de808b54cb04f9d0f0cf374e73abf587e435';
+const ZN_MEDIA = '9d9ecc93c8705b629ba6ecd5b3175f3022b6cc0f';
 /* подаръкът за Черния петък: 12 пластира за стави и мускули (тъмната опаковка) */
 const GIFT_IMG = 'https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@103940907ddf691e09f3855c4c7dcbecf32c9093/landing/zdravets/media/gift-plastiri.webp';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
@@ -978,7 +1000,7 @@ const ZONES = [
 ];
 const zoneImg = z => znM(`${z.img}-600.webp`);
 /* Снимки на пакетите – всяка показва точния брой (pack-<продукт>-<брой>.webp в media/). */
-const PACK_IMG = { bf2: 'pack-gel-2.webp', bf5: 'pack-gel-5.webp', skin2: 'pack-skin-2.webp' };
+const PACK_IMG = { bf2: 'pack-gel-2.webp', bf5: 'pack-gel-5.webp', skin2: 'pack-skin-2.webp', skin3: 'pack-skin-3.webp', skin5: 'pack-skin-5.webp' };
 ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'nail', 'ghk'].forEach(id => { PACK_IMG[`${id}2`] = `pack-${id}-2.webp`; PACK_IMG[`${id}3`] = `pack-${id}-3.webp`; });
 BUNDLES.forEach(b => { if (b.media) b.img = znM(b.media); });const SCENES = ['spray', 'hyal', 'beeherb', 'bvpatch', 'tibet', 'vein', 'nail', 'skin', 'ghk',
   'apetit', 'berberin', 'energy', 'stress', 'nad', 'focus', 'mood', 'love'];
@@ -1414,14 +1436,23 @@ const Cart = {
 const isGift = i => i.productId === CONFIG.giftStoreId;
 const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.productId)).reduce((s, i) => s + (i.quantity || 1), 0);
 
-// По време на Черния петък подаръкът върви с всяка поръчка БЕЗ тази от 1 брой:
-// комплект (2 и повече в един продукт от магазина) или поне 2 броя общо в количката.
-const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean))
-  .concat(BUNDLES.filter(b => b.items.reduce((s, [, n]) => s + n, 0) > 1).map(b => b.store)); // комплектът „Грижа за тялото“ също носи подаръка
+// По време на Черния петък подаръкът върви с поръчка от GIFT_FROM (3) и повече броя общо:
+// 3 гела, 3 кутии, 5 гела, „Грижа за тялото“ (3 продукта), комплект от 3 вида пластири или 3 отделни продукта.
+// 2 броя (напр. 2 гела) са без подарък.
+const GIFT_FROM = CONFIG.giftFrom || 3;
+const STORE_UNITS = {};
+Object.values(PACKS).forEach(l => l.forEach(k => {
+  const b = k.bundle ? B(k.bundle) : null;
+  const m = /^(\d+)/.exec(k.label);
+  STORE_UNITS[k.store] = b ? b.items.reduce((s, [, n]) => s + n, 0) : (m ? +m[1] : 1);
+}));
+BUNDLES.forEach(b => { STORE_UNITS[b.store] = b.items.reduce((s, [, n]) => s + n, 0); }); // „Грижа за тялото“ = 3
+PATCH_COMBOS.forEach(c => { if (c.store) STORE_UNITS[c.store] = c.n });
+const unitsOf = store => STORE_UNITS[store] || 1;
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
-  return real.some(i => MULTI_STORES.includes(i.productId)) || real.reduce((n, i) => n + (i.quantity || 1), 0) >= 2;
+  return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
 }
 async function syncGift() {
   if (!CONFIG.giftStoreId || !cbReady()) return;
@@ -1671,11 +1702,11 @@ function renderProduct() {
             return `
           <label class="pack ${k.key === sel ? 'on' : ''}">${k.featured ? '<span class="flag">Най-избиран</span>' : ''}
             <input type="radio" name="pack" value="${k.key}" ${k.key === sel ? 'checked' : ''}>
-            <span class="pl"><b>${esc(k.label)}${gift ? ' + ' + GIFT_TEXT : ''}</b><span>${esc(sub)}</span></span>
+            <span class="pl"><b>${esc(k.label)}${gift && unitsOf(k.store) >= GIFT_FROM ? ' + ' + GIFT_TEXT : ''}</b><span>${esc(sub)}</span></span>
             <span class="pp-price">${fmt(k.price)}</span></label>`; }).join('')}</div>`
           : `<div class="buyrow"><span class="price big">${fmt(p.price)}</span>
              <div class="qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><input id="qty" type="number" min="1" max="20" value="1" aria-label="Количество"><button type="button" data-q="1" aria-label="Повече">+</button></div></div>`}
-        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък при 2 и повече броя до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
+        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък при ${GIFT_FROM} и повече броя до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
         <div class="buybox">
           <button class="btn btn-primary btn-lg btn-block" id="buynow" type="button">Купи сега — плащаш при получаване</button>
           <button class="btn btn-outline btn-block" id="addcart" type="button">Добави в количката</button>

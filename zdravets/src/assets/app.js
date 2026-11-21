@@ -111,14 +111,23 @@ const Cart = {
 const isGift = i => i.productId === CONFIG.giftStoreId;
 const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.productId)).reduce((s, i) => s + (i.quantity || 1), 0);
 
-// По време на Черния петък подаръкът върви с всяка поръчка БЕЗ тази от 1 брой:
-// комплект (2 и повече в един продукт от магазина) или поне 2 броя общо в количката.
-const MULTI_STORES = Object.values(PACKS).reduce((a, l) => a.concat(l.slice(1).map(k => k.store)), []).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean))
-  .concat(BUNDLES.filter(b => b.items.reduce((s, [, n]) => s + n, 0) > 1).map(b => b.store)); // комплектът „Грижа за тялото“ също носи подаръка
+// По време на Черния петък подаръкът върви с поръчка от GIFT_FROM (3) и повече броя общо:
+// 3 гела, 3 кутии, 5 гела, „Грижа за тялото“ (3 продукта), комплект от 3 вида пластири или 3 отделни продукта.
+// 2 броя (напр. 2 гела) са без подарък.
+const GIFT_FROM = CONFIG.giftFrom || 3;
+const STORE_UNITS = {};
+Object.values(PACKS).forEach(l => l.forEach(k => {
+  const b = k.bundle ? B(k.bundle) : null;
+  const m = /^(\d+)/.exec(k.label);
+  STORE_UNITS[k.store] = b ? b.items.reduce((s, [, n]) => s + n, 0) : (m ? +m[1] : 1);
+}));
+BUNDLES.forEach(b => { STORE_UNITS[b.store] = b.items.reduce((s, [, n]) => s + n, 0); }); // „Грижа за тялото“ = 3
+PATCH_COMBOS.forEach(c => { if (c.store) STORE_UNITS[c.store] = c.n });
+const unitsOf = store => STORE_UNITS[store] || 1;
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
-  return real.some(i => MULTI_STORES.includes(i.productId)) || real.reduce((n, i) => n + (i.quantity || 1), 0) >= 2;
+  return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
 }
 async function syncGift() {
   if (!CONFIG.giftStoreId || !cbReady()) return;
@@ -368,11 +377,11 @@ function renderProduct() {
             return `
           <label class="pack ${k.key === sel ? 'on' : ''}">${k.featured ? '<span class="flag">Най-избиран</span>' : ''}
             <input type="radio" name="pack" value="${k.key}" ${k.key === sel ? 'checked' : ''}>
-            <span class="pl"><b>${esc(k.label)}${gift ? ' + ' + GIFT_TEXT : ''}</b><span>${esc(sub)}</span></span>
+            <span class="pl"><b>${esc(k.label)}${gift && unitsOf(k.store) >= GIFT_FROM ? ' + ' + GIFT_TEXT : ''}</b><span>${esc(sub)}</span></span>
             <span class="pp-price">${fmt(k.price)}</span></label>`; }).join('')}</div>`
           : `<div class="buyrow"><span class="price big">${fmt(p.price)}</span>
              <div class="qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><input id="qty" type="number" min="1" max="20" value="1" aria-label="Количество"><button type="button" data-q="1" aria-label="Повече">+</button></div></div>`}
-        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък при 2 и повече броя до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
+        ${bfOn() && !gift ? `<div class="gift">🎁 Подарък при ${GIFT_FROM} и повече броя до 30 ноември: ${GIFT_TEXT.replace(' подарък', '')}</div>` : ''}
         <div class="buybox">
           <button class="btn btn-primary btn-lg btn-block" id="buynow" type="button">Купи сега — плащаш при получаване</button>
           <button class="btn btn-outline btn-block" id="addcart" type="button">Добави в количката</button>
