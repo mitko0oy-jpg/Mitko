@@ -78,7 +78,7 @@ function storeInfo(id) {
 /* ---------- лентата със съобщения ---------- */
 function announceHtml() {
   const msgs = [];
-  if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 3 гела + 12 пластира за ${fmt(B('bf3').price)} · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
+  if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 5 гела + ${12 * giftPacks(B('bf5'))} пластира за ${fmt(B('bf5').price)} + безплатна доставка · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
   if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 Над ${fmt(HALF_FROM)}: <b>безплатна доставка</b> и <b>всеки следващ продукт на половин цена</b>`);
   else {
     if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка над ${fmt(FREE_FROM)}`);
@@ -243,7 +243,7 @@ function drawCart(o) {
     ${dm ? `<div class="sp-ship${dm.done ? ' is-done' : ''}"><p>${dm.done ? '<span class="sp-ship__ok" aria-hidden="true">🎉</span>' : ICON.truck}<span>${dm.text}</span></p><div class="sp-ship__bar"><i style="width:${dm.pct}%"></i></div></div>` : ''}
     ${halfNote ? `<p class="sp-half-note">${esc(halfNote)}</p>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
-      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas()} 0,00 €</span></div></div></div>` : ''}
+      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: ${giftLabel(gift.quantity || 1)}</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas(gift.quantity || 1)} 0,00 €</span></div></div></div>` : ''}
     </div>
     ${offers.length
       ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави на половин цена</p>${offers.map(halfRow).join('')}</div>`

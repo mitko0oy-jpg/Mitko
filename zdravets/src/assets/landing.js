@@ -748,7 +748,7 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: 12 пластира за стави и мускули${giftWas()}</span>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: ${giftLabel(o.store ? giftPacksFor(o.store) : 1)}${giftWas(o.store ? giftPacksFor(o.store) : 1)}</span>` : ''}</span>
           <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : o.bft ? `<span class="sp-opt__bf">${BF_BLINK}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${packs ? bfTimer() : ''}
@@ -758,7 +758,7 @@ function productTop(p, d, ctx) {
       </div>` : ''}
       <div class="sp-qtyrow"${packs ? ' hidden' : ''}><span class="sp-lbl">Брой</span><div class="sp-qty sp-qty--lg"><button type="button" data-q="-1" aria-label="По-малко">−</button><span data-qty>1</span><button type="button" data-q="1" aria-label="Повече">+</button></div></div>
       ${addonSelect(p)}
-      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b>+ 12 пластира за стави и мускули подарък</b>${giftWas()} към тази поръчка – до 30 ноември</span></p>
+      ${bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b data-gift-what>+ 12 пластира за стави и мускули подарък</b><span data-gift-was>${giftWas()}</span> към тази поръчка – до 30 ноември</span></p>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${GIFT_FROM} или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
       <div class="sp-ctas">
         <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
@@ -828,6 +828,11 @@ function bindTop(root, p) {
     const earned = (x.kind === 'qty' ? qty : (x.units || 1)) >= GIFT_FROM, gy = $('[data-gift-yes]', top), gn = $('[data-gift-no]', top);
     if (gy) gy.hidden = !earned;
     if (gn) gn.hidden = earned;
+    if (gy && earned) { // 5 гела → 3 пакета пластири (36 бр.), иначе 1 пакет
+      const gp = x.store ? giftPacksFor(x.store) : 1, gw = $('[data-gift-what]', gy), gv = $('[data-gift-was]', gy);
+      if (gw) gw.textContent = `+ ${giftLabel(gp)} подарък`;
+      if (gv) gv.innerHTML = giftWas(gp);
+    }
     if (combo) {
       combo.hidden = x.kind !== 'combo';
       if (x.kind === 'combo') {

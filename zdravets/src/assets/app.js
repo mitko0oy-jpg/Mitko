@@ -32,7 +32,13 @@ const SHIP_FROM = Math.min(...CONFIG.shipping.filter(m => m.office).map(m => m.p
 const GIFT_TEXT = '12 пластира подарък';
 // подаръкът (тъмните пластири за стави) се продава и отделно – стойността му се показва задраскана до подаръка
 const GIFT_VALUE = (PRODUCTS.find(x => x.id === 'plastiri') || {}).price || 0;
-const giftWas = () => GIFT_VALUE ? ` <s class="gift-was">${fmt(GIFT_VALUE)}</s>` : '';
+const giftWas = (n = 1) => GIFT_VALUE ? ` <s class="gift-was">${fmt(GIFT_VALUE * n)}</s>` : '';
+// колко пакета пластири са подаръкът: обикновено 1, а към 5-те гела – 3 пакета (36 пластира) – `gift` в BUNDLES
+const giftPacks = b => ((b && b.gift) || []).reduce((s, [, n]) => s + n, 0);
+const GIFT_PACKS = {};
+BUNDLES.forEach(b => { if (giftPacks(b) > 1) GIFT_PACKS[b.store] = giftPacks(b); });
+const giftPacksFor = store => GIFT_PACKS[store] || 1;
+const giftLabel = n => n > 1 ? `${n} пакета пластири за стави (${12 * n} бр.)` : '12 пластира за стави и мускули';
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
 /* ---------- font size (за по-лесно четене) ---------- */
@@ -134,6 +140,10 @@ const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
   return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
+}
+// колко пакета подарък да има в количката: най-големият подарък сред комплектите в нея (5 гела → 3 пакета)
+function giftQty(items) {
+  return Math.max(1, ...(items || []).filter(i => !isGift(i)).map(i => GIFT_PACKS[i.productId] || 0));
 }
 /* ---------- „½ цена“: при поръчка над HALF_FROM всеки следващ продукт е на половин цена ----------
    Единичните продукти от HALF са „гъвкави“ бройки: на пълна цена остава най-евтиният набор от тях, с който
@@ -239,10 +249,10 @@ async function syncGiftNow() {
   if (!CONFIG.giftStoreId || !cbReady()) return;
   const o = await Cart.get();
   const items = o.items || [];
-  const gift = items.find(isGift), others = giftEarned(items);
-  if (bfOn() && others && !gift) await Cart.add(CONFIG.giftStoreId, 1);
+  const gift = items.find(isGift), others = giftEarned(items), need = giftQty(items);
+  if (bfOn() && others && !gift) await Cart.add(CONFIG.giftStoreId, need);
   else if (gift && (!others || !bfOn())) await Cart.remove(CONFIG.giftStoreId);
-  else if (gift && gift.quantity > 1) { await Cart.remove(CONFIG.giftStoreId); await Cart.add(CONFIG.giftStoreId, 1); }
+  else if (gift && (gift.quantity || 1) !== need) { await Cart.remove(CONFIG.giftStoreId); await Cart.add(CONFIG.giftStoreId, need); }
 }
 
 let countNow = 0;
@@ -298,7 +308,7 @@ async function addFlow({ store, qty = 1, go = false, btn = null, value = 0, cont
 // „Поотделно“: продуктите по редовна цена + подаръкът (пластирите се продават отделно) + доставката, ако е безплатна
 function separateParts(b) {
   const items = b.items.reduce((s, [id, q]) => s + P(id).price * q, 0);
-  const gift = bfOn() && b.gift && b.gift.length ? GIFT_VALUE : 0;
+  const gift = bfOn() && b.gift && b.gift.length ? GIFT_VALUE * giftPacks(b) : 0;
   const ship = b.freeShip && freeShipFor(b.price) ? SHIP_FROM : 0;
   return { items, gift, ship, total: items + gift + ship };
 }
@@ -378,7 +388,7 @@ function bundleCard(b) {
     <h3>${esc(b.title)}</h3>
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
-    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: 12 пластира за стави и мускули${giftWas()}</div>` : ''}
+    ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: ${giftLabel(giftPacks(b))}${giftWas(giftPacks(b))}</div>` : ''}
     <div class="pricebox">${b.prev && bfOn() ? `<span class="bf-blink">Черен петък</span> <span class="xprice">${fmt(b.prev)}</span> ` : ''}<span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
     <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${(sp => [`продуктите ${fmt(sp.items)}`, sp.gift ? `пластирите ${fmt(sp.gift)}` : '', sp.ship ? `доставка ${fmt(sp.ship)}` : ''].filter(Boolean).join(' + ') + (sp.gift || sp.ship ? ` = ${fmt(sp.total)}` : ''))(separateParts(b))} · <b>спестяваш ${fmt(save)}</b></div>
@@ -423,7 +433,7 @@ function renderBF() {
   if (!bfOn()) { const o = $('#bf-ended'); if (o) o.hidden = false; }
   const o = $('#offers'); if (o) o.innerHTML = BUNDLES.filter(b => b.bf !== false).map(bundleCard).join('');
   const rv = $('#reviews'); if (rv) rv.innerHTML = REVIEWS.map(reviewCard).join('');
-  track('ViewContent', { content_ids: ['bf3'], content_type: 'product', value: B('bf3').price, currency: 'EUR' });
+  track('ViewContent', { content_ids: ['bf5'], content_type: 'product', value: B('bf5').price, currency: 'EUR' });
 }
 
 function renderProducts() {
@@ -570,7 +580,7 @@ function renderCheckoutHelper() {
       ${dm ? `<div class="ship-progress${dm.done ? ' is-done' : ''}">${dm.done ? '🎉 ' : '🚚 '}${dm.text}${dm.done ? '' : `<div class="bar"><i style="width:${dm.pct}%"></i></div>`}</div>` : ''}
       ${halfNote ? `<p class="halfnote">${esc(halfNote)}</p>` : ''}
       ${up}
-      ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 пластира за стави и мускули) е в поръчката ти.</p>' : ''}`;
+      ${bfOn() && items.some(isGift) ? `<p class="giftnote">🎁 Подаръкът за Черния петък (${giftLabel(items.find(isGift).quantity || 1)}) е в поръчката ти.</p>` : ''}`;
     $$('[data-swap]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.remove(+b.dataset.swap); await Cart.add(b3.store, 1); })));
   }
   async function run(btn, fn) {
@@ -663,7 +673,15 @@ function renderCheckoutHelper() {
   // редът с подаръка във формата: без + и −
   function markGiftRow() {
     document.querySelectorAll('.payment-step-wrapper .cart-row').forEach(r => {
-      if (/Подарък:/.test(r.textContent)) { r.classList.add('zn-gift-row'); r.querySelectorAll('.number-pad,.cart-row-quantity').forEach(e => e.classList.add('zn-qty')); }
+      if (/Подарък:/.test(r.textContent)) {
+        r.classList.add('zn-gift-row'); r.querySelectorAll('.number-pad,.cart-row-quantity').forEach(e => e.classList.add('zn-qty'));
+        // броят е скрит, затова при повече от 1 пакет (5 гела → 3 пакета) го пишем до името
+        const inp = r.querySelector('input[type=number]'), n = inp ? Math.max(1, parseInt(inp.value, 10) || 1) : 1;
+        const name = r.querySelector('h1,h2,h3,h4,h5,h6');
+        let tag = r.querySelector('.zn-gift-n');
+        if (n > 1 && name) { if (!tag) { tag = document.createElement('b'); tag.className = 'zn-gift-n'; name.appendChild(tag); } tag.textContent = ` × ${n} пакета (${12 * n} бр.)`; }
+        else if (tag) tag.remove();
+      }
     });
   }
 
