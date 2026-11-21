@@ -152,6 +152,9 @@ const courier = createServer((req, res) => {
           { code: "5678", name: "София Център", address: { fullAddress: "гр. София, бул. Витоша 1", city: { name: "София" } }, isAPS: false },
           { code: "9012", name: "Пловдив Тракия", address: { fullAddress: "гр. Пловдив, ул. София 3", city: { name: "Пловдив" } }, isAPS: false },
         ] });
+      case "/speedy/location/site/csv/100":
+        res.writeHead(200, { "content-type": "text/csv; charset=utf-8" });
+        return res.end('id,countryId,mainSiteId,type,typeEn,name,nameEn,municipality,municipalityEn,region,regionEn,postCode\r\n68134,100,,гр.,gr.,СОФИЯ,SOFIA,СТОЛИЧНА,,СОФИЯ (СТОЛИЦА),,1000\r\n56784,100,,гр.,gr.,ПЛОВДИВ,PLOVDIV,ПЛОВДИВ,,ПЛОВДИВ,,4000\r\n7079,100,,гр.,gr.,БЯЛА,BYALA,БЯЛА,,РУСЕ,,7100\r\n7080,100,,гр.,gr.,БЯЛА,BYALA,БЯЛА,,ВАРНА,,9101\r\n4000,100,,с.,s.,"БЯЛА ЧЕРКВА",,"ПАВЛИКЕНИ",,"ВЕЛИКО ТЪРНОВО",,5220\r\n9,100,,с.,s.,БЕЗ КОД,,,,,,\r\n');
       case "/speedy/location/office":
         if (b.name) return json({ offices: [] });
         return json({ offices: [
@@ -1132,7 +1135,14 @@ test("checkout settings like Middleware: the link, couriers for /k.js, seen on t
   // Towns and villages with their post code for "до адрес" (the ones without a code are left out).
   const pl = await fetch(B + "/api/offices/places");
   assert.equal(pl.headers.get("access-control-allow-origin"), "*");
-  assert.deepEqual((await pl.json()).places, [["София", "1000", "София"], ["Пловдив", "4000", "Пловдив"], ["Бяла", "7100", "Русе"], ["Бяла", "9101", "Варна"]]);
+  // All of Speedy's places, with Econt's spelling where Econt knows the place.
+  assert.deepEqual((await pl.json()).places, [
+    ["София", "1000", "София", "гр."],
+    ["Пловдив", "4000", "Пловдив", "гр."],
+    ["Бяла", "7100", "Русе", "гр."],
+    ["Бяла", "9101", "Варна", "гр."],
+    ["Бяла Черква", "5220", "Велико Търново", "с."],
+  ]);
   // The script itself is served.
   const js = await fetch(B + "/k.js");
   assert.equal(js.status, 200);

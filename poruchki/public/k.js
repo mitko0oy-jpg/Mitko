@@ -365,8 +365,11 @@
       var s = x.n === t || x.n === alt ? 0 : x.n.indexOf(t) === 0 || (alt && x.n.indexOf(alt) === 0) ? 1 : x.n.indexOf(t) > 0 || (alt && x.n.indexOf(alt) > 0) ? 2 : -1;
       if (s >= 0) out.push({ x: x, s: s });
     }
+    var town = function (x) {
+      return /^гр/.test(x.p[3] || "") ? 0 : 1;
+    };
     out.sort(function (a, b) {
-      return a.s - b.s || a.x.n.length - b.x.n.length || (a.x.n < b.x.n ? -1 : 1);
+      return a.s - b.s || a.x.n.length - b.x.n.length || town(a.x) - town(b.x) || (a.x.n < b.x.n ? -1 : 1);
     });
     return out.slice(0, 12).map(function (r) {
       return r.x;
@@ -403,7 +406,7 @@
     }
     el.innerHTML = items
       .map(function (x, i) {
-        return '<button type="button" class="odk-opt" role="option" data-i="' + i + '"><b>' + esc(x.p[0]) + "</b><span>" + esc((x.p[2] ? "обл. " + x.p[2] + " · " : "") + "пощенски код " + x.p[1]) + "</span></button>";
+        return '<button type="button" class="odk-opt" role="option" data-i="' + i + '"><b>' + esc((x.p[3] ? x.p[3] + " " : "") + x.p[0]) + "</b><span>" + esc((x.p[2] ? "обл. " + x.p[2] + " · " : "") + "пощенски код " + x.p[1]) + "</span></button>";
       })
       .join("");
     var btns = el.querySelectorAll(".odk-opt");

@@ -400,31 +400,98 @@ export async function publicOffices(courier: "speedy" | "econt", automats = fals
     .map((o: any) => (o.automat ? [o.id, o.city, o.name, o.address, "a"] : [o.id, o.city, o.name, o.address]));
 }
 
+/** A CSV answer of Speedy (the full lists come as CSV), as rows of cells; the first row is the header. */
+async function speedyCsv(path: string, creds: Creds): Promise<string[][]> {
+  const res = await fetchImpl(speedyBase() + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8", Accept: "text/csv, application/json" },
+    body: JSON.stringify({ userName: creds.user, password: creds.pass, language: "BG" }),
+    signal: AbortSignal.timeout(25000),
+  });
+  const text = await res.text();
+  if (!res.ok || /^\s*\{/.test(text)) {
+    let msg = `грешка ${res.status}`;
+    try {
+      msg = JSON.parse(text)?.error?.message || msg;
+    } catch {}
+    throw fail(`Спиди: ${msg}`);
+  }
+  const rows: string[][] = [];
+  let row: string[] = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') (cell += '"'), i++;
+      else if (ch === '"') q = false;
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") row.push(cell), (cell = "");
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell), (cell = "");
+      if (row.some((c) => c !== "")) rows.push(row);
+      row = [];
+    } else cell += ch;
+  }
+  if (cell || row.length) (row.push(cell), rows.push(row));
+  return rows;
+}
+
+const niceCase = (s: string) =>
+  s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_m, a, b) => a + b.toUpperCase()) : s;
+
 /**
  * The towns and villages of Bulgaria with their post code, for the address fields of the shops' order forms (/k.js):
- * [name, post code, region]. From Econt's list (one post code per place), kept a week – it rarely changes.
+ * [name, post code, region, type ("гр." / "с.")]. All of Speedy's places (CSV), the names written as Econt writes
+ * them where Econt knows the place; Econt's list alone if Speedy does not answer. Kept a week – it rarely changes.
  * Speedy finds the same place by name + post code (speedySite), so the waybill goes through without an error.
  */
 export async function publicPlaces(): Promise<string[][]> {
-  let cached = await getSetting<{ at: number; list: string[][]; v?: number }>("econt_cities");
-  if (!cached || cached.v !== 1 || Date.now() - cached.at > 7 * 24 * 3600000) {
+  let cached = await getSetting<{ at: number; list: string[][]; v?: number }>("bg_places");
+  if (cached && cached.v === 2 && Date.now() - cached.at < 7 * 24 * 3600000) return cached.list;
+  const fromEcont = new Map<string, [string, string]>(); // ИМЕ|код → [име, област]
+  const econtList: string[][] = [];
+  try {
     const d = await econt("/Nomenclatures/NomenclaturesService.getCities.json", await credsFor("econt"), { countryCode: "BGR" });
-    const seen = new Set<string>();
-    const list: string[][] = [];
     for (const c of d?.cities || []) {
       const name = String(c?.name || "").trim();
       const code = String(c?.postCode || "").trim();
+      if (!name || !/^\d{4}$/.test(code)) continue;
       const region = String(c?.regionName || "").trim();
-      const key = `${name}|${code}`;
-      if (!name || !/^\d{4}$/.test(code) || seen.has(key)) continue;
-      seen.add(key);
-      list.push([name, code, region]);
+      fromEcont.set(`${name.toUpperCase()}|${code}`, [name, region]);
+      econtList.push([name, code, region, ""]);
     }
-    if (!list.length && cached) return cached.list; // keep last week's list rather than an empty one
-    cached = { at: Date.now(), list, v: 1 };
-    await setSetting("econt_cities", cached);
+  } catch (e) {
+    console.error("econt cities", e);
   }
-  return cached.list;
+  const list: string[][] = [];
+  try {
+    const rows = await speedyCsv("/location/site/csv/100", await credsFor("speedy"));
+    const head = (rows[0] || []).map((h) => h.trim().toLowerCase());
+    const col = (n: string) => head.indexOf(n);
+    const [iName, iCode, iRegion, iType] = [col("name"), col("postcode"), col("region"), col("type")];
+    if (iName >= 0 && iCode >= 0)
+      for (const r of rows.slice(1)) {
+        const name = String(r[iName] || "").trim();
+        const code = String(r[iCode] || "").trim();
+        if (!name || !/^\d{4}$/.test(code)) continue;
+        const known = fromEcont.get(`${name.toUpperCase()}|${code}`);
+        list.push([known ? known[0] : niceCase(name), code, known?.[1] || niceCase(String(r[iRegion] || "").trim()), String(iType >= 0 ? r[iType] || "" : "").trim()]);
+      }
+  } catch (e) {
+    console.error("speedy sites", e);
+  }
+  const seen = new Set<string>();
+  const out = (list.length ? list : econtList).filter((p) => {
+    const k = `${p[0].toUpperCase()}|${p[1]}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  if (!out.length) return cached?.list || []; // keep the last list rather than an empty one
+  cached = { at: Date.now(), list: out, v: 2 };
+  await setSetting("bg_places", cached);
+  return out;
 }
 
 export async function econtOffices(creds: Creds, query: string, limit = 30) {
