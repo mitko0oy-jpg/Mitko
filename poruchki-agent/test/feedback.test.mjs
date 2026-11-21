@@ -26,7 +26,9 @@ test("feedbackVariables: everyone hears three for the price of one first, five i
   assert.equal(a.main_pack, "3");
   assert.equal(a.main_offer, "три гела на цената на един – 15 евро и 90 цента");
   assert.equal(a.main_total, "20 евро и 40 цента");
-  assert.equal(a.alt_offer, "пет гела за 19 евро и 90 цента");
+  assert.equal(a.alt_offer, "за 4 евро повече – пет гела");
+  assert.equal(a.one_offer, "един гел – 9 евро и 90 цента");
+  assert.match(a.sums_text, /пет гела със златно мляко: 34 евро и 30 цента/);
   assert.equal(a.alt_total, "24 евро и 40 цента");
   assert.equal(a.site_one_price, "15 евро и 90 цента");
   assert.equal(a.gift_text, "дванайсет билкови лепенки");
@@ -61,7 +63,7 @@ test("a feedback call result is saved and sent to Mitko with the new order", asy
   assert.equal(r.feedback, "feedback/fb-1000");
   assert.equal((await store.get("feedback/fb-1000", { type: "json" })).reorderPack, "5");
   assert.match(messages[0], /ПОРЪЧА ОТНОВО/);
-  assert.match(messages[0], /пет гела за 19 евро и 90 цента.*24 евро и 40 цента/);
+  assert.match(messages[0], /Нова поръчка: пет гела \+ подарък дванайсет билкови лепенки · общо 24 евро и 40 цента/);
   assert.match(messages[0], /⭐ 5\/5/);
 });
 
@@ -81,4 +83,15 @@ test("a 'reorder' without a confirmed pack is flagged for checking, not sent as 
   await handleWebhook(deps, payload({ campaign: "feedback", order_key: "fb-test", test: "yes", order_number: "1000" }, { outcome: "reorder", reorder_pack: "none" }), NOW);
   assert.match(messages[0], /Може би иска поръчка/);
   assert.doesNotMatch(messages[0], /Нова поръчка/);
+});
+
+test("a reorder with add-ons shows what to enter and the real total", async () => {
+  const messages = [];
+  const deps = { store: memoryStore(), notify: async (t) => messages.push(t), config: {} };
+  const vars = feedbackVariables({ label: "1001", name: "Мария Иванова", deliveredAt: "2026-11-04T10:00:00Z", items: [{ name: "BeeVenom Care Gel", q: 1 }] }, NOW);
+  await handleWebhook(deps, payload(vars, { fb_outcome: "reorder", fb_reorder_pack: "3", fb_extras: "milk" }), NOW);
+  assert.match(messages[0], /Нова поръчка: три гела \+ златно мляко \+ подарък дванайсет билкови лепенки · общо 30 евро и 30 цента/);
+  messages.length = 0;
+  await handleWebhook(deps, payload({ ...vars, order_key: "fb-1002", order_number: "1002" }, { fb_outcome: "reorder", fb_reorder_pack: "1", fb_extras: "none" }), NOW);
+  assert.match(messages[0], /Нова поръчка: един гел · общо 14 евро и 40 цента/);
 });

@@ -14,8 +14,43 @@ export const FEEDBACK_OFFER = {
   packs: {
     3: { qty: 3, words: "три", price: 15.9, gift: "дванайсет билкови лепенки" },
     5: { qty: 5, words: "пет", price: 19.9, gift: "дванайсет билкови лепенки" },
+    // Only when the price is the problem or they want less (Mitko's offers sheet, 24.10).
+    1: { qty: 1, words: "един", price: 9.9, gift: "" },
+  },
+  // Add-ons after a pack is chosen: golden milk once; tea only if they say no to the milk.
+  extras: {
+    milk: { name: "златно мляко", price: 9.9 },
+    tea: { name: "чай с куркума, джинджифил и канела", price: 4.9 },
+    patches: { name: "отделна кутия билкови лепенки, дванайсет броя", price: 4.9 },
   },
 };
+
+const PACK_WORDS = { 3: "три гела", 5: "пет гела", 1: "един гел" };
+const EXTRA_WORDS = { milk: "със златно мляко", tea: "с чая", patches: "с още една кутия лепенки" };
+
+/** Pack + add-ons + delivery, rounded to cents. */
+export function feedbackTotal(pack, extras = [], o = FEEDBACK_OFFER) {
+  const p = o.packs[pack];
+  if (!p) return null;
+  const sum = p.price + o.delivery + extras.reduce((t, e) => t + (o.extras[e]?.price || 0), 0);
+  return Math.round(sum * 100) / 100;
+}
+
+/** Every total the agent may say, so it never adds up by itself. */
+function sumsText(o = FEEDBACK_OFFER) {
+  const out = [];
+  for (const pack of [3, 5, 1]) {
+    out.push(`${PACK_WORDS[pack]}: ${moneyBG(feedbackTotal(pack, [], o))}`);
+    for (const e of ["milk", "tea", "patches"]) out.push(`${PACK_WORDS[pack]} ${EXTRA_WORDS[e]}: ${moneyBG(feedbackTotal(pack, [e], o))}`);
+  }
+  return out.join("; ");
+}
+
+/** "milk, tea" / "мляко" / "none" → ["milk", "tea"] */
+export function parseExtras(text) {
+  const t = String(text || "").toLowerCase();
+  return ["milk", "tea", "patches"].filter((e) => t.includes(e) || (e === "milk" && /мляко/.test(t)) || (e === "tea" && /чай/.test(t)) || (e === "patches" && /лепенк|пластир/.test(t)));
+}
 
 /** How many tubes of gel the order had (1, 3 or 5), 0 when there was no gel. */
 export function gelTubes(items) {
@@ -90,7 +125,12 @@ function offerText(pack, o = FEEDBACK_OFFER) {
   const p = o.packs[pack];
   // Said as value against the shop's own price (bonus-pack framing), not as a list of numbers.
   // The gift is said once for both packs (gift_text), so each offer is short.
-  const text = pack === 3 && p.price === o.site.one ? `три гела на цената на един – ${moneyBG(p.price)}` : `${p.words} гела за ${moneyBG(p.price)}`;
+  const text =
+    pack === 3 && p.price === o.site.one
+      ? `три гела на цената на един – ${moneyBG(p.price)}`
+      : pack === 5
+        ? `за ${moneyBG(p.price - o.packs[3].price)} повече – пет гела`
+        : `един гел – ${moneyBG(p.price)}`;
   return {
     offer: text,
     total: moneyBG(p.price + o.delivery),
@@ -129,6 +169,13 @@ export function feedbackVariables(order, now = new Date()) {
     delivery_fee: moneyBG(FEEDBACK_OFFER.delivery),
     site_one_price: moneyBG(FEEDBACK_OFFER.site.one),
     gift_text: FEEDBACK_OFFER.packs[3].gift,
+    one_offer: offerText(1).offer,
+    one_total: offerText(1).total,
+    milk_offer: `${FEEDBACK_OFFER.extras.milk.name} – ${moneyBG(FEEDBACK_OFFER.extras.milk.price)}`,
+    tea_offer: `${FEEDBACK_OFFER.extras.tea.name} – ${moneyBG(FEEDBACK_OFFER.extras.tea.price)}`,
+    patches_offer: `${FEEDBACK_OFFER.extras.patches.name} – ${moneyBG(FEEDBACK_OFFER.extras.patches.price)}`,
+    extras_text: Object.values(FEEDBACK_OFFER.extras).map((e) => `${e.name} – ${moneyBG(e.price)}`).join("; "),
+    sums_text: sumsText(),
   };
 }
 
@@ -189,7 +236,7 @@ export function feedbackMessage(call) {
   const f = feedbackFields(call.fields);
   let outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
   // "Reorder" without a confirmed pack is not an order – Mitko must check the conversation.
-  if (outcome === "reorder" && !/[35]/.test(String(f.reorder_pack || ""))) outcome = "unclear_order";
+  if (outcome === "reorder" && !/[135]/.test(String(f.reorder_pack || ""))) outcome = "unclear_order";
   const lines = [];
   lines.push(`${v.test === "yes" ? "🧪 ТЕСТ · " : ""}💬 <b>Обратна връзка · ${esc(OUTCOME_LABEL[outcome] || `❓ ${outcome}`)}</b>`);
   lines.push(`Поръчка #${esc(v.order_number)} · ${esc(v.customer_name)} · получена ${esc(v.delivered_ago)}`);
@@ -199,10 +246,12 @@ export function feedbackMessage(call) {
   if (uses || rating) lines.push([uses && `🧴 ${uses}`, rating && `⭐ ${rating}/5`].filter(Boolean).join(" · "));
   if (f.feedback) lines.push(`🗣 ${esc(f.feedback)}`);
   if (f.usage) lines.push(`🕒 Как го ползва: ${esc(f.usage)}`);
-  const pack = String(f.reorder_pack || "").match(/[35]/)?.[0];
+  const pack = String(f.reorder_pack || "").match(/[135]/)?.[0];
   if (pack) {
-    const offer = pack === v.main_pack ? { o: v.main_offer, t: v.main_total } : { o: v.alt_offer, t: v.alt_total };
-    lines.push(`🛒 <b>Нова поръчка: ${esc(offer.o)} + подарък ${esc(v.gift_text || "лепенки")} · общо ${esc(offer.t)} с доставката</b>`);
+    const extras = parseExtras(f.extras);
+    const what = [PACK_WORDS[pack], ...extras.map((e) => FEEDBACK_OFFER.extras[e].name)].join(" + ");
+    const gift = FEEDBACK_OFFER.packs[pack].gift;
+    lines.push(`🛒 <b>Нова поръчка: ${esc(what)}${gift ? ` + подарък ${esc(gift)}` : ""} · общо ${esc(moneyBG(feedbackTotal(pack, extras)))} с доставката</b>`);
     lines.push(`🚚 ${esc(f.delivery_change || v.delivery_text)}${f.delivery_change ? " (НОВО)" : ""}`);
     lines.push("Въведи я в Middleware.");
   }

@@ -55,7 +55,8 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
   const agentOv = ov.conversation_config_override?.agent || {};
   await api("PATCH", `/v1/convai/agents/${inboundAgentId}`, {
     platform_settings: {
-      data_collection: { ...outDc, ...FEEDBACK_FIELDS, ...inDc },
+      // Our feedback fields last: a changed description replaces the old one.
+      data_collection: { ...outDc, ...inDc, ...FEEDBACK_FIELDS },
       overrides: {
         ...ov,
         enable_conversation_initiation_client_data_from_webhook: true,
