@@ -144,6 +144,13 @@ const courier = createServer((req, res) => {
           { code: "5678", name: "София Център", address: { fullAddress: "гр. София, бул. Витоша 1", city: { name: "София" } }, isAPS: false },
           { code: "9012", name: "Пловдив Тракия", address: { fullAddress: "гр. Пловдив, ул. София 3", city: { name: "Пловдив" } }, isAPS: false },
         ] });
+      case "/speedy/location/office":
+        if (b.name) return json({ offices: [] });
+        return json({ offices: [
+          { id: 141, name: "БОТЕВГРАД - СКЛАД", type: "OFFICE", address: { siteName: "БОТЕВГРАД", fullAddressString: "гр. БОТЕВГРАД жк Васил Левски" } },
+          { id: 5, name: "СОФИЯ - МЛАДОСТ", type: "OFFICE", address: { siteName: "СОФИЯ", fullAddressString: "гр. СОФИЯ жк Младост 1" } },
+          { id: 900, name: "АВТОМАТ СОФИЯ", type: "APT", address: { siteName: "СОФИЯ", fullAddressString: "гр. СОФИЯ ул. Тест" } },
+        ] });
       case "/econt/Shipments/LabelService.deleteLabels.json":
         return json({ results: [{ shipmentNum: b.shipmentNumbers[0], error: null }] });
       default:
@@ -1066,4 +1073,15 @@ test("warehouse: value and days left, a package takes 5, deliveries at the avera
   assert.match(csv, /Гел с пчелна отрова;137;1,2\d;/);
   d = (await api(`/api/stock/${id}`, { archived: true })).data;
   assert.equal((await api("/api/stock")).data.total.value, 0);
+});
+
+test("public office list for the shops' order forms: offices only, any shop may read it", async () => {
+  const e = await fetch(B + "/api/offices/econt");
+  assert.equal(e.status, 200);
+  assert.equal(e.headers.get("access-control-allow-origin"), "*");
+  const econt = (await e.json()).offices;
+  assert.deepEqual(econt[0], ["1234", "София", "София Осогово", "гр. София, ул. Осогово 2"]);
+  const speedy = (await (await fetch(B + "/api/offices/speedy")).json()).offices;
+  assert.deepEqual(speedy.map((o) => o[0]), ["141", "5"]); // no automat
+  assert.equal((await fetch(B + "/api/offices/dhl")).status, 404);
 });
