@@ -96,20 +96,21 @@ const Cart = {
       try { W().Store.Orders.get('cart', o => { clearTimeout(timer); resolve(o || { items: [] }); }); } catch (e) { clearTimeout(timer); resolve({ items: [] }); }
     });
   },
-  async add(storeId, qty = 1) {
+  // quiet = смяна на цената от сайта (½ цена): без събития към пиксела
+  async add(storeId, qty = 1, quiet = false) {
     const r = await req('getStoreProduct', { id: storeId });
     const p = r.data;
     const option = { productId: p.id, quantity: qty, combination: -1, variation: [], price: p.onSale ? p.salePrice : p.price };
     const r2 = await req('addToCart', { orderId: 'cart', option: JSON.stringify(option), process: 'cart' });
-    try { W().Store.reportAddToCart(r2.uid, p, option, W().Store.currency); } catch (e) {}
+    if (!quiet) try { W().Store.reportAddToCart(r2.uid, p, option, W().Store.currency); } catch (e) {}
     return setOrder(r2.data);
   },
-  async remove(storeId) {
+  async remove(storeId, quiet = false) {
     const o = await Cart.get();
     const index = (o.items || []).findIndex(i => i.productId === storeId);
     if (index < 0) return o;
     const r = await req('updateCart', { orderId: 'cart', products: '[]', type: 'remove', index });
-    try { W().Store.reportRemoveFromCart(o.items[index], W().Store.currency); } catch (e) {}
+    if (!quiet) try { W().Store.reportRemoveFromCart(o.items[index], W().Store.currency); } catch (e) {}
     return setOrder(r.data);
   }
 };
@@ -134,7 +135,107 @@ function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
   return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
 }
-async function syncGift() {
+/* ---------- „½ цена“: при поръчка над HALF_FROM всеки следващ продукт е на половин цена ----------
+   Единичните продукти от HALF са „гъвкави“ бройки: на пълна цена остава най-евтиният набор от тях, с който
+   поръчката минава прага, а всички останали бройки отиват на половин цена (скритите продукти в магазина).
+   Всичко друго (комплекти, бъмп оферти, уелнес пластири) се брои към прага със своята цена.             */
+const HALF_FROM = CONFIG.halfFrom || 0;
+const HALF_OF = {}, HALF_REG = {}; // ½ цена → редовен номер; редовен номер → ½ цена
+Object.keys(typeof HALF === 'object' ? HALF : {}).forEach(id => { const p = P(id); if (p && HALF[id]) { HALF_OF[HALF[id]] = p.store; HALF_REG[p.store] = HALF[id]; } });
+const halfOn = () => HALF_FROM > 0 && Object.keys(HALF_OF).length > 0;
+const isHalf = i => !!HALF_OF[i.productId];
+const halfPriceOf = p => Math.round(p.price * 50) / 100;
+const regProduct = store => PRODUCTS.find(x => x.store === store);
+const EPS = 0.005;
+function halfPlan(items) {
+  const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
+  let fixed = 0;
+  const units = [];
+  real.forEach(i => {
+    const reg = HALF_OF[i.productId] || (HALF_REG[i.productId] ? i.productId : 0);
+    if (reg) { const p = regProduct(reg); for (let k = 0; k < (i.quantity || 1); k++) units.push({ reg, price: p.price }); }
+    else fixed += +i.price || 0;
+  });
+  const all = units.reduce((s, u) => s + u.price, 0);
+  const unlocked = halfOn() && fixed + all >= HALF_FROM - EPS;
+  const need = HALF_FROM - fixed - EPS;
+  let keep = units.map(() => true);
+  if (unlocked) {
+    if (need <= 0) keep = units.map(() => false);
+    else if (units.length <= 14) {
+      let best = 0, bestSum = Infinity;
+      for (let m = 1; m < (1 << units.length); m++) {
+        let s = 0;
+        for (let k = 0; k < units.length; k++) if (m & (1 << k)) s += units[k].price;
+        if (s >= need && s < bestSum - 0.001) { best = m; bestSum = s; }
+      }
+      keep = units.map((u, k) => !!(best & (1 << k)));
+    } else {
+      // много бройки: най-скъпите остават на пълна цена, докато поръчката стигне прага
+      const order = units.map((u, k) => k).sort((a, b) => units[b].price - units[a].price);
+      keep = units.map(() => false);
+      let s = 0;
+      for (const k of order) { if (s >= need) break; keep[k] = true; s += units[k].price; }
+    }
+  }
+  const want = {}; // редовен номер → колко бройки на пълна и колко на половин цена
+  units.forEach((u, k) => { const w = want[u.reg] = want[u.reg] || { full: 0, half: 0 }; if (keep[k]) w.full++; else w.half++; });
+  const saved = units.reduce((s, u, k) => s + (keep[k] ? 0 : u.price - halfPriceOf(regProduct(u.reg))), 0);
+  return { want, unlocked, saved, left: unlocked ? 0 : Math.max(0, HALF_FROM - fixed - all) };
+}
+// бележка в количката, когато поръчката падне под прага и сайтът върне редовната цена
+let halfNote = '';
+async function syncHalf() {
+  if (!cbReady() || !Object.keys(HALF_OF).length) return false;
+  const items = (await Cart.get()).items || [];
+  const plan = halfPlan(items);
+  const had = items.some(isHalf);
+  const qtyOf = id => { const i = items.find(x => x.productId === id); return i ? (i.quantity || 1) : 0; };
+  let changed = false;
+  for (const reg of Object.keys(plan.want).map(Number)) {
+    const w = plan.want[reg], hs = HALF_REG[reg];
+    const full = qtyOf(reg), half = qtyOf(hs);
+    if (full !== w.full) { changed = true; if (full) await Cart.remove(reg, true); if (w.full) await Cart.add(reg, w.full, true); }
+    if (half !== w.half) { changed = true; if (half) await Cart.remove(hs, true); if (w.half) await Cart.add(hs, w.half, true); }
+  }
+  if (had && !plan.unlocked) halfNote = `Поръчката вече е под ${fmt(HALF_FROM)}, затова върнахме редовната цена. Добави още ${fmt(plan.left)} и пак получаваш половин цена.`;
+  else if (plan.unlocked || !Object.keys(plan.want).length) halfNote = '';
+  return changed;
+}
+// текстът над количката: колко остава до безплатната доставка и половин цена
+function dealsMsg(items) {
+  const sub = (items || []).filter(i => !isGift(i)).reduce((s, i) => s + (+i.price || 0), 0);
+  const plan = halfPlan(items);
+  if (!halfOn()) {
+    if (!FREE_FROM) return null;
+    const left = Math.max(0, FREE_FROM - sub);
+    return { done: !left, pct: Math.min(100, Math.round(sub / FREE_FROM * 100)), text: left ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>' };
+  }
+  const shipFree = FREE_FROM && sub >= FREE_FROM - EPS;
+  const same = FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01;
+  const pct = plan.unlocked ? 100 : Math.min(100, Math.round((HALF_FROM - plan.left) / HALF_FROM * 100));
+  let text;
+  if (plan.unlocked) text = `${shipFree ? '<b>Доставката до офис е безплатна</b>, а ' : ''}<b>всеки следващ продукт е на половин цена</b>${plan.saved > EPS ? ` · спестяваш <b>${fmt(plan.saved)}</b>` : ''}`;
+  else if (same) text = `Още <b>${fmt(plan.left)}</b> до <b>безплатна доставка</b> и <b>½ цена</b> на следващия продукт`;
+  else text = `${FREE_FROM && !shipFree ? `Още <b>${fmt(FREE_FROM - sub)}</b> до <b>безплатна доставка</b>. ` : ''}Още <b>${fmt(plan.left)}</b> до <b>½ цена</b> на следващия продукт`;
+  return { done: plan.unlocked, pct, text, plan };
+}
+// продуктите, които да предложим на половин цена: първо подходящите за поръчката, после останалите
+function halfOffers(items) {
+  if (!halfPlan(items).unlocked) return [];
+  const first = (typeof recs === 'function' ? recs(items) : []).filter(p => HALF[p.id]);
+  const inCart = (items || []).map(i => i.productId);
+  const giftIn = bfOn() && (items || []).some(isGift);
+  const rest = PRODUCTS.filter(p => HALF[p.id] && !first.includes(p) && !inCart.includes(p.store) && !inCart.includes(HALF[p.id]) && !BUMPS.some(b => b.id === p.id && inCart.includes(b.store)));
+  return first.concat(rest).filter(p => !(giftIn && p.id === 'plastiri'));
+}
+
+// syncGift се вика от много места (бутони, формата, таймер): изпълнява се едно след друго, за да не се
+// разминат две смени на количката (иначе ½ цена може да се добави два пъти)
+let syncChain = Promise.resolve();
+function syncGift() { const run = syncChain.then(syncGiftNow, syncGiftNow); syncChain = run.catch(() => {}); return run; }
+async function syncGiftNow() {
+  await syncHalf();
   if (!CONFIG.giftStoreId || !cbReady()) return;
   const o = await Cart.get();
   const items = o.items || [];
@@ -297,6 +398,11 @@ function bindAddButtons(root = ROOT) {
     const p = P(b.dataset.add);
     addFlow({ store: p.store, qty: 1, btn: b, value: p.price, contentId: p.id });
   }));
+  // „Добави на половин цена“ (количката и поръчката): скритият продукт с ½ цена; syncHalf проверява прага
+  $$('[data-add-half]', root).filter(fresh).forEach(b => b.addEventListener('click', () => {
+    const p = P(b.dataset.addHalf);
+    addFlow({ store: HALF[p.id], qty: 1, btn: b, value: halfPriceOf(p), contentId: p.id });
+  }));
   $$('[data-bundle]', root).filter(fresh).forEach(b => b.addEventListener('click', () => {
     const x = B(b.dataset.bundle);
     addFlow({ store: x.store, qty: 1, go: true, btn: b, value: x.price, contentId: x.id, bf: x.bf !== false });
@@ -449,7 +555,6 @@ function renderCheckoutHelper() {
       return;
     }
     document.documentElement.classList.remove('zn-cart-empty');
-    const total = main.reduce((s, i) => s + (+i.price || 0), 0); // цената на реда е вече по броя
     drawBumps(items);
     // по-изгоден комплект: 1 гел или 2 гела → 3 гела
     let up = '';
@@ -460,9 +565,10 @@ function renderCheckoutHelper() {
         <p>Вместо ${esc(from.title.replace(' за стави', ''))} за ${fmt(from.price)} вземи <b>3 гела</b> — само <b>+${fmt(b3.price - from.price)}</b>, около 6 седмици грижа без прекъсване.</p></div>
         <button class="btn btn-primary" type="button" data-swap="${from.store}">Да, искам 3 гела</button></div>`;
     }
-    const toFree = FREE_FROM - total;
+    const dm = dealsMsg(items);
     box.innerHTML = `
-      ${FREE_FROM ? `<div class="ship-progress">${toFree > 0 ? `Добави още ${fmt(toFree)} и доставката до офис е безплатна<div class="bar"><i style="width:${Math.min(100, total / FREE_FROM * 100)}%"></i></div>` : '🎉 Доставката до офис е безплатна'}</div>` : ''}
+      ${dm ? `<div class="ship-progress${dm.done ? ' is-done' : ''}">${dm.done ? '🎉 ' : '🚚 '}${dm.text}${dm.done ? '' : `<div class="bar"><i style="width:${dm.pct}%"></i></div>`}</div>` : ''}
+      ${halfNote ? `<p class="halfnote">${esc(halfNote)}</p>` : ''}
       ${up}
       ${bfOn() && items.some(isGift) ? '<p class="giftnote">🎁 Подаръкът за Черния петък (12 пластира за стави и мускули) е в поръчката ти.</p>' : ''}`;
     $$('[data-swap]', box).forEach(b => b.addEventListener('click', () => run(b, async () => { await Cart.remove(+b.dataset.swap); await Cart.add(b3.store, 1); })));
@@ -483,7 +589,11 @@ function renderCheckoutHelper() {
     let host = document.getElementById('zn-bumps');
     const ids = items.map(i => i.productId);
     const inBundles = BUNDLES.filter(b => ids.includes(b.store)).flatMap(b => b.items.map(x => x[0]));
-    const list = BUMPS.filter(b => !inBundles.includes(b.id) && !ids.includes(P(b.id).store));
+    // над прага: вместо бъмп офертите – до 3 продукта на половин цена (вече добавените стоят отметнати)
+    const unlocked = halfPlan(items).unlocked;
+    const halfList = unlocked ? PRODUCTS.filter(p => HALF[p.id] && ids.includes(HALF[p.id]) && !ids.includes(p.store))
+      .concat(halfOffers(items)).slice(0, 3).map(p => ({ id: p.id, store: HALF[p.id], price: halfPriceOf(p), title: p.shortName, text: p.short, half: true })) : [];
+    const list = (unlocked ? BUMPS.filter(b => ids.includes(b.store)) : BUMPS.filter(b => !inBundles.includes(b.id) && !ids.includes(P(b.id).store))).concat(halfList);
     if (!btns || !items.some(i => !isGift(i)) || !list.length) { if (host) host.remove(); return; }
     if (!host || host.nextElementSibling !== btns) {
       if (host) host.remove();
@@ -491,16 +601,16 @@ function renderCheckoutHelper() {
       host.id = 'zn-bumps';
       btns.parentElement.insertBefore(host, btns);
     }
-    host.innerHTML = `<p class="zn-bumps-title">Специално само към тази поръчка:</p>` + list.map(b => {
+    host.innerHTML = `<p class="zn-bumps-title">${halfList.length ? `Поръчката ти е над ${fmt(HALF_FROM)} – добави на <b>половин цена</b>:` : 'Специално само към тази поръчка:'}</p>` + list.map(b => {
       const p = P(b.id), on = ids.includes(b.store);
-      return `<div class="zn-bump${on ? ' on' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-bump="${b.id}">
-        <span class="zn-bump-head"><span class="zn-box" aria-hidden="true"></span><span>Да, добави <b>${esc(b.title)}</b> за <b class="zn-price">${fmt(b.price)}</b> <s>${fmt(p.price)}</s></span></span>
-        <span class="zn-bump-body"><img src="${p.img}" alt=""><span>${esc(b.text)}</span></span></div>`;
+      return `<div class="zn-bump${on ? ' on' : ''}${b.half ? ' zn-bump--half' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-bump="${b.id}" data-store="${b.store}">
+        <span class="zn-bump-head"><span class="zn-box" aria-hidden="true"></span><span>Да, добави <b>${esc(b.title)}</b> за <b class="zn-price">${fmt(b.price)}</b> <s>${fmt(p.price)}</s>${b.half ? ' <span class="zn-off">−50%</span>' : ''}</span></span>
+        <span class="zn-bump-body"><img src="${productLook(p).img}" alt=""><span>${b.half ? 'Половин цена само към тази поръчка. Идва в същата пратка.' : esc(b.text)}</span></span></div>`;
     }).join('');
     host.querySelectorAll('[data-bump]').forEach(el => {
       const toggle = async () => {
         if (working) return;
-        const b = BUMPS.find(x => x.id === el.dataset.bump), on = el.getAttribute('aria-checked') === 'true';
+        const b = { store: +el.dataset.store }, on = el.getAttribute('aria-checked') === 'true';
         working = true; el.classList.add('busy');
         try { if (on) await Cart.remove(b.store); else await Cart.add(b.store, 1); await syncGift(); }
         catch (e) { toast('Не се получи. Опитай пак или се обади:', true); }
@@ -603,7 +713,8 @@ function renderThanks() {
    поръчка и води към следващата стъпка. Ако нашият код не тръгне, неговите бутони си остават.  */
 const JOINT_FREE = [...PRODUCTS.filter(p => p.cat !== 'stavi').map(p => p.store),
   ...Object.entries(PACKS).filter(([k]) => k !== 'gel').flatMap(([, v]) => v.map(x => x.store)),
-  ...BUNDLES.filter(b => !b.items.some(x => (P(x[0]) || {}).cat === 'stavi')).map(b => b.store)];
+  ...BUNDLES.filter(b => !b.items.some(x => (P(x[0]) || {}).cat === 'stavi')).map(b => b.store),
+  ...Object.keys(HALF).filter(id => P(id) && P(id).cat !== 'stavi').map(id => HALF[id])]; // ½ цена на продукт не за ставите
 function renderUpsell() {
   const box = $('#ups');
   if (!box) return;
@@ -650,7 +761,7 @@ function renderUpsell() {
       const no = o && (o.no || o.number || o.orderNumber || o.id);
       if (no) $$('[data-order-no]').forEach(e => { e.textContent = ` (№ ${no})`; });
       const ids = ((o && (o.items || o.products)) || []).map(i => +i.productId).filter(id => id && id !== CONFIG.giftStoreId);
-      const has = ids.some(id => id === p.store || id === UPSELL.store);
+      const has = ids.some(id => id === p.store || id === UPSELL.store || id === HALF_REG[p.store]);
       const noJoints = ids.length && ids.every(id => JOINT_FREE.includes(id));
       if (has || noJoints) { box.classList.add('is-skip'); (function skip(k) { if (native(false)) press(false, true); else if (k < 40) setTimeout(() => skip(k + 1), 250); })(0); }
     }).catch(() => {});

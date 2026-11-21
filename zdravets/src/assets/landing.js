@@ -371,6 +371,7 @@ function renderLanding(p) {
       </div>
       <div class="bv-packs bv-packs--n${packs ? packs.length : 1}${packs ? '' : ' bv-packs--one'}">${landingOffers(p, d)}</div>
       ${packs ? bfTimer() : ''}
+      ${halfOn() ? `<p class="bv-half">🛒 <span>При поръчка над <b>${fmt(HALF_FROM)}</b>${FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01 ? ' – безплатна доставка до офис и' : ' –'} <b>всеки следващ продукт е на половин цена</b>. Добавяш го направо от количката.</span></p>` : ''}
       <div class="bv-pay"><span>🔒 Без данни за карта в сайта</span><span>💶 Наложен платеж</span><span>🛡️ ${days} дни гаранция</span></div>
     </div>
   </section>`;

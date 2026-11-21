@@ -39,3 +39,8 @@
 .zn-bump.on .zn-bump-head{background:#e7efdc}
 .zn-bump.busy{opacity:.55;pointer-events:none}
 @media(max-width:480px){.zn-bump-head{font-size:17px;padding:12px;gap:10px}.zn-bump-body{font-size:16px;padding:10px 12px}.zn-bump-body img{width:60px;height:60px;flex-basis:60px}}
+
+/* „½ цена“ в поръчката */
+.zn-bump--half{border-color:#2E7D32}
+.zn-bump--half .zn-bump-head{background:#EAF4E4}
+.zn-off{display:inline-block;padding:1px 8px;border-radius:999px;background:#b3261e;color:#fff;font-weight:800;font-size:14px;vertical-align:2px}

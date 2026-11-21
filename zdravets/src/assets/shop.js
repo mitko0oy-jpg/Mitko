@@ -55,6 +55,7 @@ async function syncCombos() {
 
 /* ---------- всичко в количката по номера в магазина ---------- */
 function storeInfo(id) {
+  if (HALF_OF[id]) { const hp = regProduct(HALF_OF[id]); return { name: hp.name, img: productLook(hp).img, url: productUrl(hp.id), p: hp, half: true }; }
   const p = PRODUCTS.find(x => x.store === id);
   if (p) return { name: p.name, img: productLook(p).img, url: productUrl(p.id), p };
   for (const key of Object.keys(PACKS)) {
@@ -64,7 +65,7 @@ function storeInfo(id) {
   const b = BUNDLES.find(x => x.store === id);
   if (b) return { name: b.title, img: b.img || (b.collage && b.collage[0][0]) || P('gel').img };
   const bump = BUMPS.find(x => x.store === id);
-  if (bump) return { name: bump.title, img: productLook(P(bump.id)).img, url: productUrl(bump.id) };
+  if (bump) return { name: bump.title, img: productLook(P(bump.id)).img, url: productUrl(bump.id), p: P(bump.id) };
   if (id === UPSELL.store) return { name: P(UPSELL.product).name, img: productLook(P(UPSELL.product)).img };
   if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 пластира за стави и мускули', img: GIFT_IMG, gift: true };
   const c = comboOf(id);
@@ -78,7 +79,11 @@ function storeInfo(id) {
 function announceHtml() {
   const msgs = [];
   if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 3 гела + 12 пластира за ${fmt(B('bf3').price)} · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
-  if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка над ${fmt(FREE_FROM)}`);
+  if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 Над ${fmt(HALF_FROM)}: <b>безплатна доставка</b> и <b>всеки следващ продукт на половин цена</b>`);
+  else {
+    if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка над ${fmt(FREE_FROM)}`);
+    if (halfOn()) msgs.push(`🛒 Над ${fmt(HALF_FROM)} <b>всеки следващ продукт е на половин цена</b>`);
+  }
   msgs.push(`💶 Плащаш при получаване · 🛡️ <b>${CONFIG.guaranteeDays} дни гаранция</b>`);
   msgs.push(`📞 Поръчка и по телефона: <a href="tel:${CONFIG.phoneHref}"><b>${CONFIG.phone}</b></a>`);
   return `<div class="sp-announce" role="region" aria-label="Съобщения"><div class="sp-announce__in">${msgs.map((m, i) => `<p class="${i ? '' : 'on'}">${m}</p>`).join('')}</div></div>`;
@@ -216,8 +221,8 @@ function drawCart(o) {
     bindAddButtons(body);
     return;
   }
-  const left = FREE_FROM ? Math.max(0, FREE_FROM - sub) : 0;
-  const pct = FREE_FROM ? Math.min(100, Math.round(sub / FREE_FROM * 100)) : 100;
+  const dm = dealsMsg(items);
+  const offers = halfOffers(items).slice(0, 3);
   const line = i => {
     const info = storeInfo(i.productId);
     const c = info.combo;
@@ -226,17 +231,21 @@ function drawCart(o) {
       <a class="sp-line__img"${info.url ? ` href="${info.url}"` : ''}><img src="${info.img}" alt="" width="84" height="84" loading="lazy"></a>
       <div class="sp-line__txt"><b>${esc(info.name || i.title)}</b>
         ${c ? `<small>${parts.map(esc).join(' · ')}</small>` : ''}
+        ${info.half ? `<small class="sp-half-tag">½ цена – поръчката е над ${fmt(HALF_FROM)}</small>` : ''}
         <div class="sp-line__row">${c ? '<span class="sp-line__fixed">1 комплект</span>' : `<div class="sp-qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><span>${i.quantity || 1}</span><button type="button" data-q="1" aria-label="Повече">+</button></div>`}
-          <span class="sp-line__price">${fmt(+i.price || 0)}</span></div>
+          <span class="sp-line__price">${info.half ? `<s>${fmt(info.p.price * (i.quantity || 1))}</s> ` : ''}${fmt(+i.price || 0)}</span></div>
         <button class="sp-line__rm" type="button" data-rm>${ICON.trash} Премахни</button></div></div>`;
   };
   const gift = items.find(isGift);
   body.innerHTML = `
-    ${FREE_FROM ? `<div class="sp-ship"><p>${ICON.truck}<span>${left > 0 ? `Още <b>${fmt(left)}</b> до <b>безплатна доставка</b> до офис` : '<b>Доставката до офис е безплатна!</b>'}</span></p><div class="sp-ship__bar"><i style="width:${pct}%"></i></div></div>` : ''}
+    ${dm ? `<div class="sp-ship${dm.done ? ' is-done' : ''}"><p>${dm.done ? '<span class="sp-ship__ok" aria-hidden="true">🎉</span>' : ICON.truck}<span>${dm.text}</span></p><div class="sp-ship__bar"><i style="width:${dm.pct}%"></i></div></div>` : ''}
+    ${halfNote ? `<p class="sp-half-note">${esc(halfNote)}</p>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
       ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: 12 пластира за стави и мускули</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas()} 0,00 €</span></div></div></div>` : ''}
     </div>
-    <div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${recs(items).slice(0, 2).map(recRow).join('')}</div>`;
+    ${offers.length
+      ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави на половин цена</p>${offers.map(halfRow).join('')}</div>`
+      : `<div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${halfOn() ? `<p class="sp-recs__hint">Над ${fmt(HALF_FROM)} всеки следващ продукт е на <b>половин цена</b>.</p>` : ''}${recs(items).slice(0, 2).map(recRow).join('')}</div>`}`;
   foot.innerHTML = `
     <div class="sp-total"><span>Междинна сума</span><b>${fmt(sub)}</b></div>
     <p class="sp-note">Доставката (от ${fmt(SHIP_FROM)}) избираш в следващата стъпка.</p>
@@ -273,7 +282,7 @@ function recs(items) {
   const has = p => ids.includes(p.store);
   const inCart = items.map(i => storeInfo(i.productId).p).filter(Boolean);
   let pool;
-  if (inCart.some(p => p.cat === 'stavi')) pool = ['bvpatch', 'beeherb', 'spray', 'hyal'];
+  if (inCart.some(p => p.cat === 'stavi')) pool = ['gel', 'spray', 'hyal', 'bvpatch', 'beeherb'];
   else if (inCart.some(p => p.wellness)) pool = PRODUCTS.filter(p => p.wellness).map(p => p.id);
   else if (inCart.some(p => p.cat === 'kraka' || p.cat === 'koja')) pool = ['vein', 'nail', 'skin', 'ghk'];
   else pool = ['gel', 'beeherb', 'vein', 'skin'];
@@ -281,13 +290,21 @@ function recs(items) {
   // първи са тези, с които поръчката стига безплатната доставка
   const sub = items.filter(i => !isGift(i)).reduce((t, i) => t + (+i.price || 0), 0);
   const left = FREE_FROM && sub > 0 ? FREE_FROM - sub : 0;
-  const list = pool.map(P).filter(p => p && !has(p) && !inCart.includes(p) && !(bfOn() && items.some(isGift) && p.id === 'beeherb'));
-  return left > 0 ? list.slice().sort((x, y) => (fromPrice(y) >= left) - (fromPrice(x) >= left)) : list;
+  const list = pool.map(P).filter(p => p && !has(p) && !inCart.includes(p) && !(bfOn() && items.some(isGift) && p.id === 'plastiri'));
+  return left > 0 ? list.slice().sort((x, y) => (y.price >= left) - (x.price >= left)) : list;
 }
+// под прага: 1 бр. по редовна цена (бутонът добавя направо, без да води към страницата)
 function recRow(p) {
   const lk = productLook(p);
-  return `<div class="sp-rec"><a href="${productUrl(p.id)}"><img src="${lk.img}" alt="" width="60" height="60" loading="lazy"></a><div><a href="${productUrl(p.id)}"><b>${esc(p.shortName)}</b></a><small>${p.packs ? 'от ' : ''}${fmt(fromPrice(p))}</small></div>
-    ${p.packs ? `<a class="sp-rec__add" href="${productUrl(p.id)}">Виж</a>` : `<button class="sp-rec__add" type="button" data-add="${p.id}">+ Добави</button>`}</div>`;
+  const one = p.wellness && comboReady() ? null : p.price;
+  return `<div class="sp-rec"><a href="${productUrl(p.id)}"><img src="${lk.img}" alt="" width="60" height="60" loading="lazy"></a><div><a href="${productUrl(p.id)}"><b>${esc(p.shortName)}</b></a><small>${one ? fmt(one) : `от ${fmt(fromPrice(p))}`}</small></div>
+    ${one ? `<button class="sp-rec__add" type="button" data-add="${p.id}">+ Добави</button>` : `<a class="sp-rec__add" href="${productUrl(p.id)}">Виж</a>`}</div>`;
+}
+// над прага: същият продукт на половин цена
+function halfRow(p) {
+  const lk = productLook(p);
+  return `<div class="sp-rec sp-rec--half"><a href="${productUrl(p.id)}"><img src="${lk.img}" alt="" width="60" height="60" loading="lazy"></a><div><a href="${productUrl(p.id)}"><b>${esc(p.shortName)}</b></a><small><s>${fmt(p.price)}</s> <b class="sp-half__now">${fmt(halfPriceOf(p))}</b> <span class="sp-half__off">−50%</span></small></div>
+    <button class="sp-rec__add sp-rec__add--half" type="button" data-add-half="${p.id}">+ Добави</button></div>`;
 }
 
 /* ---------- картата на продукта (магазин, начало, търсене) ---------- */

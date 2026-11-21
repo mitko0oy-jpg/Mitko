@@ -932,3 +932,7 @@
 .bvp .bv-banner{margin:28px auto 0;max-width:1100px}
 .bvp .bv-banner img{display:block;width:100%;height:auto;border-radius:24px;box-shadow:0 18px 40px -22px rgba(60,30,10,.45)}
 .bvp .bv-uses__note{margin:18px auto 0;max-width:760px;font-size:.95em;color:var(--muted,#6B5A48)}
+
+/* „½ цена“ под пакетите */
+.bvp .bv-half{display:flex;gap:10px;align-items:flex-start;max-width:760px;margin:26px auto 0;padding:14px 18px;border-radius:16px;background:#EEF6EA;border:2px solid #9BCB8C;color:#17301a;font-weight:600;font-size:calc(var(--fs) * 0.95);line-height:1.45;text-align:left}
+.bvp .bv-half b{font-weight:800}

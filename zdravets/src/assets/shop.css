@@ -42,6 +42,9 @@ a{color:var(--sp-acc)}
 .box h2 .n{background:linear-gradient(180deg,#FFC24A,var(--sp-honey-d))}
 .ship-progress{background:#FFF3DA}
 .ship-progress .bar i{background:linear-gradient(90deg,var(--sp-honey),var(--sp-honey-d))}
+.ship-progress{font-size:1.02rem;line-height:1.45}
+.ship-progress.is-done{background:#EEF6EA;color:#17301a}
+.co-helper .halfnote{background:#FFF1EF;border:1px solid #F3C2BC;border-radius:12px;padding:12px 14px;font-weight:700;color:#7A1A12}
 .toast{background:var(--sp-night)}
 .bf-band{background:radial-gradient(70% 120% at 80% 50%,#4A2E0C 0%,var(--sp-night) 70%)}
 .mbar{display:none!important}
@@ -140,6 +143,21 @@ body{padding-bottom:0}
 .sp-ship svg,.sp-eta svg{width:24px;height:24px;flex:none;fill:none;stroke:#B86400;stroke-width:1.8}
 .sp-ship__bar{height:9px;border-radius:999px;background:#F3E3C2;overflow:hidden}
 .sp-ship__bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--sp-honey),var(--sp-green));transition:width .6s}
+/* „½ цена“: лентата над количката, редовете с половин цена и предложенията */
+.sp-ship.is-done{background:#EEF6EA;border-color:#B9D9AE}
+.sp-ship.is-done .sp-ship__bar{display:none}
+.sp-ship.is-done p{margin:0}
+.sp-ship__ok{font-size:1.3rem;line-height:1;flex:none}
+.sp-half-note{margin:-6px 0 14px;padding:10px 12px;border-radius:12px;background:#FFF1EF;border:1px solid #F3C2BC;color:#7A1A12;font-weight:700;font-size:.88rem;line-height:1.4}
+.sp-half-tag{display:inline-block!important;margin-top:6px!important;padding:3px 10px;border-radius:999px;background:#EEF6EA;color:#1F5E23!important;font-weight:800;font-size:.78rem!important}
+.sp-line__price s,.sp-rec s{color:var(--sp-muted);font-weight:700;font-size:.85em;margin-right:4px}
+.sp-recs__hint{margin:-2px 0 10px;font-size:.88rem;font-weight:700;color:var(--sp-ink2)}
+.sp-recs--half .sp-recs__lbl{color:#1F5E23}
+.sp-rec--half{border:2px solid #9BCB8C;background:#F7FBF4}
+.sp-half__now{display:inline!important;color:var(--sp-red-d);font-size:1rem}
+.sp-half__off{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;background:var(--sp-red-d);color:#fff;font-weight:800;font-size:.75rem}
+.sp-rec__add--half{border-color:#2E7D32;background:#2E7D32;color:#fff}
+.sp-rec__add--half:hover{background:#1F5E23;border-color:#1F5E23}
 .sp-lines{display:grid;gap:4px}
 .sp-line{display:grid;grid-template-columns:84px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--sp-line);transition:opacity .2s}
 .sp-line.is-busy{opacity:.45;pointer-events:none}
