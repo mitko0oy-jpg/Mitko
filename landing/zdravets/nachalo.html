@@ -1441,6 +1441,8 @@ async function openCart() {
   const d = $('.sp-drawer');
   showPanel(d);
   $('.sp-drawer__body', d).innerHTML = '<p class="sp-drawer__loading">Зареждаме количката…</p>';
+  // количка от по-рано (напр. отпреди правилото за ½ цена): цените се оправят, преди да я покажем
+  try { await syncGift(); } catch (e) {}
   drawCart(await Cart.get());
 }
 function drawCart(o) {
