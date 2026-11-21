@@ -7,6 +7,7 @@ import { readPostCall } from "./elevenlabs.mjs";
 import { upsellFor } from "./upsell.mjs";
 import { orderKey, getSettings } from "./store.mjs";
 import { handleFeedbackCall } from "./feedback.mjs";
+import { runFeedbackQueue } from "./feedback-queue.mjs";
 import { NO_ANSWER_MIN } from "./callback.mjs";
 
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
@@ -196,7 +197,14 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
     return { ignored: type };
   }
 
-  if (call?.variables?.campaign === "feedback") return handleFeedbackCall(deps, call, now);
+  if (call?.variables?.campaign === "feedback") {
+    const r = await handleFeedbackCall(deps, call, now);
+    // One after another: the next customer is called as soon as this result is in.
+    if (call.variables.test !== "yes" && deps.call) {
+      r.next = (await runFeedbackQueue(deps, now).catch((err) => ({ feedback: `error: ${err.message}` }))).feedback;
+    }
+    return r;
+  }
 
   let key = call?.variables?.order_key;
   if (!key && conversationId) key = (await store.get(`conv/${conversationId}`, { type: "json" }))?.key;

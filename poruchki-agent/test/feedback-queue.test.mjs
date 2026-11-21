@@ -109,9 +109,9 @@ test("the queue: one call at a time, no answer → once more an hour later, answ
   assert.equal(d.calls[0].to, "+359888123456");
   assert.equal(d.calls[0].variables.order_key, "fb-1649");
   // Still ringing: nothing else starts.
-  assert.equal((await runFeedbackQueue(d, min(3))).feedback, "call in progress");
+  assert.equal((await runFeedbackQueue(d, min(1))).feedback, "call in progress");
 
-  // Not answered after 5+ minutes → back on the queue for later; 1641 goes next.
+  // Not answered after 2+ minutes (the next tick) → back on the queue for later; 1641 goes next.
   assert.match((await runFeedbackQueue(d, min(6))).feedback, /calling #1641/);
   assert.equal((await d.store.get("fb-1649", { type: "json" })).status, "waiting");
 
@@ -136,8 +136,10 @@ test("the queue: one call at a time, no answer → once more an hour later, answ
     },
   }, min(13));
   assert.equal((await d.store.get("fb-1641", { type: "json" })).status, "done");
-  assert.match(d.messages.at(-1), /ПОРЪЧА ОТНОВО/);
-  assert.match(d.messages.at(-1), /пакет от три гела.*20 евро и 40 цента/);
+  assert.match(d.messages.find((m) => /ПОРЪЧА ОТНОВО/.test(m)) || "", /ПОРЪЧА ОТНОВО/);
+  assert.match(d.messages.find((m) => /ПОРЪЧА ОТНОВО/.test(m)), /пакет от три гела.*20 евро и 40 цента/);
+  // 1649 waits for its retry hour, so the result did not start another call.
+  assert.equal(d.calls.length, 2);
 
   // 1649 is not called again before the hour is up, then once more.
   assert.equal((await runFeedbackQueue(d, min(30))).feedback, "waiting for retries");
@@ -193,4 +195,33 @@ test("feedbackVariables still works for the old list format (deliveredAt)", () =
   const v = feedbackVariables({ label: "1", name: "Мария Иванова", deliveredAt: "2026-11-07T10:00:00Z", items: [{ name: "BeeVenom Care Gel", q: 1 }] }, T0);
   assert.equal(v.delivered_ago, "преди около две седмици");
   assert.equal(v.bought_text, "гела с пчелна отрова – една туба");
+});
+
+test("one after another: the next customer is called as soon as a result arrives", async () => {
+  const d = deps();
+  await prepareFeedback(d, "1649 1641", T0);
+  await startFeedback(d, T0);
+  await runFeedbackQueue(d, T0); // calls 1649
+  await d.store.setJSON("pending/359888123456", { variables: d.calls[0].variables, script: "feedback", at: T0.toISOString() });
+  const init = await initiationData({ store: d.store, body: { caller_id: "+442045775777", conversation_id: "conv_a" }, outboundScript: async () => null, now: min(0.5) });
+  const r = await handleWebhook(d, {
+    type: "post_call_transcription",
+    data: {
+      conversation_id: "conv_a",
+      conversation_initiation_client_data: { dynamic_variables: init.response.dynamic_variables },
+      analysis: { data_collection_results: { fb_outcome: { value: "declined" } } },
+      transcript: [{ role: "user", message: "Не, благодаря." }],
+    },
+  }, min(3));
+  assert.match(r.next, /calling #1641/);
+  assert.equal(d.calls.length, 2);
+  assert.equal(d.calls[1].to, "+359899111222");
+});
+
+test("a test call's result does not start the queue", async () => {
+  const d = deps();
+  await prepareFeedback(d, "1649", T0);
+  await startFeedback(d, T0);
+  await handleWebhook(d, { type: "post_call_transcription", data: { conversation_id: "c", conversation_initiation_client_data: { dynamic_variables: { campaign: "feedback", test: "yes", order_key: "test" } }, analysis: {}, transcript: [] } }, T0);
+  assert.equal(d.calls.length, 0);
 });

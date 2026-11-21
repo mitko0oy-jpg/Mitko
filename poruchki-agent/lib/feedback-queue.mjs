@@ -3,18 +3,23 @@
 //   /obratna 1649 1641 …  → reads each order (Middleware: delivered?, ConvertBuilder:
 //                            name, phone, address, items) and shows the list
 //   /obratna_test 1649    → the same call, but to Mitko's test phone
-//   /obratna_start        → the tick calls them one at a time (Mon–Sat 10:00–19:30)
+//   /obratna_start        → calls them one after another (Mon–Sat 10:00–19:30): the next
+//                            call starts as soon as the previous result arrives; a customer
+//                            who did not answer is noticed by the tick (every 5 minutes)
 //   /obratna_stop, /obratna_status
 // Each order is a record "fb-<number>" – the same key as the call's order_key, so the
 // initiation webhook marks it answered and the result (lib/feedback.mjs) marks it done.
 import { feedbackVariables } from "./feedback.mjs";
 import { normalizePhoneBG, sofiaNow, inCallingHours } from "./format.mjs";
 import { getSettings, saveSettings } from "./store.mjs";
-import { NO_ANSWER_MIN, PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
+import { PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
 
 export const FEEDBACK_HOURS = "10:00-19:30"; // Monday to Saturday
 export const MAX_TRIES = 2; // not answered → once more, an hour later
 export const RETRY_AFTER_MIN = 60;
+// Zadarma rings the customer for under a minute: after this, nobody answered.
+// (The tick runs every 5 minutes, so this is checked at the first run after it.)
+export const FB_NO_ANSWER_MIN = 2;
 const MAX_ORDERS = 20;
 // Answered, but no result arrived (the webhook got lost): stop waiting.
 const RESULT_WAIT_MIN = 30;
@@ -161,7 +166,7 @@ export async function startFeedback(deps, now = new Date()) {
   const t = sofiaNow(now);
   const open = t.weekday !== 0 && inCallingHours(FEEDBACK_HOURS, now);
   const lines = [
-    `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня по един на всеки ~5 минути${open ? ", започвам до 5 минути." : " – от понеделник до събота, 10:00–19:30."}`,
+    `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня един след друг – следващият, щом свърши предишният разговор${open ? ". Започвам до 5 минути." : ". От понеделник до събота, 10:00–19:30."}`,
     "/obratna_stop спира, /obratna_status показва докъде сме.",
   ];
   if (settings.paused) lines.push("⚠️ Обажданията са на пауза (/stop) – напиши /pusni, за да тръгнат.");
@@ -205,7 +210,7 @@ export async function runFeedbackQueue(deps, now = new Date()) {
     if (r.rec.answeredAt) {
       if (mins > RESULT_WAIT_MIN) await update(store, r, { status: "done", outcome: r.rec.outcome || "no_result", finishedAt: now.toISOString() });
       else busy = true;
-    } else if (mins > NO_ANSWER_MIN) {
+    } else if (mins > FB_NO_ANSWER_MIN) {
       // Not answered: the waiting callback is no longer ours, so the next call need not wait for it.
       const digits = phoneDigits(r.rec.order.phone);
       if (digits) await store.delete(`pending/${digits}`);
