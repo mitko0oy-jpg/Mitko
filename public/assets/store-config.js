@@ -101,6 +101,17 @@ export const CHECKOUT = {
 // KASA_STORE holds the product number in the store for each package, KASA_KEY the free answer key
 // that goes with the Bulgarian-language cards.
 export const KASA = "/komplekt/poruchka";
+// The product in the store of each package with a checkout of its own: the cart checkout needs it
+// when an extra (below) goes with that package.
+export const STORE_ID = { "lit-1": 3, "lit-2": 4, "ezik-1": 5, "ezik-2": 6, duo: 7, "mat-1": 37, trio: 38 };
+// Extras that go with the decks (not decks: no price step, no free delivery of their own).
+// A product page offers one as a tick under the sets; with it the order goes to the cart checkout
+// (KASA?p=<package>&x=<extra>), which adds the extra's product (store) after the package.
+// "was" is the price printed on the cover. The same product is the order bump in the checkouts
+// of the literature cards in ConvertBuilder.
+export const EXTRAS = {
+  dos: { title: "Книгата-игра „Литературни досиета“", sub: "68 стр. · цветна корица, черно-бели страници · спирала", price: 1690, was: 1990, img: "dosieta/knizhka-korica.webp", store: 60, with: "lit" },
+};
 export const KASA_STORE = {
   "lit-mat": 48, "ezik-mat": 49, "mat-2": 54,
   "lit-3": 56, "ezik-3": 57, "mat-3": 55,

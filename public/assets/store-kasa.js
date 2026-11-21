@@ -5,7 +5,9 @@
 import * as CFG from "/assets/store-config.js";
 
 const SET = window.EB_LANDING?.store || {};
-const STORE = { ...CFG.KASA_STORE, ...(SET.kasaStore || {}) };
+const STORE = { ...CFG.STORE_ID, ...CFG.KASA_STORE, ...(SET.kasaStore || {}) };
+// extras that come with the package (?x=dos): their products go in after it
+const XSTORE = Object.fromEntries(Object.entries(CFG.EXTRAS || {}).map(([x, e]) => [x, e.store]));
 const KEY_ID = Number(SET.kasaKey || CFG.KASA_KEY) || 0;
 const withKey = (pkg) => pkg === "trio" || pkg.includes("ezik");
 
@@ -57,11 +59,12 @@ async function removeAt(index) {
   return setOrder(r.data);
 }
 
-async function fill(pkg) {
+async function fill(pkg, xs) {
   let o = await getCart();
   for (let i = (o.items || []).length - 1; i >= 0; i--) o = await removeAt(i);
   await addProduct(STORE[pkg]);
   if (KEY_ID && withKey(pkg)) await addProduct(KEY_ID);
+  for (const x of xs) if (XSTORE[x]) await addProduct(XSTORE[x]);
 }
 
 // the package is one line in the order: no "+" and "−" next to it
@@ -70,12 +73,14 @@ style.textContent = ".payment-step-wrapper .cart-row .number-pad,.payment-step-w
 document.head.appendChild(style);
 
 (function start(n = 0) {
-  const pkg = new URLSearchParams(location.search).get("p");
+  const q = new URLSearchParams(location.search);
+  const pkg = q.get("p");
+  const xs = (q.get("x") || "").split(",").filter((x) => XSTORE[x]);
   if (!pkg || !STORE[pkg]) return;
   if (!ready()) {
     if (n < 100) setTimeout(() => start(n + 1), 300);
     return;
   }
   history.replaceState(null, "", location.pathname);
-  fill(pkg).catch(() => {});
+  fill(pkg, xs).catch(() => {});
 })();

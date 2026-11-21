@@ -831,3 +831,39 @@ body[data-deck] .mtopics .h2 .accent{color:#86E0D3}
 /* the bottom buy bar keeps its button whole when the set name is long */
 .buybar>div{min-width:0;flex:1 1 auto}
 .buybar .btn{flex:none}
+
+/* ---------- product page: an extra to tick under the sets (the book-game with the literature cards) ---------- */
+.addon{margin:16px 0 4px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.addon:has(input:checked){box-shadow:inset 0 0 0 2.5px var(--accent),0 14px 30px -18px color-mix(in srgb,var(--accent) 70%,transparent);background:var(--surface-2)}
+.addon-row{position:relative;display:grid;grid-template-columns:auto 52px 1fr auto;gap:14px;align-items:center;padding:14px 16px;cursor:pointer}
+.addon-row input{position:absolute;opacity:0;pointer-events:none}
+.addon-tick{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ink) 35%,transparent);display:grid;place-items:center;background:#fff}
+.addon-row input:checked + .addon-tick{background:var(--accent);box-shadow:none}
+.addon-row input:checked + .addon-tick::after{content:"";width:11px;height:6px;margin-top:-3px;border-left:2.6px solid #fff;border-bottom:2.6px solid #fff;transform:rotate(-45deg)}
+.addon-row input:focus-visible + .addon-tick{outline:3px solid var(--accent);outline-offset:2px}
+.addon-img{width:52px;height:auto;border-radius:4px;box-shadow:0 8px 16px -8px rgba(0,0,0,.45)}
+.addon-t b{display:block;font-size:16.5px;line-height:1.25}
+.addon-t small{display:block;margin-top:3px;color:var(--muted);font-size:14px;line-height:1.35}
+.addon-p{text-align:right;white-space:nowrap}
+.addon-p s{display:block;font-size:13.5px;color:var(--muted)}
+.addon-p b{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.addon-more{padding:0 16px 12px 56px}
+.addon-more summary{cursor:pointer;font-weight:700;font-size:15px;color:var(--accent);list-style:none}
+.addon-more summary::-webkit-details-marker{display:none}
+.addon-more summary::after{content:" ↓"}
+.addon-more[open] summary::after{content:" ↑"}
+.addon-pages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 8px}
+.addon-pages img{width:100%;height:auto;border-radius:6px;background:#fff;box-shadow:0 6px 16px -8px rgba(0,0,0,.4)}
+.addon-more p{margin:0;color:var(--muted);font-size:14.5px}
+@media (max-width:560px){
+  .addon-row{grid-template-columns:auto 44px 1fr;gap:10px}
+  .addon-img{width:44px}
+  .addon-p{grid-column:3;text-align:left}
+  .addon-p s{display:inline;margin-right:6px}
+  .addon-more{padding-left:16px}
+  .addon-pages{grid-template-columns:repeat(2,1fr)}
+}
+/* the cart: an extra's line and its "remove" link */
+.ci-rm{margin-top:6px;padding:0;border:0;background:none;color:var(--muted);font-size:14px;text-decoration:underline;cursor:pointer}
+.ci-x .ci-img img{object-fit:contain}
+.up-x small s{color:var(--muted)}

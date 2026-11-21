@@ -71,12 +71,16 @@ const LOGO = `<img class="logo" src="${esc(main?.dataset.logo || "/assets/logo.p
 const KEY = "eb-cart";
 const n0 = (v) => Math.max(0, Math.min(MAX_DECKS, Math.floor(Number(v) || 0)));
 const count = (c = cart) => KEYS.reduce((s, k) => s + (c[k] || 0), 0);
-const blank = () => Object.fromEntries(KEYS.map((k) => [k, 0]));
+// extras (CFG.EXTRAS) sit in the cart next to the decks as 0 / 1 and only with at least one deck
+const XKEYS = Object.keys(CFG.EXTRAS || {});
+const blank = () => Object.fromEntries([...KEYS, ...XKEYS].map((k) => [k, 0]));
+const xsOf = (c = cart) => XKEYS.filter((x) => c[x]);
+const xSum = (c = cart) => xsOf(c).reduce((s, x) => s + CFG.EXTRAS[x].price, 0);
 function load() {
   try {
     const c = JSON.parse(localStorage.getItem(KEY) || "null");
-    const v = c && Object.fromEntries(KEYS.map((k) => [k, n0(c[k])]));
-    if (v && count(v) <= MAX_DECKS) return v;
+    const v = c && Object.fromEntries([...KEYS.map((k) => [k, n0(c[k])]), ...XKEYS.map((x) => [x, c[x] ? 1 : 0])]);
+    if (v && count(v) <= MAX_DECKS) return count(v) ? v : blank();
   } catch {}
   return blank();
 }
@@ -87,19 +91,22 @@ const save = () => {
 };
 const pkgOf = (c = cart) => CFG.comboKey(c);
 // a package with a checkout of its own goes there; any other mix goes to the store's cart checkout
-const checkoutOf = (pkg) => CHECKOUT[pkg] || `${KASA}?p=${encodeURIComponent(pkg)}`;
+// with an extra in the order, every package goes to the cart checkout, which can add the extra
+const checkoutOf = (pkg, xs = []) =>
+  xs.length ? `${KASA}?p=${encodeURIComponent(pkg)}&x=${xs.map(encodeURIComponent).join(",")}` : CHECKOUT[pkg] || `${KASA}?p=${encodeURIComponent(pkg)}`;
 const single = (k) => PACKAGES[`${k}-1`];
 
 // A package goes into the cart; past three decks the cart becomes just that package.
-function add(pkg) {
+function add(pkg, xs = []) {
   const p = PKG_CART[pkg];
   if (!p) return;
-  const next = Object.fromEntries(KEYS.map((k) => [k, cart[k] + p[k]]));
+  const next = { ...cart, ...Object.fromEntries(KEYS.map((k) => [k, cart[k] + p[k]])) };
   notice = "";
   if (count(next) > MAX_DECKS) {
     if (count()) notice = `В една поръчка влизат до ${MAX_DECKS} тестета – оставихме това, което избрахте сега.`;
-    cart = { ...p };
+    cart = { ...blank(), ...p };
   } else cart = next;
+  for (const x of xs) if (XKEYS.includes(x)) cart[x] = 1;
   save();
   render();
   openCart();
@@ -107,6 +114,7 @@ function add(pkg) {
 function setQty(deck, n) {
   const others = count() - cart[deck];
   cart = { ...cart, [deck]: Math.max(0, Math.min(MAX_DECKS - others, n)) };
+  if (!count()) cart = blank();
   notice = "";
   save();
   render();
@@ -258,6 +266,15 @@ cartDlg.addEventListener("click", (e) => {
     setQty(up.dataset.up, cart[up.dataset.up] + 1);
     return;
   }
+  const xb = e.target.closest("[data-x]");
+  if (xb) {
+    const [x, on] = xb.dataset.x.split(":");
+    if (XKEYS.includes(x)) cart = { ...cart, [x]: on === "1" ? 1 : 0 };
+    notice = "";
+    save();
+    render();
+    return;
+  }
   if (e.target.closest(".cart-empty a")) cartDlg.close();
 });
 }
@@ -295,7 +312,18 @@ function render() {
         <div class="ci-price">${one.was > one.price ? `<s>${euro(cart[k] * one.was)}</s>` : ""}<b>${euro(cart[k] * one.price)}</b></div>
       </li>`;
     })
-    .join("");
+    .join("") + xsOf().map((x) => {
+      const e = CFG.EXTRAS[x];
+      return `<li class="ci ci-x">
+        <span class="ci-img"><img src="${esc(MEDIA + e.img)}" alt="" loading="lazy"></span>
+        <div class="ci-main">
+          <span class="ci-title">${esc(e.title)}</span>
+          <small>${esc(e.sub)}</small>
+          <button class="ci-rm" type="button" data-x="${x}:0">Махни</button>
+        </div>
+        <div class="ci-price">${e.was > e.price ? `<s>${euro(e.was)}</s>` : ""}<b>${euro(e.price)}</b></div>
+      </li>`;
+    }).join("");
 
   // room for one more deck: offer the kinds not yet in the cart at the next price step
   const up = $(".cart-up", cartDlg);
@@ -315,6 +343,15 @@ function render() {
       })
       .join("");
   } else up.innerHTML = "";
+  // an extra that goes with a deck in the cart and is not in it yet
+  up.insertAdjacentHTML("beforeend", XKEYS.filter((x) => !cart[x] && cart[CFG.EXTRAS[x].with]).map((x) => {
+    const e = CFG.EXTRAS[x];
+    return `<div class="up up-x">
+      <img src="${esc(MEDIA + e.img)}" alt="" loading="lazy">
+      <div><p class="up-k">Към картите</p><b>${esc(e.title)}</b><small>${esc(e.sub)}${e.was > e.price ? ` · <s>${euro(e.was)}</s>` : ""}</small></div>
+      <button class="btn btn-dark btn-sm" type="button" data-x="${x}:1">+ ${euro(e.price)}</button>
+    </div>`;
+  }).join(""));
 
   const msg = $(".meter-msg", cartDlg);
   const bar = $(".meter span", cartDlg);
@@ -331,14 +368,14 @@ function render() {
   }
   $(".cart-meter", cartDlg).classList.toggle("done", n >= FREE);
 
-  $(".s-sub", cartDlg).textContent = euro(sub);
+  $(".s-sub", cartDlg).textContent = euro(sub + xSum());
   $(".s-disc-row", cartDlg).hidden = !(disc > 0);
   $(".s-disc-t", cartDlg).textContent = `Отстъпка за ${n} тестета`;
   $(".s-disc", cartDlg).textContent = `−${euro(disc)}`;
   $(".s-ship", cartDlg).textContent = n >= FREE ? "Безплатна" : `от ${euro(DELIVERY_FROM)}`;
-  $(".s-tot", cartDlg).textContent = p ? euro(p.price) : euro(0);
+  $(".s-tot", cartDlg).textContent = p ? euro(p.price + xSum()) : euro(0);
   const go = $(".cart-go", cartDlg);
-  go.href = pkg ? checkoutOf(pkg) : "#";
+  go.href = pkg ? checkoutOf(pkg, xsOf()) : "#";
   go.toggleAttribute("aria-disabled", !pkg);
   const note = $(".cart-notice", cartDlg);
   note.hidden = !notice;
@@ -361,7 +398,7 @@ if (cartDlg) document.addEventListener("click", (e) => {
   const a = e.target.closest("[data-add], a[data-pkg]");
   if (!a || !PKG_CART[a.dataset.add || a.dataset.pkg]) return;
   e.preventDefault();
-  add(a.dataset.add || a.dataset.pkg);
+  add(a.dataset.add || a.dataset.pkg, (a.dataset.extras || "").split(",").filter(Boolean));
 });
 
 /* ---------- links between the store pages follow the settings ---------- */
@@ -425,10 +462,18 @@ for (const pdp of $$("[data-pdp]")) {
       el.hidden = !(p.was > p.price);
       if (!el.hidden) el.textContent = `−${Math.round((1 - p.price / p.was) * 100)}%`;
     }
-    for (const el of $$("[data-pdp-add]", document)) el.dataset.add = k;
+    const xs = $$("[data-addon]", pdp).filter((c) => c.checked && XKEYS.includes(c.dataset.addon)).map((c) => c.dataset.addon);
+    for (const el of $$("[data-pdp-add]", document)) {
+      el.dataset.add = k;
+      el.dataset.extras = xs.join(",");
+    }
     if (buybar) $("[data-add]", buybar)?.setAttribute("data-add", k);
     const buy = $("[data-pdp-buy]", pdp);
-    if (buy) buy.href = checkoutOf(k);
+    if (buy) buy.href = checkoutOf(k, xs);
+    for (const el of $$("[data-addon-price]", pdp)) {
+      const e = CFG.EXTRAS[el.dataset.addonPrice];
+      if (e) el.innerHTML = `${e.was > e.price ? `<s>${euro(e.was)}</s>` : ""}<b>+ ${euro(e.price)}</b>`;
+    }
   }
   pdp.addEventListener("change", update);
   setTimeout(update);
