@@ -24,7 +24,7 @@ test("feedbackVariables: 2+1 buyers get the 3-pack first, 3+2 buyers the 5-pack"
   const base = { label: "1000", name: "Мария Иванова", city: "Ловеч", deliveredAt: "2026-11-04T10:00:00Z", address: "До офис speedy[1]: ЛОВЕЧ - ЦЕНТЪР ул. Търговска No 1" };
   const a = feedbackVariables({ ...base, items: [{ name: "BeeVenom Care Gel 2+1 броя", q: 1 }] }, NOW);
   assert.equal(a.main_pack, "3");
-  assert.equal(a.main_offer, "пакет от три гела за 15 евро и 90 цента, и подарък 8 билкови пластира");
+  assert.equal(a.main_offer, "пакет от три гела за 15 евро и 90 цента, и подарък дванайсет билкови лепенки");
   assert.equal(a.main_total, "20 евро и 40 цента");
   assert.equal(a.alt_total, "24 евро и 40 цента");
   assert.equal(a.delivered_ago, "преди около две седмици");

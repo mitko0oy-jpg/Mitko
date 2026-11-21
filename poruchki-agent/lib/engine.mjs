@@ -266,6 +266,12 @@ export async function purgeOld(store, now = new Date(), days = 14) {
       n++;
     }
   }
+  // Feedback queue (/obratna): finished records go after 60 days.
+  for (const { key } of (await store.list({ prefix: "fb-" })).blobs) {
+    const r = await store.get(key, { type: "json" });
+    const at = r?.finishedAt || r?.queuedAt;
+    if (!r || (at && now - new Date(at) > 60 * 86_400_000)) await store.delete(key);
+  }
   // Feedback results: kept 60 days (callbacks are asked for up to a month later).
   for (const { key } of (await store.list({ prefix: "feedback/" })).blobs) {
     const r = await store.get(key, { type: "json" });

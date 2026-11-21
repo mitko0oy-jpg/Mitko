@@ -202,6 +202,10 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
   const ws = calls.find((c) => c.method === "PATCH" && c.path === "/v1/convai/settings");
   assert.equal(ws.body.conversation_initiation_client_data_webhook.url, "https://s/webhook/el-init/abc");
   assert.ok(inbound.platform_settings.data_collection.outcome && inbound.platform_settings.data_collection.intent);
+  // The feedback call's fields, prefixed so they do not clash with the order's "outcome".
+  assert.match(inbound.platform_settings.data_collection.fb_outcome.description, /reorder/);
+  assert.equal(inbound.platform_settings.data_collection.fb_do_not_call.type, "boolean");
+  assert.match(r.report.join("\n"), /полета за обратна връзка/);
 });
 
 test("setup: refuses to replace someone else's initiation webhook", async () => {

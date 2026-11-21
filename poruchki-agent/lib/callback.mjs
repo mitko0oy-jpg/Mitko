@@ -11,6 +11,10 @@
 import { requestCallback } from "./zadarma.mjs";
 import { pickPersona, renamePersona } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
+import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
+
+// Scripts that live in git (scripts/build-scripts.mjs) instead of an ElevenLabs agent.
+const BUNDLED = { feedback: FEEDBACK_SCRIPT };
 
 // A callback that has not reached the agent in this time is no longer ours.
 export const PENDING_TTL_MIN = 15;
@@ -43,15 +47,16 @@ function cleanVariables(vars) {
  * Start a call through Zadarma.
  * @returns {Promise<{conversationId: null, route: "zadarma"}>}
  */
-export async function startCallbackCall({ store, zadarma, to, variables, agentId = "", now = new Date(), fetchImpl }) {
+export async function startCallbackCall({ store, zadarma, to, variables, agentId = "", script = "", now = new Date(), fetchImpl }) {
   const digits = phoneDigits(to);
   if (!digits) {
     const err = new Error(`invalid phone number: ${to}`);
     err.status = 400;
     throw err;
   }
-  // agentId: whose script the agent follows on this call (empty = the order-confirmation agent).
-  await store.setJSON(pendingKey(digits), { variables: cleanVariables(variables), agentId, at: now.toISOString() });
+  // agentId: whose script the agent follows on this call (empty = the order-confirmation agent);
+  // script: a script bundled in the code instead ("feedback").
+  await store.setJSON(pendingKey(digits), { variables: cleanVariables(variables), agentId, script, at: now.toISOString() });
   await requestCallback({ ...zadarma, to: digits, fetchImpl });
   return { conversationId: null, route: "zadarma" };
 }
@@ -90,10 +95,13 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   // One callback = one conversation: a second call from the same number is a real incoming call.
   await store.delete(key);
   const orderKey = pending.variables?.order_key || null;
-  const script = await outboundScript(pending.agentId || undefined).catch((err) => {
-    console.error("outbound script unavailable", err.message);
-    return null;
-  });
+  const bundled = BUNDLED[pending.script] || null;
+  const script = bundled
+    ? { prompt: bundled.prompt, firstMessage: bundled.firstMessage, language: bundled.language }
+    : await outboundScript(pending.agentId || undefined).catch((err) => {
+        console.error("outbound script unavailable", err.message);
+        return null;
+      });
   // ElevenLabs refuses to start if a {{variable}} in the script has no value.
   const variables = { ...(pending.variables || {}) };
   // Which voice makes this call (an order keeps its voice on retries); it comes back with the result.
@@ -111,7 +119,7 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
     response.conversation_config_override = {
       agent: {
         // Learned rules are about confirming orders: not added to another agent's script.
-        prompt: { prompt: renamePersona(script.prompt, persona) + (pending.agentId ? "" : lessonsSection(lessons)) },
+        prompt: { prompt: renamePersona(script.prompt, persona) + (pending.agentId || bundled ? "" : lessonsSection(lessons)) },
         ...(script.firstMessage ? { first_message: renamePersona(script.firstMessage, persona) } : {}),
         ...(script.language ? { language: script.language } : {}),
       },

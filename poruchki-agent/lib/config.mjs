@@ -53,12 +53,13 @@ export function telegramNotify(store) {
 
 export function realCall(store) {
   if (callRoute() === "zadarma") {
-    return ({ to, variables }) => startCallbackCall({ store, zadarma: zadarmaConfig(), to, variables });
+    // script: "feedback" = the feedback script bundled in the code (lib/scripts.generated.mjs).
+    return ({ to, variables, script = "" }) => startCallbackCall({ store, zadarma: zadarmaConfig(), to, variables, script });
   }
-  return ({ to, variables }) =>
+  return ({ to, variables, script = "" }) =>
     startCall({
       apiKey: env("ELEVENLABS_API_KEY"),
-      agentId: env("EL_AGENT_ID"),
+      agentId: script === "feedback" ? env("EL_FEEDBACK_AGENT_ID") : env("EL_AGENT_ID"),
       phoneNumberId: env("EL_PHONE_NUMBER_ID"),
       provider: env("EL_PHONE_PROVIDER", "sip"),
       to,

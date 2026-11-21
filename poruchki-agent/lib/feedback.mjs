@@ -1,15 +1,17 @@
-// Feedback calls: 2–3 weeks after delivery the agent asks how the customer is
-// doing with the gel and, if they are happy, offers a repeat order.
+// Feedback calls: after delivery (2–3 weeks, or months later for older
+// customers) the agent asks how the customer is doing with the gel and, if
+// they are happy, offers a repeat order.
 // The offer follows what they bought: one tube or 2+1 → the 3-pack first,
 // 3+2 → the 5-pack first; the other pack is the alternative.
+// Both packs come with 12 herbal patches („лепенки“) as a gift.
 import { formalNameBG, moneyBG } from "./format.mjs";
 import { officeName } from "./convertbuilder.mjs";
 
 export const FEEDBACK_OFFER = {
   delivery: 4.5,
   packs: {
-    3: { qty: 3, words: "три", price: 15.9, gift: "8 билкови пластира" },
-    5: { qty: 5, words: "пет", price: 19.9, gift: "16 билкови пластира" },
+    3: { qty: 3, words: "три", price: 15.9, gift: "дванайсет билкови лепенки" },
+    5: { qty: 5, words: "пет", price: 19.9, gift: "дванайсет билкови лепенки" },
   },
 };
 
@@ -19,7 +21,7 @@ export function gelTubes(items) {
   for (const it of items || []) {
     const name = String(it.name || "");
     const qty = Number(it.q ?? it.qty ?? 1) || 1;
-    if (/подарък|пластир/i.test(name)) continue;
+    if (/подарък|пластир|лепенк/i.test(name)) continue;
     if (/3\s*\+\s*2/.test(name)) n += 5 * qty;
     else if (/2\s*\+\s*1/.test(name)) n += 3 * qty;
     else if (/gel|гел|пчелна отрова/i.test(name)) n += qty;
@@ -52,18 +54,34 @@ export function addressBG(rawName) {
   return first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : "";
 }
 
-function boughtText(tubes) {
-  if (tubes >= 5) return "гела с пчелна отрова – пакета 3 плюс 2, пет туби";
-  if (tubes >= 3) return "гела с пчелна отрова – пакета 2 плюс 1, три туби";
-  return "гела с пчелна отрова – една туба";
+/** True when the order also had herbal patches (bought or as a gift). */
+export function hadPatches(items) {
+  return (items || []).some((it) => /пластир|лепенк/i.test(String(it.name || "")));
 }
 
-function deliveredAgo(deliveredAt, now) {
-  const days = Math.round((now - new Date(deliveredAt)) / 86_400_000);
+function boughtText(tubes, patches) {
+  const gel =
+    tubes >= 5 ? "гела с пчелна отрова – пакета 3 плюс 2, пет туби" : tubes >= 3 ? "гела с пчелна отрова – пакета 2 плюс 1, три туби" : "гела с пчелна отрова – една туба";
+  return patches ? `${gel}, и билкови лепенки` : gel;
+}
+
+const MONTHS = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август", "септември", "октомври", "ноември", "декември"];
+
+/**
+ * When the customer got the gel, as the agent says it: "преди около две седмици",
+ * or for older orders the month ("през юли").
+ * Without a delivery date, the order date + 2 days (delivery takes 1–2 working days).
+ */
+export function deliveredAgo({ deliveredAt, orderedAt }, now) {
+  const at = deliveredAt ? new Date(deliveredAt) : orderedAt ? new Date(new Date(orderedAt).getTime() + 2 * 86_400_000) : null;
+  if (!at || Number.isNaN(at.getTime())) return "наскоро";
+  const days = Math.round((now - at) / 86_400_000);
   if (days <= 10) return "преди около седмица";
   if (days <= 17) return "преди около две седмици";
   if (days <= 24) return "преди около три седмици";
-  return "преди около месец";
+  if (days <= 40) return "преди около месец";
+  const month = Number(new Intl.DateTimeFormat("en", { timeZone: "Europe/Sofia", month: "numeric" }).format(at)) - 1;
+  return `през ${MONTHS[month]}`;
 }
 
 function offerText(pack, o = FEEDBACK_OFFER) {
@@ -77,7 +95,7 @@ function offerText(pack, o = FEEDBACK_OFFER) {
 
 /**
  * Variables for one feedback call.
- * @param {{label: string, name: string, city?: string, address?: string, for?: string, items: any[], deliveredAt: string}} order
+ * @param {{label: string, name: string, city?: string, address?: string, items: any[], deliveredAt?: string, orderedAt?: string}} order
  */
 export function feedbackVariables(order, now = new Date()) {
   const tubes = gelTubes(order.items);
@@ -93,8 +111,8 @@ export function feedbackVariables(order, now = new Date()) {
     test: "no",
     customer_name: addressBG(order.name),
     order_number: String(order.label),
-    bought_text: boughtText(tubes),
-    delivered_ago: deliveredAgo(order.deliveredAt, now),
+    bought_text: boughtText(tubes, hadPatches(order.items)),
+    delivered_ago: deliveredAgo(order, now),
     delivery_text: office || (city ? `до адреса Ви в ${city}` : "на същия адрес"),
     main_pack: String(main),
     main_offer: m.offer,
@@ -123,6 +141,34 @@ const OUTCOME_LABEL = {
   no_conversation: "📵 Не вдигна / затвори",
 };
 
+/**
+ * The feedback fields of a call. On calls through the Zadarma callback the
+ * incoming agent collects them with a "fb_" prefix (its own "outcome" means
+ * something else); the feedback agent itself uses the plain names.
+ */
+export function feedbackFields(fields = {}) {
+  const out = { ...fields };
+  for (const [k, v] of Object.entries(fields)) {
+    if (k.startsWith("fb_") && v !== "" && v != null) out[k.slice(3)] = v;
+  }
+  return out;
+}
+
+/** Mark the queued feedback call (record "fb-<order>") as finished. */
+async function finishQueued(store, orderKey, result, now) {
+  if (!/^fb-\d+$/.test(String(orderKey || ""))) return;
+  for (let i = 0; i < 3; i++) {
+    const entry = await store.getWithMetadata(orderKey, { type: "json" });
+    if (!entry?.data) return;
+    const { modified } = await store.setJSON(
+      orderKey,
+      { ...entry.data, status: "done", ...result, finishedAt: now.toISOString() },
+      { onlyIfMatch: entry.etag },
+    );
+    if (modified) return;
+  }
+}
+
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const yes = (v) => v === true || String(v).toLowerCase() === "true";
 
@@ -132,7 +178,7 @@ const yes = (v) => v === true || String(v).toLowerCase() === "true";
  */
 export function feedbackMessage(call) {
   const v = call.variables || {};
-  const f = call.fields || {};
+  const f = feedbackFields(call.fields);
   let outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
   // "Reorder" without a confirmed pack is not an order – Mitko must check the conversation.
   if (outcome === "reorder" && !/[35]/.test(String(f.reorder_pack || ""))) outcome = "unclear_order";
@@ -158,7 +204,8 @@ export function feedbackMessage(call) {
   if (yes(f.do_not_call)) lines.push("🚫 Не му звъним повече");
   if (f.questions) lines.push(`❓ ${esc(f.questions)}`);
   if (call.failedChecks?.length) lines.push(`⚠️ <b>Провери разговора</b> – агентът може да е нарушил: ${esc(call.failedChecks.join(", "))}`);
-  if (call.summary) lines.push(`\n📝 ${esc(call.summary)}`);
+  const summary = f.summary || call.summary;
+  if (summary) lines.push(`\n📝 ${esc(summary)}`);
   if (call.transcript) {
     const t = call.transcript.length > 2200 ? call.transcript.slice(0, 2200) + "…" : call.transcript;
     lines.push(`\n<blockquote expandable>${esc(t)}</blockquote>`);
@@ -169,9 +216,11 @@ export function feedbackMessage(call) {
 /** Save the result (for callbacks and the do-not-call list) and tell Mitko. */
 export async function handleFeedbackCall(deps, call, now = new Date()) {
   const v = call.variables || {};
-  const f = call.fields || {};
+  const f = feedbackFields(call.fields);
   const key = `feedback/${String(v.order_key || "fb-unknown").replace(/[^\w-]/g, "")}`;
   if (v.test !== "yes") {
+    // The call came from the queue (/obratna): mark it done.
+    await finishQueued(deps.store, v.order_key, { outcome: String(f.outcome || "").toLowerCase() || "no_conversation", conversationId: call.conversationId }, now);
     await deps.store.setJSON(key, {
       at: now.toISOString(),
       orderNo: v.order_number,

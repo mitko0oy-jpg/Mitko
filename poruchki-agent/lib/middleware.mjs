@@ -47,6 +47,9 @@ export function middleware({ env, fetchImpl = fetch }) {
     const f = o.fulfillment || {};
     return {
       id: o.id,
+      // ConvertBuilder's API id of the same order (customer data for feedback calls).
+      externalId: o.external_id ?? null,
+      createdAt: o.created_at || null,
       confirmed: o.is_confirmed === "yes",
       status: o.status_key,
       statusText: MW_STATUS_BG[o.status_key] || o.status_key,

@@ -64,6 +64,13 @@ export function convertBuilder({ sites, env, fetchImpl = fetch }) {
       }
       return out.sort((a, b) => b.created - a.created);
     },
+    /** One order by its API id (raw ConvertBuilder fields), or null when the site is not set up. */
+    async getOrder(siteId, apiId) {
+      const site = active.find((s) => s.id === siteId);
+      if (!site || !apiId) return null;
+      const r = await cb(site, `/orders/${apiId}`);
+      return r?.item || r || null;
+    },
     /** False when Mitko already shipped, cancelled or archived the order. */
     async isStillPending(rec) {
       const site = active.find((s) => s.id === rec.site);

@@ -3,6 +3,7 @@ import { getSettings, saveSettings } from "./store.mjs";
 import { labelFor } from "./policy.mjs";
 import { personaFromText, voiceFromText, PERSONAS, ALEKSANDRA_VOICES } from "./persona.mjs";
 import { approveLessons, dismissProposal, lessonsList, removeLesson, abStats, abText, reviewPending, buildDigest } from "./coach.mjs";
+import { prepareFeedback, testFeedback, startFeedback, stopFeedback, feedbackStatus } from "./feedback-queue.mjs";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -17,6 +18,12 @@ const HELP = [
   "/rezhim test – звъни на теб за всяка нова поръчка (тест)",
   "/rezhim live – звъни на клиентите",
   "/rezhim off – не звъни за поръчки",
+  "",
+  "Обратна връзка от стари клиенти:",
+  "/obratna 1649 1641 … – подготвя тези поръчки (само доставени)",
+  "/obratna_test 1649 – Елена звъни на теб като на този клиент",
+  "/obratna_start – звъни на всички, по един (пон–съб 10:00–19:30)",
+  "/obratna_stop, /obratna_status",
   "",
   "Учене от разговорите:",
   "/uroci – какво е научила",
@@ -156,6 +163,12 @@ export async function handleTelegram(deps, update, opts = {}) {
       return { chatId, reply: `⚠️ Прегледът не стана: ${esc(String(err.message).slice(0, 300))}` };
     }
   }
+  // Feedback calls to earlier customers (lib/feedback-queue.mjs).
+  if (cmd === "/obratna") return { chatId, reply: await prepareFeedback(deps, text.slice(cmd.length)) };
+  if (cmd === "/obratna_test") return { chatId, reply: await testFeedback(deps, text.slice(cmd.length)) };
+  if (cmd === "/obratna_start") return { chatId, reply: await startFeedback(deps) };
+  if (cmd === "/obratna_stop") return { chatId, reply: await stopFeedback(deps) };
+  if (cmd === "/obratna_status") return { chatId, reply: await feedbackStatus(deps) };
   if (["/test", "тест"].includes(cmd)) {
     if (!config.testPhone) return { chatId, reply: "Няма зададен тестов номер (TEST_PHONE)." };
     const arg = text.split(/\s+/)[1];

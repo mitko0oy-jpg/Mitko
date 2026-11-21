@@ -3,6 +3,7 @@ import type { Config, Context } from "@netlify/functions";
 import { realDeps, env } from "../../lib/config.mjs";
 import { ensureTelegramWebhook } from "../../lib/telegram.mjs";
 import { syncOrders, runDueCalls, purgeOld } from "../../lib/engine.mjs";
+import { runFeedbackQueue } from "../../lib/feedback-queue.mjs";
 import { sofiaNow } from "../../lib/format.mjs";
 import { getSettings, saveSettings } from "../../lib/store.mjs";
 import { reviewPending, buildDigest, sofiaDay, DIGEST_AT } from "../../lib/coach.mjs";
@@ -20,6 +21,8 @@ export default async (_req: Request, context: Context) => {
   }).catch((e) => `error: ${e.message}`);
   const added = await syncOrders(deps, now);
   const report = await runDueCalls(deps, now);
+  // Feedback calls Mitko started from Telegram (/obratna_start): one at a time, after the order calls.
+  const feedback = await runFeedbackQueue(deps, now).catch((e) => ({ feedback: `error: ${e.message}` }));
   const t = sofiaNow(now);
   let purged = 0;
   if (t.hour === 4 && t.minute < 5) purged = await purgeOld(deps.store, now);
@@ -39,7 +42,7 @@ export default async (_req: Request, context: Context) => {
       digest = text ? "sent" : "no calls";
     }
   }
-  console.log(JSON.stringify({ added, ...report, purged, telegram, reviews, digest }));
+  console.log(JSON.stringify({ added, ...report, ...feedback, purged, telegram, reviews, digest }));
 };
 
 export const config: Config = {
