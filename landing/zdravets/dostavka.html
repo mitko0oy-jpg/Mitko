@@ -1154,7 +1154,7 @@ const THEMES = {
 
 /* ---------- 3D сцени и раздвижените им версии (Higgsfield), в landing/zdravets/media/ ----------
    ZN_MEDIA е commit-ът с файловете (jsDelivr го пази завинаги). */
-const ZN_MEDIA = '07e6b150a7e6d21bc88aa1f9bab88cc7b0ab6ef7';
+const ZN_MEDIA = '9d2648c99dd7b1e557b59fe9c34c40d7c4d6c872';
 /* На тези продукти показваме само кадри, на които дребният текст от кутията не се чете
    (без старата снимка от магазина и без старото видео). */
 const CLEAN_PHOTOS = ['bvpatch', 'tibet'];
@@ -1167,7 +1167,7 @@ const znM = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_MEDIA}/lan
 const GIFT_IMG = znM('gift-sumifun.webp');
 PRODUCTS.find(x => x.id === 'sumifun').img = znM('sumifun-open.webp'); // в галерията: отворен плик с пластирите
 /* снимките на стъпките „Как се използва“: how-<продукт>-<n>.webp в media/ – брой готови снимки за продукта */
-const STEP_IMG = { skin: 4, sumifun: 4, beeherb: 4 };
+const STEP_IMG = { skin: 4, sumifun: 4, beeherb: 4, spray: 4, hyal: 4, bvpatch: 4, tibet: 4, vein: 4, nail: 4, ghk: 4 };
 Object.keys(STEP_IMG).forEach(id => LANDING[id].how.steps.forEach((st, i) => { if (i < STEP_IMG[id]) st[2] = znM(`how-${id}-${i + 1}.webp`); }));
 
 /* Зоните на тялото – първият екран на началната страница и филтърът ?zone= на „Всички продукти“.
