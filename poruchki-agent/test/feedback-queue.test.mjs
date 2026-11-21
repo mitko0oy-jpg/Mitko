@@ -272,3 +272,29 @@ test("/obratna_test 1649 николай – Mitko hears Николай; without 
   assert.equal(d.calls[1].variables.persona, "elena");
   assert.equal(d.calls[1].variables.voice_id, undefined);
 });
+
+test("a call that drops before the customer says anything is tried once more, 30 minutes later", async () => {
+  const d = deps();
+  await prepareFeedback(d, "1649", T0);
+  await startFeedback(d, T0);
+  await runFeedbackQueue(d, T0);
+  const dropped = (conv, at) =>
+    handleWebhook(d, {
+      type: "post_call_transcription",
+      data: {
+        conversation_id: conv,
+        conversation_initiation_client_data: { dynamic_variables: d.calls.at(-1).variables },
+        analysis: { data_collection_results: { fb_outcome: { value: "no_conversation" } } },
+        transcript: [{ role: "agent", message: "Здравейте, госпожо Петрова!" }],
+      },
+    }, at);
+  await dropped("conv_d1", min(1));
+  assert.match(d.messages.at(-1), /прекъсна, преди клиентът да каже нещо\. Ще звънна пак след 30 минути/);
+  const rec = await d.store.get("fb-1649", { type: "json" });
+  assert.equal(rec.status, "waiting");
+  assert.equal((await runFeedbackQueue(d, min(10))).feedback, "waiting for retries");
+  assert.match((await runFeedbackQueue(d, min(32))).feedback, /calling #1649/);
+  // A second drop is final.
+  await dropped("conv_d2", min(33));
+  assert.equal((await d.store.get("fb-1649", { type: "json" })).status, "done");
+});

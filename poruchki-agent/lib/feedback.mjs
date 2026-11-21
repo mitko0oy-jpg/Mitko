@@ -274,14 +274,46 @@ export function feedbackMessage(call) {
   return lines.join("\n").slice(0, 4000);
 }
 
+/** A call that dropped before the customer said anything goes back to the queue once, 30 minutes later. */
+export const DROP_RETRY_MIN = 30;
+
+/**
+ * The agent spoke but no word from the customer reached it (Zadarma sometimes sends no audio,
+ * and ElevenLabs hangs up after 15 s of silence): one more try. True if it was put back.
+ */
+async function retryDropped(store, orderKey, call, now) {
+  if (!/^fb-\d+$/.test(String(orderKey || ""))) return false;
+  const entry = await store.getWithMetadata(orderKey, { type: "json" });
+  if (!entry?.data || (entry.data.drops || 0) >= 1) return false;
+  const { modified } = await store.setJSON(
+    orderKey,
+    {
+      ...entry.data,
+      status: "waiting",
+      drops: (entry.data.drops || 0) + 1,
+      tries: Math.max(0, (entry.data.tries || 1) - 1),
+      notBefore: new Date(now.getTime() + DROP_RETRY_MIN * 60_000).toISOString(),
+      lastDrop: { at: now.toISOString(), conversationId: call.conversationId },
+    },
+    { onlyIfMatch: entry.etag },
+  );
+  return modified;
+}
+
 /** Save the result (for callbacks and the do-not-call list) and tell Mitko. */
 export async function handleFeedbackCall(deps, call, now = new Date()) {
   const v = call.variables || {};
   const f = feedbackFields(call.fields);
   const key = `feedback/${String(v.order_key || "fb-unknown").replace(/[^\w-]/g, "")}`;
+  const outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
+  const dropped = outcome === "no_conversation" && !/^Клиент:/m.test(call.transcript || "");
+  if (v.test !== "yes" && dropped && (await retryDropped(deps.store, v.order_key, call, now))) {
+    await deps.notify(`📵 Разговорът с ${esc(v.customer_name)} (#${esc(v.order_number)}) прекъсна, преди клиентът да каже нещо. Ще звънна пак след ${DROP_RETRY_MIN} минути.`);
+    return { feedback: "dropped, retry" };
+  }
   if (v.test !== "yes") {
     // The call came from the queue (/obratna): mark it done.
-    await finishQueued(deps.store, v.order_key, { outcome: String(f.outcome || "").toLowerCase() || "no_conversation", conversationId: call.conversationId }, now);
+    await finishQueued(deps.store, v.order_key, { outcome, conversationId: call.conversationId }, now);
     await deps.store.setJSON(key, {
       at: now.toISOString(),
       orderNo: v.order_number,
