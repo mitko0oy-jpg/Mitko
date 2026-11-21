@@ -22,7 +22,9 @@ export async function syncAbandoned(limit = 60) {
   const rates = await getRates();
   // 1) New abandoned rows.
   const leads = await q<any>(
-    `SELECT l.*, s.currency FROM leads l JOIN shops s ON s.id = l.shop ${MATCH}
+    `SELECT l.*, s.currency,
+            (SELECT x.country FROM orders x WHERE x.shop = l.shop AND x.country <> '' AND x.cb_status <> 'abandoned' ORDER BY x.ordered_at DESC LIMIT 1) AS shop_country
+       FROM leads l JOIN shops s ON s.id = l.shop ${MATCH}
       WHERE ${inCompany("l.shop")} AND l.status = 'open' AND NOT ${ORDERED} AND l.phone <> ''
         AND l.last_at < now() - interval '20 minutes' AND l.first_at > now() - interval '3 days'
         AND NOT EXISTS (SELECT 1 FROM orders x WHERE x.lead_id = l.id)
@@ -43,11 +45,11 @@ export async function syncAbandoned(limit = 60) {
       `INSERT INTO orders (shop, cb_id, order_no, ordered_at, day, cb_status, customer_name, phone, email, country, city, address,
                            shipping_name, delivery, items, currency, sub_total, shipping, discount, total, fx, total_eur, paid, payment_method,
                            cb_shipped, raw, cb_items, cb_sub_total, cb_shipping, cb_discount, cb_total, source, lead_id)
-       VALUES ($1, $2, $3, $4, $5, 'abandoned', $6, $7, $8, 'BG', $9, $10, '', '{}'::jsonb, $11, $12, $13, $14, 0, $15, $16, round($15::numeric / $16::numeric, 2),
+       VALUES ($1, $2, $3, $4, $5, 'abandoned', $6, $7, $8, $18, $9, $10, '', '{}'::jsonb, $11, $12, $13, $14, 0, $15, $16, round($15::numeric / $16::numeric, 2),
                false, 'cod', false, '{}'::jsonb, $11, $13, $14, 0, $15, 'abandoned', $17)
        ON CONFLICT DO NOTHING RETURNING id`,
       [l.shop, -(1_000_000_000 + Number(l.id)), `И${l.id}`, l.first_at, sofiaDay(new Date(l.first_at)), l.name || "", l.phone, l.email || "", l.city || "", l.address || "",
-       JSON.stringify(items), currency, sub, shipping, total, fx, l.id],
+       JSON.stringify(items), currency, sub, shipping, total, fx, l.id, l.shop_country || "BG"],
     );
     if (r) {
       made++;
