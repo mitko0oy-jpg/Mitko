@@ -31,6 +31,22 @@ export function reviewKind(variables = {}) {
   return "inbound";
 }
 
+/**
+ * Calls under review/<day>/ that a step (`reviewdone`, `salesdone`) has not finished.
+ * Two list calls instead of reading every call record on every tick (that made the
+ * 5-minute job take ~13 s and get retried).
+ */
+export async function pendingReviewKeys(store, day, tag) {
+  const [all, done] = await Promise.all([store.list({ prefix: `review/${day}/` }), store.list({ prefix: `${tag}/${day}/` })]);
+  const finished = new Set(done.blobs.map((b) => b.key.slice(tag.length + 1)));
+  return all.blobs.map((b) => b.key).filter((k) => !finished.has(k.slice("review/".length)));
+}
+
+/** Remember that `tag` is done with this call (review/<day>/<id> → <tag>/<day>/<id>). */
+export function markReviewDone(store, tag, key) {
+  return store.setJSON(`${tag}/${key.slice("review/".length)}`, {});
+}
+
 /** Keep a finished call for review. */
 export async function saveReview(store, call, now = new Date()) {
   if (!call?.conversationId || !call.transcript) return null;
@@ -97,12 +113,16 @@ export async function reviewPending({ store, env, fetchImpl }, now = new Date(),
   const days = [sofiaDay(now), sofiaDay(new Date(now.getTime() - 86_400_000))];
   let reviewed = 0;
   for (const day of days) {
-    for (const { key } of (await store.list({ prefix: `review/${day}/` })).blobs) {
+    for (const key of await pendingReviewKeys(store, day, "reviewdone")) {
       if (reviewed >= max) return { reviewed };
       const rec = await store.get(key, { type: "json" });
-      if (!rec || rec.reviewed || (rec.reviewErrors || 0) >= 2) continue;
+      if (!rec || rec.reviewed || (rec.reviewErrors || 0) >= 2) {
+        await markReviewDone(store, "reviewdone", key);
+        continue;
+      }
       if (!/^Клиент:/m.test(rec.transcript || "")) {
         await store.setJSON(key, { ...rec, reviewed: true, review: null });
+        await markReviewDone(store, "reviewdone", key);
         continue;
       }
       try {
@@ -115,11 +135,13 @@ export async function reviewPending({ store, env, fetchImpl }, now = new Date(),
           good: (r.good || []).slice(0, 2).map((g) => String(g).slice(0, 200)),
         };
         await store.setJSON(key, { ...rec, reviewed: true, review });
+        await markReviewDone(store, "reviewdone", key);
         reviewed++;
       } catch (err) {
         if (err.code === "ai_unavailable") return { reviewed, aiOff: true };
         console.error("review failed", key, err.message);
         await store.setJSON(key, { ...rec, reviewErrors: (rec.reviewErrors || 0) + 1 });
+        if ((rec.reviewErrors || 0) + 1 >= 2) await markReviewDone(store, "reviewdone", key);
         reviewed++; // counts against this run's budget
       }
     }
@@ -199,27 +221,40 @@ export async function buildDigest({ store, env, fetchImpl }, now = new Date(), d
   }
   if (!reviews.length) return null;
   const done = reviews.filter((r) => r.review);
-  const issues = done.flatMap((r) => r.review.issues.map((i) => ({ ...i, persona: r.persona })));
+  const issuesOf = (rs) => rs.flatMap((r) => r.review.issues.map((i) => ({ ...i, persona: r.persona })));
+  const issues = issuesOf(done);
+  // Order calls and feedback calls have different scripts, so their rules go to
+  // different places: /urok_N → order script, /da_N → feedback script (lib/sales-coach.mjs).
+  const orderIssues = issuesOf(done.filter((r) => r.kind !== "feedback"));
+  const fbIssues = issuesOf(done.filter((r) => r.kind === "feedback"));
   const lessons = await getLessons(store);
+  const { getFbRules, proposeFbRule } = await import("./sales-coach.mjs");
 
-  let summary = "";
-  let proposed = [];
-  if (issues.length) {
+  const coachOn = async (list, existing) => {
+    if (!list.length) return { summary: "", proposed: [] };
     try {
       const out = await askJson({
         env,
         fetchImpl,
         system: COACH_SYSTEM,
-        user: JSON.stringify({ issues: issues.map(({ kind, quote, fix }) => ({ kind, quote, fix })), existing_rules: lessons.map((l) => l.text) }),
+        user: JSON.stringify({ issues: list.map(({ kind, quote, fix }) => ({ kind, quote, fix })), existing_rules: existing }),
         schema: COACH_SCHEMA,
         model: env("COACH_MODEL") || COACH_MODEL,
         maxTokens: 900,
       });
-      summary = String(out.summary || "");
-      proposed = (out.lessons || []).slice(0, 3).map((l) => ({ text: String(l.text).slice(0, 300), why: String(l.why || "").slice(0, 300) }));
+      return { summary: String(out.summary || ""), proposed: (out.lessons || []).slice(0, 3).map((l) => ({ text: String(l.text).slice(0, 300), why: String(l.why || "").slice(0, 300) })) };
     } catch (err) {
-      summary = `⚠️ Не успях да обобщя деня: ${String(err.message).slice(0, 150)}`;
+      return { summary: `⚠️ Не успях да обобщя деня: ${String(err.message).slice(0, 150)}`, proposed: [] };
     }
+  };
+  const orders = await coachOn(orderIssues, lessons.map((l) => l.text));
+  const fb = await coachOn(fbIssues, (await getFbRules(store)).map((l) => l.text));
+  const summary = [orders.summary, fb.summary].filter(Boolean).join("\n\n");
+  const proposed = orders.proposed;
+  const fbProposed = [];
+  for (const l of fb.proposed) {
+    const no = await proposeFbRule(store, l, now);
+    if (no) fbProposed.push({ ...l, no });
   }
   await store.setJSON(PROPOSAL_KEY, { day, at: now.toISOString(), lessons: proposed, used: [] });
 
@@ -239,9 +274,13 @@ export async function buildDigest({ store, env, fetchImpl }, now = new Date(), d
     lines.push("", "Без забележки днес 👍");
   }
   if (proposed.length) {
-    lines.push("", "<b>Предлагам да науча:</b>");
+    lines.push("", "<b>Предлагам да науча (потвърждение на поръчки):</b>");
     proposed.forEach((l, n) => lines.push(`${n + 1}. ${esc(l.text)}\n   <i>${esc(l.why)}</i>\n   👉 /urok_${n + 1}`));
     lines.push("", "/uroci_vsichki – всички · /uroci_ne – нито едно");
+  }
+  if (fbProposed.length) {
+    lines.push("", "<b>Предлагам за обратната връзка:</b>");
+    for (const l of fbProposed) lines.push(`• ${esc(l.text)}\n   <i>${esc(l.why)}</i>\n   ✅ /da_${l.no} · ❌ /ne_${l.no}`);
   }
   return lines.join("\n");
 }
@@ -303,6 +342,13 @@ export async function purgeReviews(store, now = new Date()) {
     if (key.split("/")[1] < from) {
       await store.delete(key);
       n++;
+    }
+  }
+  // The "done" markers are only read for today and yesterday.
+  const markersFrom = sofiaDay(new Date(now.getTime() - 3 * 86_400_000));
+  for (const tag of ["reviewdone", "salesdone"]) {
+    for (const { key } of (await store.list({ prefix: `${tag}/` })).blobs) {
+      if (key.split("/")[1] < markersFrom) await store.delete(key);
     }
   }
   return n;

@@ -9,8 +9,9 @@
 //    start of every call (lib/callback.mjs) – from the next call, no deploy.
 // 4. Sales are counted against the goal (20–25% of real conversations end with an order).
 import { askJson, COACH_MODEL } from "./ai.mjs";
-import { sofiaDay } from "./coach.mjs";
+import { sofiaDay, pendingReviewKeys, markReviewDone } from "./coach.mjs";
 import { feedbackFields } from "./feedback.mjs";
+import { PERSONAS } from "./persona.mjs";
 
 export const MAX_FB_RULES = 15;
 export const SALES_GOAL = { from: 20, to: 25 }; // % of real conversations
@@ -84,13 +85,17 @@ export async function salesReviewPending({ store, env, fetchImpl, notify }, now 
   const days = [sofiaDay(now), sofiaDay(new Date(now.getTime() - 86_400_000))];
   let done = 0;
   for (const day of days) {
-    for (const { key } of (await store.list({ prefix: `review/${day}/` })).blobs) {
+    for (const key of await pendingReviewKeys(store, day, "salesdone")) {
       if (done >= max) return { sales: done };
       const rec = await store.get(key, { type: "json" });
-      if (!rec || rec.kind !== "feedback" || rec.salesReviewed || (rec.salesErrors || 0) >= 2) continue;
+      if (!rec || rec.kind !== "feedback" || rec.salesReviewed || (rec.salesErrors || 0) >= 2) {
+        await markReviewDone(store, "salesdone", key);
+        continue;
+      }
       // A sale, or no real conversation: nothing to learn from here.
       if (isSale(rec.outcome) || !isTalk(rec.outcome) || !/^Клиент:/m.test(rec.transcript || "")) {
         await store.setJSON(key, { ...rec, salesReviewed: true });
+        await markReviewDone(store, "salesdone", key);
         continue;
       }
       try {
@@ -106,12 +111,9 @@ export async function salesReviewPending({ store, env, fetchImpl, notify }, now 
         });
         const reason = REASONS_BG[r.reason] ? r.reason : "other";
         const rule = String(r.rule || "").trim().slice(0, 300);
-        let no = null;
-        if (rule && !rules.some((l) => l.text === rule)) {
-          no = await nextPropNo(store);
-          await store.setJSON(`${PROP_PREFIX}${String(no).padStart(4, "0")}`, { no, text: rule, why: String(r.why || "").slice(0, 300), at: now.toISOString(), conversationId: rec.conversationId, status: "proposed" });
-        }
+        const no = await proposeFbRule(store, { text: rule, why: r.why, conversationId: rec.conversationId }, now);
         await store.setJSON(key, { ...rec, salesReviewed: true, sales: { reason, summary: String(r.summary || "").slice(0, 300), agentPart: String(r.agent_part || "").slice(0, 400), proposal: no } });
+        await markReviewDone(store, "salesdone", key);
         const lines = [
           `🎓 <b>Урок от разговор${rec.orderNo ? ` #${esc(rec.orderNo)}` : ""}</b> – не поръча`,
           `Причина: ${esc(REASONS_BG[reason])}`,
@@ -125,11 +127,26 @@ export async function salesReviewPending({ store, env, fetchImpl, notify }, now 
         if (err.code === "ai_unavailable") return { sales: done, aiOff: true };
         console.error("sales review failed", key, err.message);
         await store.setJSON(key, { ...rec, salesErrors: (rec.salesErrors || 0) + 1 });
+        if ((rec.salesErrors || 0) + 1 >= 2) await markReviewDone(store, "salesdone", key);
         done++;
       }
     }
   }
   return { sales: done };
+}
+
+/**
+ * Store a proposed rule for the feedback calls (Mitko answers /da_N or /ne_N).
+ * Used after every call without a sale and by the evening report.
+ * @returns {Promise<number|null>} its number, or null when empty or already a rule
+ */
+export async function proposeFbRule(store, { text, why = "", conversationId = "" }, now = new Date()) {
+  const rule = String(text || "").trim().slice(0, 300);
+  if (!rule) return null;
+  if ((await getFbRules(store)).some((l) => l.text === rule)) return null;
+  const no = await nextPropNo(store);
+  await store.setJSON(`${PROP_PREFIX}${String(no).padStart(4, "0")}`, { no, text: rule, why: String(why || "").slice(0, 300), at: now.toISOString(), conversationId, status: "proposed" });
+  return no;
 }
 
 async function getProp(store, no) {
@@ -178,21 +195,34 @@ export async function removeFbRule(store, n) {
 export async function salesStats(store, now = new Date(), days = 30) {
   let talks = 0;
   let sales = 0;
+  const by = {};
   for (const { key } of (await store.list({ prefix: "feedback/" })).blobs) {
     const r = await store.get(key, { type: "json" });
     if (!r?.at || now - new Date(r.at) > days * 86_400_000) continue;
     if (!isTalk(r.outcome)) continue;
+    const p = (by[r.persona || "elena"] ||= { talks: 0, sales: 0 });
     talks++;
-    if (isSale(r.outcome) && /[135]/.test(String(r.reorderPack || ""))) sales++;
+    p.talks++;
+    if (isSale(r.outcome) && /[135]/.test(String(r.reorderPack || ""))) {
+      sales++;
+      p.sales++;
+    }
   }
   const pct = talks ? Math.round((sales / talks) * 100) : 0;
-  return { talks, sales, pct };
+  return { talks, sales, pct, by };
 }
 
-export function salesText({ talks, sales, pct }) {
+export function salesText({ talks, sales, pct, by = {} }) {
   if (!talks) return "Продажби: още няма проведени разговори.";
   const mark = pct >= SALES_GOAL.from ? "✅" : "📈";
-  return `${mark} Продажби: ${sales} от ${talks} разговора (${pct}%) · цел ${SALES_GOAL.from}–${SALES_GOAL.to}%`;
+  const lines = [`${mark} Продажби: ${sales} от ${talks} разговора (${pct}%) · цел ${SALES_GOAL.from}–${SALES_GOAL.to}%`];
+  // Елена vs Николай (calls to women are split half/half).
+  if (by.nikolay) {
+    const one = (id, name) => (by[id] ? `${name}: ${by[id].sales} от ${by[id].talks} (${Math.round((100 * by[id].sales) / by[id].talks)}%)` : `${name}: –`);
+    lines.push(`${one("elena", PERSONAS.elena)} · ${one("nikolay", PERSONAS.nikolay)}`);
+    if ((by.elena?.talks || 0) < 30 || by.nikolay.talks < 30) lines.push("<i>Още е рано за извод – трябват поне по 30 разговора на глас.</i>");
+  }
+  return lines.join("\n");
 }
 
 /** Kept for the review: the feedback outcome, not the order agent's own field. */

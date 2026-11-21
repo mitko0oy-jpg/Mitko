@@ -4,6 +4,7 @@
 // The offer is two choices in one sentence („три гела на цената на един“ or
 // five; 12 patches with both): two options sell better than one.
 // Both packs come with 12 herbal patches („лепенки“) as a gift.
+import { feedbackPersona, NIKOLAY_VOICE } from "./persona.mjs";
 import { formalNameBG, moneyBG } from "./format.mjs";
 import { officeName } from "./convertbuilder.mjs";
 
@@ -144,6 +145,7 @@ function offerText(pack, o = FEEDBACK_OFFER) {
  */
 export function feedbackVariables(order, now = new Date()) {
   const tubes = gelTubes(order.items);
+  const persona = feedbackPersona(order.name, order.label);
   // Three first („три на цената на един“), five as the second choice.
   const main = 3;
   const alt = 5;
@@ -154,6 +156,8 @@ export function feedbackVariables(order, now = new Date()) {
   return {
     campaign: "feedback",
     order_key: `fb-${order.label}`,
+    persona,
+    ...(persona === "nikolay" ? { voice_id: NIKOLAY_VOICE.id } : {}),
     test: "no",
     customer_name: addressBG(order.name),
     order_number: String(order.label),
@@ -283,6 +287,7 @@ export async function handleFeedbackCall(deps, call, now = new Date()) {
       orderNo: v.order_number,
       name: v.customer_name,
       outcome: String(f.outcome || "").toLowerCase(),
+      persona: v.persona || "elena",
       reorderPack: String(f.reorder_pack || ""),
       callbackWhen: String(f.callback_when || ""),
       doNotCall: yes(f.do_not_call),

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { memoryStore } from "../lib/store.mjs";
-import { saveReview } from "../lib/coach.mjs";
 import { initiationData } from "../lib/callback.mjs";
+import { saveReview, reviewPending, buildDigest, sofiaDay } from "../lib/coach.mjs";
 import { salesReviewPending, approveFbRule, rejectFbRule, fbRulesList, removeFbRule, salesStats, salesText, getFbRules } from "../lib/sales-coach.mjs";
 import { handleTelegram } from "../lib/commands.mjs";
 
@@ -88,7 +88,7 @@ test("sales are counted against the 20–25% goal from real conversations only",
   await store.setJSON("feedback/fb-5", { at, outcome: "no_conversation" }); // not a talk
   await store.setJSON("feedback/fb-6", { at, outcome: "voicemail" }); // not a talk
   const s = await salesStats(store, NOW);
-  assert.deepEqual(s, { talks: 4, sales: 1, pct: 25 });
+  assert.deepEqual(s, { talks: 4, sales: 1, pct: 25, by: { elena: { talks: 4, sales: 1 } } });
   assert.equal(salesText(s), "✅ Продажби: 1 от 4 разговора (25%) · цел 20–25%");
   assert.match(salesText({ talks: 5, sales: 0, pct: 0 }), /📈 Продажби: 0 от 5/);
 });
@@ -103,4 +103,50 @@ test("Telegram: /da_N, /ne_N, /pravila, /mahni_p_N", async () => {
   assert.match(await send("/pravila"), /Правило едно\. – \/mahni_p_1/);
   assert.match(await send("/mahni_p_1"), /Махнах/);
   assert.match(await send("/ne_2"), /Няма предложение №2/);
+});
+
+test("the 5-minute job does not reread calls it already finished (it was taking ~13 s)", async () => {
+  const store = memoryStore();
+  const { fetchImpl } = fakeAI({ reason: "has_gel", summary: "Още има гел.", agent_part: "", rule: "", why: "" });
+  for (let i = 0; i < 6; i++) await saveReview(store, feedbackCall(`c${i}`, i % 2 ? "reorder" : "declined"), NOW);
+  const ctx = { store, env, fetchImpl, notify: async () => {} };
+  await salesReviewPending(ctx, NOW, { max: 10 });
+  await reviewPending({ store, env, fetchImpl: fakeAI({ natural: 4, clear: 4, correct: 4, issues: [], good: [] }).fetchImpl }, NOW, { max: 10 });
+
+  let reads = 0;
+  const get = store.get.bind(store);
+  store.get = async (...a) => (reads++, get(...a));
+  await salesReviewPending(ctx, NOW, { max: 10 });
+  await reviewPending({ store, env, fetchImpl }, NOW, { max: 10 });
+  assert.equal(reads, 0, "nothing left to read");
+
+  // A new call is still picked up.
+  await saveReview(store, feedbackCall("c9", "declined"), NOW);
+  assert.equal((await salesReviewPending(ctx, NOW, { max: 10 })).sales, 1);
+});
+
+test("the evening report sends feedback-call lessons to /da_N, not to the order script's /urok_N", async () => {
+  const store = memoryStore();
+  await saveReview(store, feedbackCall("f1", "declined"), NOW);
+  const rec = await store.get(`review/${sofiaDay(NOW)}/f1`, { type: "json" });
+  await store.setJSON(`review/${sofiaDay(NOW)}/f1`, { ...rec, reviewed: true, review: { natural: 3, clear: 3, correct: 3, issues: [{ kind: "claim", quote: "помогнаха ли Ви", fix: "как Ви се сториха" }], good: [] } });
+  const { fetchImpl } = fakeAI({ summary: "Свърза продукта с лечение.", lessons: [{ text: "Питай „Как Ви се сториха?“, а не „помогнаха ли Ви“.", why: "Козметика." }] });
+  const text = await buildDigest({ store, env, fetchImpl }, NOW);
+  assert.match(text, /Предлагам за обратната връзка/);
+  assert.match(text, /✅ \/da_1 · ❌ \/ne_1/);
+  assert.doesNotMatch(text, /\/urok_/);
+  assert.match(await approveFbRule(store, 1, NOW), /Добавено/);
+  assert.equal((await getFbRules(store))[0].text, "Питай „Как Ви се сториха?“, а не „помогнаха ли Ви“.");
+});
+
+test("Елена vs Николай: sales are shown per voice once Николай calls", async () => {
+  const store = memoryStore();
+  const at = NOW.toISOString();
+  await store.setJSON("feedback/fb-1", { at, outcome: "reorder", reorderPack: "3", persona: "nikolay" });
+  await store.setJSON("feedback/fb-2", { at, outcome: "declined", persona: "nikolay" });
+  await store.setJSON("feedback/fb-3", { at, outcome: "declined" });
+  const text = salesText(await salesStats(store, NOW));
+  assert.match(text, /Продажби: 1 от 3 разговора/);
+  assert.match(text, /Елена: 0 от 1 \(0%\) · Николай: 1 от 2 \(50%\)/);
+  assert.match(text, /рано за извод/);
 });

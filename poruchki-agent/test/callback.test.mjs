@@ -213,3 +213,27 @@ test("setup: refuses to replace someone else's initiation webhook", async () => 
     url.endsWith("/v1/convai/settings") ? Response.json({ conversation_initiation_client_data_webhook: { url: "https://other.example/hook" } }) : Response.json({});
   await assert.rejects(setupCallback({ apiKey: "x", inboundAgentId: "in", outboundAgentId: "out", initUrl: "https://s/webhook/el-init/abc", fetchImpl }), /друг webhook/);
 });
+
+test("Николай: women get him or Елена half/half, men always Елена; he speaks with Kosta's voice as a man", async () => {
+  const { feedbackPersona, NIKOLAY_VOICE } = await import("../lib/persona.mjs");
+  assert.equal(feedbackPersona("Иван Петров", "1649"), "elena");
+  assert.equal(feedbackPersona("Мария", "1649"), "elena", "no surname – we cannot tell");
+  const women = Array.from({ length: 200 }, (_, i) => feedbackPersona("Мария Петрова", String(1000 + i)));
+  const n = women.filter((p) => p === "nikolay").length;
+  assert.ok(n > 70 && n < 130, `about half: ${n}`);
+  assert.equal(feedbackPersona("Мария Петрова", "1649"), feedbackPersona("Мария Петрова", "1649"), "a retry keeps the voice");
+
+  const { memoryStore } = await import("../lib/store.mjs");
+  const { initiationData } = await import("../lib/callback.mjs");
+  const store = memoryStore();
+  const now = new Date("2026-11-23T10:00:00Z");
+  await store.setJSON("pending/359888123456", { variables: { campaign: "feedback", order_key: "fb-1649", customer_name: "госпожо Петрова", persona: "nikolay", voice_id: NIKOLAY_VOICE.id }, script: "feedback", at: now.toISOString() });
+  const init = await initiationData({ store, body: { caller_id: "+442045775777", conversation_id: "x" }, outboundScript: async () => null, now });
+  const o = init.response.conversation_config_override;
+  assert.match(o.agent.first_message, /Обажда се Николай/);
+  assert.doesNotMatch(o.agent.first_message, /Елена/);
+  assert.match(o.agent.prompt.prompt, /Ти си Николай – дигиталният асистент/);
+  assert.match(o.agent.prompt.prompt, /мъжки род/);
+  assert.equal(o.tts.voice_id, "gdk0ZsvfAOobfbTtnx6p");
+  assert.equal(init.response.dynamic_variables.persona, "nikolay");
+});

@@ -9,6 +9,7 @@
 //   /obratna_stop, /obratna_status
 // Each order is a record "fb-<number>" – the same key as the call's order_key, so the
 // initiation webhook marks it answered and the result (lib/feedback.mjs) marks it done.
+import { NIKOLAY_VOICE, PERSONAS } from "./persona.mjs";
 import { feedbackVariables } from "./feedback.mjs";
 import { normalizePhoneBG, sofiaNow, inCallingHours } from "./format.mjs";
 import { getSettings, saveSettings } from "./store.mjs";
@@ -16,6 +17,13 @@ import { PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
 import { salesStats, salesText } from "./sales-coach.mjs";
 
 export const FEEDBACK_HOURS = "10:00-19:30"; // Monday to Saturday
+export const FEEDBACK_HOURS_SUNDAY = "11:00-18:00";
+const HOURS_TEXT = "пон–съб 10:00–19:30, нед 11:00–18:00";
+
+/** May a feedback call start now (Sofia time)? */
+export function feedbackHoursOpen(now = new Date()) {
+  return inCallingHours(sofiaNow(now).weekday === 0 ? FEEDBACK_HOURS_SUNDAY : FEEDBACK_HOURS, now);
+}
 export const MAX_TRIES = 2; // not answered → once more, an hour later
 export const RETRY_AFTER_MIN = 60;
 // Zadarma rings the customer for under a minute: after this, nobody answered.
@@ -115,7 +123,7 @@ export async function prepareFeedback(deps, text, now = new Date()) {
     ...ok,
     ...(skipped.length ? ["", "Пропуснати:", ...skipped] : []),
     "",
-    ok.length ? `Пробно обаждане до теб: /obratna_test ${esc(results.find((r) => !r.error)?.label || "")}\nЗвъни на всички (пон–съб 10:00–19:30, по един): /obratna_start` : "Няма кого да звъннем.",
+    ok.length ? `Пробно обаждане до теб: /obratna_test ${esc(results.find((r) => !r.error)?.label || "")}\nЗвъни на всички (${HOURS_TEXT}, по един): /obratna_start` : "Няма кого да звъннем.",
   ].join("\n");
 }
 
@@ -130,13 +138,16 @@ export async function testFeedback(deps, text, now = new Date()) {
     if (r.error) return `#${esc(label)} – ${esc(r.error)}`;
     order = r;
   }
-  const variables = { ...feedbackVariables(order, now), order_key: "test", test: "yes", persona: "elena" };
+  // "/obratna_test 1649 николай" – hear Николай's voice; otherwise Елена.
+  const persona = /николай|nikolay|nikolai|мъж/i.test(String(text)) ? "nikolay" : "elena";
+  const { voice_id: _voice, ...base } = feedbackVariables(order, now);
+  const variables = { ...base, order_key: "test", test: "yes", persona, ...(persona === "nikolay" ? { voice_id: NIKOLAY_VOICE.id } : {}) };
   try {
     await deps.call({ to: deps.config.testPhone, variables, script: "feedback" });
   } catch (err) {
     return `⚠️ Не успях да звънна: ${esc(String(err.message).slice(0, 300))}`;
   }
-  return `📞 Елена звъни на ${esc(deps.config.testPhone)} като за поръчка #${esc(label)} (${esc(variables.customer_name)}, ${esc(variables.bought_text)}). Отговаряй като клиента. После ще ти пиша резултата.`;
+  return `📞 ${PERSONAS[persona]} звъни на ${esc(deps.config.testPhone)} като за поръчка #${esc(label)} (${esc(variables.customer_name)}, ${esc(variables.bought_text)}). Отговаряй като клиента. После ще ти пиша резултата.`;
 }
 
 async function records(store) {
@@ -166,10 +177,9 @@ export async function startFeedback(deps, now = new Date()) {
     return "Няма клиенти за обаждане. Първо /obratna и номерата на поръчките.";
   }
   await saveSettings(deps.store, { ...settings, feedbackOn: true, feedbackReported: false });
-  const t = sofiaNow(now);
-  const open = t.weekday !== 0 && inCallingHours(FEEDBACK_HOURS, now);
+  const open = feedbackHoursOpen(now);
   const lines = [
-    `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня един след друг – следващият, щом свърши предишният разговор${open ? ". Започвам до 5 минути." : ". От понеделник до събота, 10:00–19:30."}`,
+    `▶️ Обратна връзка: ${clients(n)} на опашката. Звъня един след друг – следващият, щом свърши предишният разговор${open ? ". Започвам до 5 минути." : `. Звъня ${HOURS_TEXT}.`}`,
     "/obratna_stop спира, /obratna_status показва докъде сме.",
   ];
   if (settings.paused) lines.push("⚠️ Обажданията са на пауза (/stop) – напиши /pusni, за да тръгнат.");
@@ -252,8 +262,7 @@ export async function runFeedbackQueue(deps, now = new Date()) {
   // /stop in Telegram stops these too. CALLS_PAUSED in Netlify is only for the order calls:
   // feedback calls start only when Mitko writes /obratna_start.
   if (settings.paused) return { feedback: "paused" };
-  const t = sofiaNow(now);
-  if (t.weekday === 0 || !inCallingHours(FEEDBACK_HOURS, now)) return { feedback: "outside hours" };
+  if (!feedbackHoursOpen(now)) return { feedback: "outside hours" };
   if (busy) return { feedback: "call in progress" };
   for (const { key } of (await store.list({ prefix: "pending/" })).blobs) {
     const p = await store.get(key, { type: "json" });

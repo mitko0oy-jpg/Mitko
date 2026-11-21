@@ -152,11 +152,12 @@ test("the queue: one call at a time, no answer → once more an hour later, answ
   assert.match(await feedbackStatus(d), /#1641 Иван – ✅ говорихме/);
 });
 
-test("the queue does not call on Sunday, outside 10:00–19:30, when stopped or while another call connects", async () => {
+test("the queue does not call outside its hours (Sunday only 11:00–18:00), when stopped or while another call connects", async () => {
   const d = deps();
   await prepareFeedback(d, "1649", T0);
   await startFeedback(d, T0);
-  assert.equal((await runFeedbackQueue(d, new Date("2026-11-22T10:00:00Z"))).feedback, "outside hours"); // Sunday
+  assert.equal((await runFeedbackQueue(d, new Date("2026-11-22T08:30:00Z"))).feedback, "outside hours"); // Sunday 10:30
+  assert.equal((await runFeedbackQueue(d, new Date("2026-11-22T16:30:00Z"))).feedback, "outside hours"); // Sunday 18:30
   assert.equal((await runFeedbackQueue(d, new Date("2026-11-21T18:00:00Z"))).feedback, "outside hours"); // 20:00
   await d.store.setJSON("pending/359888000111", { variables: {}, at: min(-2).toISOString() });
   assert.equal((await runFeedbackQueue(d, T0)).feedback, "another call is connecting");
@@ -252,4 +253,22 @@ test("a real conversation still going on is waited for", async () => {
   assert.equal((await runFeedbackQueue(d, min(5))).feedback, "call in progress");
   // A lost result does not block the queue for long.
   assert.match((await runFeedbackQueue(d, min(16))).feedback, /calling #1641/);
+});
+
+test("on Sunday between 11:00 and 18:00 the queue calls", async () => {
+  const d = deps();
+  await prepareFeedback(d, "1649", T0);
+  await startFeedback(d, T0);
+  assert.match((await runFeedbackQueue(d, new Date("2026-11-22T10:00:00Z"))).feedback, /calling #1649/); // Sunday 12:00
+});
+
+test("/obratna_test 1649 николай – Mitko hears Николай; without it, Елена", async () => {
+  const d = deps();
+  await prepareFeedback(d, "1649", T0);
+  assert.match(await testFeedback(d, " 1649 николай", T0), /^📞 Николай звъни/);
+  assert.equal(d.calls[0].variables.persona, "nikolay");
+  assert.equal(d.calls[0].variables.voice_id, "gdk0ZsvfAOobfbTtnx6p");
+  assert.match(await testFeedback(d, " 1649", T0), /^📞 Елена звъни/);
+  assert.equal(d.calls[1].variables.persona, "elena");
+  assert.equal(d.calls[1].variables.voice_id, undefined);
 });

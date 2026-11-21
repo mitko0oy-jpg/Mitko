@@ -9,7 +9,7 @@
 //    order's variables plus the order-confirmation agent's script and first
 //    sentence. A caller with no pending call gets the normal incoming line.
 import { requestCallback } from "./zadarma.mjs";
-import { pickPersona, renamePersona } from "./persona.mjs";
+import { pickPersona, renamePersona, personaNote } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
 import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
 import { fbRulesSection } from "./sales-coach.mjs";
@@ -110,7 +110,13 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   // A test call may ask for a specific voice (voice_id); otherwise Александра's chosen voice.
   const voiceId = variables.voice_id || aleksandraVoiceId;
   const persona =
-    variables.persona === "aleksandra" && voiceId ? "aleksandra" : variables.persona === "elena" ? "elena" : pickPersona(orderKey || key, { aleksandraVoiceId });
+    variables.persona === "nikolay" && variables.voice_id
+      ? "nikolay"
+      : variables.persona === "aleksandra" && voiceId
+        ? "aleksandra"
+        : variables.persona === "elena"
+          ? "elena"
+          : pickPersona(orderKey || key, { aleksandraVoiceId });
   variables.persona = persona;
   if (persona === "aleksandra") variables.voice_id = voiceId;
   for (const [, name] of `${script?.prompt || ""} ${script?.firstMessage || ""}`.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)) {
@@ -122,14 +128,14 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
       agent: {
         // Learned rules are about confirming orders: not added to another agent's script.
         // Each script gets the rules learned for it: order rules, or the feedback rules Mitko approved.
-        prompt: { prompt: renamePersona(script.prompt, persona) + (bundled ? fbRulesSection(feedbackRules) : pending.agentId ? "" : lessonsSection(lessons)) },
+        prompt: { prompt: renamePersona(script.prompt, persona) + personaNote(persona) + (bundled ? fbRulesSection(feedbackRules) : pending.agentId ? "" : lessonsSection(lessons)) },
         ...(script.firstMessage ? { first_message: renamePersona(script.firstMessage, persona) } : {}),
         ...(script.language ? { language: script.language } : {}),
       },
     };
   }
-  if (persona === "aleksandra") {
-    response.conversation_config_override = { ...(response.conversation_config_override || {}), tts: { voice_id: voiceId } };
+  if (persona !== "elena" && variables.voice_id) {
+    response.conversation_config_override = { ...(response.conversation_config_override || {}), tts: { voice_id: variables.voice_id } };
   }
   // Remember the conversation and that the customer answered.
   if (orderKey && orderKey !== "test") {
