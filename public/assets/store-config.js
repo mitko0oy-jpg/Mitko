@@ -1,6 +1,7 @@
 // The card store (edubel.bg on ConvertBuilder): pages, checkouts and what the cart shows.
 // Prices are not here: they come from shop-catalog.js (PACKAGES, REGULAR), the same as on edubel.site.
 // Inside a ConvertBuilder block, window.EB_LANDING.store can override any of these settings.
+import { TRN } from "./trenazhor-config.js";
 
 // The pages on the live site (the funnel addresses ConvertBuilder gave them).
 // Locally (/magazin/…, /dosieta/, …) store.js uses LOCAL instead.
@@ -17,6 +18,8 @@ export const LINKS = {
   app: "/prilozhenie-trenazhor-za-nvo",
   trenazhor: "/prilozhenie-trenazhor-za-nvo/nvo-trenazhor",
   matematika: "/karti-po-matematika/predvaritelna-poruchka",
+  // the digital products (PDF files and the trainer), paid by card
+  digitalni: "/digitalni-produkti",
   // legal pages
   terms: "/obshti-usloviya",
   privacy: "/poveritelnost",
@@ -26,7 +29,17 @@ export const LINKS = {
 export const LOCAL = {
   home: "/magazin/", lit: "/magazin/literatura/", ezik: "/magazin/balgarski-ezik/", duo: "/magazin/komplekt/",
   produkti: "/magazin/produkti/", shkoli: "/magazin/#uchilishta",
-  dosieta: "/dosieta/", app: "/prilozhenie/", trenazhor: "/trenazhor/",
+  dosieta: "/dosieta/", app: "/prilozhenie/", trenazhor: "/trenazhor/", digitalni: "/magazin/digitalni/",
+};
+
+// The digital products (the page LINKS.digitalni). Each one has its own checkout in ConvertBuilder,
+// paid by card: the PDF comes to the buyer's e-mail as a download link right after the payment, the
+// trainer as a personal code. Prices are euro cents and must match the products in ConvertBuilder.
+export const DIGITAL = {
+  probna: { title: "Пробна матура НВО – PDF", price: 990, checkout: "/digitalni-produkti/poruchka-probna-matura" },
+  karti90: { title: "90 интерактивни карти по литература", price: 790, checkout: "/digitalni-produkti/poruchka-90-karti" },
+  v200: { title: "200 въпроса по БЕЛ – интерактивно приложение", price: 990, checkout: "/digitalni-produkti/poruchka-200-vaprosa" },
+  ...Object.fromEntries(Object.entries(TRN.plans).map(([k, p]) => [`trn-${k}`, { title: `НВО тренажор – ${p.title}`, price: p.price, checkout: TRN.checkout[k] }])),
 };
 
 // The checkout page in ConvertBuilder for each package. The cart holds at most two decks,

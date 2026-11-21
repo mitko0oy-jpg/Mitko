@@ -324,6 +324,14 @@ if (cartDlg) document.addEventListener("click", (e) => {
 /* ---------- links between the store pages follow the settings ---------- */
 for (const a of $$("[data-store]")) a.href = href(a.dataset.store, a.hash || "");
 
+/* ---------- digital products: each button opens that product's own checkout ---------- */
+const DIG = Object.fromEntries(Object.entries(CFG.DIGITAL).map(([k, d]) => {
+  const price = SET.digital?.prices?.[k];
+  return [k, { ...d, price: price > 0 ? Math.round(price * 100) : d.price, checkout: SET.digital?.checkout?.[k] || d.checkout }];
+}));
+for (const a of $$("[data-dig]")) if (DIG[a.dataset.dig]) a.href = DIG[a.dataset.dig].checkout;
+for (const el of $$("[data-dig-price]")) if (DIG[el.dataset.digPrice]) el.textContent = euro(DIG[el.dataset.digPrice].price);
+
 /* ---------- product page: gallery, package options, add / buy now ---------- */
 for (const pdp of $$("[data-pdp]")) {
   const opts = $$('input[name="pkg"]', pdp);

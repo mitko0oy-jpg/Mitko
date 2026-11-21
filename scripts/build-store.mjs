@@ -9,7 +9,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM } from "../public/assets/store-config.js";
+import { LINKS, LOCAL, CHECKOUT, DELIVERY_FROM, DIGITAL } from "../public/assets/store-config.js";
 import { PACKAGES, REGULAR } from "../public/assets/shop-catalog.js";
 import { DOS } from "../public/assets/dosieta-config.js";
 import { TRN } from "../public/assets/trenazhor-config.js";
@@ -31,6 +31,7 @@ const PAGES = [
   { src: "magazin/balgarski-ezik", out: "balgarski-ezik.html", name: "Карти по български език", url: LINKS.ezik },
   { src: "magazin/komplekt", out: "komplekt.html", name: "Комплект: литература + език", url: LINKS.duo },
   { src: "magazin/produkti", out: "produkti.html", name: "Всички продукти", url: LINKS.produkti },
+  { src: "magazin/digitalni", out: "digitalni.html", name: "Дигитални продукти", url: LINKS.digitalni, kind: "dig" },
   // only the shared header, or only the footer, for pages built elsewhere (Черен петък, legal pages)
   { src: "magazin/menu", out: "menu.html", name: "Само менюто (горе)", url: "най-горе на страници, направени отделно" },
   { src: "magazin/dolu", out: "dolu.html", name: "Само долната част", url: "най-долу на страници, направени отделно" },
@@ -202,7 +203,12 @@ window.EB_LANDING = {
     // Адресите на страниците в сайта.
     links: ${JSON.stringify(LINKS, null, 1).replace(/\n\s*/g, " ")},
     // Доставка с едно тесте (от … €). Две тестета са с безплатна доставка.
-    delivery: ${euroVal(DELIVERY_FROM)}
+    delivery: ${euroVal(DELIVERY_FROM)}${page.kind === "dig" ? `,
+    // Дигиталните продукти: цена в евро и страницата с поръчката в ConvertBuilder за всеки от тях.
+    digital: {
+      prices: ${JSON.stringify(Object.fromEntries(Object.entries(DIGITAL).map(([k, d]) => [k, euroVal(d.price)]))).replace(/,/g, ", ")},
+      checkout: ${JSON.stringify(Object.fromEntries(Object.entries(DIGITAL).map(([k, d]) => [k, d.checkout])), null, 1).replace(/\n\s*/g, " ")}
+    }` : ""}
   }
 };
 </script>`;

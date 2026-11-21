@@ -478,6 +478,36 @@ body[data-deck="lit"]{--muted:#46524A}
 @media (max-width:1100px){.pgrid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.pgrid-4{grid-template-columns:1fr}}
 .snav-spacer{height:var(--nav-h)}
+
+/* ---------- digital products ---------- */
+.dig-chips{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;padding:0;list-style:none}
+.dig-chips li{display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:15px;font-weight:700}
+.dig-chips svg{flex:none;width:18px;height:18px;color:#2E8B57}
+.pcard .pc-a.icon{width:58%;height:58%}
+.pc-for{margin:10px 0 0;font-size:14px;font-weight:700;color:var(--ink)}
+.dig-trn{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.dig-trn .pc-media{aspect-ratio:auto;min-height:320px}
+.dig-trn .pc-a{width:auto;height:72%}
+.dig-trn .pc-body{padding:clamp(24px,3vw,38px)}
+.dig-trn .pc-body h3{font-size:clamp(24px,2.4vw,30px)}
+.dig-plans{position:relative;z-index:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:22px}
+.dig-plan{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px 14px;border-radius:18px;background:var(--bg);color:var(--ink);text-decoration:none;text-align:center;box-shadow:inset 0 0 0 1px var(--line);transition:transform .4s var(--spring),box-shadow .3s var(--ease)}
+.dig-plan:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 2px var(--ink)}
+.dig-plan span{font-size:15px;font-weight:700;color:var(--muted)}
+.dig-plan b{font-size:24px;letter-spacing:-.03em}
+.dig-plan small{font-size:13px;font-weight:800;color:var(--accent)}
+.dig-plan.best{background:var(--ink);color:#fff;box-shadow:none}
+.dig-plan.best span{color:rgba(255,255,255,.75)}
+.dig-plan.best small{color:#F3D98B}
+.dig-flag{position:absolute;font-style:normal;top:-11px;left:50%;translate:-50% 0;padding:3px 10px;border-radius:999px;background:linear-gradient(135deg,#F7E2A2,#D8B25C 50%,#B8862C);color:#231705;font-size:11.5px;font-weight:800;white-space:nowrap}
+.dig-note{margin:16px 0 0;font-size:14.5px;color:var(--muted)}
+.dig-note a{color:var(--ink);font-weight:800}
+.dig-link{position:relative;z-index:2;display:inline-block;margin-top:14px;font-weight:800;color:var(--ink)}
+.dig-mail{display:flex;gap:14px;align-items:flex-start;max-width:760px;margin:clamp(26px,3vw,40px) auto 0;padding:18px 22px;border-radius:20px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:16px}
+.dig-mail svg{flex:none;width:26px;height:26px;margin-top:2px;color:var(--accent)}
+.dig-mail p{margin:0}
+@media (max-width:900px){.dig-trn{grid-template-columns:1fr}.dig-trn .pc-media{min-height:0;aspect-ratio:16/9}}
+@media (max-width:520px){.dig-plans{grid-template-columns:1fr}.dig-plan{flex-direction:row;justify-content:space-between;padding:14px 16px}.dig-flag{left:auto;right:12px;translate:none}}
 .hero-pack{background:radial-gradient(70% 80% at 50% 60%,#FFF6E3,#EFE2C6 60%,#E2D0AA)}
 .hero-pack img{position:absolute;inset:auto;width:auto;object-fit:contain;filter:drop-shadow(0 26px 26px rgba(60,40,10,.35))}
 .hero-pack .hp-b{left:50%;bottom:7%;height:84%;translate:-50% 0}
