@@ -523,3 +523,47 @@ setTimeout(() => {
 
 /* ---------- the year in any [data-year] ---------- */
 for (const el of $$("[data-year]")) el.textContent = new Date().getFullYear();
+
+/* ---------- sample pages (the book-game under the literature sets): a tap opens the page large and sharp ---------- */
+for (const box of $$("[data-pages]")) {
+  const items = $$("[data-full]", box);
+  const dlg = box.closest(".addon")?.querySelector("dialog.pv");
+  if (!items.length || !dlg) continue;
+  const img = $(".pv-img", dlg);
+  const scroller = $(".pv-scroll", dlg);
+  let i = 0;
+  const show = (n) => {
+    i = (n + items.length) % items.length;
+    img.src = items[i].dataset.full;
+    img.alt = items[i].dataset.cap || "";
+    $(".pv-cap", dlg).textContent = `${items[i].dataset.cap || ""} · ${i + 1} / ${items.length}`;
+    scroller.scrollTop = 0;
+    scroller.classList.remove("pv-zoom");
+  };
+  // a tap on the page makes it twice as big (for phones); another tap brings it back
+  img.addEventListener("click", () => {
+    scroller.classList.toggle("pv-zoom");
+    if (scroller.classList.contains("pv-zoom")) scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+  });
+  items.forEach((b, n) => b.addEventListener("click", () => {
+    show(n);
+    dlg.showModal();
+  }));
+  $(".pv-x", dlg).addEventListener("click", () => dlg.close());
+  $(".pv-prev", dlg).addEventListener("click", () => show(i - 1));
+  $(".pv-next", dlg).addEventListener("click", () => show(i + 1));
+  dlg.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") show(i - 1);
+    if (e.key === "ArrowRight") show(i + 1);
+  });
+  // a tap beside the page closes it; a swipe sideways turns it
+  dlg.addEventListener("click", (e) => {
+    if (e.target === dlg || e.target === scroller) dlg.close();
+  });
+  let x0 = null;
+  scroller.addEventListener("pointerdown", (e) => (x0 = e.pointerType === "mouse" ? null : e.clientX));
+  scroller.addEventListener("pointerup", (e) => {
+    if (x0 !== null && !scroller.classList.contains("pv-zoom") && Math.abs(e.clientX - x0) > 60) show(i + (e.clientX < x0 ? 1 : -1));
+    x0 = null;
+  });
+}
