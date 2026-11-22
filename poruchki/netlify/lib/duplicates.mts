@@ -111,7 +111,7 @@ export async function checkDuplicates(shop?: string): Promise<{ checked: number;
           await addEvent(
             o.id,
             "duplicate",
-            `Задържана като дублирана: клиентът с ${why}${also ? ` (${also})` : ""} вече поръча № ${x.order_no} (${x.shop_label}, ${fmtDay.format(new Date(x.ordered_at))}). Провери и натисни „Не е дубликат“ или я архивирай.`,
+            `Задържана като дублирана: клиентът със ${why}${also ? ` (${also})` : ""} вече поръча № ${x.order_no} (${x.shop_label}, ${fmtDay.format(new Date(x.ordered_at))}). Провери и натисни „Не е дубликат“ или я архивирай.`,
             { dup_of: Number(x.id) },
           );
           continue;
