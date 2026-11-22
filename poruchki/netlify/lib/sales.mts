@@ -33,6 +33,8 @@ export type AccSettings = {
   ordersFrom: string;
   // Собственикът: как да се казва колоната („Разход Митко“) и имената му в банката (през запетая).
   owner: { label: string; names: string };
+  // Реалният ДДС за внасяне по месеци (ГГГГ-ММ → евро), от справката на счетоводителя; иначе отчетът показва оценка.
+  vatActual: Record<string, number>;
 };
 
 export const DEFAULTS: AccSettings = {
@@ -50,6 +52,7 @@ export const DEFAULTS: AccSettings = {
   vatFrom: "",
   ordersFrom: "",
   owner: { label: "собственик", names: "" },
+  vatActual: {},
 };
 
 const rate = (v: unknown): number | null => {
@@ -66,6 +69,7 @@ export async function accSettings(): Promise<AccSettings> {
     vat: { ...DEFAULTS.vat, ...(s.vat || {}), products: { ...((s.vat && s.vat.products) || {}) } },
     paym: { ...DEFAULTS.paym, ...(s.paym || {}) },
     owner: { ...DEFAULTS.owner, ...(s.owner || {}) },
+    vatActual: { ...(s.vatActual || {}) },
     shops: { ...(s.shops || {}) },
   };
 }

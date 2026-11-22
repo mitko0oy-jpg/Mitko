@@ -1480,8 +1480,13 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.equal(q1.profit, Math.round((p1.profit + 100) * 100) / 100);
   assert.deepEqual([q0.otherSales, q0.revenue, q0.profit], [60, 600, p0.profit], "the bank month has them in the money in already");
   assert.equal(rep3.total.otherSales, 180);
+  // The real VAT from the accountant, by month (the estimate stays next to it).
+  assert.equal((await api("/api/acc/settings", { vatActual: { "2026-13": 5 } })).status, 400);
+  assert.equal((await api("/api/acc/settings", { vatActual: { [m]: "2133.44" } })).status, 200);
+  const rep4 = (await api(`/api/acc/report?from=${prevM}&to=${m}`)).data;
+  assert.deepEqual([rep4.months[1].vatActual, rep4.months[0].vatActual, rep4.months[1].vatDue], [2133.44, null, q1.vatDue]);
   assert.deepEqual([q1.otherOrders, q1.orders, q0.otherOrders], [4, p1.orders, 0], "their count is apart from the orders (no cost from the warehouse)");
-  await api("/api/acc/settings", { vatFrom: "", ordersFrom: "", owner: { label: "собственик", names: "" } });
+  await api("/api/acc/settings", { vatFrom: "", ordersFrom: "", owner: { label: "собственик", names: "" }, vatActual: {} });
 
   // The refund is in the NAP file.
   const xml3 = new TextDecoder("windows-1251").decode(Buffer.from(await (await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } })).arrayBuffer()));

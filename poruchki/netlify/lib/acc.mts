@@ -138,6 +138,17 @@ export async function saveSettings(input: any) {
     if (input.owner.label !== undefined) next.owner.label = s(input.owner.label, 30) || "собственик";
     if (input.owner.names !== undefined) next.owner.names = s(input.owner.names, 300);
   }
+  if (input?.vatActual && typeof input.vatActual === "object") {
+    const va: Record<string, number> = {};
+    for (const [m, v] of Object.entries<any>(input.vatActual)) {
+      if (v === "" || v === null || v === undefined) continue;
+      if (!isMonth(m)) throw bad("vatActual", "Реалният ДДС: месецът е във вида ГГГГ-ММ.");
+      const n = Number(v);
+      if (!Number.isFinite(n) || Math.abs(n) > 1e7) throw bad("vatActual", `Реалният ДДС за ${m} не е число.`);
+      va[m] = Math.round(n * 100) / 100;
+    }
+    next.vatActual = va;
+  }
   for (const k of ["vatFrom", "ordersFrom"] as const)
     if (input?.[k] !== undefined) {
       const m = s(input[k], 7);
@@ -447,6 +458,7 @@ type Month = {
   purchaseVat: number;
   profit: number;
   vatDue: number; // ориентировъчно
+  vatActual: number | null; // реалният, от счетоводителя (ако е въведен)
   returned: number; // върнати пратки (брой)
   ownerOut: number; // преведено от фирмата на собственика (не е в печалбата)
   ownerIn: number; // внесено от собственика във фирмата
@@ -475,7 +487,7 @@ export async function report(fromMonth: string, toMonth: string) {
       {
         month: m, source: fromBank(m) ? "bank" : "orders", vatRegistered: reg(m), orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, bankSales: 0,
         refunds: 0, cogs: 0, cogsMissing: 0, goodsBought: 0, courierAuto: 0, courierInvoices: 0, courier: 0, adsMeta: 0, expenses: {}, expensesTotal: 0,
-        otherIncome: 0, otherSales: 0, otherOrders: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
+        otherIncome: 0, otherSales: 0, otherOrders: 0, purchaseVat: 0, profit: 0, vatDue: 0, vatActual: null, returned: 0, ownerOut: 0, ownerIn: 0,
       },
     ]),
   );
@@ -617,6 +629,7 @@ export async function report(fromMonth: string, toMonth: string) {
     x.expensesTotal = r2(Object.values(x.expenses).reduce((a, b) => a + b, 0));
     x.profit = r2(x.revenueNet - x.refunds + x.otherIncome - x.cogs - x.courier - x.expensesTotal);
     x.vatDue = x.vatRegistered ? r2(x.revenueVatBg - x.purchaseVat) : r2((x.expenses.vat97a || 0) + (x.expenses.meta_vat || 0));
+    x.vatActual = set0.vatActual[x.month] ?? null;
   }
   const list = months.map((m) => M.get(m)!);
   const sum = (k: keyof Month) => r2(list.reduce((a, x) => a + (Number(x[k]) || 0), 0));
