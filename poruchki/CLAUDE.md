@@ -51,7 +51,7 @@
 
 ## Незавършени поръчки
 
-- Ред `<script src="https://mitko-poruchki.netlify.app/c.js" defer></script>` в ConvertBuilder (до кода на Middleware). `public/c.js` чете полетата `name`, `shippingPhone`, `shippingCity`, `shippingAddress`, редовете на `.cart-table` и `.grand-total-wrapper` и ги праща с `sendBeacon` (text/plain, без preflight) към `POST /api/collect` (`collect.mts`) 2 s след писане и при напускане. Без имейл, пароли и плащане.
+- Ред `<script src="https://mitko-poruchki.netlify.app/c.js" defer></script>` в ConvertBuilder (до кода на Middleware). `public/c.js` чете полетата `name`, `shippingPhone`, `shippingCity`, `shippingAddress`, редовете на `.cart-table` и `.grand-total-wrapper` и ги праща (ред на ConvertBuilder → „Име · бр. · цена“: `h4`, `input.cart-row-quantity`, `.row-total` без задрасканата `.checkout-old-price`; сумата – `.grand-total` без старата цена; друг ред – текстът му) с `sendBeacon` (text/plain, без preflight) към `POST /api/collect` (`collect.mts`) 2 s след писане и при напускане. Без имейл, пароли и плащане.
 - Върнал се клиент: `c.js` помни името, телефона, града и адреса в `localStorage` на сайта на магазина (`pr_me`, 90 дни, не и при Global Privacy Control). Ако същият браузър дойде пак, не пише нищо, но телефонното поле на формата е било на екрана ≥ 4 s (IntersectionObserver), при напускане (или след 20 s при формата) се праща ред с `known: true` → `leads.known`, на страницата е „върна се“. Пропуска се, ако същият телефон е поръчал през последните 3 дни. Ако после напише нещо, става обикновен ред (`known` = false).
 - `/api/collect` приема само от домейните в `CB_SITES` (по Origin, без www.), лимит 150 на час на IP; един ред `leads` на посещение (`sid` в sessionStorage). Празните полета не трият написаното.
 - „Поръчал“ се смята при показване: поръчка със същия телефон (последните 9 цифри) след `first_at - 30 мин`, или създадена от „Създай поръчка“ (`leads.order_id`). Пазят се 30 дни (`purgeLeads` в синхронизацията).
@@ -67,7 +67,7 @@
 
 ## Изоставени в Поръчки (като „Изоставена“ в Middleware)
 
-- `lib/abandoned.mts` `syncAbandoned()` (в синхронизацията, преди напомнянията): всеки отворен ред в `leads` с телефон, без поръчка, който чака ≥ 20 мин (до 3 дни), става поръчка `cb_status = 'abandoned'` → `stage = 'abandoned'`, `source = 'abandoned'`, `order_no = И<lead id>`, `cb_id = -(1e9 + lead id)`, `orders.lead_id` (уникален). Продуктите са от редовете на количката („Име · бр. · цена“, `cartLine`).
+- `lib/abandoned.mts` `syncAbandoned()` (в синхронизацията, преди напомнянията): всеки отворен ред в `leads` с телефон, без поръчка, който чака ≥ 20 мин (до 3 дни), става поръчка `cb_status = 'abandoned'` → `stage = 'abandoned'`, `source = 'abandoned'`, `order_no = И<lead id>`, `cb_id = -(1e9 + lead id)`, `orders.lead_id` (уникален). Продуктите и цените са от редовете на количката (`cartLine`: „Име · бр. · цена“ или по-старият текст на реда „Име €39.90 €27.90“ – истинската цена е последната, „ПРОМЕНИ - +“ се маха); сумата е последната цена в `leads.total`, разликата до продуктите е доставката (`fromCart`, `trailingPrices`/`cartValue` в `reminders.mts`). Отворените и некоригирани изоставени редове следват количката при всяка синхронизация (така се попълниха и тези с 0 € отпреди 22.11.2026); след „Редактирай“ или „Потвърди“ – не.
 - Влиза в таб „Активни“ и има превключвател „Изоставени“; НЕ влиза в таблото/статистиките (`stats.mts` `where`), в историята на клиента, в nekorekten и в `MATCH` на незавършените. Товарителница – чак след „Потвърди“: `confirmOrder` → `reviveAbandoned` (cb_status → pending, количката става „Поръчал“).
 - Ако клиентът поръча сам (MATCH) или количката е скрита → изоставеният ред се архивира със събитие в хронологията.
 
@@ -149,7 +149,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 57 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 58 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

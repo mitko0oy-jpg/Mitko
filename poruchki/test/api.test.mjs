@@ -1037,6 +1037,52 @@ test("abandoned carts in the orders list (Изоставена): made by the syn
   await db.end();
 });
 
+test("abandoned carts take the price from the shop's cart: the old crossed-out price is dropped; rows made with 0 € are filled in", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const send = (body) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` }, body: JSON.stringify(body) });
+  // The row's text as c.js sent it before 22.11.2026 (ConvertBuilder shows the old price first).
+  await send({
+    sid: "aband00010", name: "Куюмджиева", phone: "0894 521 215",
+    cart: ["Образователни карти за НВО €39.90 €27.90", 'PDF Писмено изпитване върху "Хубава си, моя горо" €9.90 €0.00', "Ключ с верните отговори ПРОМЕНИ - + €0.00"],
+    total: "€65.60 €33.80",
+  });
+  await db.query("UPDATE leads SET last_at = now() - interval '25 minutes', first_at = now() - interval '30 minutes' WHERE sid = 'aband00010'");
+  await api("/api/settings/sync", {});
+  const row = (await api("/api/orders?tab=&stage=abandoned")).data.orders.find((o) => o.phone === "0894 521 215");
+  assert.ok(row);
+  const o = (await api(`/api/orders/${row.id}`)).data;
+  assert.deepEqual(o.items.map((i) => [i.name, i.qty, i.total]), [
+    ["Образователни карти за НВО", 1, 27.9],
+    ['PDF Писмено изпитване върху "Хубава си, моя горо"', 1, 0],
+    ["Ключ с верните отговори", 1, 0],
+  ]);
+  assert.equal(Number(o.sub_total), 27.9);
+  assert.equal(Number(o.shipping), 5.9);
+  assert.equal(Number(o.total), 33.8);
+
+  // A row made before the fix (0 €) is filled in by the next sync…
+  await db.query("UPDATE orders SET items = $2, cb_items = $2, sub_total = 0, cb_sub_total = 0, shipping = 0, cb_shipping = 0, total = 0, cb_total = 0, total_eur = 0 WHERE id = $1", [
+    row.id, JSON.stringify(o.items.map((i) => ({ ...i, total: 0 }))),
+  ]);
+  await api("/api/settings/sync", {});
+  assert.equal(Number((await api(`/api/orders/${row.id}`)).data.total), 33.8);
+  // …and follows the cart (the customer added a product), but not after a correction by hand.
+  await send({ sid: "aband00010", name: "Куюмджиева", phone: "0894 521 215", cart: ["Образователни карти за НВО · 1 · €27.90", "Карти по литература · 2 · €55.80"], total: "€89.60" });
+  await api("/api/settings/sync", {});
+  let now = (await api(`/api/orders/${row.id}`)).data;
+  assert.equal(Number(now.total), 89.6);
+  assert.deepEqual(now.items.map((i) => [i.name, i.qty, i.total]), [["Образователни карти за НВО", 1, 27.9], ["Карти по литература", 2, 55.8]]);
+  await db.query("UPDATE orders SET edit = '{\"by\":\"test\"}'::jsonb, total = 50 WHERE id = $1", [row.id]);
+  await send({ sid: "aband00010", name: "Куюмджиева", phone: "0894 521 215", cart: ["Образователни карти за НВО · 1 · €27.90"], total: "€33.80" });
+  await api("/api/settings/sync", {});
+  now = (await api(`/api/orders/${row.id}`)).data;
+  assert.equal(Number(now.total), 50, "a corrected row is not touched");
+  await db.end();
+});
+
 test("warehouse: value and days left, a package takes 5, deliveries at the average cost, count and write-off", async () => {
   const r = await api("/api/stock", { name: "Гел с пчелна отрова", grp: "BeeVenom", qty: 100, unit_cost: 1.15, links: [{ product: "BeeVenom Care Gel", units: 1 }] });
   assert.equal(r.status, 200, JSON.stringify(r.data));

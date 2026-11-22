@@ -62,22 +62,43 @@
     var text = function (el) {
       return String(el.innerText || el.textContent || "").replace(/\s+/g, " ").trim();
     };
+    // The price without the crossed-out old one (ConvertBuilder: <span class="row-total">€27.90<span class="checkout-old-price">€39.90</span></span>).
+    var price = function (el) {
+      if (!el) return "";
+      var c = el.cloneNode(true);
+      var old = c.querySelectorAll(".checkout-old-price, s, del, strike");
+      for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+      return String(c.textContent || "").replace(/\s+/g, " ").trim() || text(el);
+    };
+    // A ConvertBuilder cart row → "Име · бройки · цена на реда"; anything else – the row's text as it is.
+    var cartRow = function (row) {
+      try {
+        var sum = row.querySelector(".row-total");
+        var name = row.querySelector(".product-info h4, h4, .product-info .name");
+        if (sum && name && text(name)) {
+          var q = row.querySelector("input.cart-row-quantity, input[type=number]");
+          var qty = Math.max(1, Math.min(99, parseInt((q && q.value) || "1", 10) || 1));
+          return text(name).slice(0, 120) + " · " + qty + " · " + price(sum).slice(0, 30);
+        }
+      } catch (e) {}
+      return text(row).slice(0, 160);
+    };
     var cart = function () {
       var tables = document.querySelectorAll(".cart-table");
       for (var i = 0; i < tables.length; i++) {
         var rows = [];
         var kids = tables[i].children;
         for (var j = 0; j < kids.length && rows.length < 10; j++) {
-          var t = text(kids[j]);
-          if (t) rows.push(t.slice(0, 160));
+          var t = cartRow(kids[j]);
+          if (t) rows.push(t);
         }
         if (rows.length) return rows;
       }
       return [];
     };
     var total = function () {
-      var el = document.querySelector(".grand-total-wrapper .subtotal-price");
-      return el ? text(el).slice(0, 40) : "";
+      var el = document.querySelector(".grand-total-wrapper .grand-total") || document.querySelector(".grand-total-wrapper .subtotal-price");
+      return el ? price(el).slice(0, 40) : "";
     };
     var phoneField = function () {
       for (var i = 0; i < FIELDS.phone.length; i++) {

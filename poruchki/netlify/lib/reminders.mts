@@ -68,11 +68,48 @@ export async function saveReminderSettings(input: any) {
 }
 
 // ---- the cart's value in EUR (the shop shows "24,50 €" or "12 780 Ft") ----
+// The shops often show the old (crossed-out) price before the real one: "€39.90 €27.90", "Ft32,990Ft10,990",
+// "Ft40,640 12,660 Ft" – the real price is always the last one.
+const CUR = "€|EUR|Ft|HUF|Kč|CZK|lei|RON|zł|PLN";
+const NUM = "\\d{1,3}(?:[ .,]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?";
+const PRICE_BEFORE = new RegExp(`(?<!\\p{L})(${CUR})\\s?(${NUM})\\s*$`, "iu"); // "€27.90", "Ft10,990"
+const PRICE_AFTER = new RegExp(`(?<![\\d.,])(${NUM})\\s?(${CUR})\\s*$`, "iu"); // "27,90 €", "12 660 Ft"
+const currencyOf = (sym: string) => {
+  const s = sym.toLowerCase();
+  return s === "ft" || s === "huf" ? "HUF" : s === "kč" || s === "czk" ? "CZK" : s === "lei" || s === "ron" ? "RON" : s === "zł" || s === "pln" ? "PLN" : "EUR";
+};
+/** "10,990" → 10990, "29,90" → 29.9, "1.234,56" → 1234.56, "12 660" → 12660 */
+const toNumber = (s: string) => {
+  const t = s.replace(/\s/g, "");
+  const m = /^(.*)[.,](\d{1,2})$/.exec(t);
+  const n = Number(m ? `${m[1].replace(/[.,]/g, "")}.${m[2]}` : t.replace(/[.,]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** The prices at the end of a text ("Карти €39.90 €27.90" → rest "Карти", prices [39.9, 27.9]); at most `max`, all written the same way. */
+export function trailingPrices(text: string, max = 2) {
+  let rest = String(text || "").replace(/\s+/g, " ").trim();
+  const prices: { amount: number; currency: string }[] = [];
+  let style = "";
+  while (prices.length < max) {
+    const before = /\d$/.test(rest);
+    const m = (before ? PRICE_BEFORE : PRICE_AFTER).exec(rest);
+    // "Гел – ½ цена над 34,90 € €7.95": a price written the other way round is part of the name.
+    if (!m || (style && style !== (before ? "b" : "a"))) break;
+    style = before ? "b" : "a";
+    const [num, sym] = before ? [m[2], m[1]] : [m[1], m[2]];
+    prices.unshift({ amount: toNumber(num), currency: currencyOf(sym) });
+    rest = rest.slice(0, m.index).trim();
+  }
+  return { rest, prices };
+}
+
 export function cartValue(total: string, rates: { rates: Record<string, number>; date: string | null }) {
   const t = String(total || "");
-  const n = Number(t.replace(/[^\d,.]/g, "").replace(/[.,](?=\d{3}\b)/g, "").replace(",", "."));
+  const last = trailingPrices(t, 1).prices[0];
+  const n = last ? last.amount : Number(t.replace(/[^\d,.]/g, "").replace(/[.,](?=\d{3}\b)/g, "").replace(",", "."));
   if (!Number.isFinite(n) || n <= 0) return { amount: 0, currency: "", eur: 0 };
-  const currency = /huf|ft/i.test(t) ? "HUF" : /czk|kč/i.test(t) ? "CZK" : /ron|lei/i.test(t) ? "RON" : /pln|zł/i.test(t) ? "PLN" : "EUR";
+  const currency = last ? last.currency : /huf|ft/i.test(t) ? "HUF" : /czk|kč/i.test(t) ? "CZK" : /ron|lei/i.test(t) ? "RON" : /pln|zł/i.test(t) ? "PLN" : "EUR";
   return { amount: n, currency, eur: Math.round((n / rateFor(currency, rates)) * 100) / 100 };
 }
 
