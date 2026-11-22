@@ -1099,3 +1099,34 @@
 .bvp .bv-zpic__ph .bv-pp>img{border:0;border-radius:0}
 .bvp .bv-lx2__disc--real{background:none;display:block}
 .bvp .bv-lx2__disc--real .bv-patch{width:100%;height:100%;display:block;border-radius:50%}
+
+/* ---------- „Защо да избереш“: бенто – голяма снимка и карти с линейни иконки ---------- */
+.bvp .bv-li{width:24px;height:24px;display:block}
+.bvp .bv-li--s{width:16px;height:16px;display:inline-block;vertical-align:-3px;margin-right:6px}
+.bvp .bv-bento{display:grid;gap:16px;margin-top:40px}
+.bvp .bv-bento__hero{position:relative;margin:0;border-radius:28px;overflow:hidden;min-height:300px;aspect-ratio:1/1;background:var(--honey-50,#FFF7E8);box-shadow:var(--shadow)}
+.bvp .bv-bento__hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}
+.bvp .bv-bento__hero:hover img{transform:scale(1.04)}
+.bvp .bv-bento__hero figcaption{position:absolute;left:0;right:0;bottom:0;padding:90px 22px 20px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.45) 45%,rgba(0,0,0,.72));color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.bvp .bv-bento__hero figcaption b{display:block;font-size:calc(var(--fs) * 1.35);line-height:1.2;letter-spacing:-.01em;margin-bottom:10px}
+.bvp .bv-bento__chips{display:flex;flex-wrap:wrap;gap:8px}
+.bvp .bv-bento__chips span{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.35);font-weight:700;font-size:calc(var(--fs) * .8)}
+.bvp .bv-bento__tiles{display:grid;gap:12px;grid-template-columns:1fr}
+.bvp .bv-tile{position:relative;display:flex;gap:16px;align-items:flex-start;padding:20px 22px;border-radius:22px;background:linear-gradient(160deg,#fff 55%,color-mix(in srgb,var(--acc,#C96F00) 7%,#fff));border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s}
+.bvp .bv-tile:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--acc,#C96F00) 35%,var(--line))}
+.bvp .bv-tile__ico{flex:none;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;color:var(--acc-d,var(--acc,#A35F00));background:color-mix(in srgb,var(--acc,#C96F00) 13%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc,#C96F00) 22%,#fff)}
+.bvp .bv-tile__body{min-width:0;padding-right:26px}
+.bvp .bv-tile h3{margin:2px 0 4px;font-size:calc(var(--fs) * 1.04);line-height:1.25;letter-spacing:-.005em}
+.bvp .bv-tile p{margin:0;color:var(--ink-2);font-size:calc(var(--fs) * .9);line-height:1.5}
+.bvp .bv-tile__n{position:absolute;right:16px;top:12px;font-weight:800;font-size:.8rem;letter-spacing:.06em;color:color-mix(in srgb,var(--acc,#C96F00) 45%,#fff)}
+@media (min-width:640px){
+  .bvp .bv-bento__tiles{grid-template-columns:1fr 1fr}
+  .bvp .bv-bento__tiles>.bv-tile:last-child:nth-child(odd){grid-column:1 / -1}
+  .bvp .bv-bento__hero{aspect-ratio:16/9}
+}
+@media (min-width:960px){
+  .bvp .bv-bento{grid-template-columns:minmax(0,.92fr) minmax(0,1.6fr);align-items:stretch}
+  .bvp .bv-bento__hero{aspect-ratio:auto;min-height:100%}
+  .bvp .bv-bento--n3 .bv-bento__tiles,.bvp .bv-bento--n2 .bv-bento__tiles{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.bvp .bv-bento__hero img,.bvp .bv-tile{transition:none}}

@@ -186,6 +186,24 @@ function packQty(p, k) {
   return m ? +m[1] : 1;
 }
 
+/* ---------- „Защо да избереш“: голяма снимка + карти с линейни иконки (бенто) ---------- */
+function bento(p, bens) {
+  const life = typeof LIFE === 'object' && LIFE[p.id] && LIFE[p.id][0] ? znM(LIFE[p.id][0]) : productLook(p).big;
+  const ok = t => `<span>${lineIcon('check', 'bv-li bv-li--s')}${esc(t)}</span>`;
+  return `<div class="bv-bento bv-bento--n${bens.length}">
+        <figure class="bv-bento__hero bv-rv">
+          <img src="${life}" alt="${esc(p.name)}" width="900" height="900" loading="lazy" decoding="async">
+          <figcaption><b>${esc(p.shortName)}</b><span class="bv-bento__chips">${ok(`${CONFIG.guaranteeDays} дни гаранция`)}${ok('Плащаш при получаване')}</span></figcaption>
+        </figure>
+        <div class="bv-bento__tiles">${bens.map(([ic, h, t], i) => `
+          <article class="bv-tile bv-rv" style="--bv-d:${(i * .07).toFixed(2)}s">
+            <span class="bv-tile__ico">${lineIcon(ic)}</span>
+            <div class="bv-tile__body"><h3>${esc(h)}</h3>${t ? `<p>${esc(t)}</p>` : ''}</div>
+            <span class="bv-tile__n" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>
+          </article>`).join('')}</div>
+      </div>`;
+}
+
 /* ---------- витрина на съставките: голяма карта за основната, по-малки за останалите ---------- */
 function ingShowcase(p, list, meta, h2) {
   const [main, ...rest] = list;
@@ -456,12 +474,12 @@ function renderLanding(p) {
         <span class="bv-eyebrow">Какво получаваш</span>
         <h2>${bensD ? hTxt(bensD.h2) : `Защо да избереш <em class="bv-accent">${esc(p.wellness ? p.shortName.replace(/^Лепенки/, 'лепенките') : p.shortName)}</em>`}</h2>
       </div>
-      <div class="bv-bens${bens.some(b => b[3]) ? '' : ' bv-bens--plain'}${wellBens ? ' bv-bens--well' : ''}">${bens.map(([ic, h, t, m, flip]) => `
+      ${!bens.some(b => b[3]) ? bento(p, bens) : `<div class="bv-bens">${bens.map(([ic, h, t, m, flip]) => `
         <article class="bv-ben${m ? '' : ' bv-ben--plain'}">
           ${m ? `<div class="bv-ben__media">${bvMedia(m, h, 640, 480)}<span class="bv-ben__ico${flip ? ' bv-cwflip' : ''}" aria-hidden="true">${flip ? '<i>❄️</i><i>🔥</i>' : ic}</span></div>` : `<span class="bv-ben__ico" aria-hidden="true">${ic}</span>`}
           <div class="bv-ben__body"><h3>${esc(h)}</h3>${t ? `<p>${esc(t)}</p>` : ''}</div>
           <span class="bv-glare" aria-hidden="true"></span>
-        </article>`).join('')}</div>
+        </article>`).join('')}</div>`}
       ${bens.some(b => b[3]) ? '<p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>' : ''}
       <div class="bv-assure">
         <div class="bv-card"><h3><span class="bv-ico">🔬</span>Качество и сигурност</h3><ul class="bv-qual">
