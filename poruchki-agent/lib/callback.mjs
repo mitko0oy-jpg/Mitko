@@ -7,12 +7,15 @@
 //    our initiation webhook who is calling (caller_id).
 // 3. initiationData(): finds the pending call by that number and returns the
 //    order's variables plus the order-confirmation agent's script and first
-//    sentence. A caller with no pending call gets the normal incoming line.
+//    sentence. A caller with no pending call gets the normal incoming line:
+//    Стела with the zdravets.eu catalogue (agent/inbound-zdravets*), filled in per call.
 import { requestCallback } from "./zadarma.mjs";
 import { pickPersona, renamePersona, personaNote } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
-import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
+import { FEEDBACK_SCRIPT, INBOUND_SCRIPT } from "./scripts.generated.mjs";
 import { fbRulesSection } from "./sales-coach.mjs";
+import { renderPriceList } from "./inbound.mjs";
+import inboundPriceList from "../agent/pricelist-zdravets.json" with { type: "json" };
 
 // Scripts that live in git (scripts/build-scripts.mjs) instead of an ElevenLabs agent.
 const BUNDLED = { feedback: FEEDBACK_SCRIPT };
@@ -74,8 +77,24 @@ export async function startCallbackCall({ store, zadarma, to, variables, agentId
  * @param {string} [args.aleksandraVoiceId] when set, half of the calls are made by Александра (lib/persona.mjs)
  * @returns {Promise<{response: object, orderKey: string|null}>}
  */
-export async function initiationData({ store, body, outboundScript, ownNumber = "", lessons = [], feedbackRules = [], aleksandraVoiceId = "", now = new Date() }) {
-  const inbound = { response: { type: "conversation_initiation_client_data", dynamic_variables: {} }, orderKey: null };
+/** The incoming line's script for a real incoming call (null = the agent's own script in ElevenLabs). */
+export function incomingOverride(script = INBOUND_SCRIPT, priceList = inboundPriceList, now = new Date()) {
+  if (!script?.prompt) return null;
+  return {
+    agent: {
+      prompt: { prompt: script.prompt.replace("[[PRICE_LIST]]", renderPriceList(priceList, now)) },
+      ...(script.firstMessage ? { first_message: script.firstMessage } : {}),
+      ...(script.language ? { language: script.language } : {}),
+    },
+  };
+}
+
+export async function initiationData({ store, body, outboundScript, ownNumber = "", lessons = [], feedbackRules = [], aleksandraVoiceId = "", inboundScript = INBOUND_SCRIPT, now = new Date() }) {
+  const override = incomingOverride(inboundScript, inboundPriceList, now);
+  const inbound = {
+    response: { type: "conversation_initiation_client_data", dynamic_variables: {}, ...(override ? { conversation_config_override: override } : {}) },
+    orderKey: null,
+  };
   const digits = phoneDigits(body?.caller_id);
   let key = digits ? pendingKey(digits) : null;
   let pending = key ? await store.get(key, { type: "json" }) : null;

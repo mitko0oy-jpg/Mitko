@@ -5,9 +5,11 @@
 import { randomBytes } from "node:crypto";
 import { normalizePhoneBG, moneyBG } from "./format.mjs";
 import { freeDeliveryFor } from "./upsell.mjs";
+import { quoteZ, renderZdravets } from "./zdravets.mjs";
 
 /** Price list as text for the inbound agent's prompt. */
-export function renderPriceList(pl) {
+export function renderPriceList(pl, now = new Date()) {
+  if (pl.kind === "zdravets") return renderZdravets(pl, now);
   const lines = pl.products.map((p) => `- ${p.name}: ${moneyBG(p.price)}${p.gift ? ` (подарък: ${p.gift})` : ""} [код ${p.id}]`);
   const d = Object.values(pl.delivery).map((x) => `- Доставка ${x.label}: ${moneyBG(x.price)}`);
   return [...lines, "", ...d, "- Плащане: наложен платеж – на куриера при получаване, в брой или с карта."].join("\n");
@@ -18,7 +20,8 @@ export function renderPriceList(pl) {
  * @param {any} pl price list
  * @param {{items: {product_id: string, quantity: number}[], delivery: string}} order
  */
-export function quote(pl, order) {
+export function quote(pl, order, now = new Date()) {
+  if (pl.kind === "zdravets") return quoteZ(pl, order, now);
   const errors = [];
   const lines = [];
   for (const it of order.items || []) {
@@ -79,7 +82,8 @@ export async function findOrders(cb, rawPhone, mw = null) {
  */
 export async function submitOrder(deps, body, now = new Date()) {
   const { store, notify, priceList } = deps;
-  const q = quote(priceList, body);
+  const q = quote(priceList, body, now);
+  if (!q.delivery && priceList.kind === "zdravets") q.errors.push("не е избран начин на доставка (офис на Еконт, офис на Спиди или адрес)");
   const name = String(body.customer_name || "").trim();
   const phone = normalizePhoneBG(body.phone) || normalizePhoneBG(body.caller_phone);
   const city = String(body.city || "").trim();
@@ -98,6 +102,7 @@ export async function submitOrder(deps, body, now = new Date()) {
     phone,
     callerPhone: body.caller_phone || "",
     items: q.lines.map((l) => ({ id: l.id, name: l.name, cb: l.cb, qty: l.qty, sum: l.sum, gift: l.gift || "" })),
+    ...(q.gift ? { gift: q.gift.text } : {}),
     delivery: { type: body.delivery, label: q.delivery.label, price: q.delivery.price, city, place },
     total: q.total,
     note: String(body.note || "").slice(0, 500),
@@ -111,10 +116,13 @@ export async function submitOrder(deps, body, now = new Date()) {
     `${esc(name)} · ${esc(phone)}`,
     ...rec.items.map((i) => `🛒 ${i.qty} × ${esc(i.cb || i.name)} – ${esc(moneyBG(i.sum))}${i.gift ? ` (+ подарък ${esc(i.gift)})` : ""}`),
     `🚚 ${esc(q.delivery.label)}: ${esc(city)}, ${esc(place)} – ${esc(moneyBG(q.delivery.price))}`,
+    q.gift ? `🎁 ${esc(q.gift.cb)}` : "",
     `💶 Общо с доставката: <b>${esc(q.totalText)}</b>, наложен платеж`,
     rec.note ? `📝 ${esc(rec.note)}` : "",
     "",
-    "Въведи я в Middleware.",
+    priceList.kind === "zdravets"
+      ? "Въведи я в магазина на Здравец Натура в ConvertBuilder (№ в скобите е продуктът там)."
+      : "Въведи я в Middleware.",
   ].filter((l) => l !== "");
   await notify(lines.join("\n"));
 

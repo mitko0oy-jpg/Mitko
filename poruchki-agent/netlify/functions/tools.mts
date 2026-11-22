@@ -3,9 +3,11 @@
 //   POST /tools/<TOOLS_SECRET>/quote-order   { items[], delivery }
 //   POST /tools/<TOOLS_SECRET>/submit-order  { customer_name, phone?, caller_phone, items[], delivery, city, office_or_address, note? }
 import type { Config, Context } from "@netlify/functions";
-import priceList from "../../agent/pricelist-bg.json" with { type: "json" };
+// The incoming line sells the zdravets.eu catalogue (scripts/build-zdravets-pricelist.mjs).
+import priceList from "../../agent/pricelist-zdravets.json" with { type: "json" };
 import { realDeps, env } from "../../lib/config.mjs";
 import { findOrders, submitOrder, quote } from "../../lib/inbound.mjs";
+import { quoteAnswer } from "../../lib/zdravets.mjs";
 
 export default async (req: Request, context: Context) => {
   const secret = env("TOOLS_SECRET");
@@ -19,7 +21,8 @@ export default async (req: Request, context: Context) => {
     if (context.params.name === "quote-order") {
       const q = quote(priceList, body);
       if (q.errors.length) return Response.json({ ok: false, error: q.errors.join("; ") });
-      return Response.json({ ok: true, total: q.totalText, delivery: `${q.delivery.label} – ${q.delivery.price.toFixed(2)} €`, items: q.lines.map((l) => `${l.qty} × ${l.name}${l.gift ? ` (подарък: ${l.gift})` : ""}`) });
+      if (!q.delivery) return Response.json({ ok: false, error: "не е избран начин на доставка (офис на Еконт, офис на Спиди или адрес)" });
+      return Response.json(quoteAnswer(q));
     }
     if (context.params.name === "submit-order") {
       return Response.json(await submitOrder({ store: deps.store, notify: deps.notify, priceList }, body));

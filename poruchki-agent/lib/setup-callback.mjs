@@ -8,6 +8,9 @@
 //    - also collects the order-confirmation fields (outcome, cancel_reason, …),
 //      so results of callback calls reach the order the same way as before,
 //    - and the feedback call's fields (fb_outcome, fb_reorder_pack, …).
+// 3. The incoming agent's order tools (get_total, submit_order): the product code is any text –
+//    our server checks it against the zdravets.eu catalogue (lib/zdravets.mjs), so a new product
+//    on the site needs no change in ElevenLabs.
 
 import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
 
@@ -16,6 +19,37 @@ const API = "https://api.elevenlabs.io";
 // The feedback call's fields, with a "fb_" prefix: the incoming agent's own
 // "outcome" and "summary" mean something else (lib/feedback.mjs reads both).
 export const FEEDBACK_FIELDS = Object.fromEntries(Object.entries(FEEDBACK_SCRIPT.dataCollection).map(([k, d]) => [`fb_${k}`, d]));
+
+export const PRODUCT_ID_HELP = "Кодът на продукта от „Каталог“ – думата след „код“, например gel, spray, vein, skin, berberin, trio, addon_bvpatch.";
+export const QUANTITY_HELP = "Общ брой от този продукт (например три гела = 3; уелнес лепенки – брой кутии).";
+const DELIVERY_HELP = "Начин на доставка: econt_office (офис на Еконт), speedy_office (офис на Спиди) или speedy_address (до адрес).";
+
+/** The incoming agent's tools: product_id without a fixed list of codes. */
+async function freeProductCodes(api, toolIds) {
+  let fixed = 0;
+  const errors = [];
+  for (const id of toolIds) {
+    try {
+      const t = await api("GET", `/v1/convai/tools/${id}`);
+      const cfg = t.tool_config;
+      const props = cfg?.api_schema?.request_body_schema?.properties;
+      const item = props?.items?.items?.properties;
+      if (!item?.product_id) continue;
+      const done = !item.product_id.enum && item.product_id.description === PRODUCT_ID_HELP && item.quantity?.description === QUANTITY_HELP;
+      if (!done) {
+        const { enum: _codes, ...pid } = item.product_id;
+        item.product_id = { ...pid, description: PRODUCT_ID_HELP };
+        if (item.quantity) item.quantity = { ...item.quantity, description: QUANTITY_HELP };
+        if (props.delivery) props.delivery = { ...props.delivery, description: DELIVERY_HELP };
+        await api("PATCH", `/v1/convai/tools/${id}`, { tool_config: cfg });
+      }
+      fixed++;
+    } catch (err) {
+      errors.push(String(err.message || err).slice(0, 200));
+    }
+  }
+  return { fixed, errors };
+}
 
 export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, initUrl, fetchImpl = fetch }) {
   if (!apiKey || !inboundAgentId || !outboundAgentId || !initUrl) {
@@ -85,5 +119,14 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
   report.push(`${fetchOn ? "✅" : "⚠️"} входящият агент взима данните от webhook-а`);
   report.push(`${overridesOn ? "✅" : "⚠️"} сценарият и първото изречение може да се сменят при обаждане`);
   report.push(`${voiceOn ? "✅" : "⚠️"} гласът може да се сменя при обаждане (за Александра)`);
-  return { ok: fetchOn && overridesOn && dcOk && fbOk && voiceOn, report };
+
+  // 3. The order tools of the incoming line (Стела sells the whole zdravets.eu catalogue).
+  const tools = await freeProductCodes(api, after.conversation_config?.agent?.prompt?.tool_ids || []);
+  const toolsOk = tools.fixed >= 2 && !tools.errors.length;
+  report.push(
+    toolsOk
+      ? `✅ инструментите за поръчка приемат всички продукти от zdravets.eu (${tools.fixed})`
+      : `⚠️ инструментите за поръчка: оправени ${tools.fixed}${tools.errors.length ? ` – грешка: ${tools.errors[0]}` : ""}`,
+  );
+  return { ok: fetchOn && overridesOn && dcOk && fbOk && voiceOn && toolsOk, report };
 }

@@ -3,11 +3,13 @@
 //   POST /webhook/el-init/<TOOLS_SECRET>  { caller_id, called_number, agent_id, call_sid, conversation_id }
 // If Zadarma's callback just connected this customer (CALL_ROUTE=zadarma), the
 // answer carries the order's variables and the order-confirmation script.
-// Anyone else is a real incoming call and gets the normal incoming line.
+// Anyone else is a real incoming call and gets the normal incoming line: Стела with the
+// zdravets.eu catalogue (INBOUND_SCRIPT=off on Netlify → the agent's own script in ElevenLabs).
 import type { Config, Context } from "@netlify/functions";
 import { env } from "../../lib/config.mjs";
 import { openStore, getSettings } from "../../lib/store.mjs";
 import { initiationData, outboundScriptLoader } from "../../lib/callback.mjs";
+import { INBOUND_SCRIPT } from "../../lib/scripts.generated.mjs";
 import { getLessons } from "../../lib/coach.mjs";
 import { getFbRules } from "../../lib/sales-coach.mjs";
 
@@ -32,6 +34,7 @@ export default async (req: Request, context: Context) => {
       feedbackRules,
       // Александра's voice: chosen in Telegram (/aleksandra 1|2|3), or from Netlify.
       aleksandraVoiceId: settings.aleksandraVoiceId ?? env("ALEKSANDRA_VOICE_ID"),
+      inboundScript: env("INBOUND_SCRIPT") === "off" ? null : INBOUND_SCRIPT,
     });
     const matched = Object.keys(response.dynamic_variables || {}).length > 0;
     console.log(JSON.stringify({

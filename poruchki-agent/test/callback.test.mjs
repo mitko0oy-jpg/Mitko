@@ -73,11 +73,27 @@ test("initiation webhook: the connected customer gets the order data and the con
   assert.deepEqual(await store.get("conv/conv_1", { type: "json" }), { key: "order/bg/7" });
 });
 
-test("initiation webhook: a real incoming caller gets the normal line", async () => {
+test("initiation webhook: a real incoming caller gets Стела with the zdravets.eu catalogue", async () => {
   const store = memoryStore();
-  const { response, orderKey } = await initiationData({ store, body: { caller_id: "+359877111222" }, outboundScript: SCRIPT, now: T0 });
+  const { response, orderKey } = await initiationData({ store, body: { caller_id: "+359877111222" }, outboundScript: SCRIPT, now: new Date("2026-11-22T10:00:00+02:00") });
   assert.equal(orderKey, null);
-  assert.deepEqual(response, { type: "conversation_initiation_client_data", dynamic_variables: {} });
+  assert.deepEqual(response.dynamic_variables, {});
+  const agent = response.conversation_config_override.agent;
+  assert.match(agent.first_message, /Здравец Натура – Стела/);
+  assert.equal(agent.language, "bg");
+  const prompt = agent.prompt.prompt;
+  assert.ok(!prompt.includes("[["), "every placeholder is filled");
+  assert.match(prompt, /Ти си Стела/);
+  assert.match(prompt, /### Гел за стави с пчелна отрова \[код gel\]/);
+  assert.match(prompt, /Лепенки с берберин \[код berberin\]/);
+  assert.match(prompt, /Черен петък – до 30 ноември включително/);
+  assert.match(prompt, /# Как говориш/, "the shared speaking style is in");
+  // After Black Friday the offer is gone by itself.
+  const after = await initiationData({ store, body: { caller_id: "+359877111222" }, outboundScript: SCRIPT, now: new Date("2026-12-01T10:00:00+02:00") });
+  assert.doesNotMatch(after.response.conversation_config_override.agent.prompt.prompt, /Черен петък/);
+  // Switched off (INBOUND_SCRIPT=off): the agent's own script in ElevenLabs.
+  const off = await initiationData({ store, body: { caller_id: "+359877111222" }, outboundScript: SCRIPT, inboundScript: null, now: T0 });
+  assert.deepEqual(off.response, { type: "conversation_initiation_client_data", dynamic_variables: {} });
 });
 
 test("initiation webhook: an old pending callback is not used", async () => {
@@ -183,7 +199,28 @@ test("Zadarma: answered → the result arrives by order_key and confirms the ord
 
 test("setup: points the workspace at our webhook and opens the incoming agent for callbacks", async () => {
   const calls = [];
-  let inbound = { platform_settings: { data_collection: { intent: { type: "string", description: "x" } }, overrides: {} } };
+  let inbound = {
+    conversation_config: { agent: { prompt: { tool_ids: ["t_find", "t_total", "t_submit"] } } },
+    platform_settings: { data_collection: { intent: { type: "string", description: "x" } }, overrides: {} },
+  };
+  const orderTool = (name) => ({
+    tool_config: {
+      type: "webhook",
+      name,
+      api_schema: {
+        url: "https://s/tools/abc/x",
+        method: "POST",
+        request_body_schema: {
+          type: "object",
+          properties: {
+            items: { type: "array", items: { type: "object", properties: { product_id: { type: "string", description: "Кодът", enum: ["gel-1", "gel-2p1"] }, quantity: { type: "integer", description: "Брой" } } } },
+            delivery: { type: "string", enum: ["econt_office", "speedy_office", "speedy_address"], description: "старо" },
+          },
+        },
+      },
+    },
+  });
+  const tools = { t_find: { tool_config: { type: "webhook", name: "find_order", api_schema: { request_body_schema: { properties: { phone: { type: "string" } } } } } }, t_total: orderTool("get_total"), t_submit: orderTool("submit_order") };
   const outbound = { platform_settings: { data_collection: { outcome: { type: "string", description: "y" }, summary: { type: "string", description: "s" } } } };
   const fetchImpl = async (url, init) => {
     const path = url.replace("https://api.elevenlabs.io", "");
@@ -191,8 +228,13 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
     calls.push({ method: init.method, path, body });
     if (path === "/v1/convai/settings") return Response.json(init.method === "GET" ? {} : {});
     if (path === "/v1/convai/agents/in") {
-      if (init.method === "PATCH") inbound = { platform_settings: { ...inbound.platform_settings, ...body.platform_settings } };
+      if (init.method === "PATCH") inbound = { ...inbound, platform_settings: { ...inbound.platform_settings, ...body.platform_settings } };
       return Response.json(inbound);
+    }
+    const tool = /^\/v1\/convai\/tools\/(\w+)$/.exec(path);
+    if (tool && tools[tool[1]]) {
+      if (init.method === "PATCH") tools[tool[1]] = { tool_config: body.tool_config };
+      return Response.json(tools[tool[1]]);
     }
     if (path === "/v1/convai/agents/out") return Response.json(outbound);
     return new Response("nope", { status: 404 });
@@ -206,6 +248,21 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
   assert.match(inbound.platform_settings.data_collection.fb_outcome.description, /reorder/);
   assert.equal(inbound.platform_settings.data_collection.fb_do_not_call.type, "boolean");
   assert.match(r.report.join("\n"), /полета за обратна връзка/);
+  // The order tools: any product code (checked on our side), the rest of the tool untouched.
+  for (const id of ["t_total", "t_submit"]) {
+    const cfg = tools[id].tool_config;
+    const pid = cfg.api_schema.request_body_schema.properties.items.items.properties.product_id;
+    assert.equal(pid.enum, undefined);
+    assert.match(pid.description, /Каталог/);
+    assert.equal(cfg.api_schema.url, "https://s/tools/abc/x");
+    assert.deepEqual(cfg.api_schema.request_body_schema.properties.delivery.enum, ["econt_office", "speedy_office", "speedy_address"]);
+  }
+  assert.equal(calls.filter((c) => c.method === "PATCH" && c.path.startsWith("/v1/convai/tools/")).length, 2);
+  assert.match(r.report.join("\n"), /приемат всички продукти от zdravets\.eu \(2\)/);
+  // A second run changes nothing.
+  const again = await setupCallback({ apiKey: "x", inboundAgentId: "in", outboundAgentId: "out", initUrl: "https://s/webhook/el-init/abc", fetchImpl });
+  assert.equal(again.ok, true);
+  assert.equal(calls.filter((c) => c.method === "PATCH" && c.path.startsWith("/v1/convai/tools/")).length, 2);
 });
 
 test("setup: refuses to replace someone else's initiation webhook", async () => {

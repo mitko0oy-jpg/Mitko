@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { renderPriceList } from "./inbound.mjs";
 
-export async function loadSpec(file) {
+/** @param {{keepPriceList?: boolean}} [opts] keepPriceList: leave [[PRICE_LIST]] to be filled at call time. */
+export async function loadSpec(file, { keepPriceList = false } = {}) {
   const spec = JSON.parse(await readFile(file, "utf8"));
   const dir = dirname(file);
   let prompt = await readFile(join(dir, spec.prompt_file), "utf8");
@@ -11,8 +12,8 @@ export async function loadSpec(file) {
   let priceList = null;
   if (spec.price_list_file) {
     priceList = JSON.parse(await readFile(join(dir, spec.price_list_file), "utf8"));
-    prompt = prompt.replace("[[PRICE_LIST]]", renderPriceList(priceList));
+    if (!keepPriceList) prompt = prompt.replace("[[PRICE_LIST]]", renderPriceList(priceList));
   }
-  if (prompt.includes("[[")) throw new Error(`unfilled placeholder in ${spec.prompt_file}`);
+  if (prompt.replace("[[PRICE_LIST]]", "").includes("[[")) throw new Error(`unfilled placeholder in ${spec.prompt_file}`);
   return { spec, prompt, priceList };
 }
