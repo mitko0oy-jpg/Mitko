@@ -183,7 +183,7 @@ function render(o) {
     canShip ? `<button class="btn primary sm" id="wbNew">Създай товарителница</button>` : "",
     o.tracking_no && (courier === "speedy" || courier === "econt") ? `<button class="btn sm" id="wbPrint">Етикет</button>` : "",
     o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage) ? `<button class="btn sm danger" id="wbCancel">Анулирай</button>` : "",
-    o.tracking_no && ["shipped", "at_office"].includes(o.stage) && (o.courier === "speedy" || o.courier === "econt") ? `<button class="btn sm" id="wbRedirect">Пренасочи</button>` : "",
+    o.tracking_no && ["shipped", "at_office"].includes(o.stage) && o.courier === "econt" ? `<button class="btn sm" id="wbRedirect">Пренасочи</button>` : "",
   ].join("");
   const reload = async () => render(await api(`/api/orders/${id}`));
   if ($("wbNew")) $("wbNew").onclick = async () => (await openWaybill(id)) && reload();

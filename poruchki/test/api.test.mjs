@@ -1160,7 +1160,7 @@ test("checkout settings like Middleware: the link, couriers for /k.js, seen on t
   assert.match(await js.text(), /До офис/);
 });
 
-test("parcels at the office: the day counter, „Връщат се скоро“, redirect with Econt and a written request for Speedy", async () => {
+test("parcels at the office: the day counter, „Връщат се скоро“ and redirect (Econt only)", async () => {
   const pg = (await import("pg")).default;
   const db = new pg.Client({ connectionString: dbUrl });
   await db.connect();
@@ -1228,17 +1228,15 @@ test("parcels at the office: the day counter, „Връщат се скоро“
     const addrCall = sent.filter((x) => x.path === "/econt/Shipments/LabelService.updateLabel.json").pop().body;
     assert.deepEqual(addrCall.label.receiverAddress, { city: { country: { code3: "BGR" }, name: "София", postCode: "1000" }, other: "ул. Тест 5" });
 
-    // Speedy: its API cannot change a parcel the courier has taken – the request is written down, nothing is sent to Speedy.
+    // Speedy has no redirect: nothing is offered and nothing is sent to Speedy.
     const sp = await api("/api/orders", { shop: "bg", name: "Клиент Спиди", phone: "0888 100 778", city: "София", delivery: { courier: "speedy", type: "office", officeId: "5", officeName: "СОФИЯ - МЛАДОСТ" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
     await db.query("UPDATE orders SET tracking_no = '62000000777', courier = 'speedy', tracking_source = 'cb', parcel_status = 'at_office', parcel_text = 'В офис', office_since = now() - interval '5 days' WHERE id = $1", [sp.data.id]);
-    const spInfo = await api(`/api/waybills/redirect?order=${sp.data.id}`);
-    assert.equal(spInfo.data.api, false);
     const before = sent.length;
-    const spDone = await api("/api/waybills/redirect", { orderId: sp.data.id, type: "office", officeId: "141", officeName: "БОТЕВГРАД - СКЛАД" });
-    assert.equal(spDone.status, 200, JSON.stringify(spDone.data));
-    assert.equal(spDone.data.api, false);
-    assert.ok(!sent.slice(before).some((x) => x.path.startsWith("/speedy/shipment")));
-    assert.ok((await api(`/api/orders/${sp.data.id}`)).data.events.some((e) => /Поискано пренасочване на пратка Спиди № 62000000777 към офис № 141/.test(e.text)));
+    const spInfo = await api(`/api/waybills/redirect?order=${sp.data.id}`);
+    assert.equal(spInfo.status, 400);
+    assert.match(spInfo.data.message || spInfo.data.error || "", /само за Еконт/);
+    assert.equal((await api("/api/waybills/redirect", { orderId: sp.data.id, confirm: true, type: "office", officeId: "141" })).status, 400);
+    assert.ok(!sent.slice(before).some((x) => x.path.startsWith("/speedy/")));
     // Not for a parcel that is already delivered.
     const delivered = (await api("/api/orders?stage=delivered&per=50")).data.orders.find((o) => o.tracking_no);
     if (delivered) assert.equal((await api(`/api/waybills/redirect?order=${delivered.id}`)).status, 400);

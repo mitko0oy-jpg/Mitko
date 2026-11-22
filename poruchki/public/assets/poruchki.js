@@ -72,8 +72,8 @@ function confirmCell(o) {
   return "";
 }
 
-// On its way or waiting at the office, with Speedy or Econt: can go to another office or address.
-const canRedirect = (o) => !!o.tracking_no && ["shipped", "at_office"].includes(o.stage) && ["speedy", "econt"].includes(o.courier);
+// On its way or waiting at the office with Econt: can go to another office or address (Speedy has no redirect).
+const canRedirect = (o) => !!o.tracking_no && ["shipped", "at_office"].includes(o.stage) && o.courier === "econt";
 const canShip = (o) => o.stage !== "abandoned" && !o.digital_only && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 // "ekont" (as Middleware writes it) is Econt.
 const COURIER_ALIAS = { ekont: "econt", spidi: "speedy", "dpd-courier": "speedy", dpd: "speedy" };

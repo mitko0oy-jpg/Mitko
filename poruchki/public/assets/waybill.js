@@ -284,10 +284,8 @@ export async function bulkCreate(orders, onDone) {
 }
 
 /**
- * Пренасочване: the parcel goes to another office, automat or address.
- * Econt does it through its API (a paid instruction, the sender pays); Speedy only before the courier takes the parcel,
- * so for Speedy the window says how and writes down what was asked.
- * Resolves to the result, or null when closed.
+ * Пренасочване (Econt only): the parcel goes to another office, automat or address through Econt's API
+ * (a paid instruction, the sender pays). Resolves to the result, or null when closed.
  */
 export async function openRedirect(orderId) {
   const d = dialog();
@@ -313,7 +311,6 @@ export async function openRedirect(orderId) {
     d.onclose = () => resolve(result);
 
     function econtNote() {
-      if (courier !== "econt") return "";
       const eds = info.editions;
       // Econt answers in words: "Промяна на офиса на получаване", "Промяна начина на доставка до адрес", …
       const can = Array.isArray(eds) && eds.some((e) => /офис|адрес/i.test(e));
@@ -322,27 +319,18 @@ export async function openRedirect(orderId) {
       const err = info.checkError ? `<div class="muted small">Не успях да попитам Еконт какво позволява (${esc(info.checkError)}).</div>` : "";
       return `<div class="note">Еконт таксува пренасочването на <b>теб (подателя)</b> – в същото населено място е по-евтино, до друго се плаща нова доставка. Пращаме само новото място, наложения платеж не го пипаме – след пренасочването провери пратката в Еконт.${allowed}${none}${err}</div>`;
     }
-    function speedyNote() {
-      if (courier !== "speedy") return "";
-      return `<div class="note"><b>Спиди не позволява пренасочване през връзката, след като е взел пратката.</b> Направи го така:
-        <ol class="small" style="margin:6px 0 0 18px;padding:0">
-          <li>Обади се на Спиди: <a href="tel:070017001">0 7001 7001</a> (от мобилен: <a href="tel:170017001">1 7001 7001</a>), кажи товарителница № <b>${esc(info.number)}</b> и новия офис или адрес; или</li>
-          <li>клиентът сам от линка на Спиди в SMS-а/имейла (Smart Control) – в същия град е безплатно.</li>
-        </ol>
-        <div class="muted small" style="margin-top:6px">Избери накъде отива и натисни „Запиши“ – ще остане в хронологията на поръчката.</div></div>`;
-    }
 
     function render() {
       const office = to.type !== "address";
       d.innerHTML = `
         <div class="mh">
           <div><h2>Пренасочване · № ${esc(o.order_no)}</h2>
-            <div class="muted small">${courier === "speedy" ? "Спиди" : "Еконт"} № ${esc(info.number)} · ${esc(o.name || "")} · ${esc(o.phone || "")}</div></div>
+            <div class="muted small">Еконт № ${esc(info.number)} · ${esc(o.name || "")} · ${esc(o.phone || "")}</div></div>
           <button class="iconbtn" data-close aria-label="Затвори">✕</button>
         </div>
         <form class="mb" id="rdForm" autocomplete="off">
           ${nowText ? `<div class="small">Сега: <b>${esc(nowText)}</b> ${officeBadge({ parcel_status: info.stage === "at_office" ? "at_office" : "", office_since: info.office_since })}</div>` : ""}
-          ${econtNote()}${speedyNote()}
+          ${econtNote()}
           <div class="row"><div class="seg" role="group" aria-label="Накъде">${["office", "automat", "address"]
             .map((t) => `<button type="button" data-type="${t}" class="${to.type === t ? "on" : ""}">${TYPE_NAME[t]}</button>`)
             .join("")}</div></div>
@@ -354,12 +342,12 @@ export async function openRedirect(orderId) {
                    <label>Пощенски код<input type="text" name="zip" value="${esc(to.zip)}" inputmode="numeric" maxlength="4"></label></div>
                  <label>Адрес (улица, номер, блок, вход, етаж, апартамент)<input type="text" name="address" value="${esc(to.address)}" required></label>`
           }
-          ${courier === "econt" ? `<label class="chk"><input type="checkbox" id="rdOk"> Разбирам, че Еконт ще таксува пренасочването на мен</label>` : ""}
+          <label class="chk"><input type="checkbox" id="rdOk"> Разбирам, че Еконт ще таксува пренасочването на мен</label>
           <div class="err small" id="rdErr"></div>
         </form>
         <div class="mf">
           <button class="btn" data-close>Откажи</button>
-          <button class="btn primary" id="rdGo">${courier === "econt" ? "Пренасочи" : "Запиши"}</button>
+          <button class="btn primary" id="rdGo">Пренасочи</button>
         </div>`;
       bind();
       if (office && to.city.trim().length >= 2) search(to.city);
@@ -424,22 +412,18 @@ export async function openRedirect(orderId) {
       err.textContent = "";
       if (to.type !== "address" && !to.officeId) return (err.textContent = `Избери ${to.type === "automat" ? "автомат" : "офис"}.`);
       if (to.type === "address" && (!to.city || !to.address)) return (err.textContent = "Напиши града и адреса.");
-      if (courier === "econt" && !d.querySelector("#rdOk")?.checked) return (err.textContent = "Отметни, че Еконт ще таксува пренасочването.");
+      if (!d.querySelector("#rdOk")?.checked) return (err.textContent = "Отметни, че Еконт ще таксува пренасочването.");
       const btn = d.querySelector("#rdGo");
       btn.disabled = true;
-      btn.textContent = courier === "econt" ? "Пренасочвам…" : "Записвам…";
+      btn.textContent = "Пренасочвам…";
       try {
         const body = to.type === "address" ? { type: "address", city: to.city, zip: to.zip, address: to.address } : { type: to.type, officeId: to.officeId, officeName: to.officeName };
-        const r = await api("/api/waybills/redirect", { method: "POST", body: { orderId, confirm: courier === "econt", ...body } });
+        const r = await api("/api/waybills/redirect", { method: "POST", body: { orderId, confirm: true, ...body } });
         result = r;
         d.innerHTML = `
-          <div class="mh"><h2>${r.api ? "Пренасочена" : "Записано"}</h2><button class="iconbtn" data-close aria-label="Затвори">✕</button></div>
+          <div class="mh"><h2>Пренасочена</h2><button class="iconbtn" data-close aria-label="Затвори">✕</button></div>
           <div class="mb">
-            ${
-              r.api
-                ? `<p>Еконт прие пренасочването на № ${esc(info.number)} към <b>${esc(r.where)}</b>${r.price != null ? ` · такса ${eur(r.price, true)}` : ""}.</p>`
-                : `<p>Записах в хронологията: пренасочване на № ${esc(info.number)} към <b>${esc(r.where)}</b>. Не забравяй да се обадиш на Спиди (0 7001 7001), ако клиентът не го направи сам.</p>`
-            }
+            <p>Еконт прие пренасочването на № ${esc(info.number)} към <b>${esc(r.where)}</b>${r.price != null ? ` · такса ${eur(r.price, true)}` : ""}.</p>
             ${(r.warnings || []).map((w) => `<p class="err"><b>Внимание:</b> ${esc(w)}</p>`).join("")}
           </div>
           <div class="mf"><button class="btn primary" data-close>Готово</button></div>`;
@@ -447,7 +431,7 @@ export async function openRedirect(orderId) {
       } catch (e) {
         err.textContent = e.message;
         btn.disabled = false;
-        btn.textContent = courier === "econt" ? "Пренасочи" : "Запиши";
+        btn.textContent = "Пренасочи";
       }
     }
 
