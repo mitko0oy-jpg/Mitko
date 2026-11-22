@@ -1115,3 +1115,73 @@ a.tile { display: block; }
   .steps li:first-child.cur { text-align: left; }
   .steps li:last-child.cur { text-align: right; }
 }
+
+/* ── Phone: each order is a tidy card ──
+   1430 · знаци .................. [Нова]
+   BeeVenom BG .................. преди 4м
+   Елена Маринова (1) ........... 29,90 €
+   0888 105 237
+   [E] Еконт · До офис
+   статус на пратката · товарителница
+   [ⓘ] [SMS] [✈] [⋮] ............. ✎        */
+@media (max-width: 760px) {
+  #table.otbl { border-collapse: separate; }
+  .otbl tr:not(.xrow) {
+    grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 5px;
+    grid-template-areas: "chk no badge" "chk shop when" "chk client money" "chk cour cour" "chk cstat cstat" "chk acts note";
+    margin: 0 0 10px; padding: 12px 12px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  }
+  .otbl tr.sel:not(.xrow) { border-color: var(--accent); background: var(--accent-soft); }
+  .otbl tr.sel td { background: none; }
+  .otbl td.c-check { padding-top: 2px; }
+  .otbl td.c-check input { width: 20px; height: 20px; }
+
+  /* number + the four small signs in one row */
+  .otbl .nocell { gap: 10px; }
+  .otbl .nocell .ono { min-width: 0; font-size: 17px; }
+  .otbl .ic4 { grid-template-columns: repeat(4, 19px); gap: 4px; }
+  .otbl .i4 { width: 19px; height: 19px; font-size: 11px; }
+  .otbl .i4 svg { width: 11px; height: 11px; }
+
+  /* status on the right of the number */
+  .otbl td.c-badge { align-self: start; }
+  .otbl td.c-badge .st { justify-content: flex-end; gap: 4px; }
+  .otbl td.c-badge .bwrap { padding: 4px 0 0 5px; }
+  .otbl td.c-badge .bwrap .badge { width: auto; min-width: 74px; padding: 4px 9px; font-size: 12px; border-radius: 6px; }
+  .otbl td.c-badge .flag { width: 14px; height: 14px; }
+
+  /* shop and time, small and grey */
+  .otbl td.c-shop { grid-area: shop; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .otbl td.c-when { display: block; grid-area: when; text-align: right; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .otbl td.c-when .sub { display: none; }
+
+  /* client: name, then phone; the count of orders and the warning sit after the name */
+  .otbl td.c-client { margin-top: 4px; }
+  .otbl .cg { display: flex; align-items: flex-start; gap: 6px; }
+  .otbl .cg .cmain { order: 0; flex: 0 1 auto; min-width: 0; max-width: none; gap: 1px; }
+  .otbl .cg .cside { order: 1; margin-top: 1px; }
+  .otbl .cg .risk { order: 2; margin-top: 1px; }
+  .otbl .cg .risk:empty { display: none; }
+  .otbl .cname2 { max-width: 100%; font-size: 15.5px; color: var(--text); }
+  .otbl .ph { font-size: 14px; }
+  .otbl td.money { margin-top: 4px; align-self: start; font-size: 16px; }
+  .otbl td.money .sub { font-weight: 400; }
+
+  /* courier on one line: logo, name, where */
+  .otbl td.c-cour { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
+  .otbl td.c-cour .where { margin-top: 0; cursor: default; }
+  .otbl td.c-cstat { text-align: left; font-size: 13px; }
+  .otbl td.c-cstat:empty { display: none; }
+  .otbl td.c-cstat .cour { display: inline; }
+  .otbl td.c-cstat .cour::after { content: " · "; font-style: normal; }
+  .otbl td.c-cstat .wb { display: inline; }
+
+  /* buttons: a little bigger for a finger; the note on the right */
+  .otbl td.acts { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); margin-right: -10px; padding-right: 10px; }
+  .otbl td.c-note { display: flex; grid-area: note; align-self: stretch; align-items: center; justify-content: flex-end; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .otbl td.c-note .notebtn { max-width: 120px; font-size: 12.5px; }
+  .otbl .actsin { gap: 8px; }
+  .otbl .actsin .iconbtn { width: 40px; height: 36px; border-radius: 10px; }
+  .otbl .actsin .iconbtn svg { width: 18px; height: 18px; }
+}
