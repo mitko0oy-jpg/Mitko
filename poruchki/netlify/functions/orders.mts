@@ -232,6 +232,93 @@ async function exportCsv(u: URLSearchParams) {
   });
 }
 
+const P9 = (col: string) => `right(regexp_replace(${col}, '\\D', '', 'g'), 9)`;
+const noEmail = (e: unknown) => !e || /@no\.email$/i.test(String(e));
+
+/**
+ * For „Създай поръчка“: the customer behind a phone (`phone`, the last 9 digits), or the ones whose name or
+ * part of the phone matches `q` – each with the data from the last order and the earlier orders.
+ */
+async function customers(u: URLSearchParams) {
+  const phone = str(u.get("phone"), 40).replace(/\D/g, "");
+  const text = str(u.get("q"), 60);
+  const digits = text.replace(/\D/g, "");
+  const params: unknown[] = [companyId()];
+  let match: string;
+  if (phone.length >= 9) {
+    params.push(phone.slice(-9));
+    match = `${P9("o.phone")} = $2`;
+  } else if (digits.length >= 5 && !/\p{L}/u.test(text)) {
+    // "0894 217", "+359894217", "894217" – the same part of the number.
+    params.push(`%${digits.replace(/^(00359|359|0)/, "")}%`);
+    match = `regexp_replace(o.phone, '\\D', '', 'g') LIKE $2`;
+  } else if (text.length >= 3) {
+    params.push(`%${text.toLowerCase()}%`);
+    match = "lower(o.customer_name) LIKE $2";
+  } else return { customers: [] };
+  const keys = await q<any>(
+    `SELECT k FROM (
+       SELECT ${P9("o.phone")} AS k, max(o.ordered_at) AS last
+         FROM orders o JOIN shops s ON s.id = o.shop
+        WHERE s.company_id = $1 AND o.phone <> '' AND ${match}
+        GROUP BY 1
+     ) t WHERE length(k) = 9 ORDER BY last DESC LIMIT 8`,
+    params,
+  );
+  if (!keys.length) return { customers: [] };
+  const rows = await q<any>(
+    `SELECT o.id, o.order_no, o.ordered_at, o.stage, o.total, o.currency, o.shop, s.label AS shop_label,
+            o.customer_name, o.phone, o.email, o.city, o.zip, o.address, o.address2, o.delivery, o.courier, ${P9("o.phone")} AS k
+       FROM orders o JOIN shops s ON s.id = o.shop
+      WHERE s.company_id = $1 AND ${P9("o.phone")} = ANY($2::text[])
+      ORDER BY o.ordered_at DESC, o.id DESC
+      LIMIT 400`,
+    [companyId(), keys.map((x) => x.k)],
+  );
+  return {
+    customers: keys
+      .map(({ k }) => {
+        const all = rows.filter((r) => r.k === k);
+        if (!all.length) return null;
+        // Abandoned carts are not orders, but their data is still the customer's own.
+        const real = all.filter((r) => r.stage !== "abandoned");
+        const src = real[0] || all[0];
+        const d = src.delivery || {};
+        const n = (stage: string) => real.filter((r) => r.stage === stage).length;
+        return {
+          key: k,
+          name: src.customer_name || "",
+          phone: src.phone || "",
+          email: all.map((r) => r.email).find((e) => !noEmail(e)) || "",
+          city: src.city || "",
+          zip: src.zip || "",
+          address: [src.address, src.address2].filter((x: string) => x && !/^\s*До офис/i.test(x)).join(", "),
+          delivery: {
+            courier: d.courier === "econt" || d.courier === "speedy" ? d.courier : src.courier === "econt" || src.courier === "speedy" ? src.courier : "",
+            type: ["office", "automat", "address"].includes(d.type) ? d.type : "",
+            officeId: d.officeId ? String(d.officeId) : "",
+            officeName: d.officeName ? String(d.officeName) : "",
+          },
+          shop: src.shop,
+          count: real.length,
+          delivered: n("delivered"),
+          returned: n("returned"),
+          canceled: n("canceled"),
+          orders: real.slice(0, 5).map((r) => ({
+            id: Number(r.id),
+            order_no: r.order_no,
+            ordered_at: r.ordered_at,
+            stage: r.stage,
+            total: Number(r.total),
+            currency: r.currency,
+            shop_label: r.shop_label,
+          })),
+        };
+      })
+      .filter(Boolean),
+  };
+}
+
 async function detail(id: number) {
   const o = await one<any>(
     `SELECT o.*, s.label AS shop_label, s.domain AS shop_domain, s.region FROM orders o JOIN shops s ON s.id = o.shop WHERE o.id = $1 AND s.company_id = $2`,
@@ -307,6 +394,8 @@ export default handle(async (req) => {
   if (req.method === "GET" && !idStr) return json(await list(u));
   // Excel (CSV with ; and a BOM, so Bulgarian Excel opens it with Cyrillic and decimal commas).
   if (req.method === "GET" && idStr === "export") return exportCsv(u);
+  // „Създай поръчка“: who is this customer and what did they order before.
+  if (req.method === "GET" && idStr === "customer") return json(await customers(u));
   // Saved filters (☆), per user.
   if (idStr === "saved") {
     const user = await requireUser(req);

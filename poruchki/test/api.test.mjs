@@ -507,6 +507,29 @@ test("contact correction survives the shop sync; new and duplicated orders", asy
   assert.equal(d2.delivery.officeId, "8501");
 });
 
+test("„Създай поръчка“: a customer who ordered before is found by phone or name, with the last data and the earlier orders", async () => {
+  const made = await api("/api/orders", { shop: "bg", name: "Гроздена Петрова", phone: "0894 217 729", email: "gr@example.com", city: "София", delivery: { courier: "speedy", type: "office", officeId: "414", officeName: "Пловдив – Велешки" }, items: [{ name: "Спрей", qty: 1, price: 12.9 }] });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  // The same phone written another way finds her, with the delivery from the last order.
+  const byPhone = (await api("/api/orders/customer?phone=%2B359894217729")).data.customers;
+  assert.equal(byPhone.length, 1);
+  const c = byPhone[0];
+  assert.equal(c.key, "894217729");
+  assert.equal(c.name, "Гроздена Петрова");
+  assert.equal(c.email, "gr@example.com");
+  assert.deepEqual(c.delivery, { courier: "speedy", type: "office", officeId: "414", officeName: "Пловдив – Велешки" });
+  assert.equal(c.count, 1);
+  assert.equal(c.orders[0].order_no, made.data.order_no);
+  // Part of the name or of the number gives a list to choose from; a new number gives nothing.
+  assert.ok((await api("/api/orders/customer?q=гроздена")).data.customers.some((x) => x.key === "894217729"));
+  assert.ok((await api("/api/orders/customer?q=0894%20217")).data.customers.some((x) => x.key === "894217729"));
+  assert.equal((await api("/api/orders/customer?phone=0877000111")).data.customers.length, 0);
+  assert.equal((await api("/api/orders/customer?q=ab")).data.customers.length, 0);
+  // Earlier shop orders count too (Клиент 7 has one in the fake shop).
+  const shopOne = (await api("/api/orders/customer?phone=0888100007")).data.customers[0];
+  assert.ok(shopOne && shopOne.count >= 1 && shopOne.delivery.courier === "econt" && shopOne.delivery.officeId === "1", JSON.stringify(shopOne));
+});
+
 test("phone agent: refused without the token; orders to call; no answer is written down", async () => {
   assert.equal((await fetch(B + "/api/agent/orders?shops=bg")).status, 403);
   const list = await agent(`orders?shops=bg&since=${new Date(Date.now() - 3 * 86400000).toISOString()}`);

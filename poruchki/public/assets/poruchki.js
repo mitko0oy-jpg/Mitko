@@ -525,6 +525,11 @@ $("newOrder").onclick = async () => {
   const r = await openOrderForm({ mode: "new", shops: shopList });
   if (r?.id) location.href = `/poruchka/?id=${r.id}`;
 };
+// „Поръчки → Създай поръчка“ from another page: /poruchki/?nova=1 opens the form.
+if (qs().get("nova") === "1") {
+  setQs({ nova: "" });
+  $("newOrder").click();
+}
 for (const f of ["shop", "region", "courier", "from", "to", "nowaybill", "nek", "confirmed", "sort", "product"]) $(f).onchange = () => ((state.page = 1), load());
 $("sentToday").onchange = () => {
   // Sent today can be on its way or already at the office: look in every tab.
