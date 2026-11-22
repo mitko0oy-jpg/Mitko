@@ -83,10 +83,10 @@ function storeInfo(id) {
 function announceHtml() {
   const msgs = [];
   if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 5 гела + ${12 * giftPacks(B('bf5'))} пластира за ${fmt(B('bf5').price)} + безплатна доставка · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
-  if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 Над ${fmt(HALF_FROM)}: <b>безплатна доставка</b> и <b>всеки следващ продукт на половин цена</b>`);
+  if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 Над ${fmt(HALF_FROM)}: <b>безплатна доставка</b> и <b>всеки следващ продукт с</b> <b class="zn-50">−50%</b>`);
   else {
     if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка над ${fmt(FREE_FROM)}`);
-    if (halfOn()) msgs.push(`🛒 Над ${fmt(HALF_FROM)} <b>всеки следващ продукт е на половин цена</b>`);
+    if (halfOn()) msgs.push(`🛒 Над ${fmt(HALF_FROM)} <b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>`);
   }
   msgs.push(`💶 Плащаш при получаване · 🛡️ <b>${CONFIG.guaranteeDays} дни гаранция</b>`);
   msgs.push(`📞 Поръчка и по телефона: <a href="tel:${CONFIG.phoneHref}"><b>${CONFIG.phone}</b></a>`);
@@ -240,7 +240,7 @@ function drawCart(o) {
       <a class="sp-line__img"${info.url ? ` href="${info.url}"` : ''}><img src="${info.img}" alt="" width="84" height="84" loading="lazy"></a>
       <div class="sp-line__txt"><b>${esc(info.name || i.title)}</b>
         ${c ? `<small>${parts.map(esc).join(' · ')}${comboGift(c) ? ` <span class="sp-line__giftbox">🎁 ${comboGift(c) === 1 ? '1 кутия е подарък' : `${comboGift(c)} кутии са подарък`}</span>` : ''}</small>` : ''}
-        ${info.half ? `<small class="sp-half-tag">½ цена – поръчката е над ${fmt(HALF_FROM)}</small>` : ''}
+        ${info.half ? `<small class="sp-half-tag"><b class="zn-50">−50%</b> – поръчката е над ${fmt(HALF_FROM)}</small>` : ''}
         <div class="sp-line__row">${c ? '<span class="sp-line__fixed">1 комплект</span>' : `<div class="sp-qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><span>${i.quantity || 1}</span><button type="button" data-q="1" aria-label="Повече">+</button></div>`}
           <span class="sp-line__price">${info.half ? `<s>${fmt(info.p.price * (i.quantity || 1))}</s> ` : ''}${fmt(+i.price || 0)}</span></div>
         <button class="sp-line__rm" type="button" data-rm>${ICON.trash} Премахни</button></div></div>`;
@@ -253,8 +253,8 @@ function drawCart(o) {
       ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: ${giftLabel(gift.quantity || 1)}</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas(gift.quantity || 1)} 0,00 €</span></div></div></div>` : ''}
     </div>
     ${offers.length
-      ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави на половин цена</p>${offers.map(halfRow).join('')}</div>`
-      : `<div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${halfOn() ? `<p class="sp-recs__hint">Над ${fmt(HALF_FROM)} всеки следващ продукт е на <b>половин цена</b>.</p>` : ''}${recs(items).slice(0, 2).map(recRow).join('')}</div>`}`;
+      ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави с <b class="zn-50">−50%</b></p>${offers.map(halfRow).join('')}</div>`
+      : `<div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${halfOn() ? `<p class="sp-recs__hint">Над ${fmt(HALF_FROM)} всеки следващ продукт е с <b class="zn-50">−50%</b>.</p>` : ''}${recs(items).slice(0, 2).map(recRow).join('')}</div>`}`;
   foot.innerHTML = `
     <div class="sp-total"><span>Междинна сума</span><b>${fmt(sub)}</b></div>
     <p class="sp-note">Доставката (от ${fmt(SHIP_FROM)}) избираш в следващата стъпка.</p>

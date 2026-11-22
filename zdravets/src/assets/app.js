@@ -212,7 +212,7 @@ async function syncHalf() {
     if (full !== w.full) { changed = true; if (full) await Cart.remove(reg, true); if (w.full) await Cart.add(reg, w.full, true); }
     if (half !== w.half) { changed = true; if (half) await Cart.remove(hs, true); if (w.half) await Cart.add(hs, w.half, true); }
   }
-  if (had && !plan.unlocked) halfNote = `Поръчката вече е под ${fmt(HALF_FROM)}, затова върнахме редовната цена. Добави още ${fmt(plan.left)} и пак получаваш половин цена.`;
+  if (had && !plan.unlocked) halfNote = `Поръчката вече е под ${fmt(HALF_FROM)}, затова върнахме редовната цена. Добави още ${fmt(plan.left)} и пак получаваш <b class="zn-50">−50%</b> на следващия продукт.`;
   else if (plan.unlocked || !Object.keys(plan.want).length) halfNote = '';
   return changed;
 }
@@ -229,9 +229,9 @@ function dealsMsg(items) {
   const same = FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01;
   const pct = plan.unlocked ? 100 : Math.min(100, Math.round((HALF_FROM - plan.left) / HALF_FROM * 100));
   let text;
-  if (plan.unlocked) text = `${shipFree ? '<b>Доставката до офис е безплатна</b>, а ' : ''}<b>всеки следващ продукт е на половин цена</b>${plan.saved > EPS ? ` · спестяваш <b>${fmt(plan.saved)}</b>` : ''}`;
-  else if (same) text = `Още <b>${fmt(plan.left)}</b> до <b>безплатна доставка</b> и <b>½ цена</b> на следващия продукт`;
-  else text = `${FREE_FROM && !shipFree ? `Още <b>${fmt(FREE_FROM - sub)}</b> до <b>безплатна доставка</b>. ` : ''}Още <b>${fmt(plan.left)}</b> до <b>½ цена</b> на следващия продукт`;
+  if (plan.unlocked) text = `${shipFree ? '<b>Доставката до офис е безплатна</b>, а ' : ''}<b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>${plan.saved > EPS ? ` · спестяваш <b>${fmt(plan.saved)}</b>` : ''}`;
+  else if (same) text = `Още <b>${fmt(plan.left)}</b> до <b>безплатна доставка</b> и <b class="zn-50">−50%</b> на следващия продукт`;
+  else text = `${FREE_FROM && !shipFree ? `Още <b>${fmt(FREE_FROM - sub)}</b> до <b>безплатна доставка</b>. ` : ''}Още <b>${fmt(plan.left)}</b> до <b class="zn-50">−50%</b> на следващия продукт`;
   return { done: plan.unlocked, pct, text, plan };
 }
 // продуктите, които да предложим на половин цена: първо подходящите за поръчката, после останалите
@@ -615,11 +615,11 @@ function renderCheckoutHelper() {
       host.id = 'zn-bumps';
       btns.parentElement.insertBefore(host, btns);
     }
-    host.innerHTML = `<p class="zn-bumps-title">${halfList.length ? `Поръчката ти е над ${fmt(HALF_FROM)} – добави на <b>половин цена</b>:` : 'Специално само към тази поръчка:'}</p>` + list.map(b => {
+    host.innerHTML = `<p class="zn-bumps-title">${halfList.length ? `Поръчката ти е над ${fmt(HALF_FROM)} – добави с <b class="zn-50">−50%</b>:` : 'Специално само към тази поръчка:'}</p>` + list.map(b => {
       const p = P(b.id), on = ids.includes(b.store);
       return `<div class="zn-bump${on ? ' on' : ''}${b.half ? ' zn-bump--half' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-bump="${b.id}" data-store="${b.store}">
         <span class="zn-bump-head"><span class="zn-box" aria-hidden="true"></span><span>Да, добави <b>${esc(b.title)}</b> за <b class="zn-price">${fmt(b.price)}</b> <s>${fmt(p.price)}</s>${b.half ? ' <span class="zn-off">−50%</span>' : ''}</span></span>
-        <span class="zn-bump-body"><img src="${productLook(p).img}" alt=""><span>${b.half ? 'Половин цена само към тази поръчка. Идва в същата пратка.' : esc(b.text)}</span></span></div>`;
+        <span class="zn-bump-body"><img src="${productLook(p).img}" alt=""><span>${b.half ? '−50% само към тази поръчка. Идва в същата пратка.' : esc(b.text)}</span></span></div>`;
     }).join('');
     host.querySelectorAll('[data-bump]').forEach(el => {
       const toggle = async () => {

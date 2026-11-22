@@ -599,3 +599,6 @@ body{padding-bottom:0}
 .sp-ghalf__o.on{border-color:#2E7D32;background:#F1F8EE}
 .sp-ghalf__o.on i{background:#2E7D32;border-color:#2E7D32;color:#fff}
 .sp-ghalf__note{margin:8px 0 0;font-size:.85rem;color:var(--muted,var(--sp-muted))}
+
+/* −50%: червен знак, за да се вижда веднага (вместо „половин цена“) */
+.zn-50{display:inline-block;padding:1px 8px;border-radius:999px;background:#D62828;color:#fff!important;font-weight:900;letter-spacing:.01em;line-height:1.35;white-space:nowrap;vertical-align:baseline}
