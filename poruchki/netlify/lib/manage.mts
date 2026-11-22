@@ -1,5 +1,6 @@
 // Everyday order handling: confirm, comment, correct the customer's details, make an order by hand
 // (or from a phone call), duplicate, archive.
+import { releaseDuplicate } from "./duplicates.mts";
 import { normalize } from "./cb.mts";
 import { sofiaDay } from "./dates.mts";
 import { one, q } from "./db.mts";
@@ -25,6 +26,8 @@ export async function addNote(id: number, text: string, userId: number | null, w
 export async function confirmOrder(id: number, by: string, userId: number | null, who: string | null = null) {
   // An abandoned cart confirmed by phone becomes a real order.
   if (await reviveAbandoned(id)) await addEvent(id, "create", "Изоставената количка стана поръчка", {}, userId, who);
+  // Confirming a held duplicate means it is a real order.
+  await releaseDuplicate(id, userId, who, `Потвърдена (${by}) – не е дубликат`);
   const r = await one<any>("UPDATE orders SET confirmed_at = coalesce(confirmed_at, now()), confirmed_by = coalesce(confirmed_by, $2) WHERE id = $1 RETURNING confirmed_at", [id, by]);
   if (!r) throw new HttpError(404, "not_found", "Няма такава поръчка.");
   await addEvent(id, "confirm", `Поръчката е потвърдена (${by})`, {}, userId, who);

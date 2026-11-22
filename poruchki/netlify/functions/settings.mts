@@ -5,6 +5,7 @@ import { cbSite, createWebhook, deleteWebhook, siteFor } from "../lib/cb.mts";
 import { COURIERS, isCourier } from "../lib/couriers.mts";
 import { one, q } from "../lib/db.mts";
 import { companyId, inCompany, ENV_COMPANY } from "../lib/tenant.mts";
+import { dupRules, saveDupRules } from "../lib/duplicates.mts";
 import { getRates } from "../lib/fx.mts";
 import { bad, body, env, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { mwConfig } from "../lib/mw.mts";
@@ -69,6 +70,8 @@ export default handle(async (req) => {
   const isAdmin = user.role === "admin";
   const [what, arg] = sub(req, "/api/settings");
   if (req.method === "GET" && !what) return json(await overview(req, isAdmin));
+  // Rules for duplicate orders (held for a look before they are shipped twice).
+  if (req.method === "GET" && what === "duplicates") return json(await dupRules(companyId()));
   if (req.method !== "POST") throw notFound();
   const b = await body(req);
 
@@ -77,6 +80,8 @@ export default handle(async (req) => {
   if (what === "track") return json(await runTracking({ deadline: Date.now() + 20000, job: "track-manual" }));
 
   if (!isAdmin) throw bad("admin", "Само собственикът може да променя настройките.");
+
+  if (what === "duplicates") return json(await saveDupRules(companyId(), b));
 
   if (what === "shop") {
     const id = str(b.id, 20);

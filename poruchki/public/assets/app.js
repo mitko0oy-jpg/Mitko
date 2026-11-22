@@ -39,6 +39,7 @@ export const pct = (x) => (x == null ? "–" : `${String(x).replace(".", ",")}%`
 export const STAGES = {
   abandoned: { label: "Изоставени", hint: "написаха данните си във формата, но не поръчаха" },
   new: { label: "Нови", hint: "още не са изпратени" },
+  duplicate: { label: "Дублирани", hint: "същият клиент поръча пак скоро – задържани за преглед" },
   prepared: { label: "Изготвени", hint: "товарителница, куриерът още не я е взел" },
   shipped: { label: "Изпратени", hint: "на път към клиента" },
   at_office: { label: "В офис", hint: "чакат клиента в офис или автомат" },
@@ -47,8 +48,8 @@ export const STAGES = {
   canceled: { label: "Отказани", hint: "преди изпращане" },
   archived: { label: "Архивирани", hint: "без друга информация" },
 };
-export const ONE = { abandoned: "Изоставена", new: "Нова", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
-export const STAGE_ORDER = ["abandoned", "new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
+export const ONE = { abandoned: "Изоставена", new: "Нова", duplicate: "Дублирана", prepared: "Изготвена", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана", archived: "Архивирана" };
+export const STAGE_ORDER = ["abandoned", "new", "duplicate", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"];
 export const COURIER = { speedy: "Спиди", econt: "Еконт", gls: "GLS", boxnow: "BOX NOW", sameday: "Sameday" };
 // Courier marks (drawn here): Speedy – a red parcel cube, Econt – a blue E.
 export const CMARK = {
@@ -318,11 +319,12 @@ async function bell(top) {
     [a.ai, "AI агентът иска човек", "/poruchki/?tab=active&confirmed=no"],
     [a.unconfirmed, "непотвърдени нови поръчки", "/poruchki/?tab=active&stage=new&confirmed=no"],
     [a.toShip, "потвърдени без товарителница", "/poruchki/?tab=active&stage=new&nowaybill=1"],
+    [a.duplicates, "дублирани поръчки чакат преглед", "/poruchki/?tab=&stage=duplicate"],
     [a.soon, "пратки чакат в офиса 5+ дни – скоро се връщат", "/poruchki/?tab=&soon=1"],
     [a.toPrint, "етикета чакат печат", "/pechat/"],
     [a.leads, "незавършени поръчки", "/nezavarsheni/"],
   ];
-  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0) + (a.soon || 0);
+  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0) + (a.soon || 0) + (a.duplicates || 0);
   const dot = top.querySelector("#bellN");
   dot.hidden = !n;
   dot.textContent = n > 99 ? "99+" : String(n);

@@ -1244,3 +1244,71 @@ test("parcels at the office: the day counter, „Връщат се скоро“
     await db.end();
   }
 });
+
+test("duplicate orders: held as „Дублирана“ by phone or email, no waybill or call, released by „Не е дубликат“; rules in settings", async () => {
+  const agent = (p) => fetch(`${B}/api/agent/${p}`, { headers: { authorization: "Bearer agent-token-agent-token-agent-token-0000" } }).then(async (r) => ({ status: r.status, data: await r.json() }));
+  const rules = await api("/api/settings/duplicates");
+  assert.deepEqual(rules.data, { on: true, phone: true, email: true, products: false, amount: false, hours: 72, sameShop: false });
+  const at = (h) => now - Math.round(h * 3600);
+  // (another test shop reads the same fake store: its copies of these orders are held as duplicates of the bg ones)
+  const byNo = async (no) => (await api(`/api/orders?q=${no}&tab=`)).data.orders.find((o) => o.order_no === String(no) && o.shop === "bg");
+  const sync = () => api("/api/settings/sync", {});
+
+  // The first order, then the same phone written differently an hour later, then another phone with the first one's email.
+  orders.push(order(80, 0, "pending", { created: at(3), customerEmail: "Dup@Abv.bg", shippingAddress: { name: "", phone: "0888 111 222", city: "София", address: "До офис econt[1]: София - Център" } }));
+  orders.push(order(81, 0, "pending", { created: at(2), shippingAddress: { name: "", phone: "+359 888 111 222", city: "София", address: "До офис econt[1]: София - Център" } }));
+  orders.push(order(82, 0, "pending", { created: at(1), customerEmail: "dup@abv.bg", shippingAddress: { name: "", phone: "0899 000 111", city: "София", address: "До офис econt[1]: София - Център" } }));
+  assert.equal((await sync()).status, 200);
+  const o80 = await byNo(5080), o81 = await byNo(5081), o82 = await byNo(5082);
+  assert.equal(o80.stage, "new");
+  assert.equal(o81.stage, "duplicate");
+  assert.equal(o81.dup_of, o80.id);
+  assert.equal(o81.dup_no, "5080");
+  assert.equal(o82.stage, "duplicate", "the same email");
+  const d81 = (await api(`/api/orders/${o81.id}`)).data;
+  assert.equal(d81.dup.order_no, "5080");
+  assert.ok(d81.events.some((e) => e.kind === "duplicate" && /същия телефон/.test(e.text) && /№ 5080/.test(e.text)));
+  assert.ok((await api(`/api/orders/${o82.id}`)).data.events.some((e) => /същия имейл/.test(e.text)));
+
+  // Held: in the active tab and its own count, in the bell, not in the dashboard, no waybill, no call from the agent.
+  const list = (await api("/api/orders?tab=active")).data;
+  assert.ok(list.orders.some((o) => o.id === o81.id));
+  assert.ok(list.facets.stages.duplicate >= 2);
+  assert.equal((await api("/api/orders?tab=&stage=duplicate")).data.orders.every((o) => o.stage === "duplicate"), true);
+  assert.ok((await api("/api/stats/alerts")).data.duplicates >= 2);
+  const wb = await api("/api/waybills/create", { orderId: o81.id, draft: {} });
+  assert.equal(wb.status, 400);
+  assert.match(wb.data.message || wb.data.error || "", /дублирана/);
+  const toCall = (await agent(`orders?shops=bg&since=${new Date(Date.now() - 86400000).toISOString()}`)).data.orders.map((x) => x.orderNo);
+  assert.ok(toCall.includes("5080") && !toCall.includes("5081"), JSON.stringify(toCall));
+
+  // Not a duplicate: a new order again (once); a later import does not hold it again.
+  const rel = await api(`/api/orders/${o81.id}/not-duplicate`, {});
+  assert.equal(rel.status, 200, JSON.stringify(rel.data));
+  assert.equal(rel.data.stage, "new");
+  assert.equal((await api(`/api/orders/${o81.id}/not-duplicate`, {})).status, 400);
+  await sync();
+  assert.equal((await byNo(5081)).stage, "new");
+  // Confirming a held one releases it too.
+  await api(`/api/orders/${o82.id}/confirm`, {});
+  const c82 = (await api(`/api/orders/${o82.id}`)).data;
+  assert.equal(c82.stage, "new");
+  assert.ok(c82.events.some((e) => /не е дубликат/.test(e.text)));
+
+  // Rules: "the same products" lets a different product through; switched off holds nothing; at least phone or email.
+  assert.equal((await api("/api/settings/duplicates", { phone: false, email: false })).status, 400);
+  assert.equal((await api("/api/settings/duplicates", { products: true })).data.products, true);
+  orders.push(order(83, 0, "pending", { created: at(0.5), items: [{ name: "Спрей с пчелна отрова", quantity: 1, total: 12.9 }], shippingAddress: { name: "", phone: "0888111222", city: "София", address: "До офис econt[1]: София - Център" } }));
+  orders.push(order(84, 0, "pending", { created: at(0.4), shippingAddress: { name: "", phone: "0888111222", city: "София", address: "До офис econt[1]: София - Център" } }));
+  await sync();
+  assert.equal((await byNo(5083)).stage, "new", "another product");
+  assert.equal((await byNo(5084)).stage, "duplicate", "the same gel again");
+  await api("/api/settings/duplicates", { on: false, products: false });
+  orders.push(order(85, 0, "pending", { created: at(0.3), shippingAddress: { name: "", phone: "0888111222", city: "София", address: "До офис econt[1]: София - Център" } }));
+  await sync();
+  assert.equal((await byNo(5085)).stage, "new");
+  await api("/api/settings/duplicates", { on: true });
+  // The dashboard does not count the held one.
+  const held = await byNo(5084);
+  assert.equal(held.stage, "duplicate");
+});

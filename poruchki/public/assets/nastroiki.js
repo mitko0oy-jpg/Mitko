@@ -141,3 +141,22 @@ $("nekRemove").onclick = async () => {
   say("Ключът е махнат.");
 };
 api("/api/nekorekten/settings?check=1").then(renderNek).catch((e) => say(e.message, false));
+
+// Duplicate orders: the rules.
+function renderDup(r) {
+  const f = $("dupForm");
+  for (const k of ["on", "phone", "email", "products", "amount", "sameShop"]) f[k].checked = !!r[k];
+  f.hours.value = r.hours;
+  for (const el of f.elements) el.disabled = !isAdmin;
+}
+$("dupForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  await busy($("dupSave"), "Записвам…", async () => {
+    const body = { hours: Number(f.hours.value) };
+    for (const k of ["on", "phone", "email", "products", "amount", "sameShop"]) body[k] = f[k].checked;
+    renderDup(await api("/api/settings/duplicates", { method: "POST", body }));
+    say("Правилата за дублирани поръчки са записани.");
+  });
+};
+api("/api/settings/duplicates").then(renderDup).catch((e) => say(e.message, false));

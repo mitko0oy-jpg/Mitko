@@ -29,6 +29,18 @@ function progress(o) {
   const cur = [...STEPS].reverse().find(([k]) => reached.has(k))?.[0];
   return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}${k === cur ? " cur" : ""}">${l}</li>`).join("")}</ol>`;
 }
+// Held as a duplicate: what the same customer already ordered, and the two ways out.
+function dupBox(o) {
+  if (o.stage !== "duplicate" || !o.dup) return "";
+  const d = o.dup;
+  const items = (Array.isArray(d.items) ? d.items : []).map((it) => `${esc(it.name)} × ${Number(it.qty) || 1}`).join(", ");
+  return `<div class="dupbox stack" style="gap:8px">
+    <div><b>Дублирана поръчка – задържана за преглед.</b> Същият клиент вече поръча
+      <a href="/poruchka/?id=${d.id}">№ ${esc(d.order_no)}</a> (${esc(d.shop_label)}, ${when(d.ordered_at)}, ${esc(ONE[d.stage] || d.stage)}, ${money(d.total, d.currency)})${items ? `: ${items}` : ""}.</div>
+    <div class="muted small">Докато е задържана, няма товарителница и AI обаждане. Ако е истинска втора поръчка – „Не е дубликат“ (или „Потвърди“); ако е същата – „Архивирай“.</div>
+    <div class="row"><button class="btn primary" id="notDupBtn">✓ Не е дубликат</button></div>
+  </div>`;
+}
 const CB_STATUS = { pending: "нова", shipped: "изпратена", completed: "завършена", canceled: "отказана", archived: "архивирана" };
 
 await shell("poruchki");
@@ -76,6 +88,7 @@ function render(o) {
         <button class="btn" id="refresh">Провери пак</button></div>
     </div>
     ${progress(o)}
+    ${dupBox(o)}
     ${o.note ? `<div class="note">📝 ${esc(o.note)}</div>` : ""}
     <div class="grid2">
       <section class="card">
@@ -178,7 +191,7 @@ function render(o) {
     if (await openSms(id)) render(await api(`/api/orders/${id}`));
   };
   const courier = o.courier || o.delivery?.courier;
-  const canShip = !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
+  const canShip = o.stage !== "duplicate" && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
   $("wbActs").innerHTML = [
     canShip ? `<button class="btn primary sm" id="wbNew">Създай товарителница</button>` : "",
     o.tracking_no && (courier === "speedy" || courier === "econt") ? `<button class="btn sm" id="wbPrint">Етикет</button>` : "",
@@ -188,6 +201,17 @@ function render(o) {
   const reload = async () => render(await api(`/api/orders/${id}`));
   if ($("wbNew")) $("wbNew").onclick = async () => (await openWaybill(id)) && reload();
   if ($("wbPrint")) $("wbPrint").onclick = () => openLabels([id]);
+  if ($("notDupBtn"))
+    $("notDupBtn").onclick = async () => {
+      $("notDupBtn").disabled = true;
+      try {
+        await api(`/api/orders/${id}/not-duplicate`, { method: "POST", body: {} });
+        reload();
+      } catch (e) {
+        alert(e.message);
+        $("notDupBtn").disabled = false;
+      }
+    };
   if ($("wbRedirect")) $("wbRedirect").onclick = async () => (await openRedirect(id)) && reload();
   if ($("wbCancel"))
     $("wbCancel").onclick = async () => {

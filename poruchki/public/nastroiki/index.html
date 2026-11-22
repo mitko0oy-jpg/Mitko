@@ -54,6 +54,23 @@
       <p class="muted small">Спиди, Еконт, офисът, от който изпращаш, и автоматичните товарителници са в <a href="/kurieri/">Куриери</a>. Хората с достъп са в <a href="/potrebiteli/">Потребители</a>.</p>
     </section>
 
+    <section class="card stack" id="dupCard">
+      <h2 id="dublirani">Дублирани поръчки</h2>
+      <p class="muted small">Когато същият клиент поръча пак скоро, новата поръчка става „Дублирана“ и се задържа за преглед: без товарителница и без AI обаждане, докато не натиснеш „Не е дубликат“ (или „Потвърди“). Ако е същата поръчка – архивирай я. Проверяват се само новите поръчки от магазините.</p>
+      <form id="dupForm" class="form" style="max-width:560px">
+        <label class="chk"><input type="checkbox" name="on"> Задържай дублираните поръчки</label>
+        <div class="small" style="margin-top:4px">Същият клиент е по:</div>
+        <label class="chk"><input type="checkbox" name="phone"> телефон</label>
+        <label class="chk"><input type="checkbox" name="email"> имейл</label>
+        <div class="small" style="margin-top:4px">И още (по желание – по-малко задържани):</div>
+        <label class="chk"><input type="checkbox" name="products"> същите продукти и бройки</label>
+        <label class="chk"><input type="checkbox" name="amount"> същата сума (наложен платеж)</label>
+        <label>Гледа назад (часа)<input type="number" name="hours" min="1" max="720" step="1" style="max-width:140px"></label>
+        <label class="chk"><input type="checkbox" name="sameShop"> Само поръчки от същия магазин (иначе от всички твои магазини)</label>
+        <div class="row"><button class="btn primary" id="dupSave">Запиши</button></div>
+      </form>
+    </section>
+
     <section class="card stack" id="smsCard">
       <h2 id="sms">SMS</h2>
       <p class="muted small">SMS-ите се пращат през <a href="https://www.smsapi.bg/" target="_blank" rel="noopener">SMSAPI</a> (~0,05 € за SMS, без договор). Там: регистрация → OAuth токени → нов токен с право „SMS“ → постави го тук. Името на подателя (до 11 латински букви, напр. BeeVenom) се одобрява от SMSAPI.</p>

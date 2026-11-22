@@ -13,7 +13,7 @@ type Cell = { n: number; sum: number };
 function where(f: Filter, firstParam = 1) {
   const params: unknown[] = [f.from, f.to];
   // Abandoned carts are not orders: never in the numbers.
-  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active", `s.company_id = ${companyId()}`, "o.stage <> 'abandoned'"];
+  const parts = [`o.day BETWEEN $${firstParam} AND $${firstParam + 1}`, "s.active", `s.company_id = ${companyId()}`, "o.stage NOT IN ('abandoned', 'duplicate')"];
   if (f.region === "bg" || f.region === "abroad") {
     params.push(f.region);
     parts.push(`s.region = $${firstParam + params.length - 1}`);
@@ -124,7 +124,7 @@ export async function summary(region?: string) {
     regionSql = ` AND s.region = $${params.length}`;
   }
   params.push(lastMonthStart);
-  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.stage <> 'abandoned' AND o.day >= $${params.length}${regionSql}`, params);
+  const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.stage NOT IN ('abandoned', 'duplicate') AND o.day >= $${params.length}${regionSql}`, params);
   const out: Record<string, any> = {};
   for (const [k, [from, to]] of Object.entries(periods)) {
     out[k] = { from, to, orders: row?.[`${k}_n`] || 0, sum: round(row?.[`${k}_sum`] || 0), delivered: row?.[`${k}_dn`] || 0, deliveredSum: round(row?.[`${k}_dsum`] || 0), canceled: row?.[`${k}_cn`] || 0 };
@@ -135,7 +135,7 @@ export async function summary(region?: string) {
 
 /** The bell in the top bar: orders and leads waiting for someone, and labels waiting for the printer. */
 export async function alerts() {
-  const [o, leads, print, soon] = await Promise.all([
+  const [o, leads, print, soon, dup] = await Promise.all([
     one<any>(
       `SELECT count(*) FILTER (WHERE o.confirmed_at IS NULL AND coalesce(o.call->>'state', '') NOT IN ('requested', 'calling'))::int AS unconfirmed,
               count(*) FILTER (WHERE o.confirmed_at IS NULL AND o.call->>'state' IN ('needs_human', 'change_requested', 'callback_later', 'wrong_person', 'wrong_number', 'canceled', 'gave_up'))::int AS ai,
@@ -151,6 +151,8 @@ export async function alerts() {
         WHERE s.active AND s.company_id = ${companyId()} AND o.archived_at IS NULL AND o.parcel_status = 'at_office' AND o.office_since IS NOT NULL
           AND (o.office_since AT TIME ZONE 'Europe/Sofia')::date <= (now() AT TIME ZONE 'Europe/Sofia')::date - 4`,
     ),
+    // Held as duplicates, waiting for someone to look.
+    one<any>(`SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.archived_at IS NULL AND o.stage = 'duplicate'`),
   ]);
-  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print, soon: soon?.n || 0 };
+  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print, soon: soon?.n || 0, duplicates: dup?.n || 0 };
 }

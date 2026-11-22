@@ -74,7 +74,7 @@ function confirmCell(o) {
 
 // On its way or waiting at the office with Econt: can go to another office or address (Speedy has no redirect).
 const canRedirect = (o) => !!o.tracking_no && ["shipped", "at_office"].includes(o.stage) && o.courier === "econt";
-const canShip = (o) => o.stage !== "abandoned" && !o.digital_only && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
+const canShip = (o) => o.stage !== "abandoned" && o.stage !== "duplicate" && !o.digital_only && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 // "ekont" (as Middleware writes it) is Econt.
 const COURIER_ALIAS = { ekont: "econt", spidi: "speedy", "dpd-courier": "speedy", dpd: "speedy" };
 function courierOf(o) {
@@ -202,13 +202,14 @@ function moreMenu(o) {
   if (canCancel(o)) items.push(["cancel", "Анулирай товарителницата"]);
   if (canRedirect(o)) items.push(["redirect", officeDay(o) >= 5 ? "↪ Пренасочи (скоро се връща)" : "↪ Пренасочи пратката"]);
   items.push(["duplicate", "Дублирай"]);
+  if (o.stage === "duplicate") items.unshift(["not-duplicate", "✓ Не е дубликат"]);
   items.push(o.archived_at ? ["unarchive", "Върни от архива"] : ["archive", "Архивирай"]);
   return items.map(([a, t]) => `<button type="button" data-act="${a}" data-id="${o.id}" role="menuitem">${t}</button>`).join("") + `<a href="/poruchka/?id=${o.id}">Отвори поръчката</a>`;
 }
 
 function renderSide(f) {
   const total = Object.values(f.stages).reduce((a, b) => a + b, 0);
-  const active = (f.stages.new || 0) + (f.stages.prepared || 0) + (f.stages.shipped || 0) + (f.stages.at_office || 0);
+  const active = (f.stages.new || 0) + (f.stages.duplicate || 0) + (f.stages.prepared || 0) + (f.stages.shipped || 0) + (f.stages.at_office || 0);
   $("nActive").textContent = num(active);
   $("nDone").textContent = num(total - active);
   $("nAll").textContent = num(total);
@@ -329,7 +330,7 @@ function renderTable(d) {
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
         <td class="c-no"><div class="nocell"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a>${icons4(o)}</div></td>
-        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div></td>
+        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div>${o.stage === "duplicate" && o.dup_no ? `<a class="dupof" href="/poruchka/?id=${o.dup_of}" title="Същият клиент вече поръча № ${esc(o.dup_no)}">на № ${esc(o.dup_no)}</a>` : ""}</td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
         <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
@@ -443,7 +444,7 @@ async function act(what, id, btn) {
   const o = rows.find((x) => x.id === id);
   try {
     if (what === "more") return openMore(o, btn);
-    if (["unconfirm", "archive", "unarchive"].includes(what)) {
+    if (["unconfirm", "archive", "unarchive", "not-duplicate"].includes(what)) {
       if (what === "archive" && !confirm(`Да архивирам ли поръчка № ${o?.order_no}?`)) return;
       await api(`/api/orders/${id}/${what}`, { method: "POST", body: {} });
       return load(true);

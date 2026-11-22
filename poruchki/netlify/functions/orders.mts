@@ -12,9 +12,10 @@ import { bad, handle, json, notFound, str, sub } from "../lib/http.mts";
 import { STAGES, upsertOrders } from "../lib/orders.mts";
 import { runTracking } from "../lib/track.mts";
 import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
+import { releaseDuplicate } from "../lib/duplicates.mts";
 import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editContact, unconfirmOrder } from "../lib/manage.mts";
 
-const ACTIVE = "o.stage IN ('abandoned', 'new', 'prepared', 'shipped', 'at_office')";
+const ACTIVE = "o.stage IN ('abandoned', 'new', 'duplicate', 'prepared', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 
 // "Изпратени днес": the waybill appeared today (Sofia time); sent_at is kept by a trigger.
@@ -34,8 +35,8 @@ const SORTS: Record<string, string> = {
   sent: "o.sent_at DESC NULLS LAST, o.ordered_at DESC",
   courier: "o.parcel_at DESC NULLS LAST, o.ordered_at DESC",
   parcel_asc: "o.parcel_at ASC NULLS LAST, o.ordered_at DESC",
-  stage_asc: "array_position(ARRAY['abandoned','new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) ASC, o.ordered_at DESC",
-  stage_desc: "array_position(ARRAY['abandoned','new','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) DESC, o.ordered_at DESC",
+  stage_asc: "array_position(ARRAY['abandoned','new','duplicate','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) ASC, o.ordered_at DESC",
+  stage_desc: "array_position(ARRAY['abandoned','new','duplicate','prepared','shipped','at_office','delivered','returned','canceled','archived'], o.stage) DESC, o.ordered_at DESC",
   shop_asc: "s.label ASC, o.ordered_at DESC",
   shop_desc: "s.label DESC, o.ordered_at DESC",
   cour_asc: "coalesce(o.courier, o.delivery->>'courier', 'я') ASC, o.ordered_at DESC",
@@ -120,6 +121,7 @@ async function list(u: URLSearchParams) {
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.office_since, o.courier, o.tracking_no, o.tracking_source,
+              o.dup_of, o.dup_state, (SELECT d.order_no FROM orders d WHERE d.id = o.dup_of) AS dup_no,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
               h.got AS delivered_before, h.ret_shops,
@@ -172,6 +174,7 @@ async function list(u: URLSearchParams) {
     orders: rows.map((r) => ({
       ...r,
       id: Number(r.id),
+      dup_of: r.dup_of == null ? null : Number(r.dup_of),
       total: Number(r.total),
       sub_total: Number(r.sub_total),
       shipping: Number(r.shipping),
@@ -245,6 +248,13 @@ async function detail(id: number) {
     `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
     [id],
   );
+  // Held as a duplicate: the order it repeats.
+  const dup = o.dup_of
+    ? await one<any>(
+        `SELECT d.id, d.order_no, d.ordered_at, d.stage, d.total, d.currency, d.items, s.label AS shop_label FROM orders d JOIN shops s ON s.id = d.shop WHERE d.id = $1 AND s.company_id = $2`,
+        [o.dup_of, companyId()],
+      )
+    : null;
   // The products with what the shop knows about them (picture, SKU, weight, variant), like Middleware's panel.
   const rawItems: any[] = Array.isArray(raw.items) ? raw.items : [];
   const catalog = await q<any>("SELECT title, sku, image FROM products WHERE shop = $1", [o.shop]);
@@ -283,6 +293,8 @@ async function detail(id: number) {
     discount_code: raw.discountCode || null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     nekorekten: nek,
+    dup_of: o.dup_of == null ? null : Number(o.dup_of),
+    dup: dup ? { ...dup, id: Number(dup.id), total: Number(dup.total) } : null,
     lines,
     courier_cost: o.courier_cost == null ? null : Number(o.courier_cost),
   };
@@ -337,7 +349,7 @@ export default handle(async (req) => {
     return json({ ...r, order: await detail(id) });
   }
 
-  if (req.method === "POST" && ["confirm", "unconfirm", "note", "contact", "archive", "unarchive", "duplicate", "ai-call"].includes(action)) {
+  if (req.method === "POST" && ["confirm", "unconfirm", "note", "contact", "archive", "unarchive", "duplicate", "not-duplicate", "ai-call"].includes(action)) {
     const user = await requireUser(req);
     const b = await body(req);
     const by = user.name || user.email;
@@ -347,6 +359,8 @@ export default handle(async (req) => {
     if (action === "contact") await editContact(id, b, user.id);
     if (action === "archive" || action === "unarchive") await archiveOrder(id, action === "archive", user.id);
     if (action === "duplicate") return json(await duplicateOrder(id, user.id, by));
+    // Held as a duplicate, but it is a real second order: it goes on as new.
+    if (action === "not-duplicate" && !(await releaseDuplicate(id, user.id))) throw bad("not_held", "Поръчката не е задържана като дублирана.");
     // Ask the phone agent to call this order (it picks requests up within 5 minutes, in calling hours).
     if (action === "ai-call") {
       const r = await q("UPDATE orders SET call = jsonb_build_object('state', 'requested', 'at', now(), 'by', $2::text) WHERE id = $1 AND confirmed_at IS NULL RETURNING id", [id, by]);

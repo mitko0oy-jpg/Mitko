@@ -11,6 +11,7 @@ import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
 import { purgeVisits } from "./visits.mts";
 import { runCartReminders } from "./reminders.mts";
+import { checkDuplicates } from "./duplicates.mts";
 import { syncAbandoned } from "./abandoned.mts";
 import { runNekChecks } from "./nekorekten.mts";
 import { upsertOrders } from "./orders.mts";
@@ -95,6 +96,9 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     }
   }
 
+  // 2b) Duplicate orders: anything not looked at yet (the webhook and the import above already check their shop).
+  const duplicates = await checkDuplicates().catch((e) => ({ error: e.message }));
+
   // 3) Products of the shops, once a day (to add to orders).
   let products: Record<string, unknown> = {};
   if (!opts.onlyShop && Date.now() < deadline - 5000) products = await syncAllProducts(deadline - 3000).catch((e) => ({ error: e.message }));
@@ -125,7 +129,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
   }
 
-  const info = { ...c, shops: shops.length, errors, mw, products, nekorekten, abandoned, reminders };
+  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

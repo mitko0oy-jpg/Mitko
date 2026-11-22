@@ -1,6 +1,7 @@
 // Writing orders from ConvertBuilder into the database.
 // The shop owns the order data; the waybill number is taken from the shop unless we made the waybill
 // ourselves; the parcel status belongs to the courier and is only reset when the waybill number changes.
+import { checkDuplicates } from "./duplicates.mts";
 import { normalize } from "./cb.mts";
 import { sofiaDay } from "./dates.mts";
 import { q } from "./db.mts";
@@ -86,8 +87,10 @@ export async function upsertOrders(shop: { id: string; currency: string }, raws:
     const rows = await q<{ inserted: boolean }>(`INSERT INTO orders (${COLS.join(", ")}) VALUES ${tuples.join(", ")} ${UPSERT_TAIL}`, vals);
     for (const r of rows) r.inserted ? inserted++ : updated++;
   }
+  // A new order from a customer who just ordered is held as a duplicate before anyone calls or ships it.
+  if (inserted) await checkDuplicates(shop.id).catch((e) => console.error("duplicates", e.message));
   return { inserted, updated };
 }
 
-export const STAGES = ["new", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"] as const;
+export const STAGES = ["new", "duplicate", "prepared", "shipped", "at_office", "delivered", "returned", "canceled", "archived"] as const;
 export type Stage = (typeof STAGES)[number];
