@@ -84,6 +84,12 @@
           <div class="row small"><input type="tel" id="smsTestPhone" placeholder="твоят телефон" style="flex:1"><button type="button" class="btn sm" id="smsTest">Пробен SMS</button></div>
         </div>
         <div class="form" id="smsTemplates"></div>
+        <fieldset class="form" style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:12px 14px">
+          <legend class="small"><b>Пратка, чакаща в офис – автоматично напомняне</b></legend>
+          <label class="chk"><input type="checkbox" name="officeOn"> Пращай SMS сам на клиентите, чиято пратка чака в офис или автомат (България – Еконт и Спиди)</label>
+          <div class="row small">1-во на <input type="number" name="officeDay1" min="2" max="7" style="width:64px"> ден, последно на <input type="number" name="officeDay2" min="3" max="9" style="width:64px"> ден в офиса</div>
+          <p class="muted small" style="margin:0">Денят на пристигане е ден 1, както е в знака „Ден N в офиса“. Не праща между 21:00 и 9:00, нито ако клиентът вече е получил SMS за поръчката в последните 20 часа. Спира веднага, щом пратката бъде взета, върната или пренасочена. Текстовете са горе: „Автоматично: чака в офис (1-во)“ и „Автоматично: последно напомняне“. Всеки изпратен SMS се записва в хронологията на поръчката.</p>
+        </fieldset>
       </form>
       <p class="muted small">В текстовете може: {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}.</p>
     </section>

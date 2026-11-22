@@ -1314,6 +1314,67 @@ test("parcels at the office: the day counter, „Връщат се скоро“
   }
 });
 
+test("parcels at the office: automatic SMS on day 4 and day 6, once each, only while it waits", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    // Off by default; wrong days are refused.
+    assert.equal((await api("/api/sms/settings")).data.office.on, false);
+    assert.equal((await api("/api/sms/settings", { office: { on: true, day1: 1, day2: 6 } })).status, 400);
+    assert.equal((await api("/api/sms/settings", { office: { on: true, day1: 5, day2: 5 } })).status, 400);
+    const set = await api("/api/sms/settings", { office: { on: true, day1: 4, day2: 6 } });
+    assert.equal(set.status, 200, JSON.stringify(set.data));
+    assert.deepEqual(set.data.office, { on: true, day1: 4, day2: 6 });
+    assert.ok(set.data.templates.office1 && set.data.templates.office2);
+
+    const make = async (name, phone, sql) => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Варна", delivery: { courier: "econt", type: "office", officeId: "9001", officeName: "Варна Чайка" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
+      assert.equal(r.status, 200, JSON.stringify(r.data));
+      await db.query(`UPDATE orders SET tracking_no = $2, courier = 'econt', tracking_source = 'cb', parcel_text = 'Пристигнала в офис', ${sql} WHERE id = $1`, [r.data.id, "10516009" + phone.replace(/\D/g, "").slice(-5)]);
+      return r.data.id;
+    };
+    // Day 4 (arrived 3 days ago), day 2, and one already picked up.
+    const waits = await make("Мария Офисова", "0888 100 901", "parcel_status = 'at_office', office_since = now() - interval '3 days'");
+    await make("Нова Пратка", "0888 100 902", "parcel_status = 'at_office', office_since = now() - interval '1 day'");
+    await make("Взела Вече", "0888 100 903", "parcel_status = 'delivered', office_since = now() - interval '3 days'");
+    const smsTo = (from, n) => sent.slice(from).filter((x) => x.path === "sms" && x.body.to === n);
+
+    let before = sent.length;
+    assert.equal((await api("/api/settings/sync", {})).status, 200);
+    const first = smsTo(before, "359888100901");
+    assert.equal(first.length, 1, "day 4: the first reminder");
+    assert.match(first[0].body.message, /Мария, пратката Ви от Тест чака в офис Варна Чайка на Еконт/);
+    assert.equal(smsTo(before, "359888100902").length, 0, "day 2: nothing yet");
+    assert.equal(smsTo(before, "359888100903").length, 0, "picked up: nothing");
+    const ev = (await api(`/api/orders/${waits}`)).data.events.find((e) => e.kind === "sms");
+    assert.match(ev.text, /Автоматичен SMS \(ден 4 в офиса\)/);
+
+    // Again: not twice.
+    before = sent.length;
+    await api("/api/settings/sync", {});
+    assert.equal(smsTo(before, "359888100901").length, 0, "once");
+
+    // Day 6: the last reminder (and not the first one again).
+    await db.query("UPDATE orders SET office_since = office_since - interval '2 days' WHERE id = $1", [waits]);
+    await db.query("UPDATE order_events SET at = at - interval '2 days', info = info || jsonb_build_object('since', (info->>'since')::bigint - 172800) WHERE order_id = $1 AND kind = 'sms'", [waits]);
+    before = sent.length;
+    await api("/api/settings/sync", {});
+    const last = smsTo(before, "359888100901");
+    assert.equal(last.length, 1);
+    assert.match(last[0].body.message, /последно напомняне/);
+    // Picked up now: nothing more, even when it is due.
+    await db.query("UPDATE order_events SET at = at - interval '2 days', info = info - 'since' WHERE order_id = $1", [waits]);
+    await db.query("UPDATE orders SET parcel_status = 'delivered' WHERE id = $1", [waits]);
+    before = sent.length;
+    await api("/api/settings/sync", {});
+    assert.equal(smsTo(before, "359888100901").length, 0);
+  } finally {
+    await api("/api/sms/settings", { office: { on: false } });
+    await db.end();
+  }
+});
+
 test("duplicate orders: held as „Дублирана“ by phone or email, no waybill or call, released by „Не е дубликат“; rules in settings", async () => {
   const agent = (p) => fetch(`${B}/api/agent/${p}`, { headers: { authorization: "Bearer agent-token-agent-token-agent-token-0000" } }).then(async (r) => ({ status: r.status, data: await r.json() }));
   const rules = await api("/api/settings/duplicates");

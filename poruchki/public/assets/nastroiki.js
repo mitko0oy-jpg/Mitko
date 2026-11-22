@@ -89,6 +89,9 @@ function renderSms(d) {
   const f = $("smsForm");
   f.sender.value = d.sender || "";
   f.latin.checked = !!d.latin;
+  f.officeOn.checked = !!d.office?.on;
+  f.officeDay1.value = d.office?.day1 ?? 4;
+  f.officeDay2.value = d.office?.day2 ?? 6;
   $("smsTemplates").innerHTML = Object.entries(d.templates)
     .map(([k, t]) => `<label>${esc(t.label)}<textarea name="tpl_${k}" rows="3" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)">${esc(t.text)}</textarea></label>`)
     .join("");
@@ -101,7 +104,7 @@ $("smsForm").onsubmit = async (e) => {
   const templates = {};
   for (const el of f.elements) if (el.name?.startsWith("tpl_")) templates[el.name.slice(4)] = el.value;
   await busy($("smsSave"), "Записвам…", async () => {
-    renderSms(await api("/api/sms/settings", { method: "POST", body: { token: f.token.value, sender: f.sender.value, latin: f.latin.checked, templates } }));
+    renderSms(await api("/api/sms/settings", { method: "POST", body: { token: f.token.value, sender: f.sender.value, latin: f.latin.checked, templates, office: { on: f.officeOn.checked, day1: Number(f.officeDay1.value), day2: Number(f.officeDay2.value) } } }));
     f.token.value = "";
     say("SMS настройките са записани.");
   });

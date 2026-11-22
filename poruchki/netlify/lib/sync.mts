@@ -11,6 +11,7 @@ import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
 import { purgeVisits } from "./visits.mts";
 import { runCartReminders } from "./reminders.mts";
+import { runOfficeReminders } from "./office-sms.mts";
 import { checkDuplicates } from "./duplicates.mts";
 import { syncAbandoned } from "./abandoned.mts";
 import { runMonthlyMail } from "./accmail.mts";
@@ -124,10 +125,13 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   // 6) Abandoned carts into the orders list, then reminders to unfinished orders (each company that switched them on).
   const reminders: Record<number, unknown> = {};
   const abandoned: Record<number, unknown> = {};
+  const office: Record<number, unknown> = {}; // 6b) SMS to parcels waiting at the courier's office
   for (const company of companies) {
     if (Date.now() > deadline - 1500) break;
     abandoned[company] = await withCompany(company, () => syncAbandoned()).catch((e) => ({ error: e.message }));
     reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
+    if (Date.now() > deadline - 1200) continue;
+    office[company] = await withCompany(company, () => runOfficeReminders(deadline - 800)).catch((e) => ({ error: e.message }));
   }
 
   // 7) The monthly letter to the accountant (sales by country and shop + the NAP audit files) – on the chosen day.
@@ -137,7 +141,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     accountant[company] = await withCompany(company, () => runMonthlyMail()).catch((e) => ({ error: e.message }));
   }
 
-  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders, accountant };
+  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders, office, accountant };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

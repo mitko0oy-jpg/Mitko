@@ -20,9 +20,15 @@ export const DEFAULT_TEMPLATES: Record<string, { label: string; text: string }> 
   confirm: { label: "Потвърждение", text: "Здравейте, {име}! Поръчка № {номер} от {магазин} за {сума} е приета и ще бъде изпратена до 1 работен ден. Благодарим Ви!" },
   shipped: { label: "Изпратена", text: "{име}, поръчка № {номер} е изпратена с {куриер}, товарителница {товарителница}. Сума за плащане при получаване: {сума}." },
   office: { label: "Чака в офис", text: "{име}, пратката Ви № {товарителница} чака в офис {офис} на {куриер}. Моля, вземете я до 7 дни. Сума: {сума}." },
+  office1: { label: "Автоматично: чака в офис (1-во)", text: "{име}, пратката Ви от {магазин} чака в офис {офис} на {куриер}. Моля, вземете я в следващите дни, иначе ще бъде върната. Сума: {сума}." },
+  office2: { label: "Автоматично: последно напомняне", text: "{име}, последно напомняне: пратката Ви от {магазин} в офис {офис} на {куриер} скоро ще бъде върната. Моля, вземете я днес или утре." },
 };
 
-type Stored = { sealed?: string; sender?: string; templates?: Record<string, string>; latin?: boolean; at?: string };
+/** Automatic SMS to parcels waiting at the courier's office: on these days of waiting (the arrival day is day 1). */
+export type OfficeAuto = { on: boolean; day1: number; day2: number };
+export const DEFAULT_OFFICE_AUTO: OfficeAuto = { on: false, day1: 4, day2: 6 };
+
+type Stored = { sealed?: string; sender?: string; templates?: Record<string, string>; latin?: boolean; office?: Partial<OfficeAuto>; at?: string };
 
 export async function smsSettings() {
   const s = (await getSetting<Stored>(cKey("sms"))) || {};
@@ -37,7 +43,8 @@ export async function smsSettings() {
     }
   }
   const templates = Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k, t]) => [k, { label: t.label, text: s.templates?.[k] || t.text }]));
-  return { token, source, sender: s.sender || (companyId() === ENV_COMPANY ? env("SMSAPI_SENDER") : "") || "", templates, latin: s.latin ?? false };
+  const office: OfficeAuto = { ...DEFAULT_OFFICE_AUTO, ...(s.office || {}) };
+  return { token, source, sender: s.sender || (companyId() === ENV_COMPANY ? env("SMSAPI_SENDER") : "") || "", templates, latin: s.latin ?? false, office };
 }
 
 export async function saveSmsSettings(input: any) {
@@ -58,6 +65,19 @@ export async function saveSmsSettings(input: any) {
     }
   }
   if (typeof input?.latin === "boolean") next.latin = input.latin;
+  if (input?.office && typeof input.office === "object") {
+    const cur = { ...DEFAULT_OFFICE_AUTO, ...(next.office || {}) };
+    const day = (v: unknown, old: number) => (v === undefined || v === null || v === "" ? old : Math.trunc(Number(v)));
+    const o: OfficeAuto = {
+      on: typeof input.office.on === "boolean" ? input.office.on : cur.on,
+      day1: day(input.office.day1, cur.day1),
+      day2: day(input.office.day2, cur.day2),
+    };
+    // Couriers send a parcel back after about a week: both reminders must come before that.
+    if (!(o.day1 >= 2 && o.day1 <= 7)) throw fail("Първото напомняне е между 2-рия и 7-ия ден в офиса.");
+    if (!(o.day2 > o.day1 && o.day2 <= 9)) throw fail("Второто напомняне е след първото и до 9-ия ден.");
+    next.office = o;
+  }
   await setSetting(cKey("sms"), next);
   return smsSettings();
 }
