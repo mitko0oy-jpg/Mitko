@@ -197,7 +197,7 @@ const PRODUCTS = [
     name: 'Тибетски пластири с 6 вида животински отрови (8 бр.)',
     shortName: 'Тибетски пластири',
     size: '8 пластира в кутия',
-    price: 9.90,
+    price: 7.90,
     img: zImg('ChatGPT_Image_Jul_15_2026_11_37_37_AM-4104674.png'),
     short: 'С 6 вида животински отрови по тибетска рецептура, ментол, камфор и капсаицин, билка плаун и далечно инфрачервен магнитен прах — силно усещане за топлина и свежест.',
     bullets: [
@@ -632,9 +632,9 @@ const PACKS = {
     { key: 'bvpatch3', label: '3 кутии', sub: '8,30\u00a0€ за кутия · най-изгодно', store: 49, price: 24.90, featured: true }
   ],
   tibet: [
-    { key: 'tibet1', label: '1 кутия', sub: 'За да опиташ', store: 8, price: 9.90 },
-    { key: 'tibet2', label: '2 кутии', sub: '8,95\u00a0€ за кутия', store: 50, price: 17.90 },
-    { key: 'tibet3', label: '3 кутии', sub: '8,30\u00a0€ за кутия · най-изгодно', store: 51, price: 24.90, featured: true }
+    { key: 'tibet1', label: '1 кутия', sub: 'За да опиташ', store: 8, price: 7.90 },
+    { key: 'tibet2', label: '2 кутии', sub: '7,45\u00a0€ за кутия', store: 50, price: 14.90 },
+    { key: 'tibet3', label: '3 кутии', sub: '7,63\u00a0€ за кутия', store: 51, price: 22.90, featured: true }
   ],
   nail: [
     { key: 'nail1', label: '1 спрей', sub: 'За да опиташ', store: 12, price: 9.90 },
