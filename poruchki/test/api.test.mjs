@@ -1470,6 +1470,16 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.equal(p0.profit, 600 - 120 - 50 - 10 - p0.courier, "what the owner took or put in is not in the profit (bank lines are expenses only as entries)");
   assert.deepEqual([p0.ownerOut, p0.ownerIn, rep2.owner], [140, 500, "Иван"], "to the owner: his withdrawal and the rent paid to him; from him: the loan");
   assert.ok(rep2.categories.ads_meta && rep2.categories.fulfillment);
+  // Sales from the pages that are not in OrderDesk (phone orders): in the revenue like the orders, with the VAT once registered;
+  // in a month from the bank they are already in the money in.
+  await api("/api/acc/import", { entries: [{ key: "cb1", day: `${m}-20`, kind: "income", category: "sales_cb", party: "Телефонни", total: 120, vat: 20 },
+    { key: "cb0", day: `${prevM}-20`, kind: "income", category: "sales_cb", party: "Телефонни", total: 60 }] });
+  const rep3 = (await api(`/api/acc/report?from=${prevM}&to=${m}`)).data;
+  const [q0, q1] = rep3.months;
+  assert.deepEqual([q1.otherSales, q1.revenue, q1.revenueNet, q1.revenueVatBg, q1.otherIncome], [120, p1.revenue + 120, p1.revenueNet + 100, p1.revenueVatBg + 20, p1.otherIncome]);
+  assert.equal(q1.profit, Math.round((p1.profit + 100) * 100) / 100);
+  assert.deepEqual([q0.otherSales, q0.revenue, q0.profit], [60, 600, p0.profit], "the bank month has them in the money in already");
+  assert.equal(rep3.total.otherSales, 180);
   await api("/api/acc/settings", { vatFrom: "", ordersFrom: "", owner: { label: "собственик", names: "" } });
 
   // The refund is in the NAP file.

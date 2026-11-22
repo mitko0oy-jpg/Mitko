@@ -33,7 +33,12 @@ export const AUTO_CATS: Record<string, string> = {
   ads_meta: "Реклама Meta (по рекламните профили)",
   meta_vat: "ДДС върху Meta (чл. 97а, преди регистрацията)",
 };
-export const INCOME_CATS: Record<string, string> = { other_income: "Друг приход" };
+export const INCOME_CATS: Record<string, string> = {
+  other_income: "Друг приход",
+  // Продажби от страници в ConvertBuilder, които не са свързани с OrderDesk (телефонни поръчки, стари страници) –
+  // влизат в приходите като поръчките, по месеца на плащането.
+  sales_cb: "Продажби от други страници (ConvertBuilder)",
+};
 // Bank lines: money in from the couriers and others, or out (the expense categories above, or these).
 // The sales ones (SALES_IN) are the income of a month that is before the orders in OrderDesk.
 export const SALES_IN = ["cod_econt", "cod_speedy", "cod_abroad", "card_in", "customer"];
@@ -434,6 +439,7 @@ type Month = {
   expenses: Record<string, number>; // без ДДС, по категории (без куриерите); преди регистрацията – с ДДС
   expensesTotal: number;
   otherIncome: number;
+  otherSales: number; // продажби от несвързани страници (в приходите)
   purchaseVat: number;
   profit: number;
   vatDue: number; // ориентировъчно
@@ -465,7 +471,7 @@ export async function report(fromMonth: string, toMonth: string) {
       {
         month: m, source: fromBank(m) ? "bank" : "orders", vatRegistered: reg(m), orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, bankSales: 0,
         refunds: 0, cogs: 0, cogsMissing: 0, goodsBought: 0, courierAuto: 0, courierInvoices: 0, courier: 0, adsMeta: 0, expenses: {}, expensesTotal: 0,
-        otherIncome: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
+        otherIncome: 0, otherSales: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
       },
     ]),
   );
@@ -576,7 +582,15 @@ export async function report(fromMonth: string, toMonth: string) {
     const net = x.vatRegistered ? e.net : e.total;
     const vat = x.vatRegistered ? e.vat : 0;
     if (e.kind === "refund") x.refunds = r2(x.refunds + net);
-    else if (e.kind === "income") x.otherIncome = r2(x.otherIncome + net);
+    else if (e.kind === "income" && e.category === "sales_cb") {
+      // Продажби от несвързаните страници: приход като поръчките (в месец „банка“ вече са в постъпленията).
+      x.otherSales = r2(x.otherSales + e.total);
+      if (x.source === "bank") continue;
+      x.revenue = r2(x.revenue + e.total);
+      x.revenueNet = r2(x.revenueNet + net);
+      x.revenueVat = r2(x.revenueVat + vat);
+      x.revenueVatBg = r2(x.revenueVatBg + vat);
+    } else if (e.kind === "income") x.otherIncome = r2(x.otherIncome + net);
     else if (e.category === "courier") {
       x.courierInvoices = r2(x.courierInvoices + net);
       x.purchaseVat = r2(x.purchaseVat + vat);
@@ -607,7 +621,7 @@ export async function report(fromMonth: string, toMonth: string) {
     total: {
       orders: sum("orders"), revenue: sum("revenue"), revenueNet: sum("revenueNet"), refunds: sum("refunds"), cogs: sum("cogs"),
       courier: sum("courier"), expenses, expensesTotal: sum("expensesTotal"), otherIncome: sum("otherIncome"), profit: sum("profit"),
-      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"), ownerOut: sum("ownerOut"), ownerIn: sum("ownerIn"),
+      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"), otherSales: sum("otherSales"), ownerOut: sum("ownerOut"), ownerIn: sum("ownerIn"),
     },
     vatMissing: shops.filter((x) => !shopAcc(set, x).vatSet).map((x) => x.label),
     categories: { ...EXPENSE_CATS, ...AUTO_CATS },
