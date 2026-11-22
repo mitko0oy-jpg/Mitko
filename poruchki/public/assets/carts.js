@@ -3,11 +3,13 @@ import { api, esc, num } from "./app.js";
 
 const $ = (id) => document.getElementById(id);
 const ZONES = [
-  { id: "fresh", label: "Пресни", from: 0, to: 1, color: "#ff7a45" },
-  { id: "warm", label: "Топли", from: 1, to: 6, color: "#f5b041" },
-  { id: "cool", label: "Изстиващи", from: 6, to: 24, color: "#4aa3ff" },
-  { id: "edge", label: "На ръба", from: 24, to: 72, color: "#a68bff" },
+  { id: "fresh", label: "Пресни", from: 0, to: 1, color: "#ff7a45", fish: ["#ff9350", "#e8652a", "#ffd9bd"] },
+  { id: "warm", label: "Топли", from: 1, to: 6, color: "#f5b041", fish: ["#ffc94d", "#e09a1c", "#fff1c4"] },
+  { id: "cool", label: "Изстиващи", from: 6, to: 24, color: "#4aa3ff", fish: ["#62b8ff", "#2f83d4", "#dcf0ff"] },
+  { id: "edge", label: "На ръба", from: 24, to: 72, color: "#a68bff", fish: ["#b59dff", "#8466e6", "#eee7ff"] },
 ];
+// The water takes the first 88% of the width (0 → 72 h); after the red line waits the shark.
+const WATER = 0.88;
 const zoneOf = (h) => ZONES.find((z) => h < z.to) || ZONES[3];
 const xOf = (h) => {
   const i = ZONES.findIndex((z) => h < z.to);
@@ -64,6 +66,97 @@ function place(el, target) {
   el.style.top = `${top}px`;
 }
 
+/** A cart as a fish (facing the deadline on the right); the colours come from its zone. */
+function fishSvg(z) {
+  const [a, b, c] = z.fish;
+  return `<svg viewBox="0 0 64 40" aria-hidden="true" style="--f1:${a};--f2:${b};--f3:${c}">
+    <g class="tl"><path d="M16 20 L2 6 Q7 20 2 34 Z" fill="var(--f2)"/></g>
+    <path d="M25 10 Q33 -1 47 9 Z" fill="var(--f2)"/>
+    <path d="M30 30 Q35 39 42 31 Z" fill="var(--f2)"/>
+    <path d="M14 20 C18 7 40 3 52 9 C60 13 63 18 63 20.5 C63 23 60 27 52 31 C40 37 18 33 14 20 Z" fill="var(--f1)"/>
+    <path d="M16 22 C26 33 46 35 61 23 C57 30 47 35 35 34.5 C25 34 19 29 16 22 Z" fill="var(--f3)" opacity=".75"/>
+    <path d="M44 9.5 C40 16 40 25 45 31.5" stroke="var(--f3)" stroke-width="2.4" fill="none" opacity=".85"/>
+    <ellipse cx="37" cy="12.5" rx="8" ry="2" fill="#fff" opacity=".28"/>
+    <path d="M37 21 Q31 26 34 30 Q39 27 37 21 Z" fill="var(--f2)" opacity=".85"/>
+    <circle cx="53.5" cy="16.5" r="3.7" fill="#fff"/><circle cx="54.6" cy="16.6" r="1.9" fill="#13202e"/>
+    <path d="M62 22.5 Q59.5 24 57 23.4" stroke="#0004" stroke-width="1" fill="none"/>
+  </svg>`;
+}
+
+const SHARK = `<svg class="shark" viewBox="0 0 240 112" aria-hidden="true">
+  <defs><linearGradient id="shk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55697a"/><stop offset="1" stop-color="#8ea2b1"/></linearGradient></defs>
+  <path d="M120 41 L141 6 L153 42 Z" fill="#4c6070"/>
+  <path d="M206 50 L236 24 L228 58 L238 90 L206 66 Z" fill="#4c6070"/>
+  <path d="M4 63 C28 42 88 34 148 39 C182 42 205 47 214 54 C216 58 216 62 213 66 C198 72 170 77 140 79 C92 83 38 82 4 63 Z" fill="url(#shk)"/>
+  <path d="M8 66 C40 77 100 80 156 73 C124 84 62 87 8 66 Z" fill="#e8eef2"/>
+  <path d="M90 74 L112 104 L121 76 Z" fill="#4c6070"/>
+  <path d="M52 52 q3 8 0 15 M58 51 q3 8 0 16 M64 51 q3 8 0 16" stroke="#3b4c5a" stroke-width="1.6" fill="none" opacity=".7"/>
+  <circle cx="29" cy="54" r="3.2" fill="#18222d"/><circle cx="28.2" cy="53.2" r="1" fill="#fff" opacity=".7"/>
+  <path d="M9 66 Q21 71 35 66" stroke="#2c3a46" stroke-width="1.6" fill="none"/>
+</svg>`;
+
+/** The bottom of the sea: hills, sand, rocks, kelp and corals (drawn here). */
+function seabed() {
+  // Kelp: a swaying stem with leaves on both sides.
+  const kelp = (x, h, col, d = 0) => {
+    const leaves = Array.from({ length: Math.floor(h / 16) }, (_, i) => {
+      const y = 128 - 12 - i * 16;
+      const side = i % 2 ? 1 : -1;
+      return `<ellipse cx="${x + side * 7}" cy="${y}" rx="8" ry="3.2" transform="rotate(${side * -35} ${x + side * 7} ${y})" fill="${col}"/>`;
+    }).join("");
+    return `<g class="kelp" style="animation-delay:-${d}s"><path d="M${x} 130 C${x - 8} ${128 - h * 0.3} ${x + 8} ${128 - h * 0.6} ${x} ${128 - h}" stroke="${col}" stroke-width="3.5" fill="none" stroke-linecap="round"/>${leaves}</g>`;
+  };
+  const grass = (x, col) => `<g class="kelp" fill="${col}">${[-14, -7, 0, 7, 14].map((dx, i) => `<path d="M${x + dx * 0.4} 130 Q${x + dx} ${110 - (i % 2) * 10} ${x + dx * 1.6} ${96 + (i % 3) * 6} Q${x + dx * 0.9} ${112} ${x + dx * 0.4 + 3} 130 Z"/>`).join("")}</g>`;
+  const coral = (x, col, s = 1) => `<g transform="translate(${x} 128) scale(${s})" stroke="${col}" stroke-width="5" stroke-linecap="round" fill="none"><path d="M0 0 V-26 M0 -12 L-12 -24 V-34 M0 -18 L11 -30 V-40 M-12 -28 L-20 -34 M11 -34 L18 -42"/></g>`;
+  const tubes = (x, col, s = 1) => `<g transform="translate(${x} 128) scale(${s})" fill="${col}"><rect x="-14" y="-30" width="8" height="30" rx="4"/><rect x="-4" y="-40" width="9" height="40" rx="4.5"/><rect x="7" y="-24" width="8" height="24" rx="4"/><g fill="#0003"><ellipse cx="-10" cy="-29" rx="3" ry="1.5"/><ellipse cx="0.5" cy="-39" rx="3.2" ry="1.6"/><ellipse cx="11" cy="-23" rx="3" ry="1.5"/></g></g>`;
+  const anemone = (x, col) => `<g transform="translate(${x} 128)" stroke="${col}" stroke-width="3" stroke-linecap="round">${[-50, -32, -16, 0, 16, 32, 50].map((a) => `<path d="M0 0 L${(Math.sin((a * Math.PI) / 180) * 20).toFixed(1)} ${(-Math.cos((a * Math.PI) / 180) * 22).toFixed(1)}"/>`).join("")}<circle r="4" fill="${col}"/></g>`;
+  const star = (x, y, col) => `<path transform="translate(${x} ${y}) scale(.9)" d="M0 -7 L2 -2 L7 -2 L3 1.5 L5 7 L0 3.5 L-5 7 L-3 1.5 L-7 -2 L-2 -2 Z" fill="${col}"/>`;
+  return `<svg class="seabed" viewBox="0 0 1200 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs><linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9c9f97"/><stop offset="1" stop-color="#6c716f"/></linearGradient></defs>
+    <path d="M0 62 Q110 28 230 56 T470 50 T700 44 T930 58 T1200 40 V150 H0 Z" fill="#0c2c50" opacity=".75"/>
+    <path d="M0 92 Q160 70 330 88 T660 84 T980 92 T1200 80 V150 H0 Z" fill="#0b2443" opacity=".8"/>
+    ${kelp(38, 118, "#86a83f", 0)}${kelp(330, 78, "#6f9636", 2)}${kelp(612, 124, "#86a83f", 0.7)}${kelp(988, 108, "#86a83f", 1.4)}${kelp(1150, 100, "#86a83f", 0.4)}
+    ${grass(70, "#4f8a3a")}${grass(300, "#5d9a44")}${grass(655, "#4f8a3a")}${grass(870, "#5d9a44")}${grass(1185, "#4f8a3a")}
+    ${coral(205, "#e2589a", 1.3)}${coral(452, "#9a55d6", 1.5)}${coral(735, "#f0793d", 1.35)}${coral(1060, "#e2589a", 1.15)}
+    ${tubes(560, "#c9a62d", 1.25)}${tubes(905, "#8a5bd4", 1.35)}
+    ${anemone(262, "#ef4f8a")}${anemone(806, "#f39a3b")}${anemone(1112, "#b763e8")}${anemone(500, "#43b3c9")}
+    <path d="M0 128 Q150 118 300 126 T600 124 T900 128 T1200 120 V150 H0 Z" fill="url(#sand)"/>
+    <ellipse cx="150" cy="128" rx="46" ry="14" fill="#566270"/><ellipse cx="140" cy="124" rx="20" ry="5" fill="#6b7886" opacity=".7"/>
+    <ellipse cx="520" cy="131" rx="34" ry="10" fill="#4e5a68"/><ellipse cx="850" cy="129" rx="40" ry="12" fill="#56636f"/>
+    <ellipse cx="1010" cy="131" rx="26" ry="8" fill="#4e5a68"/>
+    ${star(372, 140, "#e2654a")}${star(760, 143, "#e98a4a")}${star(1180, 141, "#e2654a")}
+    <g fill="#d8cdb8" opacity=".8"><circle cx="90" cy="142" r="2.5"/><circle cx="420" cy="138" r="2"/><circle cx="690" cy="144" r="2.5"/><circle cx="940" cy="140" r="2"/><circle cx="1090" cy="145" r="2.2"/></g>
+  </svg>`;
+}
+
+const AXIS = [["0", 0], ["1 ч", 1], ["6 ч", 2], ["24 ч", 3], ["72 ч", 4]];
+/** The water, the light, the bubbles, the bottom and the shark – drawn once; the fish come and go on top. */
+function scene() {
+  const bubbles = Array.from({ length: 14 }, (_, i) => {
+    const x = (hash(i + 11) * 96 + 2).toFixed(1);
+    const sz = (3 + hash(i + 3) * 6).toFixed(1);
+    return `<i class="bb" style="left:${x}%;width:${sz}px;height:${sz}px;animation-duration:${(7 + hash(i + 5) * 9).toFixed(1)}s;animation-delay:-${(hash(i + 9) * 16).toFixed(1)}s"></i>`;
+  }).join("");
+  return `<div class="sea-back" aria-hidden="true">
+      <div class="rays"></div>${bubbles}
+      ${[1, 2, 3].map((k) => `<div class="zline" style="left:${k * 25 * WATER}%"></div>`).join("")}
+      <div class="zline end" style="left:${100 * WATER}%"></div><div class="danger" style="left:${100 * WATER}%"></div>
+      ${seabed()}${SHARK}
+      <div class="axis">${AXIS.map(([t, k]) => `<span class="${k === 4 ? "end" : ""}" style="left:${k * 25 * WATER}%">${t}</span>`).join("")}</div>
+    </div>
+    <div id="seaLayer"></div>
+    <button type="button" class="legendbtn" id="seaLegendBtn" aria-expanded="false" aria-controls="seaLegend">Легенда</button>
+    <div class="sea-legend" id="seaLegend" hidden>
+      <b>Как се чете</b>
+      <div>Рибката е незавършена количка. По-голяма = по-скъпа.</div>
+      <div>Отляво надясно – колко време е минало: пресни → топли → изстиващи → на ръба.</div>
+      <div><span class="lg-glow"></span> Червено сияние – изтича до 12 ч.</div>
+      <div><span class="lg-mail">✉</span> Пратено е напомняне.</div>
+      <div>Акулата чака след 72 ч – тогава количката се губи.</div>
+      <div class="muted">Клик на рибка – обаждане, SMS, имейл или поръчка.</div>
+    </div>`;
+}
+
 export function renderStream() {
   if (!stream) return;
   const carts = stream.carts;
@@ -79,23 +172,41 @@ export function renderStream() {
     `<span class="bad">В риск &lt;12 ч: ${num(risk.length)} · ${eur(risk.reduce((n, c) => n + c.value.eur, 0))}</span>`,
   ].join("");
   const max = Math.max(1, ...carts.map((c) => c.value.eur));
+  const lane = $("lane");
+  if (!lane.querySelector(".sea-back")) {
+    lane.classList.add("sea");
+    lane.innerHTML = scene();
+    const lb = $("seaLegendBtn");
+    lb.onclick = () => {
+      const open = $("seaLegend").hidden;
+      $("seaLegend").hidden = !open;
+      lb.setAttribute("aria-expanded", String(open));
+    };
+  }
   const zoneTop = ZONES.map((z, i) => {
     const mine = carts.filter((c) => zoneOf(c.hours) === z);
-    return `<div class="zone" style="left:${i * 25}%"><span class="ztag" style="--z:${z.color}">${z.label} · ${mine.length}<span class="zm"> · ${eur(mine.reduce((n, c) => n + c.value.eur, 0))}</span></span></div>`;
+    return `<span class="ztag" style="left:calc(${i * 25 * WATER}% + 8px);--z:${z.color}" title="${z.label}"><span class="zl">${z.label} · </span>${mine.length}<span class="zm"> · ${eur(mine.reduce((n, c) => n + c.value.eur, 0))}</span></span>`;
   }).join("");
-  $("lane").innerHTML =
+  // Smaller fish on a phone; the swimming keeps its rhythm when the list is refreshed.
+  const k = lane.clientWidth && lane.clientWidth < 600 ? 0.7 : 1;
+  const t = Date.now() / 1000;
+  $("seaLayer").innerHTML =
     zoneTop +
     carts
       .map((c) => {
         const z = zoneOf(c.hours);
-        const size = Math.round(18 + Math.sqrt(c.value.eur / max) * 34);
-        const top = 18 + hash(c.id) * 64;
+        const w = Math.round((28 + Math.sqrt(c.value.eur / max) * 44) * k);
+        const x = Math.min(100 * WATER - 1, Math.max(1.5, xOf(c.hours) * WATER));
+        const top = 15 + hash(c.id) * 50;
         const late = stream.window - c.hours < 12;
-        return `<button class="bub ${z.id} ${late ? "late" : ""} ${c.reminders ? "rem" : ""}" data-cart="${c.id}" aria-label="${esc(c.name || "Без име")}, ${esc(fmtValue(c.value))}"
-          style="left:calc(${xOf(c.hours)}% - ${size / 2}px);top:${top}%;width:${size}px;height:${size}px;--z:${z.color};animation-delay:-${(hash(c.id + 7) * 6).toFixed(1)}s"><span>${esc((c.name || "?").trim().charAt(0).toUpperCase())}</span></button>`;
+        const sp = 5 + hash(c.id + 3) * 4;
+        return `<button class="fishbtn ${z.id} ${late ? "late" : ""} ${c.reminders ? "rem" : ""}" data-cart="${c.id}" aria-label="${esc(c.name || "Без име")}, ${esc(fmtValue(c.value))}, ${z.label}"
+          style="left:calc(${x.toFixed(2)}% - ${w / 2}px);top:${top.toFixed(1)}%;width:${w}px;height:${Math.round(w * 0.64)}px;z-index:${200 - w};--sy:${(0.86 + hash(c.id + 5) * 0.3).toFixed(2)};animation-duration:${sp.toFixed(1)}s;animation-delay:-${((t + hash(c.id + 7) * sp) % sp).toFixed(2)}s">${fishSvg(z)}</button>`;
       })
       .join("") +
-    (carts.length ? "" : `<div class="lane-empty">Няма незавършени колички в последните ${stream.window} часа.</div>`);
+    (carts.length ? "" : `<div class="lane-empty">Аквариумът е празен – няма незавършени колички в последните ${stream.window} часа.</div>`);
+  // The shark comes closer when carts are about to be lost.
+  lane.classList.toggle("hungry", carts.some((c) => stream.window - c.hours < 12));
   $("zones").innerHTML = ZONES.map((z) => `<span style="color:${z.color}">${carts.filter((c) => zoneOf(c.hours) === z).length} ${z.label}</span>`).join("");
   if (pinned && !carts.some((c) => c.id === pinned)) pinned = null;
 }
@@ -114,17 +225,17 @@ export function initStream(h) {
   const popEl = $("cartpop");
   const lane = $("lane");
   lane.addEventListener("mouseover", (e) => {
-    const b = e.target.closest(".bub");
+    const b = e.target.closest(".fishbtn");
     if (!b || pinned) return;
     popEl.innerHTML = pop(stream.carts.find((c) => c.id === Number(b.dataset.cart)), false);
     popEl.classList.remove("pinned");
     place(popEl, b);
   });
   lane.addEventListener("mouseout", (e) => {
-    if (!pinned && !e.relatedTarget?.closest?.(".bub")) popEl.hidden = true;
+    if (!pinned && !e.relatedTarget?.closest?.(".fishbtn")) popEl.hidden = true;
   });
   lane.addEventListener("click", (e) => {
-    const b = e.target.closest(".bub");
+    const b = e.target.closest(".fishbtn");
     if (!b) return;
     pinned = Number(b.dataset.cart);
     popEl.innerHTML = pop(stream.carts.find((c) => c.id === pinned), true);

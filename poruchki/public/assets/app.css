@@ -1036,6 +1036,67 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 .modal textarea { width: 100%; font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); color: var(--text); }
 @media (max-width: 700px) { .lane { height: 240px; } .lane .ztag { font-size: 10px; padding: 1px 6px; left: 4px; } .cartpop { width: min(320px, calc(100vw - 48px)); } .zonecounts { font-size: 12px; } }
 .modal .remstep input[type="number"] { width: 84px !important; flex: none; }
+
+/* Незавършени: the cart stream as an aquarium – fish = carts, the shark waits after 72 h */
+.lane.sea { height: 380px; animation: none; box-shadow: inset 0 0 60px rgb(0 0 0 / 0.35);
+  background: linear-gradient(180deg, #3f8fd0 0%, #2a6fb4 28%, #1d5596 55%, #163f78 80%, #12325f 100%); }
+.lane.sea::after { display: none; }
+.sea-back { position: absolute; inset: 0; pointer-events: none; }
+.sea .rays { position: absolute; inset: 0 0 25% 0; opacity: .7;
+  background:
+    linear-gradient(105deg, transparent 6%, rgb(255 255 255 / 0.16) 9%, transparent 14%),
+    linear-gradient(110deg, transparent 22%, rgb(255 255 255 / 0.12) 27%, transparent 33%),
+    linear-gradient(104deg, transparent 47%, rgb(255 255 255 / 0.14) 51%, transparent 57%),
+    linear-gradient(112deg, transparent 68%, rgb(255 255 255 / 0.10) 73%, transparent 80%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  animation: rays 12s ease-in-out infinite alternate; }
+@keyframes rays { to { transform: translateX(3%); opacity: .35; } }
+.sea .bb { position: absolute; bottom: 18%; border-radius: 50%; border: 1px solid rgb(255 255 255 / 0.55); background: rgb(255 255 255 / 0.12); animation: rise 10s linear infinite; }
+@keyframes rise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .9; } 50% { transform: translate(6px, -130px); } 100% { transform: translate(-4px, -300px); opacity: 0; } }
+.sea .zline { position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgb(255 255 255 / 0.2); }
+.sea .zline.end { border-left: 2px dashed rgb(255 90 78 / 0.75); }
+.sea .danger { position: absolute; top: 0; bottom: 0; right: 0; background: linear-gradient(90deg, rgb(255 70 60 / 0.10), rgb(0 0 0 / 0.12)); }
+.sea .seabed { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 42%; }
+.sea .kelp { transform-box: fill-box; transform-origin: 50% 100%; animation: kelp 5s ease-in-out infinite alternate; }
+@keyframes kelp { from { transform: skewX(-5deg); } to { transform: skewX(5deg); } }
+.sea .shark { position: absolute; right: -60px; top: 42%; width: 250px; opacity: .85; filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.3)); animation: shark 14s ease-in-out infinite; transition: right 1.2s ease; }
+.lane.sea.hungry .shark { right: -14px; opacity: 1; }
+@keyframes shark { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(-16px, -10px) rotate(-1.5deg); } 60% { transform: translate(-6px, 8px) rotate(1deg); } }
+.sea .axis { position: absolute; left: 0; right: 0; bottom: 8px; height: 22px; }
+.sea .axis span { position: absolute; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #fff; background: rgb(10 25 45 / 0.6); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.sea .axis span:first-child { transform: translateX(6px); }
+.sea .axis span.end { background: #b4282a; }
+.lane.sea .ztag { top: 12px; left: auto; background: rgb(10 25 45 / 0.55); backdrop-filter: blur(2px); z-index: 300; pointer-events: none; }
+#seaLayer { position: absolute; inset: 0; }
+.fishbtn { position: absolute; border: 0; padding: 0; background: none; cursor: pointer; animation: swim 7s ease-in-out infinite; }
+.fishbtn svg { width: 100%; height: 100%; overflow: visible; transform: scaleY(var(--sy, 1)); transition: transform .15s; filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.25)); }
+.fishbtn .tl { transform-box: fill-box; transform-origin: 100% 50%; animation: wag .7s ease-in-out infinite alternate; }
+@keyframes swim { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(4px, -6px) rotate(-3deg); } 50% { transform: translate(0, -10px) rotate(0); } 75% { transform: translate(-4px, -4px) rotate(3deg); } }
+@keyframes wag { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+.fishbtn:hover, .fishbtn:focus-visible { z-index: 250 !important; animation-play-state: paused; outline: none; }
+.fishbtn:hover svg, .fishbtn:focus-visible svg { transform: scale(1.18) scaleY(var(--sy, 1)); }
+.fishbtn:focus-visible svg { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 4px #fff); }
+.fishbtn.late svg { filter: drop-shadow(0 0 4px #ff4a3d) drop-shadow(0 0 10px rgb(255 74 61 / 0.7)); }
+.fishbtn.late::before { content: ""; position: absolute; inset: -40%; border-radius: 50%; background: radial-gradient(circle, rgb(255 80 60 / 0.35), transparent 65%); pointer-events: none; }
+.fishbtn.rem::after { content: "✉"; position: absolute; right: -4px; top: -8px; font-size: 10px; background: #fff; color: #2f6fed; border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center; box-shadow: 0 1px 3px rgb(0 0 0 / 0.3); }
+.lane.sea .lane-empty { color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); font-weight: 600; inset: 0 0 30% 0; }
+.legendbtn { position: absolute; right: 12px; bottom: 38px; z-index: 310; border: 0; border-radius: 10px; padding: 7px 12px; font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: rgb(10 20 35 / 0.75); cursor: pointer; }
+.legendbtn:hover { background: rgb(10 20 35 / 0.9); }
+.sea-legend { position: absolute; right: 12px; bottom: 76px; z-index: 310; width: 290px; display: grid; gap: 6px; padding: 12px 14px; border-radius: 12px; background: rgb(12 22 38 / 0.92); color: #e8eef5; font-size: 12.5px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.35); }
+.sea-legend[hidden] { display: none; }
+.sea-legend .muted { color: #9fb0c4; }
+.sea-legend .lg-glow { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ff4a3d; box-shadow: 0 0 6px 2px rgb(255 74 61 / 0.7); vertical-align: -1px; margin-right: 2px; }
+.sea-legend .lg-mail { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #fff; color: #2f6fed; font-size: 10px; }
+@media (max-width: 700px) {
+  .lane.sea { height: 280px; }
+  .sea .shark { width: 150px; right: -50px; }
+  .lane.sea.hungry .shark { right: -20px; }
+  .sea .axis span { font-size: 10px; padding: 1px 6px; }
+  .lane.sea .ztag .zl, .lane.sea .ztag .zm { display: none; }
+  .legendbtn { bottom: 34px; padding: 5px 9px; font-size: 12px; }
+  .sea-legend { width: min(270px, calc(100% - 24px)); bottom: 68px; }
+}
+@media (prefers-reduced-motion: reduce) { .lane.sea *, .lane.sea { animation: none !important; } }
 .badge.abandoned { --h: #8a7fc4; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
 /* Дублирана: held for a look before it is shipped twice. */
 .badge.duplicate { --h: #c2410c; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
