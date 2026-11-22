@@ -331,6 +331,16 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
 /* New order: the customer who ordered before (filled in from the last order) */
 .modal .cust { display: grid; gap: 3px; padding: 9px 11px; border-radius: 10px; background: color-mix(in srgb, var(--good) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good) 30%, var(--line)); }
 .modal .cust b { color: var(--good); }
+/* The new-order form scrolls as a whole: its parts (lists, tables) keep their height instead of being squeezed. */
+#orderDialog .mb { grid-auto-rows: max-content; }
+/* Products: a list under the field, filtered while typing (☰ Списък – all of them) */
+.modal .prlist { display: grid; gap: 1px; max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 4px; margin-top: -6px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 0.08); }
+.modal .prlist[hidden] { display: none; }
+.modal .prlist button { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; border: 0; background: none; padding: 5px 8px; border-radius: 8px; cursor: pointer; font: inherit; color: inherit; }
+.modal .prlist button:hover, .modal .prlist button.on { background: var(--surface-2); }
+.modal .prlist img, .modal .prlist .noimg { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: var(--surface-2); }
+.modal .prlist mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.modal .prlist .muted, .modal .prlist .err { padding: 6px 8px; }
 .modal #ofSug:not(:empty) { border: 1px solid var(--line); border-radius: 10px; padding: 4px; margin-top: -4px; }
 .modal .price { font-size: 15px; }
 .modal .price b { font-variant-numeric: tabular-nums; }

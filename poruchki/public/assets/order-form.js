@@ -100,8 +100,10 @@ export function openOrderForm({ mode, order, shops = [] }) {
                        <td><button type="button" class="iconbtn" data-del="${n}" aria-label="Премахни">✕</button></td></tr>`,
                    )
                    .join("") || `<tr><td class="muted small">Още няма продукти.</td></tr>`}</tbody></table></div>
-                 <div class="row"><input type="search" id="prQ" placeholder="Добави продукт" style="flex:1"><button type="button" class="btn sm" id="prCustom">Свой продукт</button></div>
-                 <div class="results" id="prList"></div>
+                 <div class="row"><input type="search" id="prQ" name="prq" placeholder="Добави продукт – пиши името" style="flex:1" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="prList">
+                   <button type="button" class="btn sm" id="prAll" aria-expanded="false" aria-controls="prList" title="Всички продукти на магазина">☰ Списък</button>
+                   <button type="button" class="btn sm" id="prCustom">Свой продукт</button></div>
+                 <div class="prlist" id="prList" role="listbox" hidden></div>
                  <div class="grid2"><label>Доставка (€)<input type="number" name="shipping" min="0" step="0.01" value="${st.shipping}"></label>
                    <div class="price" style="align-self:end">Общо: <b id="ofTotal">${eur(total(), true)}</b></div></div>
                  <label>Бележка<input type="text" name="note" value="${esc(st.note)}"></label>
@@ -247,9 +249,32 @@ export function openOrderForm({ mode, order, shops = [] }) {
       const pq = d.querySelector("#prQ");
       if (pq) {
         let t;
-        pq.oninput = (e) => (clearTimeout(t), (t = setTimeout(() => products(e.target.value), 250)));
-        pq.onfocus = (e) => products(e.target.value);
-        d.querySelector("#prCustom").onclick = () => (read(), st.items.push({ name: "", qty: 1, price: 0, custom: true }), render());
+        // Typing: the shop's products with that in the name. „☰ Списък“: all of them.
+        pq.oninput = (e) => (clearTimeout(t), (t = setTimeout(() => products(e.target.value), 200)));
+        pq.onfocus = (e) => e.target.value.trim() && products(e.target.value);
+        pq.onkeydown = (e) => {
+          const open = !d.querySelector("#prList").hidden && prItems.length;
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (!open) return products(pq.value, !pq.value.trim());
+            prSel = (prSel + (e.key === "ArrowDown" ? 1 : -1) + prItems.length) % prItems.length;
+            markSel();
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (open && prSel >= 0) addProduct(prItems[prSel]);
+          } else if (e.key === "Escape" && !d.querySelector("#prList").hidden) {
+            e.preventDefault();
+            closeList();
+          }
+        };
+        d.querySelector("#prAll").onclick = () => (prShowsAll && !d.querySelector("#prList").hidden ? closeList() : products("", true));
+        d.querySelector("#prCustom").onclick = () => (read(), closeList(), st.items.push({ name: "", qty: 1, price: 0, custom: true }), render());
+        d.querySelector("form").shop.onchange = () => (read(), closeList());
+        // A click anywhere else closes the list.
+        // (A block, not an expression: a handler that returns false would stop the click from focusing the field.)
+        d.onmousedown = (e) => {
+          if (!e.target.closest("#prList, #prQ, #prAll")) closeList();
+        };
       }
       d.querySelector("form").onsubmit = (e) => e.preventDefault();
       d.querySelector("#ofSave").onclick = save;
@@ -268,20 +293,81 @@ export function openOrderForm({ mode, order, shops = [] }) {
       }
     }
 
-    async function products(text) {
+    // ---- products: a list under the field, filtered while typing ----
+    let prItems = [];
+    let prSel = -1;
+    let prSeq = 0;
+    let prShowsAll = false;
+    let prQuery = "";
+
+    function openState(open) {
+      d.querySelector("#prQ")?.setAttribute("aria-expanded", String(open));
+      d.querySelector("#prAll")?.setAttribute("aria-expanded", String(open && prShowsAll));
+    }
+    function closeList() {
+      prSeq++;
+      const list = d.querySelector("#prList");
+      if (!list) return;
+      list.hidden = true;
+      list.innerHTML = "";
+      prItems = [];
+      prSel = -1;
+      openState(false);
+    }
+    /** The typed part of the name, highlighted. */
+    function mark(name, q) {
+      const i = q ? name.toLowerCase().indexOf(q.toLowerCase()) : -1;
+      if (i < 0) return esc(name);
+      return `${esc(name.slice(0, i))}<mark>${esc(name.slice(i, i + q.length))}</mark>${esc(name.slice(i + q.length))}`;
+    }
+    function markSel() {
+      d.querySelectorAll("#prList [data-n]").forEach((b) => {
+        const on = Number(b.dataset.n) === prSel;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", String(on));
+        if (on) b.scrollIntoView({ block: "nearest" });
+      });
+    }
+    async function products(text, all = false) {
+      const q = all ? "" : String(text || "").trim();
+      if (!all && !q) return closeList();
       read();
       const list = d.querySelector("#prList");
+      const my = ++prSeq;
+      prShowsAll = all;
+      prQuery = q;
+      list.hidden = false;
+      openState(true);
+      if (!prItems.length) list.innerHTML = `<div class="muted small">Зареждам продуктите…</div>`;
       try {
-        const r = await api(`/api/products?shop=${encodeURIComponent(st.shop)}&q=${encodeURIComponent(text.trim())}`);
-        list.innerHTML = r.products.slice(0, 30).map((p, n) => `<button type="button" data-n="${n}">${esc(p.name)} <b>${eur(p.price, true)}</b></button>`).join("") || `<div class="muted small">Няма такъв продукт – ползвай „Свой продукт“.</div>`;
-        list.querySelectorAll("button").forEach((b) => (b.onclick = () => {
-          const p = r.products[Number(b.dataset.n)];
-          st.items.push({ name: p.name, qty: 1, price: p.price, sku: p.sku || "" });
-          render();
-        }));
+        const r = await api(`/api/products?shop=${encodeURIComponent(st.shop)}&q=${encodeURIComponent(q)}`);
+        if (my !== prSeq) return;
+        prItems = r.products.slice(0, all ? 300 : 50);
+        prSel = prItems.length ? 0 : -1;
+        list.innerHTML =
+          prItems
+            .map(
+              (p, n) => `<button type="button" role="option" data-n="${n}" aria-selected="${n === prSel}" class="${n === prSel ? "on" : ""}">
+                ${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : `<span class="noimg"></span>`}
+                <span class="nm">${mark(p.name, prQuery)}</span><b>${eur(p.price, true)}</b></button>`,
+            )
+            .join("") ||
+          `<div class="muted small">${all ? "Магазинът още няма продукти." : `Няма продукт с „${esc(q)}“.`} Ползвай „Свой продукт“.</div>`;
+        list.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => addProduct(prItems[Number(b.dataset.n)])));
       } catch (e) {
-        list.innerHTML = `<div class="err small">${esc(e.message)}</div>`;
+        if (my === prSeq) list.innerHTML = `<div class="err small">${esc(e.message)}</div>`;
       }
+    }
+    /** The same product again only adds one more. The field stays ready for the next one. */
+    function addProduct(p) {
+      if (!p) return;
+      read();
+      const same = st.items.find((i) => !i.custom && i.name === p.name && Number(i.price) === Number(p.price));
+      if (same) same.qty = (Number(same.qty) || 1) + 1;
+      else st.items.push({ name: p.name, qty: 1, price: p.price, sku: p.sku || "" });
+      closeList();
+      render();
+      d.querySelector("#prQ")?.focus();
     }
 
     async function save() {
