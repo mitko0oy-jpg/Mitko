@@ -936,3 +936,36 @@
 /* „½ цена“ под пакетите */
 .bvp .bv-half{display:flex;gap:10px;align-items:flex-start;max-width:760px;margin:26px auto 0;padding:14px 18px;border-radius:16px;background:#EEF6EA;border:2px solid #9BCB8C;color:#17301a;font-weight:600;font-size:calc(var(--fs) * 0.95);line-height:1.45;text-align:left}
 .bvp .bv-half b{font-weight:800}
+
+/* ---------- уелнес пластирите: кутиите в офертите (1, 2, 3 + подарък) ---------- */
+.bvp .bv-pack__boxes{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:6% 5%;background:linear-gradient(180deg,#fff,var(--tint2,#FFF4DE))}
+.bvp .bv-pack__boxes img{position:relative;width:52%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;border:3px solid #fff;box-shadow:0 14px 28px rgba(var(--sh,36,23,11),.18);background:#fff}
+.bvp .bv-pack__boxes img+img{margin-left:-30%}
+.bvp .bv-pack__boxes img:nth-child(1){transform:rotate(-6deg);z-index:1}
+.bvp .bv-pack__boxes img:nth-child(2){transform:rotate(-2deg) translateY(-4%);z-index:2}
+.bvp .bv-pack__boxes img:nth-child(3){transform:rotate(3deg);z-index:3}
+.bvp .bv-pack__boxes img:nth-child(4){transform:rotate(7deg) translateY(4%);z-index:4}
+.bvp .bv-pack__boxes--1 img{width:74%;transform:none}
+.bvp .bv-pack__boxes--2 img{width:58%}
+.bvp .bv-pack__boxes--2 img+img{margin-left:-20%}
+.bvp .bv-pack__boxes--4 img{width:46%}
+.bvp .bv-pack__boxes img.is-gift{border-color:#9CCB8C;box-shadow:0 0 0 3px #fff,0 0 0 6px #7BB36A,0 14px 28px rgba(var(--sh,36,23,11),.2)}
+.bvp .bv-pack__bow{position:absolute;right:7%;bottom:9%;z-index:5;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:#fff;font-size:28px;box-shadow:0 8px 18px rgba(var(--sh,36,23,11),.22)}
+
+/* ---------- иконките на съставките (рисувани, когато няма подходящ емоджи) ---------- */
+.bvp .bv-ingsvg{display:block;width:1.15em;height:1.15em}
+.bvp .bv-ing__ico .bv-ingsvg{width:1em;height:1em;margin:auto}
+.bvp .bv-ring__b i .bv-ingsvg{width:1.25em;height:1.25em;margin:0 auto}
+
+/* ---------- кръгът на формулата: надписът е под кръга, за да не го закриват съставките ---------- */
+.bvp .bv-ring__wrap{display:flex;flex-direction:column;align-items:center;gap:22px}
+.bvp .bv-ring__wrap>.bv-ring__cap{position:static;transform:none}
+
+/* ---------- „Защо да избереш“ при уелнес пластирите: 6 карти – 3 + 3 на компютър, 2 + 2 + 2 на таблет ---------- */
+.bvp .bv-bens.bv-bens--well{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+@media (min-width:960px){.bvp .bv-bens.bv-bens--well{grid-template-columns:repeat(3,1fr)}}
+.bvp .bv-bens--well .bv-ben--plain p{margin:6px 0 0;color:var(--ink-2);font-size:calc(var(--fs) * 0.9444);line-height:1.5}
+
+/* ---------- трите слоя: номерата стоят до самите слоеве ---------- */
+.bvp .bv-plate__n{right:auto;left:80%;margin-left:-20px}
+.bvp .bv-plate__n::before{content:"";position:absolute;right:100%;top:50%;width:22px;border-top:2px dashed rgba(var(--sh,36,23,11),.3)}

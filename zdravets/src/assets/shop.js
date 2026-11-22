@@ -37,9 +37,13 @@ const fromPrice = p => (p.packs ? Math.min(...PACKS[p.packs].map(k => k.price)) 
 const comboReady = () => PATCH_COMBOS.some(c => c.store) && PRODUCTS.filter(p => p.wellness).every(p => PATCH_IN_COMBO[p.id]);
 const comboOf = store => PATCH_COMBOS.find(c => c.store && c.store === store);
 const inComboOf = store => Object.keys(PATCH_IN_COMBO).find(id => PATCH_IN_COMBO[id] && PATCH_IN_COMBO[id] === store);
+// кутиите подарък към комплекта (само по време на Черния петък) и всички кутии в него
+const comboGift = c => (c && c.gift && bfOn() ? c.gift : 0);
+const comboBoxes = c => c.n + comboGift(c);
+// ids: видовете на всички кутии (може да се повтарят), заедно с подаръка
 async function addCombo(n, ids, { go = false, btn = null } = {}) {
   const c = PATCH_COMBOS.find(x => x.n === n);
-  if (!c || !c.store || ids.length !== n) return;
+  if (!c || !c.store || ids.length !== comboBoxes(c)) return;
   await addFlow({ store: c.store, qty: 1, btn, value: c.price, contentId: `combo${n}:${ids.join('+')}`, extra: ids.map(id => PATCH_IN_COMBO[id]), go });
 }
 // всеки вид в комплект трябва да има свой комплект: без комплекта редовете за 0 € се махат
@@ -47,7 +51,7 @@ async function syncCombos() {
   if (!cbReady() || !PATCH_COMBOS.some(c => c.store)) return;
   const o = await Cart.get();
   const items = o.items || [];
-  const allowed = items.reduce((s, i) => { const c = comboOf(i.productId); return s + (c ? c.n * (i.quantity || 1) : 0); }, 0);
+  const allowed = items.reduce((s, i) => { const c = comboOf(i.productId); return s + (c ? comboBoxes(c) * (i.quantity || 1) : 0); }, 0);
   const inCombo = items.filter(i => inComboOf(i.productId));
   const have = inCombo.reduce((s, i) => s + (i.quantity || 1), 0);
   if (have > allowed) for (const i of inCombo) await Cart.remove(i.productId);
@@ -69,7 +73,7 @@ function storeInfo(id) {
   if (id === UPSELL.store) return { name: P(UPSELL.product).name, img: productLook(P(UPSELL.product)).img };
   if (id === CONFIG.giftStoreId) return { name: 'Подарък: 12 пластира за стави и мускули', img: GIFT_IMG, gift: true };
   const c = comboOf(id);
-  if (c) return { name: c.title, img: productLook(P('apetit')).img, combo: c };
+  if (c) return { name: c.title + (comboGift(c) ? ` + ${comboGift(c)} подарък` : ''), img: productLook(P('apetit')).img, combo: c };
   const ic = inComboOf(id);
   if (ic) return { name: `${P(ic).shortName} (в комплект)`, img: productLook(P(ic)).img, inCombo: true };
   return { name: '', img: '' };
@@ -228,11 +232,14 @@ function drawCart(o) {
   const line = i => {
     const info = storeInfo(i.productId);
     const c = info.combo;
-    const parts = c ? items.filter(x => inComboOf(x.productId)).map(x => P(inComboOf(x.productId)).shortName) : [];
+    // видовете в комплекта с броя им: „Пластири с берберин × 3 · Пластири Energy“
+    const cnt = {};
+    if (c) items.filter(x => inComboOf(x.productId)).forEach(x => { const k = inComboOf(x.productId); cnt[k] = (cnt[k] || 0) + (x.quantity || 1); });
+    const parts = Object.keys(cnt).map(k => P(k).shortName + (cnt[k] > 1 ? ` × ${cnt[k]}` : ''));
     return `<div class="sp-line" data-id="${i.productId}">
       <a class="sp-line__img"${info.url ? ` href="${info.url}"` : ''}><img src="${info.img}" alt="" width="84" height="84" loading="lazy"></a>
       <div class="sp-line__txt"><b>${esc(info.name || i.title)}</b>
-        ${c ? `<small>${parts.map(esc).join(' · ')}</small>` : ''}
+        ${c ? `<small>${parts.map(esc).join(' · ')}${comboGift(c) ? ` <span class="sp-line__giftbox">🎁 ${comboGift(c) === 1 ? '1 кутия е подарък' : `${comboGift(c)} кутии са подарък`}</span>` : ''}</small>` : ''}
         ${info.half ? `<small class="sp-half-tag">½ цена – поръчката е над ${fmt(HALF_FROM)}</small>` : ''}
         <div class="sp-line__row">${c ? '<span class="sp-line__fixed">1 комплект</span>' : `<div class="sp-qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><span>${i.quantity || 1}</span><button type="button" data-q="1" aria-label="Повече">+</button></div>`}
           <span class="sp-line__price">${info.half ? `<s>${fmt(info.p.price * (i.quantity || 1))}</s> ` : ''}${fmt(+i.price || 0)}</span></div>

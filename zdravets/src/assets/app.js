@@ -124,7 +124,7 @@ const isGift = i => i.productId === CONFIG.giftStoreId;
 const countOf = o => (o.items || []).filter(i => !isGift(i) && !inComboOf(i.productId)).reduce((s, i) => s + (i.quantity || 1), 0);
 
 // По време на Черния петък подаръкът върви с поръчка от GIFT_FROM (3) и повече броя общо:
-// 3 гела, 3 кутии, 5 гела, „Грижа за тялото“ (3 продукта), комплект от 3 вида пластири или 3 отделни продукта.
+// 3 гела, 3 кутии, 5 гела, „Грижа за тялото“ (3 продукта) или 3 отделни продукта (без уелнес пластирите).
 // 2 броя (напр. 2 гела) са без подарък.
 const GIFT_FROM = CONFIG.giftFrom || 3;
 const STORE_UNITS = {};
@@ -137,8 +137,10 @@ BUNDLES.forEach(b => { STORE_UNITS[b.store] = b.items.reduce((s, [, n]) => s + n
 PATCH_COMBOS.forEach(c => { if (c.store) STORE_UNITS[c.store] = c.n });
 const unitsOf = store => STORE_UNITS[store] || 1;
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
+// уелнес пластирите имат свой подарък (кутия към комплекта от 3) – не носят пластирите за стави
+const WELL_STORES = PRODUCTS.filter(p => p.wellness).map(p => p.store).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean), IN_COMBO_STORES);
 function giftEarned(items) {
-  const real = (items || []).filter(i => !isGift(i) && !IN_COMBO_STORES.includes(i.productId));
+  const real = (items || []).filter(i => !isGift(i) && !WELL_STORES.includes(i.productId));
   return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
 }
 // колко пакета подарък да има в количката: най-големият подарък сред комплектите в нея (5 гела → 3 пакета)

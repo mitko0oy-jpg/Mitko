@@ -25,7 +25,16 @@ const ING_ICON = [[/камфор/i, '🌳'], [/капсаицин/i, '🌶️'],
   [/магнез|алантоин/i, '💎'], [/хиалурон/i, '💧'], [/джинджиф|пипер/i, '🌶️'], [/пелин/i, '🌿'], [/шафран|нотожен/i, '🌸'],
   [/животинск/i, '🔥'], [/кестен/i, '🌰'], [/чаено/i, '🌱'], [/биота/i, '🌲'], [/ghk|пептид/i, '✨'], [/лой/i, '🧈'],
   [/мед\b|^мед/i, '🍯'], [/масл/i, '🫒'], [/берберин/i, '🌿'], [/nad/i, '⚡'], [/растителн/i, '🍃']];
-const ingIcon = name => (ING_ICON.find(([re]) => re.test(name)) || [0, '🌿'])[1];
+/* Рисувани иконки там, където емоджи няма или подвежда: нарът не е ябълка, канелата не е дърва,
+   а слънцето е за витамин D, не за витамините от група B. */
+const ING_SVG = {
+  berberis: '<svg class="bv-ingsvg" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40C16 30 26 20 40 8" stroke="#6B4B2A" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M17 30c-6-1-9-5-9-9 5 0 9 3 9 9zM24 23c-1-6 1-11 6-13 1 5-1 10-6 13zM31 17c5-3 10-2 12 1-4 3-8 3-12-1zM22 26c6 1 9 5 9 9-5 0-8-4-9-9z" fill="#4F9A3A"/><g fill="#D7263D"><ellipse cx="12" cy="36" rx="3" ry="4.2" transform="rotate(-25 12 36)"/><ellipse cx="18" cy="39" rx="3" ry="4.2" transform="rotate(-10 18 39)"/><ellipse cx="10" cy="43" rx="2.8" ry="3.9" transform="rotate(-30 10 43)"/></g><g fill="#fff" opacity=".55"><circle cx="11" cy="34.5" r=".9"/><circle cx="17" cy="37.5" r=".9"/></g></svg>',
+  pomegranate: '<svg class="bv-ingsvg" viewBox="0 0 48 48" aria-hidden="true"><path d="M18 11l2-6 4 4 4-4 2 6z" fill="#A3142B"/><circle cx="24" cy="27" r="16" fill="#C8193A"/><path d="M14 22a12 12 0 0 1 8-8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".45"/><g fill="#F7B6C2"><circle cx="27" cy="29" r="2"/><circle cx="31" cy="25" r="2"/><circle cx="31" cy="32" r="2"/><circle cx="35" cy="28.5" r="1.8"/></g><path d="M25 21c8-2 13 3 13 10" stroke="#8E0F26" stroke-width="1.6" fill="none" opacity=".5"/></svg>',
+  cinnamon: '<svg class="bv-ingsvg" viewBox="0 0 48 48" aria-hidden="true"><g transform="rotate(-28 24 24)"><rect x="6" y="14" width="36" height="9" rx="4.5" fill="#A0582B"/><rect x="6" y="14" width="36" height="3" rx="1.5" fill="#C2753D"/><circle cx="42" cy="18.5" r="4.5" fill="#7A3E1A"/><path d="M42 15.5a3 3 0 1 1-2.6 4.5" stroke="#D99A62" stroke-width="1.4" fill="none"/><rect x="6" y="26" width="36" height="9" rx="4.5" fill="#8C4A22"/><rect x="6" y="26" width="36" height="3" rx="1.5" fill="#B0652F"/><circle cx="42" cy="30.5" r="4.5" fill="#6A3415"/><path d="M42 27.5a3 3 0 1 1-2.6 4.5" stroke="#D99A62" stroke-width="1.4" fill="none"/></g></svg>',
+  vitB: '<svg class="bv-ingsvg" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#F6B73C"/><circle cx="24" cy="24" r="15" fill="#FFD36E"/><text x="24" y="31.5" text-anchor="middle" font-family="Manrope,Arial,sans-serif" font-weight="800" font-size="21" fill="#8A4B00">B</text></svg>'
+};
+const ingIcon = name => /^берберин/i.test(name) ? ING_SVG.berberis : /от нар|^нар\b/i.test(name) ? ING_SVG.pomegranate : /канел/i.test(name) ? ING_SVG.cinnamon
+  : /витамин(и)?( от група)? B/i.test(name) ? ING_SVG.vitB : (ING_ICON.find(([re]) => re.test(name)) || [0, '🌿'])[1];
 
 /* Снимките на съставките в раздела „Какво съдържа?“ – като картите на гела в beeevenom.eu.
    Файловете са landing/zdravets/media/ing-<име>.webp (600×480); ZN_ING е commit-ът с тях.
