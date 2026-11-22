@@ -2488,12 +2488,13 @@ function renderCheckoutHelper() {
   let shipKind = local.get('zn_ship', null);
   if (!['econt', 'speedy', 'address'].includes(shipKind)) shipKind = null;
   let autoClicks = 0; // предпазител: формата да не се върти в кръг, ако не приеме избора
+  let picking = false; // нашият избор (офисът по подразбиране) не се пази като избор на клиента
   const kindOf = t => /спиди|speedy/i.test(t) ? 'speedy' : /еконт|econt/i.test(t) ? 'econt' : 'address';
   const SHIP_LABEL = { econt: 'До офис на Еконт', speedy: 'До офис на Спиди', address: 'До адрес (с куриер)' };
   const ADDR_HINT = { econt: 'Офис на Еконт – име или адрес на офиса', speedy: 'Офис на Спиди – име или адрес на офиса', address: 'Улица, номер, блок, вход, апартамент' };
   document.addEventListener('change', e => {
     const t = e.target;
-    if (e.isTrusted && t && t.name === 'shippingOption' && t.closest('label')) { shipKind = kindOf(t.closest('label').textContent); local.set('zn_ship', shipKind); }
+    if (e.isTrusted && !picking && t && t.name === 'shippingOption' && t.closest('label')) { shipKind = kindOf(t.closest('label').textContent); local.set('zn_ship', shipKind); }
   }, true);
   function fixShipping() {
     const wrap = document.querySelector('.payment-step-wrapper [data-role="shipping-methods"]');
@@ -2510,7 +2511,7 @@ function renderCheckoutHelper() {
     let cur = rows.find(r => r.inp.checked);
     const office = rows.find(r => r.kind === 'econt') || rows.find(r => r.kind !== 'address');
     const want = shipKind ? rows.find(r => r.kind === shipKind) : (!cur || cur.kind === 'address' ? office : null);
-    if (want && want !== cur && autoClicks < 6) { autoClicks++; want.l.click(); cur = want; }
+    if (want && want !== cur && autoClicks < 6) { autoClicks++; picking = true; try { want.l.click(); } finally { picking = false; } cur = want; }
     const kind = cur ? cur.kind : 'address';
     const addr = document.querySelector('.payment-step-wrapper input[name="shippingAddress"]');
     if (addr && addr.placeholder !== ADDR_HINT[kind]) addr.placeholder = ADDR_HINT[kind];
