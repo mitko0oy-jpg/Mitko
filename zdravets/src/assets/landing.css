@@ -1087,3 +1087,15 @@
 .bvp .bv-zones--pics .bv-zones__when{justify-content:center}
 .bvp .bv-zones--pics .bv-note{text-align:left;max-width:640px;margin-left:auto;margin-right:auto}
 @media (min-width:760px){.bvp .bv-zpics{grid-template-columns:repeat(5,1fr);gap:18px 22px}.bvp .bv-zpic,.bvp .bv-zpic:nth-child(4),.bvp .bv-zpic:nth-child(5){grid-column:auto}}
+
+/* ---------- истинският пластир върху снимките ---------- */
+.bvp .bv-pp{position:relative;display:block;width:100%;height:100%}
+.bvp .bv-pp>img{width:100%;height:100%;object-fit:cover;display:block}
+.bvp .bv-pp__p{position:absolute;aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg));border-radius:50%;box-shadow:0 1px 1.5px rgba(60,30,10,.28),0 0 0 .5px rgba(60,30,10,.12);pointer-events:none}
+.bvp .bv-pp__p .bv-patch{display:block;width:100%;height:100%}
+.bvp .bv-pp__p::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.18),transparent 55%),radial-gradient(circle at 70% 80%,rgba(0,0,0,.07),transparent 60%)}
+.bvp .bv-pp__p--cut{clip-path:polygon(0 0,74% 0,100% 30%,100% 100%,0 100%)}
+.bvp .bv-zpic__ph .bv-pp{border-radius:50%;overflow:hidden;border:3px solid #fff}
+.bvp .bv-zpic__ph .bv-pp>img{border:0;border-radius:0}
+.bvp .bv-lx2__disc--real{background:none;display:block}
+.bvp .bv-lx2__disc--real .bv-patch{width:100%;height:100%;display:block;border-radius:50%}

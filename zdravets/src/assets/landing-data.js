@@ -153,6 +153,24 @@ const ingInfo = name => ING_INFO.find(x => x.re.test(name)) || null;
 const ZN_USE = 'dca070bbdbd96905b301e978e9095fcd56bfd706';
 const znUse = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_USE}/landing/zdravets/media/${f}`;
 const ZONE_IMG = { 'ръка': 'zone-ruka.webp', 'китка': 'zone-kitka.webp', 'гърди': 'zone-gardi.webp', 'корем': 'zone-korem.webp', 'хълбок': 'zone-halbok.webp' };
+const ZN_USE2 = 'dcaecc2da6581b6cf7aebc0384d9dc74fcb5482e'; // стъпки 1 и 2, на които пластирите се виждат цели
+const znUse2 = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_USE2}/landing/zdravets/media/${f}`;
+
+/* Истинските пластири – цвят и надпис в кръга, както са в пакета (по снимките на производителя).
+   Върху снимките „Как се използва“ и местата за залепване бежовият пластир се покрива с този на продукта. */
+const PATCH_LOOK = {
+  apetit: ['#F49AB0', 'ПЛАСТИР PureBalance'], berberin: ['#F2876F', 'BERBERINE PATCH'], energy: ['#F1E874', 'ENERGY PATCH'],
+  stress: ['#F6A456', 'STRESS DOWN PATCH'], nad: ['#7EA2E4', 'NAD+ PATCH'], focus: ['#A876DA', 'FOCUS PATCH'],
+  mood: ['#F3E040', 'DOPAMINE PATCH'], love: ['#F2826E', 'LOVE PATCH']
+};
+// къде е пластирът на всяка снимка: [x %, y %, диаметър %, завъртане°, 'cut' – пръстите държат ръба горе вдясно]
+const PH_PATCH = {
+  'how-wellness-1b.webp': [[34, 21.8, 27, -6], [63, 22.4, 27, 4, 'cut'], [33.6, 50.8, 27, 10], [62.7, 51.1, 27, -3], [33.3, 80.3, 26.6, 2], [62.7, 80.2, 27.4, -9]],
+  'how-wellness-2b.webp': [[42, 59.6, 23.5, -8]],
+  'how-wellness-3.webp': [[45.2, 64.1, 21.8, 6]], 'zone-kitka.webp': [[45.2, 64.1, 21.8, 6]],
+  'zone-ruka.webp': [[71, 53.8, 16, -12]], 'zone-gardi.webp': [[63.2, 50.5, 17.5, 4]],
+  'zone-korem.webp': [[39.9, 51.8, 10.9, -6]], 'zone-halbok.webp': [[51.2, 62.3, 10.6, 8]]
+};
 
 /* ---------- по категория ---------- */
 const CAT_LANDING = {
@@ -247,8 +265,8 @@ const CAT_LANDING = {
     how: {
       eyebrow: 'Как се използва?', h2: ['Отлепи. Залепи. ', 'Смени.'],
       lead: 'Три движения сутрин – и продължаваш деня си. Пластирите са за всеки ден, затова ползвай ги редовно.',
-      steps: [['Отлепи', 'Свали пластира от подложката, без да пипаш лепливата страна.', znUse('how-wellness-1.webp'), '🩹'],
-        ['Залепи', 'Сутрин – върху чиста, суха кожа без косми. Притисни с длан за няколко секунди.', znUse('how-wellness-2.webp'), '✋'],
+      steps: [['Отлепи', 'Свали пластира от подложката, без да пипаш лепливата страна.', znUse2('how-wellness-1b.webp'), '🩹'],
+        ['Залепи', 'Сутрин – върху чиста, суха кожа без косми. Притисни с длан за няколко секунди.', znUse2('how-wellness-2b.webp'), '✋'],
         ['Свали и смени', 'След до 8 часа го свали. На следващия ден – нов пластир на друго място.', znUse('how-wellness-3.webp'), '🔄']]
     },
     faq: [

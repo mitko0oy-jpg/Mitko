@@ -215,6 +215,29 @@ function ingShowcase(p, list, meta, h2) {
   </div></section>`;
 }
 
+/* ---------- истинският пластир (цвят, надпис в кръга, дърво) – SVG ---------- */
+const TREE_G = `<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M32 58V38"/><path d="M32 40Q23.8 30.2 13.9 21.5"/><path d="M32 40Q26.8 26.6 20.5 13.6"/><path d="M32 40Q32.0 25.0 32.0 10.0"/><path d="M32 40Q37.2 26.6 43.5 13.6"/><path d="M32 40Q40.2 30.2 50.1 21.5"/><path d="M32 52Q27 54 23 58"/><path d="M32 52Q37 54 41 58"/></g><g fill="currentColor"><ellipse cx="22.3" cy="27.4" rx="2.3" ry="4.3" transform="rotate(285 22.3 27.4)"/><ellipse cx="25.9" cy="22.1" rx="2.3" ry="4.3" transform="rotate(322 25.9 22.1)"/><ellipse cx="32.0" cy="20.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 20.0)"/><ellipse cx="38.1" cy="22.1" rx="2.3" ry="4.3" transform="rotate(398 38.1 22.1)"/><ellipse cx="41.7" cy="27.4" rx="2.3" ry="4.3" transform="rotate(435 41.7 27.4)"/><ellipse cx="15.6" cy="25.6" rx="2.3" ry="4.3" transform="rotate(285 15.6 25.6)"/><ellipse cx="18.3" cy="19.9" rx="2.3" ry="4.3" transform="rotate(306 18.3 19.9)"/><ellipse cx="23.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(328 23.0 15.6)"/><ellipse cx="28.8" cy="13.3" rx="2.3" ry="4.3" transform="rotate(349 28.8 13.3)"/><ellipse cx="35.2" cy="13.3" rx="2.3" ry="4.3" transform="rotate(371 35.2 13.3)"/><ellipse cx="41.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(392 41.0 15.6)"/><ellipse cx="45.7" cy="19.9" rx="2.3" ry="4.3" transform="rotate(414 45.7 19.9)"/><ellipse cx="48.4" cy="25.6" rx="2.3" ry="4.3" transform="rotate(435 48.4 25.6)"/><ellipse cx="8.8" cy="23.8" rx="2.3" ry="4.3" transform="rotate(285 8.8 23.8)"/><ellipse cx="11.2" cy="18.0" rx="2.3" ry="4.3" transform="rotate(300 11.2 18.0)"/><ellipse cx="15.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(315 15.0 13.0)"/><ellipse cx="20.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(330 20.0 9.2)"/><ellipse cx="25.8" cy="6.8" rx="2.3" ry="4.3" transform="rotate(345 25.8 6.8)"/><ellipse cx="32.0" cy="6.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 6.0)"/><ellipse cx="38.2" cy="6.8" rx="2.3" ry="4.3" transform="rotate(375 38.2 6.8)"/><ellipse cx="44.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(390 44.0 9.2)"/><ellipse cx="49.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(405 49.0 13.0)"/><ellipse cx="52.8" cy="18.0" rx="2.3" ry="4.3" transform="rotate(420 52.8 18.0)"/><ellipse cx="55.2" cy="23.8" rx="2.3" ry="4.3" transform="rotate(435 55.2 23.8)"/></g>`;
+let patchN = 0;
+function patchSvg(p) {
+  const look = PATCH_LOOK[p.id];
+  if (!look) return '';
+  // интервалите са неразделими – в SVG обикновените се сливат в един
+  const [c, t] = look, id = `znp${++patchN}`, ring = `${t}\u00A0\u00A0\u00A0${t}\u00A0\u00A0\u00A0`;
+  const fs = Math.min(22, 440 / (ring.length * 0.66)).toFixed(1);
+  return `<svg class="bv-patch" viewBox="0 0 200 200" aria-hidden="true"><defs><path id="${id}" d="M100,100 m-73,0 a73,73 0 1,1 146,0 a73,73 0 1,1 -146,0"/><radialGradient id="${id}g" cx="38%" cy="32%" r="80%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".08"/></radialGradient></defs>
+    <circle cx="100" cy="100" r="99" fill="${c}"/><circle cx="100" cy="100" r="99" fill="url(#${id}g)"/>
+    <circle cx="100" cy="100" r="61" fill="none" stroke="#2B1B12" stroke-width="2.8"/>
+    <text font-family="Manrope,Arial,sans-serif" font-weight="700" font-size="${fs}" fill="#2B1B12"><textPath href="#${id}" textLength="445" lengthAdjust="spacing">${esc(ring)}</textPath></text>
+    <g transform="translate(62 60) scale(1.2)" color="#2B1B12">${TREE_G}</g></svg>`;
+}
+// снимка с истинския пластир отгоре на бежовия (ако знаем къде е)
+function patchPhoto(p, url, alt, w, h) {
+  const f = String(url).split('/').pop(), spots = PATCH_LOOK[p.id] && PH_PATCH[f];
+  const img = `<img src="${url}" alt="${esc(alt)}" width="${w}" height="${h}" loading="lazy" decoding="async">`;
+  if (!spots) return img;
+  return `<span class="bv-pp">${img}${spots.map(([x, y, d, r, cut]) => `<span class="bv-pp__p${cut ? ' bv-pp__p--cut' : ''}" style="left:${x}%;top:${y}%;width:${d}%;--rot:${r || 0}deg">${patchSvg(p)}</span>`).join('')}</span>`;
+}
+
 /* ---------- уелнес пластирите: кръгът на формулата, трите слоя, местата за залепване ---------- */
 // „берберин, нар, канела и витамини B“ – от първия ред с предимствата („С берберин, нар, …“)
 const wellList = p => (p.wellness && p.bullets && /^С /.test(p.bullets[0]) ? p.bullets[0].replace(/^С /, '') : '');
@@ -251,13 +274,13 @@ function layersSection(L, p) {
   // точици в цветовете на съставките върху слоя със съставките
   const tones = (p.ingredients || []).map(([n]) => (ingInfo(n) || {}).tone).filter(Boolean);
   const specks = tones.length ? Array.from({ length: 14 }, (_, k) => { const a = k * 2.399, r = 18 + (k * 37 % 26); return `radial-gradient(circle at ${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%, ${tones[k % tones.length]} 0 2.2%, transparent 2.6%)`; }).join(',') : '';
-  const tree = `<svg class="bv-lx2__tree" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M32 58V38"/><path d="M32 40Q23.8 30.2 13.9 21.5"/><path d="M32 40Q26.8 26.6 20.5 13.6"/><path d="M32 40Q32.0 25.0 32.0 10.0"/><path d="M32 40Q37.2 26.6 43.5 13.6"/><path d="M32 40Q40.2 30.2 50.1 21.5"/><path d="M32 52Q27 54 23 58"/><path d="M32 52Q37 54 41 58"/></g><g fill="currentColor"><ellipse cx="22.3" cy="27.4" rx="2.3" ry="4.3" transform="rotate(285 22.3 27.4)"/><ellipse cx="25.9" cy="22.1" rx="2.3" ry="4.3" transform="rotate(322 25.9 22.1)"/><ellipse cx="32.0" cy="20.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 20.0)"/><ellipse cx="38.1" cy="22.1" rx="2.3" ry="4.3" transform="rotate(398 38.1 22.1)"/><ellipse cx="41.7" cy="27.4" rx="2.3" ry="4.3" transform="rotate(435 41.7 27.4)"/><ellipse cx="15.6" cy="25.6" rx="2.3" ry="4.3" transform="rotate(285 15.6 25.6)"/><ellipse cx="18.3" cy="19.9" rx="2.3" ry="4.3" transform="rotate(306 18.3 19.9)"/><ellipse cx="23.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(328 23.0 15.6)"/><ellipse cx="28.8" cy="13.3" rx="2.3" ry="4.3" transform="rotate(349 28.8 13.3)"/><ellipse cx="35.2" cy="13.3" rx="2.3" ry="4.3" transform="rotate(371 35.2 13.3)"/><ellipse cx="41.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(392 41.0 15.6)"/><ellipse cx="45.7" cy="19.9" rx="2.3" ry="4.3" transform="rotate(414 45.7 19.9)"/><ellipse cx="48.4" cy="25.6" rx="2.3" ry="4.3" transform="rotate(435 48.4 25.6)"/><ellipse cx="8.8" cy="23.8" rx="2.3" ry="4.3" transform="rotate(285 8.8 23.8)"/><ellipse cx="11.2" cy="18.0" rx="2.3" ry="4.3" transform="rotate(300 11.2 18.0)"/><ellipse cx="15.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(315 15.0 13.0)"/><ellipse cx="20.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(330 20.0 9.2)"/><ellipse cx="25.8" cy="6.8" rx="2.3" ry="4.3" transform="rotate(345 25.8 6.8)"/><ellipse cx="32.0" cy="6.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 6.0)"/><ellipse cx="38.2" cy="6.8" rx="2.3" ry="4.3" transform="rotate(375 38.2 6.8)"/><ellipse cx="44.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(390 44.0 9.2)"/><ellipse cx="49.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(405 49.0 13.0)"/><ellipse cx="52.8" cy="18.0" rx="2.3" ry="4.3" transform="rotate(420 52.8 18.0)"/><ellipse cx="55.2" cy="23.8" rx="2.3" ry="4.3" transform="rotate(435 55.2 23.8)"/></g></svg>`;
+  const tree = `<svg class="bv-lx2__tree" viewBox="0 0 64 64" aria-hidden="true">${TREE_G}</svg>`;
   return `
   <section class="bv-layers"><div class="bv-wrap">
     <div class="bv-center"><span class="bv-eyebrow">${esc(L.eyebrow)}</span><h2>${hTxt(L.h2)}</h2><p class="bv-lead">${esc(L.lead)}</p></div>
     <ol class="bv-lx2">
       ${items.map(([h, t], i) => `<li class="bv-lx2__row bv-rv" style="--bv-d:${(i * .15).toFixed(2)}s">
-        <div class="bv-lx2__disc bv-lx2__disc--${i + 1}"${i === 2 && specks ? ` style="--specks:${specks}"` : ''} aria-hidden="true">${i === 0 ? `<span class="bv-lx2__ring"></span>${tree}` : ''}</div>
+        <div class="bv-lx2__disc bv-lx2__disc--${i + 1}${i === 0 && PATCH_LOOK[p.id] ? ' bv-lx2__disc--real' : ''}"${i === 2 && specks ? ` style="--specks:${specks}"` : ''} aria-hidden="true">${i === 0 ? (PATCH_LOOK[p.id] ? patchSvg(p) : `<span class="bv-lx2__ring"></span>${tree}`) : ''}</div>
         <span class="bv-lx2__lead" aria-hidden="true"></span>
         <div class="bv-lx2__txt"><h3 class="bv-lx2__pill"><span>${i + 1}</span>${esc(h)}</h3><p>${esc(t)}</p></div>
       </li>`).join('')}
@@ -265,7 +288,7 @@ function layersSection(L, p) {
     ${L.zones && L.zones.every(([, k]) => ZONE_IMG[k]) ? `<div class="bv-zones bv-zones--pics">
       <div class="bv-zones__txt">
         <h3>Къде да го залепиш?</h3>
-        <ol class="bv-zpics">${L.zones.map(([t, k], i) => `<li class="bv-zpic bv-rv" style="--bv-d:${(i * .08).toFixed(2)}s"><span class="bv-zpic__ph"><img src="${znUse(ZONE_IMG[k])}" alt="${esc(t)}" width="400" height="400" loading="lazy" decoding="async"><span class="bv-zpic__n">${i + 1}</span></span><span class="bv-zpic__t">${esc(t)}</span></li>`).join('')}</ol>
+        <ol class="bv-zpics">${L.zones.map(([t, k], i) => `<li class="bv-zpic bv-rv" style="--bv-d:${(i * .08).toFixed(2)}s"><span class="bv-zpic__ph">${patchPhoto(p, znUse(ZONE_IMG[k]), t, 400, 400)}<span class="bv-zpic__n">${i + 1}</span></span><span class="bv-zpic__t">${esc(t)}</span></li>`).join('')}</ol>
         ${L.when ? `<p class="bv-zones__lbl">Носиш го навсякъде – до 8 часа</p><div class="bv-zones__when">${L.when.map(([ic, t]) => `<span><i aria-hidden="true">${ic}</i>${esc(t)}</span>`).join('')}</div>` : ''}
         ${L.note ? `<div class="bv-note"><span>🔄</span><span>${esc(L.note)}</span></div>` : ''}
       </div>
@@ -529,7 +552,7 @@ function renderLanding(p) {
     </div>
     <ol class="bv-hsteps${steps.some(s => s[2]) ? '' : ' bv-hsteps--plain'}${steps.length === 3 ? ' bv-hsteps--3' : ''}">${steps.map(([h, t, m, ic], i) => `
       <li class="bv-hstep"><span class="bv-hstep__num" style="animation-delay:${(i * .6).toFixed(1)}s">${i + 1}</span>
-        ${m ? `<div class="bv-hstep__media">${bvMedia(m, h, 600, 600)}</div>` : ic ? `<div class="bv-hstep__ico" aria-hidden="true">${ic}</div>` : ''}
+        ${m ? `<div class="bv-hstep__media">${typeof m === 'string' && PH_PATCH[m.split('/').pop()] ? patchPhoto(p, m, h, 600, 600) : bvMedia(m, h, 600, 600)}</div>` : ic ? `<div class="bv-hstep__ico" aria-hidden="true">${ic}</div>` : ''}
         <div class="bv-hstep__body"><h3>${esc(h)}</h3>${t ? `<p>${esc(t)}</p>` : ''}</div><span class="bv-glare" aria-hidden="true"></span></li>`).join('')}</ol>
     ${steps.some(s => s[2]) ? '<p class="bv-swipe">Плъзни настрани <span aria-hidden="true">→</span></p>' : ''}
     <div class="bv-how__foot">
