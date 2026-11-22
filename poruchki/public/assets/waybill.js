@@ -315,10 +315,12 @@ export async function openRedirect(orderId) {
     function econtNote() {
       if (courier !== "econt") return "";
       const eds = info.editions;
-      const allowed = Array.isArray(eds) && eds.length ? `<div class="muted small">Еконт позволява за тази пратка: ${esc(eds.join(", "))}</div>` : "";
-      const none = Array.isArray(eds) && !eds.length ? `<div class="warn small">Еконт не върна разрешени промени за тази пратка – може да откаже пренасочването.</div>` : "";
+      // Econt answers in words: "Промяна на офиса на получаване", "Промяна начина на доставка до адрес", …
+      const can = Array.isArray(eds) && eds.some((e) => /офис|адрес/i.test(e));
+      const allowed = can ? `<div class="small" style="margin-top:4px">✓ Еконт позволява смяна на офиса и адреса за тази пратка.</div>` : "";
+      const none = Array.isArray(eds) && !can ? `<div class="warn small">Еконт не позволява смяна на офиса или адреса за тази пратка – вероятно ще откаже.</div>` : "";
       const err = info.checkError ? `<div class="muted small">Не успях да попитам Еконт какво позволява (${esc(info.checkError)}).</div>` : "";
-      return `<div class="note">Еконт таксува пренасочването на <b>теб (подателя)</b> – в същото населено място е по-евтино, до друго се плаща нова доставка. Наложеният платеж и получателят остават същите.${allowed}${none}${err}</div>`;
+      return `<div class="note">Еконт таксува пренасочването на <b>теб (подателя)</b> – в същото населено място е по-евтино, до друго се плаща нова доставка. Пращаме само новото място, наложения платеж не го пипаме – след пренасочването провери пратката в Еконт.${allowed}${none}${err}</div>`;
     }
     function speedyNote() {
       if (courier !== "speedy") return "";

@@ -815,6 +815,9 @@ export async function redirectFor(id: number, input: any, userId: number | null)
   const warnings: string[] = [];
   const [d0, d1] = [due(before), due(after)];
   if (d0 !== null && d1 !== null && d1 < d0 - 0.01) warnings.push(`Сумата, която клиентът плаща, падна от ${d0.toFixed(2)} на ${d1.toFixed(2)} – провери наложения платеж в Еконт веднага.`);
+  // The cash-on-delivery service itself (Econt names it "CD") must still be there.
+  const hasCod = (st: any) => (Array.isArray(st?.services) ? st.services.some((x: any) => /^cd$|наложен/i.test(String(x?.type || x?.description || ""))) : null);
+  if (hasCod(before) === true && hasCod(after) === false) warnings.push("Еконт вече не показва наложен платеж по пратката – провери в Еконт веднага.");
   if ("officeId" in to && after?.receiverOfficeCode && String(after.receiverOfficeCode) !== to.officeId) warnings.push(`Еконт още показва офис ${after.receiverOfficeCode} – провери пратката в Еконт.`);
   const price = Number.isFinite(Number(ed.price)) ? Number(ed.price) : null;
   await log(id, "econt", "redirect", true, number, { to, edition: ed.editionType || null, price, currency: ed.currency || null, due: [d0, d1], warnings }, userId);
