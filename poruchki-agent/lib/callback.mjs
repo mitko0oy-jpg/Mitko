@@ -10,7 +10,7 @@
 //    sentence. A caller with no pending call gets the normal incoming line:
 //    Стела with the zdravets.eu catalogue (agent/inbound-zdravets*), filled in per call.
 import { requestCallback } from "./zadarma.mjs";
-import { pickPersona, renamePersona, personaNote } from "./persona.mjs";
+import { pickPersona, renamePersona, personaNote, PERSONAS } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
 import { FEEDBACK_SCRIPT, INBOUND_SCRIPT } from "./scripts.generated.mjs";
 import { fbRulesSection } from "./sales-coach.mjs";
@@ -138,6 +138,11 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
           : pickPersona(orderKey || key, { aleksandraVoiceId });
   variables.persona = persona;
   if (persona === "aleksandra") variables.voice_id = voiceId;
+  // A feedback call queued before the first sentence became a variable: the usual opening.
+  if (variables.campaign === "feedback" && !variables.opening) {
+    variables.opening = `Обажда се ${PERSONAS[persona] || "Елена"} – дигиталният асистент на магазина за продукти с пчелна отрова. Звъня Ви за обратна връзка – доволни ли бяхте от гела с пчелна отрова за ставите?`;
+  }
+  if (variables.campaign === "feedback" && !variables.callback_note) variables.callback_note = "няма";
   for (const [, name] of `${script?.prompt || ""} ${script?.firstMessage || ""}`.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)) {
     if (!name.startsWith("system__") && !(name in variables)) variables[name] = "";
   }

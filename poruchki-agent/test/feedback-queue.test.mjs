@@ -119,7 +119,9 @@ test("the queue: one call at a time, no answer → once more an hour later, answ
   await d.store.setJSON("pending/359899111222", { variables: d.calls[1].variables, script: "feedback", at: min(6).toISOString() });
   const init = await initiationData({ store: d.store, body: { caller_id: "+442045775777", conversation_id: "conv_fb" }, outboundScript: async () => null, now: min(6.5) });
   assert.match(init.response.conversation_config_override.agent.prompt.prompt, /Елена/);
-  assert.match(init.response.conversation_config_override.agent.first_message, /^Здравейте, \{\{customer_name\}\}! Обажда се Елена/);
+  assert.equal(init.response.conversation_config_override.agent.first_message, "Здравейте, {{customer_name}}! {{opening}}");
+  assert.match(init.response.dynamic_variables.opening, /^Обажда се Елена – дигиталният асистент .* доволни ли бяхте от гела/);
+  assert.equal(init.response.dynamic_variables.callback_note, "няма");
   assert.equal(init.response.dynamic_variables.customer_name, "господин Георгиев");
   assert.equal(init.response.dynamic_variables.campaign, "feedback");
   assert.ok((await d.store.get("fb-1641", { type: "json" })).answeredAt);
@@ -297,4 +299,76 @@ test("a call that drops before the customer says anything is tried once more, 30
   // A second drop is final.
   await dropped("conv_d2", min(33));
   assert.equal((await d.store.get("fb-1649", { type: "json" })).status, "done");
+});
+
+test("promised calls: „след месец“ → that day the order is back in the queue, with its own opening; who we talked to is remembered", async () => {
+  const { callbackDue, alreadyCalled } = await import("../lib/feedback-callbacks.mjs");
+  const { promisedCalls } = await import("../lib/feedback-queue.mjs");
+  // The customer's words → the day (Sofia), and whether we guessed.
+  const day = (t, o = "later") => {
+    const r = callbackDue(t, o, T0);
+    return `${new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia" }).format(r.due)}${r.exact ? "" : "?"}`;
+  };
+  assert.equal(day("след месец"), "2026-12-21");
+  assert.equal(day("след две седмици"), "2026-12-05");
+  assert.equal(day("след 10-ти, когато вземе пенсия"), "2026-12-11");
+  assert.equal(day("в началото на декември"), "2026-12-03");
+  assert.equal(day("в понеделник"), "2026-11-23");
+  assert.equal(day("след Нова година"), "2027-01-05");
+  assert.equal(day("като свърши гела"), "2026-12-05?", "not understood: two weeks, and Mitko is told it is a guess");
+  assert.equal(day("", "busy"), "2026-11-22?");
+
+  const d = deps();
+  await prepareFeedback(d, "1649", T0);
+  await startFeedback(d, T0);
+  await runFeedbackQueue(d, T0);
+  await d.store.setJSON("pending/359888123456", { variables: d.calls[0].variables, script: "feedback", at: T0.toISOString() });
+  const init = await initiationData({ store: d.store, body: { caller_id: "+442045775777", conversation_id: "conv_l" }, outboundScript: async () => null, now: min(0.5) });
+  await handleWebhook(d, {
+    type: "post_call_transcription",
+    data: {
+      conversation_id: "conv_l",
+      conversation_initiation_client_data: { dynamic_variables: init.response.dynamic_variables },
+      analysis: { data_collection_results: { fb_outcome: { value: "later" }, fb_callback_when: { value: "след месец" } } },
+      transcript: [{ role: "user", message: "Още имам, обадете се след месец." }],
+    },
+  }, min(4));
+  const rec = await d.store.get("fb-1649", { type: "json" });
+  assert.equal(rec.status, "done");
+  assert.match(rec.callbackDue, /^2026-12-21/);
+  assert.match(d.messages.find((m) => /Иска по-късно/.test(m)), /🔁 Ще звънна пак сама: <b>понеделник, 21 декември<\/b>/);
+  assert.match(await promisedCalls(d, min(5)), /21 декември · #1649 Мария – каза „след месец“/);
+  // Remembered: not again for this order, nor for another order with the same number.
+  assert.ok(await alreadyCalled(d.store, "1649"));
+  assert.ok(await alreadyCalled(d.store, "9999", "0888 123 456"));
+  assert.match(await prepareFeedback(d, "1649", min(6)), /вече говорихме с този клиент/);
+  // The 60-day cleanup keeps a promise that is still to come; the marker keeps no name or number.
+  const keys = (await d.store.list({ prefix: "fb-called/" })).blobs.map((b) => b.key);
+  assert.ok(keys.every((k) => !k.includes("888123456")));
+
+  // Before that day nothing happens; on the day, in the calling hours, it is called again – with its own first sentence.
+  const calls = d.calls.length;
+  await runFeedbackQueue(d, new Date("2026-12-20T09:00:00Z"));
+  assert.equal(d.calls.length, calls);
+  const due = new Date("2026-12-21T09:00:00Z"); // 11:00 Sofia, a Monday
+  const r = await runFeedbackQueue(d, due);
+  assert.match(r.feedback, /calling #1649/);
+  assert.match(d.messages.find((m) => /Днес звъня пак/.test(m)), /#1649 Мария – каза „след месец“/);
+  const v = d.calls.at(-1).variables;
+  assert.match(v.opening, /Разбрахме се да Ви звънна пак – как върви с гела\?/);
+  assert.match(v.callback_note, /^Говорихте 21 ноември\. Клиентът каза да звъннете „след месец“/);
+  assert.equal((await d.store.get("fb-1649", { type: "json" })).callbackStarted, due.toISOString());
+  // Not twice.
+  await d.store.setJSON("fb-1649", { ...(await d.store.get("fb-1649", { type: "json" })), status: "done" });
+  await runFeedbackQueue(d, new Date("2026-12-21T12:00:00Z"));
+  assert.equal(d.calls.filter((c) => c.variables.callback_note !== "няма").length, 1);
+});
+
+test("promised calls: a do-not-call is never called again, a reorder gets no reminder", async () => {
+  const { wantsCallback } = await import("../lib/feedback-callbacks.mjs");
+  assert.equal(wantsCallback("later", ""), true);
+  assert.equal(wantsCallback("declined", "след месец"), true, "said no for now, but asked us to call in a month");
+  assert.equal(wantsCallback("do_not_call", "след месец"), false);
+  assert.equal(wantsCallback("reorder", ""), false);
+  assert.equal(wantsCallback("declined", ""), false);
 });

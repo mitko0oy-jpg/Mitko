@@ -3,7 +3,7 @@ import { getSettings, saveSettings } from "./store.mjs";
 import { labelFor } from "./policy.mjs";
 import { personaFromText, voiceFromText, PERSONAS, ALEKSANDRA_VOICES } from "./persona.mjs";
 import { approveLessons, dismissProposal, lessonsList, removeLesson, abStats, abText, reviewPending, buildDigest } from "./coach.mjs";
-import { prepareFeedback, testFeedback, startFeedback, stopFeedback, feedbackStatus } from "./feedback-queue.mjs";
+import { prepareFeedback, testFeedback, startFeedback, stopFeedback, feedbackStatus, promisedCalls } from "./feedback-queue.mjs";
 import { approveFbRule, rejectFbRule, fbRulesList, removeFbRule } from "./sales-coach.mjs";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -25,6 +25,7 @@ const HELP = [
   "/obratna_test 1649 – Елена звъни на теб като на този клиент; /obratna_test 1649 николай – Николай",
   "/obratna_start – звъни на всички, по един (пон–съб 10:00–19:30, нед 11:00–18:00); на жените – половината Николай, половината Елена",
   "/obratna_stop, /obratna_status (с продажбите спрямо целта 20–25%)",
+  "/obratna_obeshtani – на кого обещахме да звъннем пак и кога (звъня сама в този ден)",
   "/da_N, /ne_N – добави или откажи правило, предложено след разговор без продажба",
   "/pravila – научените правила за обратната връзка; /mahni_p_N – махни едно",
   "",
@@ -172,6 +173,7 @@ export async function handleTelegram(deps, update, opts = {}) {
   if (cmd === "/obratna_start") return { chatId, reply: await startFeedback(deps) };
   if (cmd === "/obratna_stop") return { chatId, reply: await stopFeedback(deps) };
   if (cmd === "/obratna_status") return { chatId, reply: await feedbackStatus(deps) };
+  if (cmd === "/obratna_obeshtani") return { chatId, reply: await promisedCalls(deps) };
   const da = /^\/da_(\d+)$/.exec(cmd);
   if (da) return { chatId, reply: await approveFbRule(store, Number(da[1])) };
   const ne = /^\/ne_(\d+)$/.exec(cmd);

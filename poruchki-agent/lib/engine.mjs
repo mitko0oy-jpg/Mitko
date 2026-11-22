@@ -1,5 +1,6 @@
 // The calling loop: pick up new orders, call when due, apply results.
 // All I/O comes in through arguments, so this file is testable with fakes.
+import { purgeCalled } from "./feedback-callbacks.mjs";
 import { saveReview, purgeReviews } from "./coach.mjs";
 import { normalizePhoneBG, moneyBG, itemsTextBG, inCallingHours, sofiaNow, formalNameBG } from "./format.mjs";
 import { applyOutcome, buildMessage, labelFor, STALE_CALL_MIN, MAX_LINE_FAULTS, LINE_FAULT_RETRY_MIN } from "./policy.mjs";
@@ -310,12 +311,16 @@ export async function purgeOld(store, now = new Date(), days = 14) {
       n++;
     }
   }
-  // Feedback queue (/obratna): finished records go after 60 days.
+  // Feedback queue (/obratna): finished records go after 60 days – unless we promised to call again.
   for (const { key } of (await store.list({ prefix: "fb-" })).blobs) {
+    if (key.startsWith("fb-called/")) continue;
     const r = await store.get(key, { type: "json" });
     const at = r?.finishedAt || r?.queuedAt;
+    if (r?.callbackDue && !r.callbackStarted) continue;
     if (!r || (at && now - new Date(at) > 60 * 86_400_000)) await store.delete(key);
   }
+  // Who we talked to (only a hash of the number): a year; "do not call" stays.
+  n += await purgeCalled(store, now);
   // Feedback results: kept 60 days (callbacks are asked for up to a month later).
   for (const { key } of (await store.list({ prefix: "feedback/" })).blobs) {
     const r = await store.get(key, { type: "json" });

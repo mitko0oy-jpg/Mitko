@@ -294,8 +294,14 @@ test("Николай: women get him or Елена half/half, men always Елен
   await store.setJSON("pending/359888123456", { variables: { campaign: "feedback", order_key: "fb-1649", customer_name: "госпожо Петрова", persona: "nikolay", voice_id: NIKOLAY_VOICE.id }, script: "feedback", at: now.toISOString() });
   const init = await initiationData({ store, body: { caller_id: "+442045775777", conversation_id: "x" }, outboundScript: async () => null, now });
   const o = init.response.conversation_config_override;
-  assert.match(o.agent.first_message, /Обажда се Николай/);
-  assert.doesNotMatch(o.agent.first_message, /Елена/);
+  assert.equal(o.agent.first_message, "Здравейте, {{customer_name}}! {{opening}}");
+  assert.match(init.response.dynamic_variables.opening, /Обажда се Николай/, "a call queued before: the usual opening, in his name");
+  assert.equal(init.response.dynamic_variables.callback_note, "няма");
+  const { feedbackVariables } = await import("../lib/feedback.mjs");
+  const vars = feedbackVariables({ label: "1649", name: "Мария Петрова", phone: "+359888123456", items: [{ name: "BeeVenom Care Gel", q: 1 }] }, now);
+  if (vars.persona === "nikolay") assert.match(vars.opening, /^Обажда се Николай/);
+  else assert.match(vars.opening, /^Обажда се Елена/);
+  assert.doesNotMatch(o.agent.prompt.prompt, /Ти си Елена/);
   assert.match(o.agent.prompt.prompt, /Ти си Николай – дигиталният асистент/);
   assert.match(o.agent.prompt.prompt, /мъжки род/);
   assert.equal(o.tts.voice_id, "gdk0ZsvfAOobfbTtnx6p");

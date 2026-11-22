@@ -15,6 +15,7 @@ import { normalizePhoneBG, sofiaNow, inCallingHours } from "./format.mjs";
 import { getSettings, saveSettings } from "./store.mjs";
 import { PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
 import { salesStats, salesText } from "./sales-coach.mjs";
+import { alreadyCalled, callbackDue, dateBG } from "./feedback-callbacks.mjs";
 
 export const FEEDBACK_HOURS = "10:00-19:30"; // Monday to Saturday
 export const FEEDBACK_HOURS_SUNDAY = "11:00-18:00";
@@ -106,8 +107,9 @@ export async function prepareFeedback(deps, text, now = new Date()) {
       skipped.push(`#${esc(r.label)} – ${esc(r.error)}`);
       continue;
     }
-    if (await deps.store.get(`feedback/fb-${r.label}`, { type: "json" })) {
-      skipped.push(`#${esc(r.label)} – вече говорихме с този клиент`);
+    const called = (await deps.store.get(`feedback/fb-${r.label}`, { type: "json" })) || (await alreadyCalled(deps.store, r.label, r.phone));
+    if (called) {
+      skipped.push(`#${esc(r.label)} – ${called.doNotCall ? "не иска обаждания" : "вече говорихме с този клиент"}`);
       continue;
     }
     const existing = await deps.store.get(recKey(r.label), { type: "json" });
@@ -153,6 +155,7 @@ export async function testFeedback(deps, text, now = new Date()) {
 async function records(store) {
   const out = [];
   for (const { key } of (await store.list({ prefix: "fb-" })).blobs) {
+    if (key.startsWith("fb-called/")) continue;
     const entry = await store.getWithMetadata(key, { type: "json" });
     if (entry?.data?.order) out.push({ key, etag: entry.etag, rec: entry.data });
   }
@@ -193,6 +196,20 @@ export async function stopFeedback(deps) {
   return "⏸ Обратната връзка е спряна. Който е на опашката, остава там – /obratna_start продължава.";
 }
 
+/** /obratna_obeshtani: the calls we promised, by date. */
+export async function promisedCalls(deps, now = new Date()) {
+  const due = (await records(deps.store))
+    .filter((r) => r.rec.callbackDue && !r.rec.callbackStarted)
+    .sort((a, b) => String(a.rec.callbackDue).localeCompare(String(b.rec.callbackDue)));
+  if (!due.length) return "Няма обещани обаждания.";
+  return [
+    `<b>Обещани обаждания – ${clients(due.length)}</b>`,
+    ...due.map(({ rec }) => `${esc(dateBG(new Date(rec.callbackDue)))} · #${esc(rec.label)} ${esc(String(rec.order.name || "").split(/\s+/)[0])}${rec.callbackWhen ? ` – каза „${esc(rec.callbackWhen)}“` : ""}`),
+    "",
+    "В този ден звъня сама (в часовете за обратна връзка) и ти пиша.",
+  ].join("\n");
+}
+
 /** /obratna_status */
 export async function feedbackStatus(deps) {
   const all = await records(deps.store);
@@ -202,7 +219,8 @@ export async function feedbackStatus(deps) {
     `<b>Обратна връзка</b> – ${settings.feedbackOn ? "▶️ звъни" : "⏸ спряна"}`,
     salesText(await salesStats(deps.store)),
     "",
-    ...all.slice(-25).map(({ rec }) => `#${esc(rec.label)} ${esc(String(rec.order.name || "").split(/\s+/)[0])} – ${STATUS_BG[rec.status] || esc(rec.status)}${rec.outcome ? ` (${esc(rec.outcome)})` : ""}`),
+    ...all.slice(-25).map(({ rec }) => `#${esc(rec.label)} ${esc(String(rec.order.name || "").split(/\s+/)[0])} – ${STATUS_BG[rec.status] || esc(rec.status)}${rec.outcome ? ` (${esc(rec.outcome)})` : ""}${rec.callbackDue && !rec.callbackStarted ? ` · 🔁 ${esc(dateBG(new Date(rec.callbackDue)))}` : ""}`),
+    ...(all.some((r) => r.rec.callbackDue && !r.rec.callbackStarted) ? ["", "Обещаните обаждания: /obratna_obeshtani"] : []),
   ].join("\n");
 }
 
@@ -213,9 +231,40 @@ export async function feedbackStatus(deps) {
  */
 export async function runFeedbackQueue(deps, now = new Date()) {
   const { store } = deps;
-  const all = await records(store);
+  let all = await records(store);
   if (!all.length) return { feedback: "empty" };
-  const settings = await getSettings(store);
+  let settings = await getSettings(store);
+
+  // 0. Calls we promised („след месец“): on that day, in the calling hours, back to the queue.
+  if (!settings.callbacksBackfilled) {
+    // Results from before this existed: their date from the customer's words and the day of the call.
+    for (const r of all) {
+      if (r.rec.status !== "done" || r.rec.callbackDue || r.rec.callbackStarted) continue;
+      const res = await store.get(`feedback/fb-${r.rec.label}`, { type: "json" }).catch(() => null);
+      if (!res || !["later", "busy"].includes(res.outcome) || res.doNotCall) continue;
+      const { due } = callbackDue(res.callbackWhen, res.outcome, new Date(res.at));
+      await update(store, r, { callbackDue: due.toISOString(), callbackWhen: res.callbackWhen || "" });
+    }
+    settings = { ...settings, callbacksBackfilled: true };
+    await saveSettings(store, settings);
+    all = await records(store);
+  }
+  if (feedbackHoursOpen(now) && !settings.paused) {
+    const due = all.filter((r) => r.rec.status === "done" && r.rec.callbackDue && !r.rec.callbackStarted && new Date(r.rec.callbackDue) <= now);
+    const back = [];
+    for (const r of due) {
+      const callback = { when: r.rec.callbackWhen || "", prevAt: r.rec.finishedAt || r.rec.queuedAt };
+      if (await update(store, r, { status: "waiting", tries: 0, notBefore: now.toISOString(), callbackStarted: now.toISOString(), callback, outcome: null })) back.push(r.rec);
+    }
+    if (back.length) {
+      settings = { ...settings, feedbackOn: true, feedbackReported: false };
+      await saveSettings(store, settings);
+      await deps.notify(
+        [`🔁 <b>Днес звъня пак, както обещахме – ${clients(back.length)}</b>`, ...back.map((rec) => `#${esc(rec.label)} ${esc(String(rec.order.name || "").split(/\s+/)[0])}${rec.callbackWhen ? ` – каза „${esc(rec.callbackWhen)}“` : ""}`), "/obratna_stop спира."].join("\n"),
+      );
+      all = await records(store);
+    }
+  }
 
   // 1. Calls in progress.
   let busy = false;
@@ -274,7 +323,7 @@ export async function runFeedbackQueue(deps, now = new Date()) {
   const tries = (next.rec.tries || 0) + 1;
   // Claim it before calling, so the webhook finds the record when the customer answers.
   if (!(await update(store, next, { status: "calling", tries, startedAt: now.toISOString(), answeredAt: null }))) return { feedback: "busy" };
-  const variables = feedbackVariables(next.rec.order, now);
+  const variables = feedbackVariables(next.rec.order, now, next.rec.callback || null);
   try {
     await deps.call({ to: next.rec.order.phone, variables, script: "feedback" });
     return { feedback: `calling #${next.rec.label} (try ${tries})` };

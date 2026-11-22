@@ -4,7 +4,8 @@
 // The offer is two choices in one sentence („три гела на цената на един“ or
 // five; 12 patches with both): two options sell better than one.
 // Both packs come with 12 herbal patches („лепенки“) as a gift.
-import { feedbackPersona, NIKOLAY_VOICE } from "./persona.mjs";
+import { feedbackPersona, NIKOLAY_VOICE, PERSONAS } from "./persona.mjs";
+import { callbackDue, wantsCallback, rememberCalled, dateBG } from "./feedback-callbacks.mjs";
 import { formalNameBG, moneyBG } from "./format.mjs";
 import { officeName } from "./convertbuilder.mjs";
 
@@ -143,7 +144,12 @@ function offerText(pack, o = FEEDBACK_OFFER) {
  * Variables for one feedback call.
  * @param {{label: string, name: string, city?: string, address?: string, items: any[], deliveredAt?: string, orderedAt?: string}} order
  */
-export function feedbackVariables(order, now = new Date()) {
+/**
+ * @param {any} order
+ * @param {Date} now
+ * @param {{when?: string, prevAt?: string}|null} callback a call we promised („след месец“)
+ */
+export function feedbackVariables(order, now = new Date(), callback = null) {
   const tubes = gelTubes(order.items);
   const persona = feedbackPersona(order.name, order.label);
   // Three first („три на цената на един“), five as the second choice.
@@ -153,10 +159,18 @@ export function feedbackVariables(order, now = new Date()) {
   const a = offerText(alt);
   const office = officeName(order.address).replace(/\s*\([^)]*\)/g, "");
   const city = String(order.city || "").trim();
+  const name = PERSONAS[persona] || "Елена";
+  const promised = callback?.prevAt
+    ? `Говорихте ${new Intl.DateTimeFormat("bg-BG", { timeZone: "Europe/Sofia", day: "numeric", month: "long" }).format(new Date(callback.prevAt))}. Клиентът каза да звъннете ${callback.when ? `„${callback.when}“` : "по-късно"} – затова звъните сега.`
+    : "няма";
   return {
     campaign: "feedback",
     order_key: `fb-${order.label}`,
     persona,
+    opening: callback?.prevAt
+      ? `Обажда се ${name} – дигиталният асистент на магазина за продукти с пчелна отрова. Разбрахме се да Ви звънна пак – как върви с гела?`
+      : `Обажда се ${name} – дигиталният асистент на магазина за продукти с пчелна отрова. Звъня Ви за обратна връзка – доволни ли бяхте от гела с пчелна отрова за ставите?`,
+    callback_note: promised,
     ...(persona === "nikolay" ? { voice_id: NIKOLAY_VOICE.id } : {}),
     test: "no",
     customer_name: addressBG(order.name),
@@ -235,7 +249,7 @@ const yes = (v) => v === true || String(v).toLowerCase() === "true";
  * Telegram message (HTML) for one feedback call.
  * @param {ReturnType<import("./elevenlabs.mjs").readPostCall>} call
  */
-export function feedbackMessage(call) {
+export function feedbackMessage(call, again = null) {
   const v = call.variables || {};
   const f = feedbackFields(call.fields);
   let outcome = String(f.outcome || "").toLowerCase() || "no_conversation";
@@ -260,6 +274,7 @@ export function feedbackMessage(call) {
     lines.push("Въведи я в Middleware.");
   }
   if (f.callback_when) lines.push(`📅 <b>Да звъннем:</b> ${esc(f.callback_when)}`);
+  if (again) lines.push(`🔁 Ще звънна пак сама: <b>${esc(dateBG(again.due))}</b>${again.exact ? "" : " (предположение – ако не е така, кажи ми)"}`);
   if (f.decline_reason) lines.push(`❔ Защо не: ${esc(f.decline_reason)}`);
   if (yes(f.side_effect)) lines.push("⚠️ <b>Спомена нежелана реакция – обади му се</b>");
   if (yes(f.do_not_call)) lines.push("🚫 Не му звъним повече");
@@ -311,9 +326,22 @@ export async function handleFeedbackCall(deps, call, now = new Date()) {
     await deps.notify(`📵 Разговорът с ${esc(v.customer_name)} (#${esc(v.order_number)}) прекъсна, преди клиентът да каже нещо. Ще звънна пак след ${DROP_RETRY_MIN} минути.`);
     return { feedback: "dropped, retry" };
   }
+  let again = null;
   if (v.test !== "yes") {
+    // A call we promised: on that day the order goes back to the queue by itself (lib/feedback-queue.mjs).
+    if (outcome !== "no_conversation" && wantsCallback(outcome, f.callback_when) && !yes(f.do_not_call)) again = callbackDue(f.callback_when, outcome, now);
     // The call came from the queue (/obratna): mark it done.
-    await finishQueued(deps.store, v.order_key, { outcome, conversationId: call.conversationId }, now);
+    await finishQueued(
+      deps.store,
+      v.order_key,
+      { outcome, conversationId: call.conversationId, callbackDue: again ? again.due.toISOString() : null, callbackWhen: String(f.callback_when || ""), callbackStarted: null },
+      now,
+    );
+    // We talked to this customer: /obratna will not call them again for another order either.
+    if (outcome !== "no_conversation") {
+      const rec = await deps.store.get(String(v.order_key || ""), { type: "json" }).catch(() => null);
+      await rememberCalled(deps.store, { label: v.order_number, phone: rec?.order?.phone, outcome, doNotCall: yes(f.do_not_call) || outcome === "do_not_call" }, now);
+    }
     await deps.store.setJSON(key, {
       at: now.toISOString(),
       orderNo: v.order_number,
@@ -322,11 +350,12 @@ export async function handleFeedbackCall(deps, call, now = new Date()) {
       persona: v.persona || "elena",
       reorderPack: String(f.reorder_pack || ""),
       callbackWhen: String(f.callback_when || ""),
+      ...(again ? { callbackDue: again.due.toISOString() } : {}),
       doNotCall: yes(f.do_not_call),
       sideEffect: yes(f.side_effect),
       conversationId: call.conversationId,
     });
   }
-  await deps.notify(feedbackMessage(call));
+  await deps.notify(feedbackMessage(call, again));
   return { feedback: key };
 }
