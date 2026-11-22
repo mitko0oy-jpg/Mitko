@@ -47,3 +47,6 @@
 
 /* −50%: червен знак, за да се вижда веднага (вместо „половин цена“) */
 .zn-50{display:inline-block;padding:1px 8px;border-radius:999px;background:#D62828;color:#fff!important;font-weight:900;letter-spacing:.01em;line-height:1.35;white-space:nowrap;vertical-align:baseline}
+
+/* под бутона „Завърши поръчката“: доставката, когато поръчката е с безплатен офис (app.js → drawShipHint) */
+#zn-shiphint{clear:both;margin:12px 0 4px;text-align:center;font:800 18px/1.35 'Manrope','Segoe UI',Arial,sans-serif;color:#2c5a2c}

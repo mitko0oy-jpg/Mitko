@@ -139,7 +139,7 @@ function landingOffers(p, d) {
     const qty = packQty(p, k);
     const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : unit * qty;
     // „поотделно“ = продуктите + пластирите (ако носи подаръка) + доставката (ако е безплатна)
-    const giftV = gift && !ghalf && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0, shipV = freeShipFor(k.price) ? SHIP_FROM : 0;
+    const giftV = gift && !ghalf && unitsOf(k.store) >= GIFT_FROM ? giftValueFor(k.store) : 0, shipV = freeShipFor(k.price) ? SHIP_FROM : 0;
     const regular = items + giftV + shipV;
     const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
     const hot = !!k.featured && list.length > 1;
@@ -150,21 +150,21 @@ function landingOffers(p, d) {
     const tuba = BVM(BV.hero, 'vs-tuba.webp');
     // цял кадър на пакета (заснет с подаръка) – докато подаръкът важи; иначе сглобената снимка без подарък
     // снимката показва точния брой: 2/3/5 гела, 2/3 спрея и т.н. (3 гела с подаръка – докато важи)
-    const one = gift && k.key === 'bf3' ? znM('pack-gel-3-solo.webp') : PACK_IMG[k.key] ? znM(PACK_IMG[k.key]) : '';
+    const one = gift && k.key === 'bf3' ? znM('pack-gel-3-solo.webp') : gift && k.key === 'bf5' ? BF5_IMG : PACK_IMG[k.key] ? znM(PACK_IMG[k.key]) : '';
     const duo = null;
     const lis = [];
     if (ghalf && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift"><span>🎁 <b>+ още 1 продукт по избор с −50%</b> – ${ghalf.map(x => esc(x.shortName.toLowerCase())).join(', ')}</span></li>`);
-    else if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b>${giftWas()} – подарък до 30 ноември</span></li>`);
+    else if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPacksFor(k.store) > 1 ? znM('pack-plastiri-3.webp') : giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(giftLabel(giftPacksFor(k.store)))}</b>${giftWas(giftPacksFor(k.store))} – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
     else if (qty === 1) lis.push(`<li>${list.length > 1 ? 'За да пробваш' : esc(p.bullets[0])}</li>`);
     if (qty > 1 || bundle) lis.push(`<li>${esc(bundle ? bundle.line : `${qty} броя`)}</li>`);
-    if (giftV || shipV) lis.push(`<li class="bv-calc">Поотделно: ${qty > 1 ? `${qty} × ${fmt(unit)}` : fmt(items)}${giftV ? ` + пластири ${fmt(giftV)}` : ''}${shipV ? ` + доставка ${fmt(shipV)}` : ''} = ${fmt(regular)}</li>`);
+    if (giftV || shipV) lis.push(`<li class="bv-calc">Поотделно: ${qty > 1 ? `${qty} × ${fmt(unit)}` : fmt(items)}${giftV ? ` + пластири ${giftPacksFor(k.store) > 1 ? `${giftPacksFor(k.store)} × ${fmt(GIFT_VALUE)}` : fmt(giftV)}` : ''}${shipV ? ` + доставка ${fmt(shipV)}` : ''} = ${fmt(regular)}${shipV ? ' (с доставката)' : ''}</li>`);
     if (off) lis.push(`<li class="bv-save">Спестяваш ${fmt(regular - k.price)}</li>`);
     else lis.push(`<li>${CONFIG.guaranteeDays} дни гаранция</li>`);
-    if (freeShipFor(k.price)) lis.push('<li class="bv-save">Безплатна доставка до офис</li>');
+    if (freeShipFor(k.price)) lis.push(`<li class="bv-save">${esc(shipHint())}</li>`);
     const per = qty > 1 ? `само ${fmt(k.price / qty)} за брой` : 'Плащаш при получаване';
     return `<article class="bv-pack${hot ? ' bv-pack--hot' : ''}${isBest ? ' bv-pack--best' : ''}">
-      ${hot ? '<span class="bv-ribbon">⭐ Най-избиран</span>' : isBest ? '<span class="bv-ribbon bv-ribbon--gold">💰 Най-изгоден</span>' : ''}
+      ${hot ? '<span class="bv-ribbon">⭐ Най-избиран</span>' : isBest ? `<span class="bv-ribbon bv-ribbon--gold">💰 Най-ниска цена ${p.id === 'gel' ? 'за гел' : 'за брой'}</span>` : ''}
       ${off ? `<span class="bv-off">−${off}%</span>` : ''}
       <div class="bv-pack__media">${one ? `<img class="bv-pack__one" src="${one}" alt="${esc(k.label)}" width="900" height="900" loading="lazy" decoding="async">` : duo ? `<div class="bv-pack__duo${duo.plus ? ' bv-pack__duo--plus' : ''}">${duo.imgs.map((src, i) => `${i && duo.plus ? '<span>+</span>' : ''}<img src="${src}" alt="" loading="lazy" decoding="async">`).join('')}</div>` : bvMedia(m, k.label, 640, 512)}${SPARKS}</div>
       <div class="bv-pack__body">
@@ -426,7 +426,7 @@ function renderLanding(p) {
   const eta = `
   <section class="bv-eta"><div class="bv-wrap"><div class="bv-eta__box">
     <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span class="bv-eta-long">до 2 работни дни</span></strong>
-      <span class="bv-eta__gift">${p.wellness && wellN && PATCH_COMBOS.some(comboGift) ? '🎁 До 30 ноември – при 3 кутии получаваш 4-та подарък, по избор.' : p.wellness ? '' : typeof GIFT_HALF === 'object' && GIFT_HALF[p.id] && halfOn() ? `🎁 При ${GIFT_FROM} броя си избираш още един продукт с −50%.` : bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} при ${GIFT_FROM} и повече броя.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка над ${fmt(FREE_FROM)}.` : ''}</span></div></div>
+      <span class="bv-eta__gift">${p.wellness && wellN && PATCH_COMBOS.some(comboGift) ? '🎁 До 30 ноември – при 3 кутии получаваш 4-та подарък, по избор.' : p.wellness ? '' : typeof GIFT_HALF === 'object' && GIFT_HALF[p.id] && halfOn() ? `🎁 При ${GIFT_FROM} броя си избираш още един продукт с −50%.` : bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} при ${GIFT_FROM} и повече броя${p.packs === 'gel' ? ', а към 5 гела – 36 пластира' : ''}.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка от ${fmt(FREE_FROM)}.` : ''}</span></div></div>
     <a class="bv-btn" href="${toOffers}">Избери пакет</a>
   </div></div></section>`;
 
@@ -509,7 +509,7 @@ function renderLanding(p) {
       </div>
       <div class="bv-packs bv-packs--n${packs ? packs.length : wellN || 1}${packs || wellN ? '' : ' bv-packs--one'}">${landingOffers(p, d)}</div>
       ${packs || wellN ? bfTimer() : ''}
-      ${halfOn() ? `<p class="bv-half">🛒 <span>При поръчка над <b>${fmt(HALF_FROM)}</b>${FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01 ? ' – безплатна доставка до офис и' : ' –'} <b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>. Добавяш го направо от количката.</span></p>` : ''}
+      ${halfOn() ? `<p class="bv-half">🛒 <span>При поръчка от <b>${fmt(HALF_FROM)}</b>${FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01 ? ' – безплатна доставка до офис и' : ' –'} <b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>. Добавяш го направо от количката.</span></p>` : ''}
       <div class="bv-pay"><span>🔒 Без данни за карта в сайта</span><span>💶 Наложен платеж</span><span>🛡️ ${days} дни гаранция</span></div>
     </div>
   </section>`;
@@ -623,7 +623,7 @@ function renderLanding(p) {
     ['Употреба и безопасност', [safety, ...(c.faq || [['Мога ли да го ползвам заедно с други продукти?', 'Да, при нужда остави време между нанасянията на една и съща зона. Ако приемаш лекарства или имаш заболяване, попитай лекаря си.']])]],
     ['Поръчка, доставка и гаранция', [
       ['Трябва ли да плащам предварително?', 'Не. Плащаш с наложен платеж – на куриера при получаване. Не въвеждаш данни за карта в сайта.'],
-      ['Колко струва доставката и кога пристига?', `Изпращаме с Еконт и Спиди: до офис от ${fmt(SHIP_FROM)}, до адрес ${fmt(Math.max(...CONFIG.shipping.map(m => m.price)))}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пратката обикновено пристига за 1–2 работни дни.`],
+      ['Колко струва доставката и кога пристига?', `Изпращаме с Еконт и Спиди: до офис от ${fmt(SHIP_FROM)}, до адрес ${fmt(Math.max(...CONFIG.shipping.map(m => m.price)))}.${FREE_FROM ? ` При поръчка от ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пратката обикновено пристига за 1–2 работни дни.`],
       ['Ами ако не съм доволен?', `Имаш ${days} дни гаранция – обади се на ${CONFIG.phone} и ще ти върнем парите. Освен това по закон имаш 14 дни право на отказ.`],
       ['Мога ли да поръчам по телефона?', `Да – обади се на ${CONFIG.phone} по всяко време, денонощно и без почивен ден. Отговаря ${CONFIG.phoneBot}: при нея можеш да поръчаш или да провериш поръчка.`]
     ]]
@@ -662,7 +662,8 @@ function renderLanding(p) {
   if (theme) { const v = themeVars(theme); Object.keys(v).forEach(k => root.style.setProperty(k, v[k])); root.dataset.shape = theme.shape; if (theme.dark) root.dataset.dark = '1'; }
   const trustHtml = hero.slice(hero.indexOf('<div class="bv-trust">'));
   const top = gelIntro(p, d) + productTop(p, d, { theme, packs, reviewsOn: !!(shots.length || reviews.length) });
-  root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : wellN ? `Колко месеца <em class="bv-accent">искаш да опиташ?</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
+  const cmpHtml = typeof PATCH_COMPARE === 'object' && PATCH_COMPARE.some(x => x.id === p.id) ? `<div class="bv-wrap">${patchCompareHtml(p.id)}</div>` : '';
+  root.innerHTML = GRAD + top + trustHtml + sitsHtml + eta + formula + why + cmpHtml + offers(offersId, packs ? `Избери своя комплект <em class="bv-accent">на изгодна цена</em>` : wellN ? `Колко месеца <em class="bv-accent">искаш да опиташ?</em>` : `${esc(p.shortName)} <em class="bv-accent">с доставка до 2 дни</em>`)
     + ingsHtml + (d.ingBanner ? `<section class="bv-situ"><div class="bv-wrap"><figure class="bv-banner"><img src="${d.ingBanner}" alt="Активните съставки" loading="lazy" decoding="async"></figure></div></section>` : '') + usesHtml + layersHtml + vs + howHtml + tlHtml + revHtml
     + (packs ? offers('bv-offers-2', `Вземи своя комплект <em class="bv-accent">още днес</em>`) : '')
     + faq + final;
@@ -801,7 +802,7 @@ function packCalc(p, k) {
   const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : p.price * qty;
   // както в офертите: + пластирите, ако носи подаръка, + доставката, ако е безплатна
   // (продуктите с подарък „още един с −50%“ – GIFT_HALF – не носят пластирите, затова без тях)
-  const regular = items + (bfOn() && !(typeof GIFT_HALF === 'object' && GIFT_HALF[p.id]) && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0) + (freeShipFor(k.price) ? SHIP_FROM : 0);
+  const regular = items + (bfOn() && !(typeof GIFT_HALF === 'object' && GIFT_HALF[p.id]) && unitsOf(k.store) >= GIFT_FROM ? giftValueFor(k.store) : 0) + (freeShipFor(k.price) ? SHIP_FROM : 0);
   const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
   return { bundle, qty, regular, off };
 }
@@ -818,7 +819,7 @@ function galleryItems(p, d) {
   (CLEAN_PHOTOS.includes(p.id) ? [] : [p.img].concat(p.gallery || [])).forEach((src, i) => list.push({ img: src, thumb: src, alt: `${p.name} – снимка ${i + 1}`, photo: true }));
   // сглобени кадри в квадрат (четат се и на телефон) вместо широките банери от стария лендинг
   const tile = (src, cap, n) => `<figure><img src="${src}" alt="" loading="lazy">${n ? `<i>${n}</i>` : ''}<figcaption>${esc(cap)}</figcaption></figure>`;
-  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-gc sp-gc--gift"><b class="sp-gc__h">Комплект + подарък</b><span class="sp-gc__pair"><img src="${znM('pack-gel-3-solo.webp')}" alt="3 гела" loading="lazy"><b aria-hidden="true">+</b><img src="${GIFT_IMG}" alt="Пакет с 12 пластира" loading="lazy"></span><p><b>12 пластира за стави и мускули подарък</b>${giftWas()} при ${GIFT_FROM} и повече гела – до 30 ноември</p></div>` });
+  if (lk.gel && bfOn() && p.gallery && p.gallery[0]) list.push({ thumb: GIFT_IMG, alt: 'Подаръкът', html: `<div class="sp-gc sp-gc--gift"><b class="sp-gc__h">Комплект + подарък</b><span class="sp-gc__pair"><img src="${znM('pack-gel-3-solo.webp')}" alt="3 гела" loading="lazy"><b aria-hidden="true">+</b><img src="${GIFT_IMG}" alt="Пакет с 12 пластира" loading="lazy"></span><p><b>12 пластира за стави и мускули подарък</b>${giftWas()} при ${GIFT_FROM} и повече гела, а към 5 гела – <b>36 пластира</b> (3 пакета). До 30 ноември</p></div>` });
   const ing = d.ings && d.ings.items && d.ings.items.filter(x => x[3] && x[3].poster);
   if (ing && ing.length >= 4) list.push({ thumb: ing[0][3].poster, alt: 'Съставки', html: `<div class="sp-gc"><b class="sp-gc__h">Какво има в гела</b><div class="sp-gc__grid">${ing.slice(0, 4).map(x => tile(x[3].poster, x[0])).join('')}</div></div>` });
   const st = d.how && d.how.steps && d.how.steps.filter(x => x[2] && x[2].poster);
@@ -917,6 +918,7 @@ function productTop(p, d, ctx) {
       <p class="sp-price__note"><span data-sp-per></span>С ДДС · плащаш при получаване</p>
       <p class="sp-short">${esc(p.short)}</p>
       <ul class="sp-bullets">${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+      ${typeof PATCH_TWINS === 'object' && PATCH_TWINS[p.id] && P(PATCH_TWINS[p.id].other) ? `<p class="sp-twin"><b>Разлика с <a href="${productUrl(PATCH_TWINS[p.id].other)}">„${esc(P(PATCH_TWINS[p.id].other).shortName)}“</a>:</b> ${esc(PATCH_TWINS[p.id].text)}</p>` : ''}
       ${showOpts ? `<p class="sp-lbl">${packs ? 'Избери комплект' : 'Избери количество'}</p>
       <div class="sp-opts" role="radiogroup" aria-label="${packs ? 'Избери комплект' : 'Избери количество'}">${opts.map(o => `
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
@@ -944,7 +946,7 @@ function productTop(p, d, ctx) {
       </div>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><span>🎁 Вземи <b>${GIFT_FROM} броя</b> и си избираш още един продукт с <b>−50%</b>: ${ghalf.map(x => esc(x.shortName.toLowerCase())).join(', ')}</span></p>`
       : bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b data-gift-what>+ 12 пластира за стави и мускули подарък</b><span data-gift-was>${giftWas()}</span> към тази поръчка – до 30 ноември</span></p>
-      <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${GIFT_FROM} или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
+      <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${GIFT_FROM} или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b>${p.packs === 'gel' ? ' – а към 5 гела <b>36 пластира</b>' : ''}</span></p>` : ''}
       <div class="sp-ctas">
         <button class="sp-add" type="button" data-sp-add>${ICON.bag} Добави в количката</button>
         <button class="bv-btn bv-btn--xl sp-buynow" type="button" data-sp-buy>Купи сега – плащаш при получаване</button>
@@ -955,7 +957,7 @@ function productTop(p, d, ctx) {
         <details open><summary>Описание</summary><div><p>${esc(d.lead || p.short)}</p><ul>${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul><p class="sp-muted">${esc(p.size)}</p></div></details>
         <details><summary>Съставки</summary><div>${(p.ingredients || []).length ? `<ul>${p.ingredients.map(([n, t]) => `<li><b>${esc(n)}</b> – ${esc(t)}</li>`).join('')}</ul>` : ''}<p class="sp-muted">Пълният състав е отпечатан върху опаковката.</p></div></details>
         <details><summary>Как се използва</summary><div><p>${esc(p.usage)}</p><p class="sp-muted">${p.wellness ? `${p.caution ? esc(p.caution) + ' ' : 'При заболяване, прием на лекарства, бременност или кърмене се посъветвай с лекар. '}Не е лекарство. Не е за деца.` : `Само за външна употреба. Не нанасяй върху наранена кожа и избягвай контакт с очите.${isBee(p) ? ' Не използвай при алергия към пчелни продукти.' : ''}`}</p></div></details>
-        <details><summary>Доставка и плащане</summary><div><ul>${CONFIG.shipping.map(m => `<li>${esc(m.label)} – <b>${fmt(m.price)}</b></li>`).join('')}</ul>${FREE_FROM ? `<p>При поръчка над <b>${fmt(FREE_FROM)}</b> доставката до офис е <b>безплатна</b>.</p>` : ''}<p>Плащаш на куриера при получаване. Пратката пристига за 1–2 работни дни.</p></div></details>
+        <details><summary>Доставка и плащане</summary><div><ul>${CONFIG.shipping.map(m => `<li>${esc(m.label)} – <b>${fmt(m.price)}</b></li>`).join('')}</ul>${FREE_FROM ? `<p>При поръчка от <b>${fmt(FREE_FROM)}</b> доставката до офис е <b>безплатна</b>.</p>` : ''}<p>Плащаш на куриера при получаване. Пратката пристига за 1–2 работни дни.</p></div></details>
         <details><summary>Гаранция и връщане</summary><div><p>${CONFIG.guaranteeDays} дни гаранция за удовлетвореност – ако не си доволен, обади се и ти връщаме парите. Освен това по закон имаш 14 дни право на отказ.</p></div></details>
       </div>
     </div>
@@ -1124,7 +1126,7 @@ function renderHomeBv() {
     <div class="bv-wrap">
       <div class="bv-center"><span class="bv-eyebrow">⚫ Черен петък · до 30 ноември</span>
         <h2>3 гела с пчелна отрова <em class="bv-accent" style="color:var(--tx,#FFC65C)">за ${fmt(B('bf3').price)}</em></h2>
-        <p class="bv-lead">+ 12 пластира за стави и мускули подарък към комплектите от ${GIFT_FROM} и повече броя. Офертата изтича след:</p>
+        <p class="bv-lead">3 гела + 12 пластира подарък за ${fmt(B('bf3').price)} · 5 гела + 36 пластира подарък за ${fmt(B('bf5').price)} (${esc(shipHint().toLowerCase())}). Офертата изтича след:</p>
         <div class="countdown hv-cd" data-countdown></div></div>
       <div class="bv-packs bv-packs--n4">${landingOffers(gel, LANDING.gel)}</div>
       <p class="bv-center hv-more"><a class="sp-outline sp-outline--light" href="${L.bf}">Всички оферти за Черен петък →</a></p>
@@ -1195,7 +1197,7 @@ function renderHomeBv() {
   const qa = [
     ['Как да направя поръчка?', `Натисни „Добави в количката“ или „Купи сега“, напиши име, телефон и офис или адрес. Можеш да поръчаш и по телефона на ${CONFIG.phone} – денонощно, без почивен ден (отговаря Стела, нашият дигитален асистент).`],
     ['Как се плаща?', 'Плащаш на куриера, когато получиш пратката (наложен платеж). Не ти трябва карта и не плащаш нищо предварително.'],
-    ['Колко струва доставката и кога ще пристигне?', `${CONFIG.shipping.map(m => `${m.label} – ${fmt(m.price)}`).join(', ')}.${FREE_FROM ? ` При поръчка над ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пристига за 1–2 работни дни.`],
+    ['Колко струва доставката и кога ще пристигне?', `${CONFIG.shipping.map(m => `${m.label} – ${fmt(m.price)}`).join(', ')}.${FREE_FROM ? ` При поръчка от ${fmt(FREE_FROM)} доставката до офис е безплатна.` : ''} Пристига за 1–2 работни дни.`],
     ['Мога ли да върна продукт?', `Да. Имаш ${days} дни гаранция за удовлетвореност и законово право да върнеш продукта в 14-дневен срок.`],
     ['Лекарства ли са продуктите?', 'Не. Това са козметични продукти за външна употреба и уелнес пластири. Те не лекуват заболявания. При здравословен проблем се консултирай с лекар.'],
     ['Подходящи ли са за чувствителна кожа?', 'Преди първата употреба направи тест на малък участък кожа. Продуктите с пчелна отрова не са подходящи при алергия към пчелни продукти.']

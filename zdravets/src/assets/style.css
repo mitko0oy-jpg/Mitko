@@ -192,14 +192,36 @@ p{margin:0 0 1em}
 .bf .eyebrow{color:var(--gold)}
 .bf .lead{color:#d6d6d6}
 .gold{color:var(--gold)}
-.bf-hero .wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding-top:44px;padding-bottom:50px}
-.bf-hero h1{font-size:clamp(2rem,5.2vw,3.5rem)}
+/* началото: на компютър – текстът вляво, снимката вдясно; на телефон първият екран е заглавие → снимка → цена → бутон,
+   а таймерът и подробностите са под бутона */
+.bf-hero .wrap{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"head img" "buy img" "more more";column-gap:40px;row-gap:14px;align-items:center;padding-top:40px;padding-bottom:46px}
+.bf-hero__head{grid-area:head;align-self:end}
+.bf-hero .heroimg{grid-area:img}
+.bf-buy{grid-area:buy;align-self:start}
+.bf-hero__more{grid-area:more}
+.bf-hero h1{font-size:clamp(1.75rem,4.6vw,3.2rem);margin:0}
+.bf-buy__price{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 12px}
+.bf-buy__price b{font-size:clamp(2.4rem,6vw,3.2rem);font-weight:900;color:var(--gold);line-height:1}
+.bf-buy__price span{color:#e6e6e6;font-weight:700;font-size:.95rem}
+.bf-buy__ship{margin:10px 0 0;text-align:center;font-weight:800;color:#e9d9a8;font-size:.98rem}
+.bf-buy__trust{margin:6px 0 0;text-align:center;color:#cfcfcf;font-size:.86rem}
 .bf-hero .save{display:inline-block;background:var(--gold);color:#1a1300;font-weight:900;padding:6px 14px;border-radius:10px;margin-bottom:14px}
-.bf-hero .heroimg{position:relative;background:radial-gradient(circle at 50% 45%,#3b2f12 0%,#121212 70%);border-radius:28px;padding:20px}
-.bf-hero .heroimg img{margin:0 auto;max-height:440px;object-fit:contain}
-.bf-hero .burst{position:absolute;top:14px;right:14px;width:118px;height:118px;border-radius:50%;background:var(--gold);color:#1a1300;display:grid;place-items:center;text-align:center;font-weight:900;line-height:1.05;transform:rotate(8deg);font-size:.9rem}
-.bf-hero .burst b{font-size:1.6rem;display:block}
-@media(max-width:900px){.bf-hero .wrap{grid-template-columns:1fr;padding-top:26px;gap:18px}.bf-hero .heroimg{order:-1}}
+.bf-hero .heroimg{position:relative;background:radial-gradient(circle at 50% 45%,#3b2f12 0%,#121212 70%);border-radius:28px;padding:18px}
+.bf-hero .heroimg img{margin:0 auto;width:100%;height:auto;max-height:440px;object-fit:contain}
+.bf-hero .burst{position:absolute;top:-14px;right:-8px;width:104px;height:104px;border-radius:50%;background:var(--gold);color:#1a1300;display:grid;place-items:center;text-align:center;font-weight:900;line-height:1.05;transform:rotate(8deg);font-size:.82rem;z-index:1}
+.bf-hero .burst b{font-size:1.5rem;display:block}
+@media(max-width:900px){
+  .bf-hero .wrap{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "img" "buy" "more";padding-top:14px;padding-bottom:30px;row-gap:12px}
+  .bf-hero .eyebrow{margin-bottom:.35em}
+  .bf-hero .heroimg{padding:10px;border-radius:20px;margin-top:4px}
+  .bf-hero .burst{width:70px;height:70px;font-size:.62rem;top:-12px;right:-4px}
+  .bf-hero .burst b{font-size:1.1rem}
+  .bf-buy__price{flex-direction:column;align-items:center;text-align:center;margin-bottom:10px}
+  .bf-hero .burst{display:none}
+  .bf-buy .btn{font-size:1.04rem;padding-left:12px;padding-right:12px;letter-spacing:0}
+  .bf-buy__ship{font-size:.92rem}
+  .bf-hero__more{padding-top:8px;border-top:1px solid rgba(255,255,255,.14)}
+}
 .countdown{display:flex;gap:10px;margin:8px 0 18px}
 .countdown .u{background:#fff;color:var(--bf);border-radius:14px;min-width:74px;padding:8px 6px;text-align:center}
 .countdown .u b{display:block;font-size:1.9rem;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}

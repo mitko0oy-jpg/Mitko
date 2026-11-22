@@ -233,7 +233,7 @@ body{padding-bottom:0}
 .sp-card__cat{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--pcd)}
 .sp-card h3{font-size:1.05rem;line-height:1.25;margin:0}
 .sp-card h3 a{color:var(--sp-ink);text-decoration:none}
-.sp-card__size{margin:0;color:var(--sp-muted);font-size:.82rem}
+.sp-card__use{margin:2px 0 0;color:var(--sp-ink);font-size:.86rem;line-height:1.35;font-weight:600}
 .sp-card__price{font-weight:800;font-size:1.35rem;margin:6px 0 10px}
 .sp-card__price small{font-size:.8rem;color:var(--sp-muted);font-weight:700}
 .sp-card__btn{margin-top:auto;display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:999px;border:2px solid var(--sp-ink);background:#fff;color:var(--sp-ink);font:800 .92rem var(--head);text-decoration:none;cursor:pointer;transition:background .2s,color .2s}
@@ -255,7 +255,7 @@ body{padding-bottom:0}
   .sp-card h3{font-size:.95rem}
   .sp-card__price{font-size:1.15rem}
   .sp-card__btn{min-height:46px;font-size:.82rem}
-  .sp-card__size{display:none}
+  .sp-card__use{font-size:.8rem;line-height:1.3}
   .sp-tabs{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;margin-left:-14px;margin-right:-14px;padding:0 14px 4px;scrollbar-width:none}
   .sp-tabs::-webkit-scrollbar{display:none}
   .sp-tabs button{flex:none}
@@ -602,3 +602,37 @@ body{padding-bottom:0}
 
 /* −50%: червен знак, за да се вижда веднага (вместо „половин цена“) */
 .zn-50{display:inline-block;padding:1px 8px;border-radius:999px;background:#D62828;color:#fff!important;font-weight:900;letter-spacing:.01em;line-height:1.35;white-space:nowrap;vertical-align:baseline}
+
+/* ---------- „Кой пластир за стави да избереш?“ (каталогът и страниците на пластирите) ----------
+   Карти по една на ред на телефон; всеки ред е „име: стойност“ – без плъзгане встрани. */
+.sp-cmp-link{margin:-6px 0 14px;font-weight:800}
+.sp-cmp-link a{color:var(--sp-ink);text-decoration:underline;text-underline-offset:3px}
+.sp-cmp{margin:34px 0 10px;scroll-margin-top:110px}
+.sp-cmp__in{background:#fff;border:1px solid rgba(160,110,40,.18);border-radius:24px;padding:24px 22px;box-shadow:var(--sp-shadow)}
+.sp-cmp h2{margin:0 0 6px;font-size:clamp(1.35rem,3.2vw,1.8rem);line-height:1.2}
+.sp-cmp__lead{margin:0 0 18px;color:var(--sp-muted)}
+.sp-cmp__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.sp-cmp__c{position:relative;border:2px solid color-mix(in srgb,var(--pc) 40%,#eee);border-radius:18px;padding:14px;background:color-mix(in srgb,var(--pc) 6%,#fff);display:flex;flex-direction:column}
+.sp-cmp__c.is-here{border-color:var(--pc);box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 30%,transparent)}
+.sp-cmp__here{position:absolute;top:-11px;right:12px;background:var(--pc);color:#fff;font-weight:800;font-size:.72rem;padding:3px 10px;border-radius:999px}
+.sp-cmp__top{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--sp-ink);margin-bottom:10px}
+.sp-cmp__top img{width:56px;height:56px;flex:0 0 56px;object-fit:cover;border-radius:12px;background:#fff}
+.sp-cmp__top b{display:block;font-size:1rem;line-height:1.2}
+.sp-cmp__top small{display:block;color:var(--sp-muted);font-weight:700;font-size:.82rem;margin-top:2px}
+.sp-cmp dl{margin:0;display:grid;gap:8px}
+.sp-cmp__r{display:grid;gap:1px}
+.sp-cmp dt{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sp-muted)}
+.sp-cmp dd{margin:0;font-size:.92rem;line-height:1.35;font-weight:600}
+.sp-cmp__pick{margin:12px 0 0;padding-top:10px;border-top:1px dashed rgba(0,0,0,.14);font-weight:800;font-size:.9rem;line-height:1.35}
+@media(max-width:1060px){.sp-cmp__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){
+  .sp-cmp__in{padding:18px 14px;border-radius:18px}
+  .sp-cmp__grid{grid-template-columns:minmax(0,1fr)}
+  .sp-cmp__r{grid-template-columns:6.4em minmax(0,1fr);gap:8px;align-items:baseline}
+  .sp-cmp dt{font-size:.66rem}
+  .sp-cmp dd{font-size:.88rem}
+  .sp-cmp__c{padding:12px}
+}
+/* разликата между двете лепенки с берберин – на страницата на продукта */
+.sp-twin{margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:#fff7e3;border:1px solid #f0d9a0;font-size:.95rem;line-height:1.45}
+.sp-twin a{color:inherit}

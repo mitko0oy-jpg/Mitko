@@ -82,11 +82,11 @@ function storeInfo(id) {
 /* ---------- лентата със съобщения ---------- */
 function announceHtml() {
   const msgs = [];
-  if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 5 гела + ${12 * giftPacks(B('bf5'))} пластира за ${fmt(B('bf5').price)} + безплатна доставка · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
-  if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 Над ${fmt(HALF_FROM)}: <b>безплатна доставка</b> и <b>всеки следващ продукт с</b> <b class="zn-50">−50%</b>`);
+  if (bfOn()) msgs.push(`⚫ <b>ЧЕРЕН ПЕТЪК:</b> 5 гела + ${12 * giftPacks(B('bf5'))} пластира за ${fmt(B('bf5').price)} + безплатна доставка до офис · остават <span class="cd-mini" data-cd-mini></span> · <a href="${L.bf}">Виж офертите →</a>`);
+  if (halfOn() && FREE_FROM && Math.abs(FREE_FROM - HALF_FROM) < 0.01) msgs.push(`🛒 От ${fmt(HALF_FROM)}: <b>безплатна доставка до офис</b> и <b>всеки следващ продукт с</b> <b class="zn-50">−50%</b>`);
   else {
-    if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка над ${fmt(FREE_FROM)}`);
-    if (halfOn()) msgs.push(`🛒 Над ${fmt(HALF_FROM)} <b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>`);
+    if (FREE_FROM) msgs.push(`🚚 <b>Безплатна доставка до офис</b> при поръчка от ${fmt(FREE_FROM)}`);
+    if (halfOn()) msgs.push(`🛒 От ${fmt(HALF_FROM)} <b>всеки следващ продукт е с</b> <b class="zn-50">−50%</b>`);
   }
   msgs.push(`💶 Плащаш при получаване · 🛡️ <b>${CONFIG.guaranteeDays} дни гаранция</b>`);
   msgs.push(`📞 Поръчка и по телефона: <a href="tel:${CONFIG.phoneHref}"><b>${CONFIG.phone}</b></a>`);
@@ -240,7 +240,7 @@ function drawCart(o) {
       <a class="sp-line__img"${info.url ? ` href="${info.url}"` : ''}><img src="${info.img}" alt="" width="84" height="84" loading="lazy"></a>
       <div class="sp-line__txt"><b>${esc(info.name || i.title)}</b>
         ${c ? `<small>${parts.map(esc).join(' · ')}${comboGift(c) ? ` <span class="sp-line__giftbox">🎁 ${comboGift(c) === 1 ? '1 кутия е подарък' : `${comboGift(c)} кутии са подарък`}</span>` : ''}</small>` : ''}
-        ${info.half ? `<small class="sp-half-tag"><b class="zn-50">−50%</b> – поръчката е над ${fmt(HALF_FROM)}</small>` : ''}
+        ${info.half ? `<small class="sp-half-tag"><b class="zn-50">−50%</b> – поръчката е от ${fmt(HALF_FROM)} нагоре</small>` : ''}
         <div class="sp-line__row">${c ? '<span class="sp-line__fixed">1 комплект</span>' : `<div class="sp-qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><span>${i.quantity || 1}</span><button type="button" data-q="1" aria-label="Повече">+</button></div>`}
           <span class="sp-line__price">${info.half ? `<s>${fmt(info.p.price * (i.quantity || 1))}</s> ` : ''}${fmt(+i.price || 0)}</span></div>
         <button class="sp-line__rm" type="button" data-rm>${ICON.trash} Премахни</button></div></div>`;
@@ -254,10 +254,10 @@ function drawCart(o) {
     </div>
     ${offers.length
       ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави с <b class="zn-50">−50%</b></p>${offers.map(halfRow).join('')}</div>`
-      : `<div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${halfOn() ? `<p class="sp-recs__hint">Над ${fmt(HALF_FROM)} всеки следващ продукт е с <b class="zn-50">−50%</b>.</p>` : ''}${recs(items).slice(0, 2).map(recRow).join('')}</div>`}`;
+      : `<div class="sp-recs"><p class="sp-recs__lbl">Добави и…</p>${halfOn() ? `<p class="sp-recs__hint">От ${fmt(HALF_FROM)} всеки следващ продукт е с <b class="zn-50">−50%</b>.</p>` : ''}${recs(items).slice(0, 2).map(recRow).join('')}</div>`}`;
   foot.innerHTML = `
     <div class="sp-total"><span>Междинна сума</span><b>${fmt(sub)}</b></div>
-    <p class="sp-note">Доставката (от ${fmt(SHIP_FROM)}) избираш в следващата стъпка.</p>
+    <p class="sp-note">${FREE_FROM && sub >= FREE_FROM - EPS ? `🚚 ${shipHint()} – избираш в следващата стъпка.` : `Доставката (от ${fmt(SHIP_FROM)}) избираш в следващата стъпка.`}</p>
     <a class="bv-btn bv-btn--xl sp-wide" href="${L.checkout}">Към поръчката →</a>
     <p class="sp-trustline">💶 Плащаш при получаване · 🛡️ ${CONFIG.guaranteeDays} дни гаранция</p>
     <button class="sp-link" type="button" data-close-panels>← Продължи пазаруването</button>`;
@@ -316,6 +316,29 @@ function halfRow(p) {
     <button class="sp-rec__add sp-rec__add--half" type="button" data-add-half="${p.id}">+ Добави</button></div>`;
 }
 
+/* ---------- „Кой пластир за стави да избера?“ ----------
+   Четирите вида един до друг по истинските им данни (PATCH_COMPARE в data.js). На телефон картите са
+   една под друга и всеки ред е „име: стойност“ – чете се без плъзгане встрани. here = продуктът на страницата. */
+function patchCompareHtml(here) {
+  if (typeof PATCH_COMPARE !== 'object' || !PATCH_COMPARE.length) return '';
+  const list = PATCH_COMPARE.map(x => ({ x, p: P(x.id) })).filter(o => o.p);
+  if (list.length < 2) return '';
+  const per = o => fmt(Math.round(o.p.price / o.x.n * 100) / 100);
+  const low = Math.min(...list.map(o => o.p.price / o.x.n));
+  const row = (k, v) => v ? `<div class="sp-cmp__r"><dt>${k}</dt><dd>${v}</dd></div>` : '';
+  return `<section class="sp-cmp" id="kakav-plastir" aria-labelledby="sp-cmp-h"><div class="sp-cmp__in">
+    <h2 id="sp-cmp-h">Кой пластир за стави да избереш?</h2>
+    <p class="sp-cmp__lead">Четирите вида се различават по брой, размер, съставки и колко време се носят – според указанията на опаковката.</p>
+    <div class="sp-cmp__grid">${list.map(o => `
+      <article class="sp-cmp__c${o.p.id === here ? ' is-here' : ''}" style="--pc:${productLook(o.p).a}">
+        <a class="sp-cmp__top" href="${productUrl(o.p.id)}"><img src="${productLook(o.p).img}" alt="" width="64" height="64" loading="lazy"><span><b>${esc(o.p.shortName)}</b><small>${fmt(o.p.price)} · ${per(o)} за пластир${Math.abs(o.p.price / o.x.n - low) < 0.005 ? ' – най-ниската' : ''}</small></span></a>
+        ${o.p.id === here ? '<span class="sp-cmp__here">Гледаш този</span>' : ''}
+        <dl>${row('В кутията', esc(o.x.count))}${row('Размер', esc(o.x.size || ''))}${row('Основни съставки', esc(o.x.ings))}${row('Къде', esc(o.x.zone))}${row('Носиш', esc(o.x.wear))}</dl>
+        <p class="sp-cmp__pick">${esc(o.x.pick)}</p>
+      </article>`).join('')}</div>
+  </div></section>`;
+}
+
 /* ---------- картата на продукта (магазин, начало, търсене) ---------- */
 function shopCard(p) {
   const lk = productLook(p), cat = catOf(p);
@@ -329,7 +352,7 @@ function shopCard(p) {
     <div class="sp-card__body">
       <span class="sp-card__cat">${esc(cat.name)}</span>
       <h3><a href="${productUrl(p.id)}">${esc(p.shortName)}</a></h3>
-      <p class="sp-card__size">${esc(p.size)}</p>
+      <p class="sp-card__use">${esc(p.use || p.size)}</p>
       <div class="sp-card__price">${p.packs ? '<small>от</small> ' : ''}${fmt(fromPrice(p))}</div>
       ${p.packs || (p.wellness && comboReady())
         ? `<a class="sp-card__btn" href="${productUrl(p.id)}">Избери ${p.packs ? 'комплект' : 'количество'}</a>`

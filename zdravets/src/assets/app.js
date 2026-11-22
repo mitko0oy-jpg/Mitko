@@ -39,6 +39,12 @@ const GIFT_PACKS = {};
 BUNDLES.forEach(b => { if (giftPacks(b) > 1) GIFT_PACKS[b.store] = giftPacks(b); });
 const giftPacksFor = store => GIFT_PACKS[store] || 1;
 const giftLabel = n => n > 1 ? `${n} пакета пластири за стави (${12 * n} бр.)` : '12 пластира за стави и мускули';
+// „поотделно“ и надписите на пакетите: колкото пакета подарък носи точно този продукт в магазина
+const giftValueFor = store => GIFT_VALUE * giftPacksFor(store);
+const giftTextFor = store => `${giftLabel(giftPacksFor(store))} подарък`;
+// цената до адрес – за подсказката „Безплатно до офис · до адрес +5,90 €“
+const ADDR_PRICE = (CONFIG.shipping.find(m => !m.office) || {}).price || 0;
+const shipHint = () => `Безплатно до офис · до адрес +${fmt(ADDR_PRICE)}`;
 const BF_STORE_IDS = BUNDLES.filter(b => b.bf !== false).map(b => b.store);
 
 /* ---------- font size (за по-лесно четене) ---------- */
@@ -341,7 +347,7 @@ function renderFooter() {
   f.innerHTML = `
   <section class="sp-perks" aria-label="Защо да поръчаш от нас"><div class="wrap sp-perks__in">
     <div><span>💶</span><b>Плащаш при получаване</b><small>Без карта и без предплащане</small></div>
-    <div><span>🚚</span><b>Доставка 1–2 работни дни</b><small>Еконт и Спиди${FREE_FROM ? ` · безплатно над ${fmt(FREE_FROM)}` : ''}</small></div>
+    <div><span>🚚</span><b>Доставка 1–2 работни дни</b><small>Еконт и Спиди${FREE_FROM ? ` · до офис безплатно от ${fmt(FREE_FROM)}` : ''}</small></div>
     <div><span>🛡️</span><b>${CONFIG.guaranteeDays} дни гаранция</b><small>Не си доволен – връщаме парите</small></div>
     <div><span>📞</span><b>Обади се денонощно</b><small>${CONFIG.phone} · без почивен ден. Отговаря ${esc(CONFIG.phoneBot)} – приема поръчки и проверява поръчка.</small></div>
   </div></section>
@@ -384,17 +390,17 @@ function bundleCard(b) {
   const free = b.freeShip && freeShipFor(b.price);
   const img = b.collage
     ? `<div class="collage ${b.collage.length === 2 ? 'two' : ''}">${b.collage.map(([src, alt]) => `<img src="${src}" alt="${esc(alt)}" loading="lazy">`).join('')}</div>`
-    : `<img src="${b.img}" alt="${esc(b.title)}" loading="lazy">`;
+    : `<img src="${b.id === 'bf5' && bfOn() && b.gift.length ? BF5_IMG_S : b.img}" alt="${esc(b.id === 'bf5' && bfOn() ? '5 гела BeeVenom и 3 пакета пластири за стави' : b.title)}" loading="lazy">`;
   const ribbon = b.featured ? '<div class="ribbon">★ Най-избиран</div>' : (free ? '<div class="ribbon green">Безплатна доставка</div>' : '');
   return `<div class="offer ${b.featured ? 'featured' : ''}">
     ${ribbon}
-    <div class="tier">${esc(b.tier)}</div>
+    ${b.featured && /Най-избиран/.test(b.tier) ? '' : `<div class="tier">${esc(b.tier)}</div>`}
     <h3>${esc(b.title)}</h3>
     <div class="oimg">${img}</div>
     <div class="contents">${esc(b.line)}</div>
     ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: ${giftLabel(giftPacks(b))}${giftWas(giftPacks(b))}</div>` : ''}
     <div class="pricebox">${b.prev && bfOn() ? `<span class="bf-blink">Черен петък</span> <span class="xprice">${fmt(b.prev)}</span> ` : ''}<span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
-    <div class="ship ${free ? 'free' : ''}">${free ? '🚚 Безплатна доставка до офис' : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
+    <div class="ship ${free ? 'free' : ''}">${free ? `🚚 ${shipHint()}` : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${(sp => [`продуктите ${fmt(sp.items)}`, sp.gift ? `пластирите ${fmt(sp.gift)}` : '', sp.ship ? `доставка ${fmt(sp.ship)}` : ''].filter(Boolean).join(' + ') + (sp.gift || sp.ship ? ` = ${fmt(sp.total)}` : ''))(separateParts(b))} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>
     <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'trio' ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
@@ -457,6 +463,11 @@ function renderProducts() {
     if (sort === 'desc') list.sort((a, b) => fromPrice(b[0]) - fromPrice(a[0]));
     grid.innerHTML = list.map(([p]) => productCard(p)).join('');
     $('#found').textContent = `${list.length} ${list.length === 1 ? 'продукт' : 'продукта'}`;
+    // четирите вида пластири за стави: сравнение под картите, щом в списъка има поне два от тях
+    const cmpOn = !term && typeof PATCH_COMPARE === 'object' && list.filter(([p]) => PATCH_COMPARE.some(x => x.id === p.id)).length >= 2;
+    const cmp = $('#cmp'), cmpLink = $('#cmp-link');
+    if (cmp) cmp.innerHTML = cmpOn ? patchCompareHtml('') : '';
+    if (cmpLink) cmpLink.hidden = !cmpOn;
     $$('[data-cat]', chips).forEach(b => b.addEventListener('click', () => { cat = b.dataset.cat; history.replaceState(null, '', cat === 'zone' ? `${L.products}?zone=${zone.id}` : cat === 'all' ? L.products : `${L.products}?cat=${cat}`); draw(); }));
     bindAddButtons(grid);
     const c = CATEGORIES.find(x => x.id === cat);
@@ -500,11 +511,11 @@ function renderProduct() {
         <ul class="checks">${p.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
         ${packs ? `<div class="packs" role="radiogroup" aria-label="Избери количество">${packs.map(k => {
             const free = k.bundle && B(k.bundle).freeShip && freeShipFor(k.price);
-            const sub = [k.sub, free ? 'безплатна доставка до офис' : ''].filter(Boolean).join(' · ');
+            const sub = [k.sub, free ? shipHint().toLowerCase() : ''].filter(Boolean).join(' · ');
             return `
           <label class="pack ${k.key === sel ? 'on' : ''}">${k.featured ? '<span class="flag">Най-избиран</span>' : ''}
             <input type="radio" name="pack" value="${k.key}" ${k.key === sel ? 'checked' : ''}>
-            <span class="pl"><b>${esc(k.label)}${gift && unitsOf(k.store) >= GIFT_FROM ? ' + ' + GIFT_TEXT : ''}</b><span>${esc(sub)}</span></span>
+            <span class="pl"><b>${esc(k.label)}${gift && unitsOf(k.store) >= GIFT_FROM ? ' + ' + giftTextFor(k.store) : ''}</b><span>${esc(sub)}</span></span>
             <span class="pp-price">${fmt(k.price)}</span></label>`; }).join('')}</div>`
           : `<div class="buyrow"><span class="price big">${fmt(p.price)}</span>
              <div class="qty"><button type="button" data-q="-1" aria-label="По-малко">−</button><input id="qty" type="number" min="1" max="20" value="1" aria-label="Количество"><button type="button" data-q="1" aria-label="Повече">+</button></div></div>`}
@@ -615,7 +626,7 @@ function renderCheckoutHelper() {
       host.id = 'zn-bumps';
       btns.parentElement.insertBefore(host, btns);
     }
-    host.innerHTML = `<p class="zn-bumps-title">${halfList.length ? `Поръчката ти е над ${fmt(HALF_FROM)} – добави с <b class="zn-50">−50%</b>:` : 'Специално само към тази поръчка:'}</p>` + list.map(b => {
+    host.innerHTML = `<p class="zn-bumps-title">${halfList.length ? `Поръчката ти е от ${fmt(HALF_FROM)} нагоре – добави с <b class="zn-50">−50%</b>:` : 'Специално само към тази поръчка:'}</p>` + list.map(b => {
       const p = P(b.id), on = ids.includes(b.store);
       return `<div class="zn-bump${on ? ' on' : ''}${b.half ? ' zn-bump--half' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-bump="${b.id}" data-store="${b.store}">
         <span class="zn-bump-head"><span class="zn-box" aria-hidden="true"></span><span>Да, добави <b>${esc(b.title)}</b> за <b class="zn-price">${fmt(b.price)}</b> <s>${fmt(p.price)}</s>${b.half ? ' <span class="zn-off">−50%</span>' : ''}</span></span>
@@ -635,15 +646,18 @@ function renderCheckoutHelper() {
     });
   }
   // Доставката. Над прага за безплатна доставка формата показва друг списък и сама избира първия ред
-  // („До адрес“, платен), макар офисът да е безплатен. Пазим избора на клиента; ако още не е избирал –
-  // не оставяме платения адрес, когато има офис. Оправяме и надписите, и подсказката в полето за адрес.
-  let shipKind = null;
+  // („До адрес“, платен), макар офисът да е безплатен. Пазим избора на клиента (и при следващо влизане –
+  // localStorage „zn_ship“); ако още не е избирал – избираме офиса на Еконт (безплатен от прага нагоре).
+  // Оправяме и надписите, и подсказката в полето за адрес.
+  let shipKind = local.get('zn_ship', null);
+  if (!['econt', 'speedy', 'address'].includes(shipKind)) shipKind = null;
+  let autoClicks = 0; // предпазител: формата да не се върти в кръг, ако не приеме избора
   const kindOf = t => /спиди|speedy/i.test(t) ? 'speedy' : /еконт|econt/i.test(t) ? 'econt' : 'address';
   const SHIP_LABEL = { econt: 'До офис на Еконт', speedy: 'До офис на Спиди', address: 'До адрес (с куриер)' };
   const ADDR_HINT = { econt: 'Офис на Еконт – име или адрес на офиса', speedy: 'Офис на Спиди – име или адрес на офиса', address: 'Улица, номер, блок, вход, апартамент' };
   document.addEventListener('change', e => {
     const t = e.target;
-    if (e.isTrusted && t && t.name === 'shippingOption' && t.closest('label')) shipKind = kindOf(t.closest('label').textContent);
+    if (e.isTrusted && t && t.name === 'shippingOption' && t.closest('label')) { shipKind = kindOf(t.closest('label').textContent); local.set('zn_ship', shipKind); }
   }, true);
   function fixShipping() {
     const wrap = document.querySelector('.payment-step-wrapper [data-role="shipping-methods"]');
@@ -658,20 +672,48 @@ function renderCheckoutHelper() {
       if (tn && tn.textContent.trim() !== SHIP_LABEL[r.kind]) tn.textContent = SHIP_LABEL[r.kind];
     });
     let cur = rows.find(r => r.inp.checked);
-    const want = shipKind ? rows.find(r => r.kind === shipKind) : (cur && cur.kind === 'address' ? rows.find(r => r.kind !== 'address') : null);
-    if (want && want !== cur) { want.l.click(); cur = want; }
+    const office = rows.find(r => r.kind === 'econt') || rows.find(r => r.kind !== 'address');
+    const want = shipKind ? rows.find(r => r.kind === shipKind) : (!cur || cur.kind === 'address' ? office : null);
+    if (want && want !== cur && autoClicks < 6) { autoClicks++; want.l.click(); cur = want; }
     const kind = cur ? cur.kind : 'address';
     const addr = document.querySelector('.payment-step-wrapper input[name="shippingAddress"]');
     if (addr && addr.placeholder !== ADDR_HINT[kind]) addr.placeholder = ADDR_HINT[kind];
     const city = document.querySelector('.payment-step-wrapper input[name="shippingCity"]');
     if (city && city.placeholder !== 'Град или село') city.placeholder = 'Град или село';
   }
-  // формата на ConvertBuilder се зарежда и пренарежда сама: отметките се връщат на мястото си
-  setInterval(() => {
+  // до бутона „Завърши поръчката“: колко струва доставката, когато поръчката е с безплатен офис
+  function drawShipHint() {
+    const btns = document.querySelector('.payment-step-wrapper .next-prev-buttons');
+    let el = document.getElementById('zn-shiphint');
+    const sub = bumpItems.filter(i => !isGift(i)).reduce((t, i) => t + (+i.price || 0), 0);
+    if (!btns || !FREE_FROM || sub < FREE_FROM - EPS) { if (el) el.remove(); return; }
+    if (!el || el.previousElementSibling !== btns) { if (el) el.remove(); el = document.createElement('p'); el.id = 'zn-shiphint'; btns.after(el); }
+    const txt = `🚚 ${shipHint()}`;
+    if (el.textContent !== txt) el.textContent = txt;
+  }
+  // снимките на редовете във формата: магазинът показва общата снимка на гела (3 туби) и на старите пластири –
+  // слагаме точния брой туби и тъмните пликове на подаръка
+  const ROW_IMG = {};
+  ['bf2', 'bf3', 'bf5'].forEach(id => { const b = B(id); if (b) ROW_IMG[b.store] = znM(PACK_IMG[id] || (id === 'bf3' ? 'pack-gel-3-solo.webp' : '')); });
+  function markRows() {
+    document.querySelectorAll('.payment-step-wrapper .cart-row[data-product]').forEach(r => {
+      const id = +r.dataset.product, img = r.querySelector('.image img');
+      if (!img) return;
+      let src = ROW_IMG[id];
+      if (id === CONFIG.giftStoreId) { const inp = r.querySelector('input[type=number]'); src = (inp && +inp.value > 1) ? znM('pack-plastiri-3.webp') : GIFT_IMG; }
+      if (src && img.getAttribute('src') !== src) { img.setAttribute('src', src); img.removeAttribute('srcset'); img.style.objectFit = 'contain'; }
+    });
+  }
+  // формата на ConvertBuilder се зарежда и пренарежда сама: отметките се връщат на мястото си,
+  // а доставката се оправя веднага щом формата се смени (не чакаме таймера)
+  const tidy = () => {
     const btns = document.querySelector('.payment-step-wrapper .next-prev-buttons'), host = document.getElementById('zn-bumps');
     if (btns && bumpItems.length && (!host || host.nextElementSibling !== btns)) drawBumps(bumpItems);
-    fixShipping();
-  }, 1200);
+    fixShipping(); drawShipHint(); markRows();
+  };
+  setInterval(tidy, 1200);
+  let tidyQ = 0;
+  try { new MutationObserver(() => { if (tidyQ) return; tidyQ = requestAnimationFrame(() => { tidyQ = 0; fixShipping(); markRows(); }); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
 
   // редът с подаръка във формата: без + и −
   function markGiftRow() {
