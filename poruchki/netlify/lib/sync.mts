@@ -13,6 +13,7 @@ import { purgeVisits } from "./visits.mts";
 import { runCartReminders } from "./reminders.mts";
 import { checkDuplicates } from "./duplicates.mts";
 import { syncAbandoned } from "./abandoned.mts";
+import { runMonthlyMail } from "./accmail.mts";
 import { runNekChecks } from "./nekorekten.mts";
 import { upsertOrders } from "./orders.mts";
 import { ensureShops, shopError, type Shop } from "./shops.mts";
@@ -129,7 +130,14 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
   }
 
-  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders };
+  // 7) The monthly letter to the accountant (sales by country and shop + the NAP audit files) – on the chosen day.
+  const accountant: Record<number, unknown> = {};
+  for (const company of companies) {
+    if (Date.now() > deadline - 1000) break;
+    accountant[company] = await withCompany(company, () => runMonthlyMail()).catch((e) => ({ error: e.message }));
+  }
+
+  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders, accountant };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

@@ -71,7 +71,9 @@ const html = (text: string) =>
     .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')
     .replace(/\n/g, "<br>")}</div>`;
 
-export async function sendEmail(m: { to: string; name?: string; subject: string; text: string; footer?: string }) {
+export type Attachment = { name: string; content: string }; // content in base64
+
+export async function sendEmail(m: { to: string; name?: string; subject: string; text: string; footer?: string; html?: string; cc?: string[]; attachments?: Attachment[] }) {
   const cfg = await emailSettings();
   if (!cfg.configured) throw fail("Имейлът не е свързан. Добави ключ от Brevo и подател в Незавършени → Напомняния.");
   if (!validEmail(m.to)) throw fail("Невалиден имейл.");
@@ -81,9 +83,11 @@ export async function sendEmail(m: { to: string; name?: string; subject: string;
     body: JSON.stringify({
       sender: { email: cfg.fromEmail, ...(cfg.fromName ? { name: cfg.fromName } : {}) },
       to: [{ email: m.to, ...(m.name ? { name: m.name } : {}) }],
+      ...(m.cc && m.cc.filter((e) => validEmail(e) && e !== m.to).length ? { cc: [...new Set(m.cc.filter((e) => validEmail(e) && e !== m.to))].map((email) => ({ email })) } : {}),
       subject: m.subject.slice(0, 200),
       textContent: text,
-      htmlContent: html(text),
+      htmlContent: m.html || html(text),
+      ...(m.attachments && m.attachments.length ? { attachment: m.attachments } : {}),
     }),
   });
   return { id: String(d?.messageId || "") };

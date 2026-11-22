@@ -161,6 +161,7 @@ export const ICONS = {
   live: I('<circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/>'),
   hourglass: I('<path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/>'),
   print: I('<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z"/>'),
+  ledger: I('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3M14 15h2"/>'),
   box: I('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
   store: I('<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0V9M5 13v8h14v-8"/>'),
   truck: I('<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'),
@@ -219,6 +220,8 @@ export async function shell(active) {
     ["/potrebiteli/", "Потребители", "potrebiteli", ICONS.users],
     ["/nastroiki/", "Настройки", "nastroiki", ICONS.gear],
   ];
+  // The books are for the owner of the company only.
+  if (me.user.role === "admin") links.splice(links.findIndex(([, , k]) => k === "sklad") + 1, 0, ["/schetovodstvo/", "Счетоводство", "schetovodstvo", ICONS.ledger]);
   // Only the platform owner manages companies.
   if (me.user.owner) links.push(["/firmi/", "Фирми", "firmi", ICONS.users]);
   const u = me.user;

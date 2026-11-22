@@ -1312,3 +1312,163 @@ test("duplicate orders: held as „Дублирана“ by phone or email, no w
   const held = await byNo(5084);
   assert.equal(held.stage, "duplicate");
 });
+
+test("accounting: sales by country and shop (physical / digital VAT), NAP audit file by the XSD, entries and bank import, profit, letter to the accountant", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { writeFileSync, mkdtempSync } = await import("node:fs");
+  const os = await import("node:os");
+  const m = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+  // Only the owner, and only logged in.
+  assert.equal((await fetch(B + "/api/acc/settings")).status, 401);
+
+  // An Еду Бел-like order: a box of cards (physical) and a PDF (digital), with a discount code, delivered.
+  orders.push(order(90, 0, "completed", {
+    items: [{ name: "Карти НВО кутия", quantity: 2, total: 50 }, { name: "Карти PDF", quantity: 1, total: 12, shippingRequired: false }],
+    subTotal: 62, discountAmount: 6.2, shippingAmount: 4.5, total: 60.3,
+  }));
+  await api("/api/settings/sync", {});
+
+  let r = await api("/api/acc/settings", {
+    eik: "123456789", companyName: "Тест ЕООД",
+    accountant: { name: "Яна", email: "yana@example.com", day: 1, auto: true, copyMe: true },
+    vat: { products: { "Карти НВО кутия": 9 } },
+    shops: { bg: { nap: true, eShopN: "RF0000020" }, hu: { country: "HU", vat: 27 } },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.settings.vat.products["карти нво кутия"], 9);
+  assert.equal((await api("/api/acc/settings", { shops: { bg: { eShopN: "TOO-LONG-NUMBER" } } })).status, 400);
+
+  // Sales for the month: by country and per shop, physical (20% and 9%) apart from digital.
+  const sales = (await api(`/api/acc/sales?month=${m}`)).data;
+  assert.ok(sales.total.orders >= 20, JSON.stringify(sales.total));
+  const bg = sales.countries.find((c) => c.country === "BG");
+  assert.ok(bg && bg.orders === sales.total.orders);
+  assert.ok(bg.rates.some((x) => x.rate === 9) && bg.rates.some((x) => x.rate === 20));
+  const shop = sales.shops.find((s) => s.id === "bg");
+  const kinds = shop.parts.map((p) => `${p.kind}:${p.rate}`);
+  for (const k of ["physical:20", "physical:9", "digital:20", "shipping:20"]) assert.ok(kinds.includes(k), kinds.join(","));
+  const sumParts = Math.round(shop.parts.reduce((a, p) => a + p.gross, 0) * 100) / 100;
+  assert.equal(sumParts, shop.gross, "the parts add up to the shop");
+  for (const p of shop.parts) assert.equal(Math.round((p.net + p.vat) * 100) / 100, p.gross);
+
+  // The NAP file: valid by the schema, windows-1251, sums that add up, document numbers that stay.
+  const nap = (await api(`/api/acc/nap?month=${m}`)).data;
+  const f = nap.files.find((x) => x.shop === "bg");
+  assert.ok(f.ready, JSON.stringify(f));
+  const dl = await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } });
+  assert.equal(dl.status, 200);
+  assert.match(dl.headers.get("content-disposition"), /NAP_RF0000020_/);
+  const buf = Buffer.from(await dl.arrayBuffer());
+  const xml = new TextDecoder("windows-1251").decode(buf);
+  assert.match(xml, /<art_name>Карти НВО кутия<\/art_name>/);
+  assert.match(xml, /<art_name>Доставка<\/art_name>/);
+  assert.match(xml, /<e_shop_n>RF0000020<\/e_shop_n>/);
+  const dir = mkdtempSync(path.join(os.tmpdir(), "nap-"));
+  const file = path.join(dir, "nap.xml");
+  writeFileSync(file, buf);
+  try {
+    execFileSync("xmllint", ["--noout", "--schema", path.join(root, "test/fixtures/nap-audit.xsd"), file], { stdio: "pipe" });
+  } catch (e) {
+    if (e.code !== "ENOENT") assert.fail(`XSD: ${e.stderr}`);
+  }
+  const num = (s, tag) => [...s.matchAll(new RegExp(`<${tag}>([^<]*)</${tag}>`, "g"))].map((x) => Number(x[1]));
+  for (const oe of xml.split("<orderenum>").slice(1)) {
+    const body = oe.split("</orderenum>")[0];
+    const [t1] = num(body, "ord_total1"), [disc] = num(body, "ord_disc"), [vat] = num(body, "ord_vat"), [t2] = num(body, "ord_total2");
+    const sums = num(body, "art_sum"), vats = num(body, "art_vat");
+    assert.equal(Math.round(sums.reduce((a, b) => a + b, 0) * 100) / 100, t2, body);
+    assert.equal(Math.round(vats.reduce((a, b) => a + b, 0) * 100) / 100, vat, body);
+    assert.equal(Math.round((t1 - disc + vat) * 100) / 100, t2, body);
+  }
+  const o90 = xml.split("<orderenum>").find((x) => x.includes("<ord_n>5090</ord_n>"));
+  assert.ok(o90 && /<ord_total2>60\.30<\/ord_total2>/.test(o90) && /<art_vat_rate>9<\/art_vat_rate>/.test(o90), o90);
+  const docs1 = num(xml, "doc_n");
+  assert.equal(new Set(docs1).size, docs1.length, "a document number once");
+  const xml2 = new TextDecoder("windows-1251").decode(Buffer.from(await (await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } })).arrayBuffer()));
+  assert.deepEqual(num(xml2, "doc_n"), docs1, "the numbers stay the same");
+  // A shop without its NAP number has no file.
+  assert.ok(!(await api(`/api/acc/nap?month=${m}`)).data.files.some((x) => x.shop === "hu"));
+
+  // End of the month: invoices and the bank statement, imported (the same keys again change, not add).
+  const imp = {
+    entries: [
+      { key: "inv-1", day: `${m}-02`, category: "ads", party: "Meta Platforms Ireland", total: 120, vat: 0, doc_no: "FBADS-1" },
+      { key: "inv-2", day: `${m}-03`, category: "goods", party: "Доставчик ООД", total: 240, vat: 40, doc_no: "0000123" },
+      { key: "inv-3", day: `${m}-03`, category: "courier", party: "Еконт Експрес", total: 60, vat: 10, doc_no: "E-77" },
+      { key: "ref-1", day: `${m}-04`, kind: "refund", order_no: "5090", shop: "bg", total: 12, vat: 2, refund_paym: 1, party: "Клиент 90" },
+    ],
+    bank: [
+      { key: "b1", day: `${m}-04`, amount: 500, party: "Еконт Експрес", description: "Наложени платежи", category: "cod_econt", balance: 1500, account: "BG..1234" },
+      { key: "b2", day: `${m}-05`, amount: -240, party: "Доставчик ООД", entry_key: "inv-2", category: "goods", balance: 1260, account: "BG..1234" },
+      { key: "b3", day: `${m}-06`, amount: -15.5, party: "Google", description: "Workspace", balance: 1244.5, account: "BG..1234" },
+    ],
+  };
+  r = await api("/api/acc/import", imp);
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.deepEqual([r.data.entries.added, r.data.bank.added], [4, 3]);
+  r = await api("/api/acc/import", imp);
+  assert.deepEqual([r.data.entries.added, r.data.entries.changed, r.data.bank.added, r.data.bank.changed], [0, 4, 0, 3]);
+  assert.equal((await api("/api/acc/import", { entries: [{ day: `${m}-02`, total: 1 }] })).status, 400, "no key");
+  assert.equal((await api("/api/acc/import", { entries: [{ key: "x", day: `${m}-02`, total: 10, net: 5, vat: 1 }] })).status, 400, "sums do not match");
+
+  // A card payment from the bank becomes an expense; a manual one by hand.
+  let bank = (await api(`/api/acc/bank?month=${m}`)).data;
+  assert.equal(bank.lines.length, 3);
+  assert.equal(bank.cash.unsorted, 1);
+  assert.equal(bank.cash.balances[0].balance, 1244.5);
+  assert.equal(bank.cash.cod.find((c) => c.cat === "cod_econt").received, 500);
+  assert.ok(bank.cash.cod.find((c) => c.cat === "cod_econt").expected.orders > 0);
+  const b3 = bank.lines.find((l) => l.party === "Google");
+  assert.equal((await api(`/api/acc/bank/${b3.id}/expense`, { category: "software" })).status, 200);
+  bank = (await api(`/api/acc/bank?month=${m}`)).data;
+  assert.equal(bank.cash.unsorted, 0);
+  const own = await api("/api/acc/entries", { day: `${m}-07`, category: "packaging", party: "Кашони", total: 36, vat: 6 });
+  assert.equal(own.status, 200, JSON.stringify(own.data));
+  assert.equal((await api(`/api/acc/entries/${own.data.id}`, { total: 48, vat: 8 })).status, 200);
+  const ent = (await api(`/api/acc/entries?month=${m}`)).data.entries;
+  assert.equal(ent.find((e) => e.id === own.data.id).net, 40);
+
+  // The profit: revenue without VAT, the refund, the couriers' invoice instead of the waybills, expenses without VAT.
+  const rep = (await api(`/api/acc/report?from=${m}&to=${m}`)).data;
+  const x = rep.months[0];
+  assert.equal(x.expenses.ads, 120);
+  assert.equal(x.expenses.goods, 200);
+  assert.equal(x.expenses.software, 15.5);
+  assert.equal(x.expenses.packaging, 40);
+  assert.equal(x.courierInvoices, 50);
+  assert.equal(x.courier, 50);
+  assert.equal(x.refunds, 10);
+  assert.equal(x.purchaseVat, 58);
+  assert.equal(x.profit, Math.round((x.revenueNet - 10 - x.cogs - 50 - 375.5) * 100) / 100);
+  assert.ok(x.cogs > 0, "the gels have a cost from the warehouse");
+
+  // The refund is in the NAP file.
+  const xml3 = new TextDecoder("windows-1251").decode(Buffer.from(await (await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } })).arrayBuffer()));
+  assert.match(xml3, /<r_ord>1<\/r_ord>[\s\S]*<r_ord_n>5090<\/r_ord_n>[\s\S]*<r_amount>12\.00<\/r_amount>[\s\S]*<r_total>12\.00<\/r_total>/);
+
+  // The letter: by hand now, with the Excel and the XML, a copy to the owner.
+  const letter = (await api(`/api/acc/nap/letter?month=${m}`)).data;
+  assert.match(letter.html, /По държави/);
+  assert.match(letter.html, /Дигитални продукти/);
+  assert.ok(letter.files.some((n) => /^NAP_RF0000020_/.test(n)));
+  const n0 = sent.length;
+  r = await api("/api/acc/nap/send", { month: m });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const mail = sent.slice(n0).find((s) => s.path === "/email/smtp/email").body;
+  assert.equal(mail.to[0].email, "yana@example.com");
+  assert.ok(mail.cc.some((c) => c.email === "m@example.com"));
+  assert.deepEqual(mail.attachment.map((a) => a.name.replace(/_\d{4}_\d{2}\.xml$/, ".xml").replace(/_\d{4}-\d{2}\.csv$/, ".csv")), ["prodazhbi.csv", "NAP_RF0000020.xml"]);
+  const csv = Buffer.from(mail.attachment[0].content, "base64").toString("utf8");
+  assert.match(csv, /^﻿Магазин;Държава;Поръчка №/);
+  assert.match(csv, /;5090;/);
+
+  // From the sync: last month's letter goes once (the chosen day has come), not again in the same day.
+  const before = sent.filter((s) => s.path === "/email/smtp/email").length;
+  await api("/api/settings/sync", {});
+  await api("/api/settings/sync", {});
+  const auto = sent.filter((s) => s.path === "/email/smtp/email").slice(before);
+  assert.equal(auto.length, 1, "once");
+  assert.match(auto[0].body.subject, /Продажби за /);
+  const log = (await api(`/api/acc/nap?month=${m}`)).data.log;
+  assert.ok(log.some((l) => l.shop === "*" && !l.auto));
+});
