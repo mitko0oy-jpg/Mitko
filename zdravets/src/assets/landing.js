@@ -183,6 +183,36 @@ function packQty(p, k) {
   return m ? +m[1] : 1;
 }
 
+/* ---------- витрина на съставките: голяма карта за основната, по-малки за останалите ---------- */
+function ingShowcase(p, list, meta) {
+  const [main, ...rest] = list;
+  const card = (x, i) => `
+      <article class="bv-ingx__card${i ? '' : ' bv-ingx__card--main'}" style="--tone:${x.tone}">
+        <div class="bv-ingx__ph"><img src="${x.img}" alt="${esc(x.n)}" width="600" height="480" loading="lazy" decoding="async"></div>
+        <div class="bv-ingx__body">
+          ${i ? `<span class="bv-ingx__n">${i + 1}</span>` : '<span class="bv-ingx__tag">Основна съставка</span>'}
+          <h3>${esc(x.n)}</h3>
+          <p class="bv-ingx__latin">${esc(x.latin)}</p>
+          <p class="bv-ingx__t">${esc(x.t || x.short)}</p>
+          ${x.facts ? `<ul class="bv-ingx__facts">${x.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
+        </div>
+        <span class="bv-glare" aria-hidden="true"></span>
+      </article>`;
+  return `
+  <section id="bv-sastav" class="bv-ingx-sec"><div class="bv-wrap">
+    <div class="bv-center">
+      <span class="bv-eyebrow">${esc(meta && meta.eyebrow ? meta.eyebrow : 'Какво има в пластира?')}</span>
+      <h2>${list.length} съставки, <em class="bv-accent">подбрани с грижа</em></h2>
+      <p class="bv-lead">${esc(meta && meta.lead ? meta.lead : 'Пълният състав е отпечатан върху опаковката – прочети го, преди да започнеш.')}</p>
+    </div>
+    <div class="bv-ingx bv-ingx--n${list.length}">
+      ${card(main, 0)}
+      <div class="bv-ingx__rest">${rest.map((x, i) => card(x, i + 1)).join('')}</div>
+    </div>
+    <p class="bv-ingx__foot"><img src="${productLook(p).img}" alt="" width="56" height="56" loading="lazy"><span><b>Всичко това – в един тънък пластир.</b> Залепваш го сутрин и го носиш до 8 часа.</span></p>
+  </div></section>`;
+}
+
 /* ---------- уелнес пластирите: кръгът на формулата, трите слоя, местата за залепване ---------- */
 // „берберин, нар, канела и витамини B“ – от първия ред с предимствата („С берберин, нар, …“)
 const wellList = p => (p.wellness && p.bullets && /^С /.test(p.bullets[0]) ? p.bullets[0].replace(/^С /, '') : '');
@@ -425,7 +455,9 @@ function renderLanding(p) {
   const ingD = d.ings && d.ings.items ? d.ings : null;
   const ingMeta = ingD || d.ings || c.ings || null;
   const ingItems = ingD ? ingD.items : ings.map(([n, t], i) => { const [, tag, m] = p.wellness || p.ingPlain ? [0, '', null] : ingCard(n); return [n, i ? tag : 'Основна съставка', t, m, !i]; });
-  const ingsHtml = ingItems.length ? `
+  // уелнес пластирите: витрина със снимки, когато всяка съставка има снимка
+  const showcase = !ingD && p.wellness && ings.length > 1 && ings.every(([n]) => ingInfo(n)) ? ings.map(([n, t]) => ({ n, ...ingInfo(n), short: t })) : null;
+  const ingsHtml = showcase ? ingShowcase(p, showcase, ingMeta) : ingItems.length ? `
   <section id="bv-sastav"><div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">${esc(ingMeta && ingMeta.eyebrow ? ingMeta.eyebrow : 'Какво съдържа?')}</span>
