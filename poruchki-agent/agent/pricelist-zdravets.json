@@ -1,6 +1,6 @@
 {
   "kind": "zdravets",
-  "note": "Генерирано от data.js на zdravets.eu (FETCH_HEAD @ 987701a) със scripts/build-zdravets-pricelist.mjs – не се пипа на ръка.",
+  "note": "Генерирано от data.js на zdravets.eu (origin/claude/cheren-petak-bf5 @ 987701a) със scripts/build-zdravets-pricelist.mjs – не се пипа на ръка.",
   "currency": "EUR",
   "shop": {
     "brand": "Здравец Натура",
@@ -30,6 +30,7 @@
   "rules": {
     "freeOfficeFrom": 34.9,
     "halfFrom": 34.9,
+    "phoneRepeatDiscount": 0.3,
     "bf": {
       "label": "Черен петък",
       "end": "2026-11-30T23:59:59+02:00",

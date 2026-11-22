@@ -203,7 +203,7 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
     conversation_config: { agent: { prompt: { tool_ids: ["t_find", "t_total", "t_submit"] } } },
     platform_settings: { data_collection: { intent: { type: "string", description: "x" } }, overrides: {} },
   };
-  const orderTool = (name) => ({
+  const orderTool = (name, extra = {}) => ({
     tool_config: {
       type: "webhook",
       name,
@@ -212,15 +212,17 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
         method: "POST",
         request_body_schema: {
           type: "object",
+          required: ["items", "delivery"],
           properties: {
             items: { type: "array", items: { type: "object", properties: { product_id: { type: "string", description: "Кодът", enum: ["gel-1", "gel-2p1"] }, quantity: { type: "integer", description: "Брой" } } } },
             delivery: { type: "string", enum: ["econt_office", "speedy_office", "speedy_address"], description: "старо" },
+            ...extra,
           },
         },
       },
     },
   });
-  const tools = { t_find: { tool_config: { type: "webhook", name: "find_order", api_schema: { request_body_schema: { properties: { phone: { type: "string" } } } } } }, t_total: orderTool("get_total"), t_submit: orderTool("submit_order") };
+  const tools = { t_find: { tool_config: { type: "webhook", name: "find_order", api_schema: { request_body_schema: { properties: { phone: { type: "string" } } } } } }, t_total: orderTool("get_total"), t_submit: orderTool("submit_order", { caller_phone: { type: "string", dynamic_variable: "system__caller_id" }, phone: { type: "string", description: "друг номер" } }) };
   const outbound = { platform_settings: { data_collection: { outcome: { type: "string", description: "y" }, summary: { type: "string", description: "s" } } } };
   const fetchImpl = async (url, init) => {
     const path = url.replace("https://api.elevenlabs.io", "");
@@ -258,6 +260,11 @@ test("setup: points the workspace at our webhook and opens the incoming agent fo
     assert.deepEqual(cfg.api_schema.request_body_schema.properties.delivery.enum, ["econt_office", "speedy_office", "speedy_address"]);
   }
   assert.equal(calls.filter((c) => c.method === "PATCH" && c.path.startsWith("/v1/convai/tools/")).length, 2);
+  // get_total gets the caller's number (for the repeat discount) the same way submit_order has it.
+  assert.deepEqual(tools.t_total.tool_config.api_schema.request_body_schema.properties.caller_phone, { type: "string", dynamic_variable: "system__caller_id" });
+  assert.equal(tools.t_total.tool_config.api_schema.request_body_schema.properties.phone.description, "друг номер");
+  assert.deepEqual(tools.t_total.tool_config.api_schema.request_body_schema.required, ["items"], "get_total also before the delivery is chosen");
+  assert.deepEqual(tools.t_submit.tool_config.api_schema.request_body_schema.required, ["items", "delivery"], "submit_order still needs it");
   assert.match(r.report.join("\n"), /приемат всички продукти от zdravets\.eu \(2\)/);
   // A second run changes nothing.
   const again = await setupCallback({ apiKey: "x", inboundAgentId: "in", outboundAgentId: "out", initUrl: "https://s/webhook/el-init/abc", fetchImpl });

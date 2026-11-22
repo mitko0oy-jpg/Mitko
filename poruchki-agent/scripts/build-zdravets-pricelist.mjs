@@ -87,6 +87,8 @@ export function buildPriceList(d, source = "") {
     rules: {
       freeOfficeFrom: C.freeOfficeShippingFrom || 0,
       halfFrom: C.halfFrom || 0,
+      // Phone only (Mitko, 22.11): a customer who has ordered before gets 30% off the products when ordering by phone.
+      phoneRepeatDiscount: 0.3,
       bf: C.bf?.active
         ? {
             label: C.bf.label || "Черен петък",

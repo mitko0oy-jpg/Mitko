@@ -24,23 +24,48 @@ export const PRODUCT_ID_HELP = "Кодът на продукта от „Кат�
 export const QUANTITY_HELP = "Общ брой от този продукт (например три гела = 3; уелнес лепенки – брой кутии).";
 const DELIVERY_HELP = "Начин на доставка: econt_office (офис на Еконт), speedy_office (офис на Спиди) или speedy_address (до адрес).";
 
-/** The incoming agent's tools: product_id without a fixed list of codes. */
+/**
+ * The incoming agent's order tools: product_id without a fixed list of codes, and the caller's
+ * number (and the optional other number) in get_total too, copied from submit_order, so the repeat
+ * discount is known before the total is said.
+ */
 async function freeProductCodes(api, toolIds) {
   let fixed = 0;
   const errors = [];
+  const tools = [];
   for (const id of toolIds) {
     try {
-      const t = await api("GET", `/v1/convai/tools/${id}`);
-      const cfg = t.tool_config;
-      const props = cfg?.api_schema?.request_body_schema?.properties;
+      tools.push({ id, cfg: (await api("GET", `/v1/convai/tools/${id}`)).tool_config });
+    } catch (err) {
+      errors.push(String(err.message || err).slice(0, 200));
+    }
+  }
+  const bodyProp = (name, ok) => tools.map((t) => t.cfg?.api_schema?.request_body_schema?.properties?.[name]).find((p) => p && ok(p));
+  const callerTemplate = bodyProp("caller_phone", (p) => p.dynamic_variable);
+  const phoneTemplate = bodyProp("phone", (p) => !p.dynamic_variable && p.description) || bodyProp("phone", (p) => !p.dynamic_variable);
+  for (const { id, cfg } of tools) {
+    try {
+      const schema = cfg?.api_schema?.request_body_schema;
+      const props = schema?.properties;
       const item = props?.items?.items?.properties;
       if (!item?.product_id) continue;
-      const done = !item.product_id.enum && item.product_id.description === PRODUCT_ID_HELP && item.quantity?.description === QUANTITY_HELP;
+      // get_total may be asked before the delivery is chosen (the total is then to an office).
+      const deliveryOptional = cfg.name !== "get_total" || !(schema.required || []).includes("delivery");
+      const done =
+        !item.product_id.enum &&
+        item.product_id.description === PRODUCT_ID_HELP &&
+        item.quantity?.description === QUANTITY_HELP &&
+        (props.caller_phone || !callerTemplate) &&
+        (props.phone || !phoneTemplate) &&
+        deliveryOptional;
       if (!done) {
         const { enum: _codes, ...pid } = item.product_id;
         item.product_id = { ...pid, description: PRODUCT_ID_HELP };
         if (item.quantity) item.quantity = { ...item.quantity, description: QUANTITY_HELP };
         if (props.delivery) props.delivery = { ...props.delivery, description: DELIVERY_HELP };
+        if (!props.caller_phone && callerTemplate) props.caller_phone = { ...callerTemplate };
+        if (!props.phone && phoneTemplate) props.phone = { ...phoneTemplate };
+        if (!deliveryOptional) schema.required = schema.required.filter((k) => k !== "delivery");
         await api("PATCH", `/v1/convai/tools/${id}`, { tool_config: cfg });
       }
       fixed++;

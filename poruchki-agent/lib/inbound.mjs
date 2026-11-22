@@ -20,8 +20,8 @@ export function renderPriceList(pl, now = new Date()) {
  * @param {any} pl price list
  * @param {{items: {product_id: string, quantity: number}[], delivery: string}} order
  */
-export function quote(pl, order, now = new Date()) {
-  if (pl.kind === "zdravets") return quoteZ(pl, order, now);
+export function quote(pl, order, now = new Date(), opts = {}) {
+  if (pl.kind === "zdravets") return quoteZ(pl, order, now, opts);
   const errors = [];
   const lines = [];
   for (const it of order.items || []) {
@@ -76,13 +76,48 @@ export async function findOrders(cb, rawPhone, mw = null) {
   return { found: orders.length, orders: out };
 }
 
+const NOT_AN_ORDER = new Set(["canceled", "returned", "duplicate"]);
+const repeatSeen = new Map(); // phone → { repeat, at } – one lookup per call, not one per get_total
+
+/**
+ * Has this number ordered from us before (a phone order here, or any order in OrderDesk in the last 2 years
+ * that was not canceled, refused or a duplicate)? Then a phone order gets the repeat discount.
+ * @param {{store: any, platform?: any}} deps
+ */
+export async function repeatCustomer({ store, platform }, rawPhones, now = new Date()) {
+  const phones = [...new Set(rawPhones.map((p) => normalizePhoneBG(p)).filter(Boolean))];
+  if (!phones.length) return false;
+  const key = phones.join(",");
+  const hit = repeatSeen.get(key);
+  if (hit && now - hit.at < 10 * 60_000) return hit.repeat;
+  let repeat = false;
+  for (const { key: k } of (await store.list({ prefix: "phone-orders/" })).blobs.slice(-300)) {
+    const r = await store.get(k, { type: "json" }).catch(() => null);
+    if (r && phones.includes(normalizePhoneBG(r.phone))) {
+      repeat = true;
+      break;
+    }
+  }
+  if (!repeat && platform?.enabled) {
+    for (const p of phones) {
+      const orders = await platform.searchByPhone(p, 730).catch(() => []);
+      if (orders.some((o) => !NOT_AN_ORDER.has(o.status))) {
+        repeat = true;
+        break;
+      }
+    }
+  }
+  repeatSeen.set(key, { repeat, at: now });
+  return repeat;
+}
+
 /**
  * Save an order taken by phone and tell Mitko. Returns what the agent should say.
  * @param {{store: any, notify: (t: string) => Promise<any>, priceList: any}} deps
  */
-export async function submitOrder(deps, body, now = new Date()) {
+export async function submitOrder(deps, body, now = new Date(), { repeat = false } = {}) {
   const { store, notify, priceList } = deps;
-  const q = quote(priceList, body, now);
+  const q = quote(priceList, body, now, { repeat, suggest: false });
   if (!q.delivery && priceList.kind === "zdravets") q.errors.push("не е избран начин на доставка (офис на Еконт, офис на Спиди или адрес)");
   const name = String(body.customer_name || "").trim();
   const phone = normalizePhoneBG(body.phone) || normalizePhoneBG(body.caller_phone);
@@ -105,6 +140,7 @@ export async function submitOrder(deps, body, now = new Date()) {
     ...(q.gift ? { gift: q.gift.text } : {}),
     delivery: { type: body.delivery, label: q.delivery.label, price: q.delivery.price, city, place },
     total: q.total,
+    ...(q.repeatOff ? { repeatDiscount: q.repeatOff } : {}),
     note: String(body.note || "").slice(0, 500),
     conversationId: body.conversation_id || "",
   };
@@ -117,6 +153,7 @@ export async function submitOrder(deps, body, now = new Date()) {
     ...rec.items.map((i) => `🛒 ${i.qty} × ${esc(i.cb || i.name)} – ${esc(moneyBG(i.sum))}${i.gift ? ` (+ подарък ${esc(i.gift)})` : ""}`),
     `🚚 ${esc(q.delivery.label)}: ${esc(city)}, ${esc(place)} – ${esc(moneyBG(q.delivery.price))}`,
     q.gift ? `🎁 ${esc(q.gift.cb)}` : "",
+    q.repeatOff ? `🔁 Повторна поръчка по телефона: −${Math.round(q.repeatPct * 100)}% от продуктите (−${esc(moneyBG(q.repeatOff))})` : "",
     `💶 Общо с доставката: <b>${esc(q.totalText)}</b>, наложен платеж`,
     rec.note ? `📝 ${esc(rec.note)}` : "",
     "",

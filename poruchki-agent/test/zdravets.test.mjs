@@ -65,8 +65,10 @@ test("zdravets: Black Friday gift from 3 pieces until 30.11 – then it stops by
 
 test("zdravets: one extra offer, with the exact new total", () => {
   assert.match(q([["gel"]]).suggestion, /3 броя гел за стави с пчелна отрова вместо 1.*22 евро и 90 цента и подарък 12 лепенки.*27 евро и 80 цента/);
-  assert.match(q([["gel", 3]]).suggestion, /Още 12 евро до 34 евро и 90 цента/);
-  assert.match(q([["gel", 5]]).suggestion, /лепенки с пчелна отрова, осем броя, за 4 евро и 90 цента/);
+  // 3 gels: one more product makes the delivery free – which one and the new total (not the gift's patches again).
+  assert.match(q([["gel", 3]]).suggestion, /Ако добавите и спрей за стави с пчелна отрова, поръчката минава 34 евро и 90 цента: доставката до офис става безплатна и общата сума ще е 40 евро и 80 цента – само 13 евро повече/);
+  assert.equal(q([["gel", 5]]).suggestion, "", "the 4,90 € checkout add-on is not offered on the phone");
+  assert.match(q([["berberin"]]).suggestion, /още една кутия – от същите или друг вид – двете излизат 22 евро и 90 цента\. Общата сума ще е 27 евро и 80 цента/);
   const withAddon = q([["gel", 5], ["addon_bvpatch"]]);
   assert.equal(withAddon.subtotal, 39.8);
   assert.equal(q([["addon_bvpatch"]]).errors.length, 1, "an add-on only with another product");
@@ -129,3 +131,47 @@ test("zdravets: a phone order is saved and sent to Telegram with the shop's prod
   assert.equal(saved.length, 1);
   assert.equal(quote(pl, { items: [{ product_id: "gel", quantity: 1 }], delivery: "econt_office" }, BF).total, 20.8, "quote() picks the zdravets rules");
 });
+
+test("zdravets: for this very order – the total if one more product is added", () => {
+  const a = quoteAnswer(q([["gel", 3]]));
+  const vein = a.if_you_add.find((x) => x.includes("[vein]"));
+  assert.equal(vein, "Крем с конски кестен [vein]: обща сума 35 евро и 80 цента (с 8 евро повече) – доставката става безплатна");
+  assert.match(a.if_you_add.find((x) => x.includes("[bvpatch]")), /обща сума 37 евро и 70 цента \(с 9 евро и 90 цента повече\)$/, "the patches at 9,90 €");
+  // Above 34,90 € the next product is half price.
+  const above = quoteAnswer(q([["gel", 5]]));
+  assert.match(above.if_you_add.find((x) => x.includes("[bvpatch]")), /39 евро и 85 цента \(с 4 евро и 95 цента повече\) – той е на половин цена/);
+  assert.match(above.if_you_add.find((x) => x.includes("[wellness]") || x.includes("уелнес")), /уелнес лепенки по избор/);
+});
+
+test("zdravets: a repeat order by phone – 30% off the products, after the offers; the thresholds use the price before it", () => {
+  const r = q([["gel", 3]], "econt_office", BF);
+  const rr = quoteZ(pl, { items: [{ product_id: "gel", quantity: 3 }], delivery: "econt_office" }, BF, { repeat: true });
+  assert.equal(rr.repeatOff, 6.87);
+  assert.equal(rr.total, 20.93, "16,03 € + 4,90 € delivery");
+  assert.equal(r.total, 27.8);
+  const five = quoteZ(pl, { items: [{ product_id: "gel", quantity: 5 }], delivery: "econt_office" }, BF, { repeat: true });
+  assert.equal(five.freeDelivery, true, "34,90 € before the discount – the delivery stays free");
+  assert.equal(five.total, 24.43);
+  assert.match(quoteAnswer(rr).repeat_discount, /30% отстъпка от продуктите \(6 евро и 87 цента\)/);
+  assert.equal(quoteAnswer(r).repeat_discount, undefined);
+});
+
+test("zdravets: who is a repeat customer – an earlier phone order or an order in OrderDesk that was not canceled", async () => {
+  const { repeatCustomer } = await import("../lib/inbound.mjs");
+  const store = memoryStore();
+  const orders = { "+359888111111": [{ status: "delivered" }], "+359888222222": [{ status: "canceled" }, { status: "returned" }] };
+  const platform = { enabled: true, searchByPhone: async (p, days) => (assert.equal(days, 730), orders[p] || []) };
+  assert.equal(await repeatCustomer({ store, platform }, ["0888111111"]), true);
+  assert.equal(await repeatCustomer({ store, platform }, ["+359888222222"]), false, "canceled or refused do not count");
+  assert.equal(await repeatCustomer({ store, platform }, ["", undefined]), false);
+  await store.setJSON("phone-orders/2026-11-20/Т1120-AB12", { phone: "+359888333333" });
+  assert.equal(await repeatCustomer({ store, platform: { enabled: false } }, ["0888333333"]), true, "an earlier phone order");
+  // Saved with the discount and shown in Telegram.
+  const msgs = [];
+  const ok = await submitOrder({ store, notify: async (t) => msgs.push(t), priceList: pl }, {
+    customer_name: "Иван Петров", caller_phone: "+359888333333", items: [{ product_id: "gel", quantity: 3 }], delivery: "econt_office", city: "Пловдив", office_or_address: "офис Тракия",
+  }, BF, { repeat: true });
+  assert.equal(ok.total, "20 евро и 93 цента");
+  assert.match(msgs[0], /🔁 Повторна поръчка по телефона: −30% от продуктите \(−6 евро и 87 цента\)/);
+});
+

@@ -4,7 +4,8 @@
 //   - from 34,90 € the delivery to an office is free and every further single product is half price
 //     (packs, sets, add-ons and wellness patches count towards the 34,90 € but are never halved);
 //   - wellness patches: 1 box 14,90 €, any 2 boxes 22,90 €, any 3 boxes 29,90 €;
-//   - Black Friday (until the end date): a gift from 3 pieces on.
+//   - Black Friday (until the end date): a gift from 3 pieces on;
+//   - phone only: a customer who has ordered before gets 30% off the products (rules.phoneRepeatDiscount).
 // The AI never does arithmetic: it says what quoteZ returns.
 import { moneyBG } from "./format.mjs";
 
@@ -31,7 +32,7 @@ export function sayBG(text) {
 
 // How the English names of the wellness patches are said.
 const SPOKEN = { energy: "Енерджи", stress: "Стрес Даун", nad: "Ен Ей Ди плюс", focus: "Фокус", love: "Лав" };
-const sayName = (p) => sayBG(p.say);
+const sayName = (p) => sayBG(p.say).replace(/\s*Би Хърб/, "");
 
 const bfOn = (pl, now) => Boolean(pl.rules?.bf) && now.getTime() <= new Date(pl.rules.bf.end).getTime();
 const bfEndText = (pl) =>
@@ -102,6 +103,7 @@ function keepFull(units, need) {
   return keep;
 }
 
+const THE = { 2: "двете", 3: "трите", 4: "четирите", 5: "петте" };
 const packName = (p, n) => (n === 1 ? sayName(p) : `${sayName(p)} – ${n} броя`);
 
 /**
@@ -109,7 +111,7 @@ const packName = (p, n) => (n === 1 ? sayName(p) : `${sayName(p)} – ${n} бр�
  * @param {any} pl agent/pricelist-zdravets.json
  * @param {{items: {product_id: string, quantity: number}[], delivery?: string}} order
  */
-export function quoteZ(pl, order, now = new Date(), { suggest = true } = {}) {
+export function quoteZ(pl, order, now = new Date(), { suggest = true, repeat = false } = {}) {
   const errors = [];
   const units = new Map(); // product id → pieces
   const setQty = new Map();
@@ -221,7 +223,10 @@ export function quoteZ(pl, order, now = new Date(), { suggest = true } = {}) {
   const freeFrom = pl.rules.freeOfficeFrom || 0;
   const free = Boolean(d?.office) && freeFrom > 0 && subtotal >= freeFrom - EPS;
   const delivery = d ? (free ? { ...d, price: 0, label: `${d.label} (безплатна)` } : d) : null;
-  const total = round(subtotal + (delivery?.price || 0));
+  // A repeat order by phone: −30% of the products, after the other offers (the thresholds count the price before it).
+  const repeatPct = repeat ? pl.rules.phoneRepeatDiscount || 0 : 0;
+  const repeatOff = round(subtotal * repeatPct);
+  const total = round(subtotal - repeatOff + (delivery?.price || 0));
 
   // Black Friday gift.
   const pieces = [...units.entries()].reduce((s, [, n]) => s + n, 0) + [...setQty.entries()].reduce((s, [id, n]) => s + n * pl.sets.find((x) => x.id === id).units, 0) + addonQty.size;
@@ -246,17 +251,63 @@ export function quoteZ(pl, order, now = new Date(), { suggest = true } = {}) {
     toThreshold: halfFrom > 0 && !halfOn ? round(halfFrom - subtotal) : 0,
     gift,
     pieces,
+    repeatPct,
+    repeatOff,
   };
-  if (suggest && !errors.length) q.suggestion = suggestionFor(pl, order, q, units, now);
+  if (suggest && !errors.length) {
+    q.ifAdd = ifAddFor(pl, order, q, units, now, repeat);
+    q.suggestion = suggestionFor(pl, order, q, units, now, repeat);
+  }
   return q;
 }
 
-/** One extra offer the agent may make, once, with the exact new total. */
-function suggestionFor(pl, order, q, units, now) {
+const halfCount = (q, id) => q.lines.filter((l) => l.id === id && /половин цена/.test(l.name)).reduce((s, l) => s + l.qty, 0);
+
+/** For every product: the new total if the customer adds one more – so the agent knows the offer for this very order. */
+function ifAddFor(pl, order, q, units, now, repeat) {
   const delivery = order.delivery || "econt_office";
-  const alt = (items) => quoteZ(pl, { items, delivery }, now, { suggest: false });
+  const base = order.items || [];
+  const inOrderWellness = [...units.keys()].find((id) => pl.wellness.ids.includes(id));
+  const candidates = [
+    ...pl.products.filter((p) => !pl.wellness.ids.includes(p.id)).map((p) => ({ id: p.id, name: sayName(p) })),
+    ...pl.sets.map((s) => ({ id: s.id, name: sayBG(s.name) })),
+    { id: inOrderWellness || pl.wellness.ids[0], name: "още една кутия уелнес лепенки по избор", wellness: true },
+  ].filter((c) => c.id);
+  const out = [];
+  for (const c of candidates) {
+    const r = quoteZ(pl, { items: [...base, { product_id: c.id, quantity: 1 }], delivery }, now, { suggest: false, repeat });
+    if (r.errors.length) continue;
+    out.push({
+      id: c.wellness ? "wellness" : c.id,
+      code: c.id,
+      name: c.name,
+      total: r.total,
+      added: round(r.total - q.total),
+      freeNow: r.freeDelivery && !q.freeDelivery,
+      half: halfCount(r, c.id) > halfCount(q, c.id),
+      gift: r.gift && !q.gift ? r.gift.text : "",
+    });
+  }
+  return out;
+}
+
+/** One extra offer the agent may make, once, with the exact new total. */
+function suggestionFor(pl, order, q, units, now, repeat) {
+  const delivery = order.delivery || "econt_office";
+  const alt = (items) => quoteZ(pl, { items, delivery }, now, { suggest: false, repeat });
   const base = order.items || [];
   const withTotal = (r) => r.total;
+  // 0. Wellness only: one more box of any kind – 2 for 22,90 €, 3 for 29,90 € (+ the gift in Black Friday).
+  const wellnessIds = [...units.keys()].filter((id) => pl.wellness.ids.includes(id));
+  const boxes = wellnessIds.reduce((s, id) => s + units.get(id), 0);
+  if (wellnessIds.length && wellnessIds.length === units.size && (boxes === 1 || boxes === 2)) {
+    const combo = pl.wellness.combos.find((c) => c.n === boxes + 1);
+    const r = alt([...base, { product_id: wellnessIds[0], quantity: 1 }]);
+    if (combo && !r.errors.length) {
+      const giftNow = r.gift && !q.gift ? ` и ${r.gift.text} подарък` : "";
+      return `Ако вземете още една кутия – от същите или друг вид – ${THE[boxes + 1]} излизат ${moneyBG(combo.price)}${giftNow}. Общата сума ще е ${moneyBG(r.total)}.`;
+    }
+  }
   // 1. One or two pieces of a product with a bigger "most chosen" pack (e.g. 3 gels).
   for (const [id, n] of units) {
     const p = pl.products.find((x) => x.id === id);
@@ -267,7 +318,7 @@ function suggestionFor(pl, order, q, units, now) {
       const r = alt([...other, { product_id: id, quantity: feat.n }]);
       if (r.errors.length) continue;
       const giftNow = r.gift && !q.gift ? ` и подарък ${r.gift.text}` : "";
-      return `Ако вземете ${feat.n} броя ${sayName(p).toLowerCase()} вместо ${n}, ${feat.n}-те излизат ${moneyBG(feat.price)}${giftNow}. Общата сума ще е ${moneyBG(withTotal(r))}.`;
+      return `Ако вземете ${feat.n} броя ${sayName(p).toLowerCase()} вместо ${n}, ${THE[feat.n] || `${feat.n}-те`} излизат ${moneyBG(feat.price)}${giftNow}. Общата сума ще е ${moneyBG(withTotal(r))}.`;
     }
     // 2. Four pieces when five cost less.
     const bigger = p.packs.find((k) => k.n === n + 1 && k.n >= 5);
@@ -277,16 +328,18 @@ function suggestionFor(pl, order, q, units, now) {
       if (!r.errors.length && r.total <= q.total + 0.001) return `${n + 1} броя ${sayName(p).toLowerCase()} излизат по-евтино от ${n}: общата сума ще е ${moneyBG(r.total)}.`;
     }
   }
-  // 3. Close to the threshold: free delivery to an office and half price for what comes after.
+  // 3. Close to the threshold: one more product makes the delivery to an office free – say which and the new total.
   if (q.toThreshold > 0 && q.toThreshold <= 12) {
+    const cats = new Set([...units.keys()].map((id) => pl.products.find((p) => p.id === id)?.cat));
+    const giftProduct = q.gift && !q.gift.wellness ? "plastiri" : "";
+    const options = (q.ifAdd || []).filter((o) => o.freeNow && o.id !== "wellness" && !units.has(o.id) && o.id !== giftProduct);
+    const pick =
+      options.filter((o) => cats.has(pl.products.find((p) => p.id === o.id)?.cat)).sort((a, b) => a.added - b.added)[0] ||
+      options.sort((a, b) => a.added - b.added)[0];
+    if (pick) {
+      return `Ако добавите и ${pick.name.toLowerCase()}, поръчката минава ${moneyBG(pl.rules.halfFrom)}: доставката до офис става безплатна и общата сума ще е ${moneyBG(pick.total)} – само ${moneyBG(pick.added)} повече. А всеки следващ продукт става на половин цена.`;
+    }
     return `Още ${moneyBG(q.toThreshold)} до ${moneyBG(pl.rules.halfFrom)} и доставката до офис става безплатна, а всеки следващ продукт е на половин цена.`;
-  }
-  // 4. The add-on of the site's checkout: bee-venom patches.
-  const addon = pl.addons.find((a) => a.of === "bvpatch");
-  if (addon && !units.has("bvpatch") && !base.some((it) => resolve(pl, it.product_id)?.[0] === addon.id)) {
-    const r = alt([...base, { product_id: addon.id, quantity: 1 }]);
-    const p = pl.products.find((x) => x.id === addon.of);
-    if (!r.errors.length) return `Към поръчката може да добавите кутия лепенки с пчелна отрова, осем броя, за ${moneyBG(addon.price)} вместо ${moneyBG(p?.price || 0)}. Общата сума ще е ${moneyBG(r.total)}.`;
   }
   return "";
 }
@@ -300,7 +353,17 @@ export function quoteAnswer(q) {
     items: q.lines.map((l) => `${l.qty > 1 ? `${l.qty} × ` : ""}${l.name} – ${moneyBG(l.sum)}`),
     ...(q.gift ? { gift: `Подарък: ${q.gift.text}${q.gift.wellness ? " – попитай кой вид иска и го запиши в бележката" : ""}` } : {}),
     ...(q.halfOn ? { half_price: `Поръчката е над прага: всеки следващ отделен продукт е на половин цена${q.saved ? ` (спестява ${moneyBG(q.saved)})` : ""}.` } : {}),
+    ...(q.repeatOff ? { repeat_discount: `Клиентът вече е поръчвал при нас: ${Math.round(q.repeatPct * 100)}% отстъпка от продуктите (${moneyBG(q.repeatOff)}) – вече е в общата сума.` } : {}),
     ...(q.suggestion ? { suggestion: q.suggestion } : {}),
+    ...(q.ifAdd?.length
+      ? {
+          if_you_add: q.ifAdd.map((o) => {
+            const diff = o.added >= 0 ? `с ${moneyBG(o.added)} повече` : `с ${moneyBG(-o.added)} по-малко`;
+            const flags = [o.half ? "той е на половин цена" : "", o.freeNow ? "доставката става безплатна" : "", o.gift ? `подарък ${o.gift}` : ""].filter(Boolean);
+            return `${o.name} [${o.code}]: обща сума ${moneyBG(o.total)} (${diff})${flags.length ? ` – ${flags.join(", ")}` : ""}`;
+          }),
+        }
+      : {}),
   };
 }
 
@@ -358,12 +421,6 @@ export function renderZdravets(pl, now = new Date()) {
       out.push("", `### ${sayBG(s.name)} [код ${s.id}]`, `${sayBG(s.line)} – общо ${money(s.price)}.`);
     }
   }
-  if (pl.addons.length) {
-    out.push("", "## Добавки към поръчка (само заедно с друг продукт, по една бройка)");
-    for (const a of pl.addons) {
-      const p = pl.products.find((x) => x.id === a.of);
-      out.push(`- ${sayBG(a.name)} [код ${a.id}] – ${money(a.price)}${p ? ` вместо ${money(p.price)}` : ""}.`);
-    }
-  }
+  // The site's checkout add-ons (4,90 €) are not offered on the phone: Стела offers the patches at 9,90 €.
   return out.filter((l) => l !== "").join("\n").replace(/\n### /g, "\n\n### ").replace(/\n## /g, "\n\n## ");
 }

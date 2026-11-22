@@ -1,12 +1,12 @@
 // Tools the inbound agent calls during a phone call:
 //   POST /tools/<TOOLS_SECRET>/find-order    { phone?, caller_phone }
-//   POST /tools/<TOOLS_SECRET>/quote-order   { items[], delivery }
+//   POST /tools/<TOOLS_SECRET>/quote-order   { items[], delivery, caller_phone? }
 //   POST /tools/<TOOLS_SECRET>/submit-order  { customer_name, phone?, caller_phone, items[], delivery, city, office_or_address, note? }
 import type { Config, Context } from "@netlify/functions";
 // The incoming line sells the zdravets.eu catalogue (scripts/build-zdravets-pricelist.mjs).
 import priceList from "../../agent/pricelist-zdravets.json" with { type: "json" };
 import { realDeps, env } from "../../lib/config.mjs";
-import { findOrders, submitOrder, quote } from "../../lib/inbound.mjs";
+import { findOrders, submitOrder, quote, repeatCustomer } from "../../lib/inbound.mjs";
 import { quoteAnswer } from "../../lib/zdravets.mjs";
 
 export default async (req: Request, context: Context) => {
@@ -18,14 +18,20 @@ export default async (req: Request, context: Context) => {
     if (context.params.name === "find-order") {
       return Response.json(await findOrders(deps.cb, body.phone || body.caller_phone, deps.mw));
     }
+    // A customer who has ordered before gets the repeat discount on a phone order.
+    const repeat = () => repeatCustomer(deps, [body.caller_phone, body.phone]).catch(() => false);
     if (context.params.name === "quote-order") {
-      const q = quote(priceList, body);
+      // Before the delivery is chosen (to say a price or an offer early), the total is to an office.
+      const early = !body.delivery;
+      const q = quote(priceList, early ? { ...body, delivery: "econt_office" } : body, new Date(), { repeat: await repeat() });
       if (q.errors.length) return Response.json({ ok: false, error: q.errors.join("; ") });
-      if (!q.delivery) return Response.json({ ok: false, error: "не е избран начин на доставка (офис на Еконт, офис на Спиди или адрес)" });
-      return Response.json(quoteAnswer(q));
+      return Response.json({
+        ...quoteAnswer(q),
+        ...(early ? { delivery_note: "Доставката още не е избрана – сумата е с доставка до офис. До адрес е 5,90 €." } : {}),
+      });
     }
     if (context.params.name === "submit-order") {
-      return Response.json(await submitOrder({ store: deps.store, notify: deps.notify, priceList }, body));
+      return Response.json(await submitOrder({ store: deps.store, notify: deps.notify, priceList }, body, new Date(), { repeat: await repeat() }));
     }
   } catch (err) {
     console.error(context.params.name, err);
