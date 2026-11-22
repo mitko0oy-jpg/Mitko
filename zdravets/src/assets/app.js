@@ -139,6 +139,8 @@ const unitsOf = store => STORE_UNITS[store] || 1;
 const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 // уелнес пластирите имат свой подарък (кутия към комплекта от 3) – не носят пластирите за стави
 const WELL_STORES = PRODUCTS.filter(p => p.wellness).map(p => p.store).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean), IN_COMBO_STORES);
+// продуктите със свой подарък (GIFT_HALF – продукт с −50%) също не носят пластирите за стави
+Object.keys(typeof GIFT_HALF === 'object' ? GIFT_HALF : {}).forEach(id => { const q = P(id); if (!q) return; WELL_STORES.push(q.store); if (HALF[id]) WELL_STORES.push(HALF[id]); (q.packs && PACKS[q.packs] || []).forEach(k => WELL_STORES.push(k.store)); });
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !WELL_STORES.includes(i.productId));
   return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;

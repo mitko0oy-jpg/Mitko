@@ -583,3 +583,19 @@ body{padding-bottom:0}
 .sp-gc__pair{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:8px}
 .sp-gc__pair img{width:44%;aspect-ratio:1;object-fit:cover;border-radius:16px}
 .sp-gc__pair b{font-size:2em;line-height:1;color:#B8860B}
+
+/* подарък „още един продукт с −50%“ (GIFT_HALF) */
+.sp-opt__gift--half{color:#1F6B2E}
+.sp-gift.sp-gift--half{display:block;padding:14px 14px 12px}
+.sp-ghalf__h{margin:0 0 10px;font-size:1rem;line-height:1.35}
+.sp-ghalf{display:grid;gap:8px}
+.sp-ghalf__o{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid var(--line,var(--sp-line));border-radius:14px;padding:8px 40px 8px 8px;cursor:pointer;font:inherit;color:inherit}
+.sp-ghalf__o img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none}
+.sp-ghalf__t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sp-ghalf__t>b{font-size:.98rem;line-height:1.25}
+.sp-ghalf__p{color:#C0392B;font-size:1.05rem}
+.sp-ghalf__t s{color:var(--muted,var(--sp-muted));font-size:.9rem}
+.sp-ghalf__o i{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;border:2px solid var(--line,var(--sp-line));display:grid;place-items:center;font-style:normal;font-size:.8rem;color:transparent}
+.sp-ghalf__o.on{border-color:#2E7D32;background:#F1F8EE}
+.sp-ghalf__o.on i{background:#2E7D32;border-color:#2E7D32;color:#fff}
+.sp-ghalf__note{margin:8px 0 0;font-size:.85rem;color:var(--muted,var(--sp-muted))}

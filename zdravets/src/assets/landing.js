@@ -128,6 +128,8 @@ function wellOffers(p) {
 function landingOffers(p, d) {
   if (p.wellness && !p.packs && comboReady()) return wellOffers(p);
   const gift = bfOn(); // подаръкът на Черния петък върви с поръчка от GIFT_FROM (3) и повече броя (syncGift)
+  // продуктите с подарък „още един продукт с −50%“ (GIFT_HALF): пакетът с подаръка се избира горе, където е изборът
+  const ghalf = typeof GIFT_HALF === 'object' && GIFT_HALF[p.id] && halfOn() ? GIFT_HALF[p.id].map(P).filter(x => x && HALF[x.id]) : null;
   const giftPic = GIFT_IMG;
   const unit = p.price;
   const list = p.packs ? PACKS[p.packs] : [{ key: p.id, label: '1 брой', sub: p.size, store: p.store, price: p.price }];
@@ -137,7 +139,7 @@ function landingOffers(p, d) {
     const qty = packQty(p, k);
     const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : unit * qty;
     // „поотделно“ = продуктите + пластирите (ако носи подаръка) + доставката (ако е безплатна)
-    const giftV = gift && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0, shipV = freeShipFor(k.price) ? SHIP_FROM : 0;
+    const giftV = gift && !ghalf && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0, shipV = freeShipFor(k.price) ? SHIP_FROM : 0;
     const regular = items + giftV + shipV;
     const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
     const hot = !!k.featured && list.length > 1;
@@ -151,7 +153,8 @@ function landingOffers(p, d) {
     const one = gift && k.key === 'bf3' ? znM('pack-gel-3-solo.webp') : PACK_IMG[k.key] ? znM(PACK_IMG[k.key]) : '';
     const duo = null;
     const lis = [];
-    if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b>${giftWas()} – подарък до 30 ноември</span></li>`);
+    if (ghalf && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift"><span>🎁 <b>+ още 1 продукт по избор с −50%</b> – ${ghalf.map(x => esc(x.shortName.toLowerCase())).join(', ')}</span></li>`);
+    else if (gift && unitsOf(k.store) >= GIFT_FROM) lis.push(`<li class="bv-gift bv-gift--pic"><img src="${giftPic}" alt="" width="56" height="56" loading="lazy"><span><b>+ ${esc(GIFT_TEXT.replace(' подарък', ''))}</b>${giftWas()} – подарък до 30 ноември</span></li>`);
     if (bundle && bundle.note) lis.push(`<li>${esc(bundle.note)}</li>`);
     else if (qty === 1) lis.push(`<li>${list.length > 1 ? 'За да пробваш' : esc(p.bullets[0])}</li>`);
     if (qty > 1 || bundle) lis.push(`<li>${esc(bundle ? bundle.line : `${qty} броя`)}</li>`);
@@ -171,7 +174,7 @@ function landingOffers(p, d) {
         ${bfOn() && (k.prev || k.bfTag) ? `<div class="bv-prev">${BF_BLINK}${k.prev ? xPrice(k.prev) : ''}</div>` : ''}
         <div class="bv-price"><b${off ? ` data-from="${regular.toFixed(2)}"` : ''}>${fmt(k.price)}</b>${off ? `<s>${fmt(regular)}</s>` : ''}</div>
         <p class="bv-unit">${per}</p>
-        <button class="bv-btn${hot ? ' bv-pulse' : ''}" type="button" data-bv-buy="${k.store}" data-bv-key="${esc(k.key)}">Избирам този пакет</button>
+        <button class="bv-btn${hot ? ' bv-pulse' : ''}" type="button" ${ghalf && unitsOf(k.store) >= GIFT_FROM ? `data-bv-pick="${esc(k.key)}"` : `data-bv-buy="${k.store}" data-bv-key="${esc(k.key)}"`}>Избирам този пакет</button>
         <p class="bv-pack__note"><span>💶 Плащаш при получаване</span><span>🚚 Пристига: <b class="bv-eta-short">до 2 работни дни</b></span></p>
       </div></article>`;
   }).join('');
@@ -405,7 +408,7 @@ function renderLanding(p) {
   const eta = `
   <section class="bv-eta"><div class="bv-wrap"><div class="bv-eta__box">
     <div class="bv-row"><span class="bv-ico">📦</span><div><strong>Поръчай днес – очаквана доставка: <span class="bv-eta-long">до 2 работни дни</span></strong>
-      <span class="bv-eta__gift">${p.wellness && wellN && PATCH_COMBOS.some(comboGift) ? '🎁 До 30 ноември – при 3 кутии получаваш 4-та подарък, по избор.' : p.wellness ? '' : bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} при ${GIFT_FROM} и повече броя.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка над ${fmt(FREE_FROM)}.` : ''}</span></div></div>
+      <span class="bv-eta__gift">${p.wellness && wellN && PATCH_COMBOS.some(comboGift) ? '🎁 До 30 ноември – при 3 кутии получаваш 4-та подарък, по избор.' : p.wellness ? '' : typeof GIFT_HALF === 'object' && GIFT_HALF[p.id] && halfOn() ? `🎁 При ${GIFT_FROM} броя си избираш още един продукт с −50%.` : bfOn() ? `🎁 До 30 ноември – ${esc(GIFT_TEXT)} при ${GIFT_FROM} и повече броя.` : FREE_FROM ? `🚚 Безплатна доставка до офис при поръчка над ${fmt(FREE_FROM)}.` : ''}</span></div></div>
     <a class="bv-btn" href="${toOffers}">Избери пакет</a>
   </div></div></section>`;
 
@@ -451,7 +454,7 @@ function renderLanding(p) {
     <div class="bv-wrap">
       <div class="bv-center">
         <span class="bv-eyebrow">Какво получаваш</span>
-        <h2>${bensD ? hTxt(bensD.h2) : `Защо да избереш <em class="bv-accent">${esc(p.wellness ? p.shortName.replace(/^Пластири/, 'пластирите') : p.shortName)}</em>`}</h2>
+        <h2>${bensD ? hTxt(bensD.h2) : `Защо да избереш <em class="bv-accent">${esc(p.wellness ? p.shortName.replace(/^Лепенки/, 'лепенките') : p.shortName)}</em>`}</h2>
       </div>
       <div class="bv-bens${bens.some(b => b[3]) ? '' : ' bv-bens--plain'}${wellBens ? ' bv-bens--well' : ''}">${bens.map(([ic, h, t, m, flip]) => `
         <article class="bv-ben${m ? '' : ' bv-ben--plain'}">
@@ -779,7 +782,8 @@ function packCalc(p, k) {
   const qty = packQty(p, k);
   const items = bundle ? bundle.items.reduce((s, [id, n]) => s + P(id).price * n, 0) : p.price * qty;
   // както в офертите: + пластирите, ако носи подаръка, + доставката, ако е безплатна
-  const regular = items + (bfOn() && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0) + (freeShipFor(k.price) ? SHIP_FROM : 0);
+  // (продуктите с подарък „още един с −50%“ – GIFT_HALF – не носят пластирите, затова без тях)
+  const regular = items + (bfOn() && !(typeof GIFT_HALF === 'object' && GIFT_HALF[p.id]) && unitsOf(k.store) >= GIFT_FROM ? GIFT_VALUE : 0) + (freeShipFor(k.price) ? SHIP_FROM : 0);
   const off = regular > k.price + .01 ? Math.round((1 - k.price / regular) * 100) : 0;
   return { bundle, qty, regular, off };
 }
@@ -846,6 +850,8 @@ function wellCombos(p) {
   if (best) best.hot = true;
   return list;
 }
+// кратко име за менютата с кутиите (събира се на телефон)
+const SLOT_NAME = { apetit: 'За апетит', berberin: 'Берберин', energy: 'За енергия', stress: 'За стрес', nad: 'NAD+', focus: 'За фокус', mood: 'За настроение', love: 'За желание' };
 const wellGiftOpt = opts => opts.find(o => o.kind === 'combo' && o.gift);
 function productTop(p, d, ctx) {
   const { theme, packs, reviewsOn } = ctx;
@@ -870,9 +876,11 @@ function productTop(p, d, ctx) {
   // комплектът от 2 вида остава отбелязан като най-изгоден
   const sel = (p.wellness ? opts[0] : (opts.find(o => o.hot) || opts[0])).key;
   const wellAll = p.wellness ? PRODUCTS.filter(x => x.wellness) : [];
+  // подарък „още един продукт с −50%“ вместо пластирите за стави (GIFT_HALF в data.js)
+  const ghalf = !p.wellness && typeof GIFT_HALF === 'object' && GIFT_HALF[p.id] && halfOn() ? GIFT_HALF[p.id].map(P).filter(x => x && HALF[x.id]) : null;
   const maxSlots = Math.max(0, ...opts.filter(o => o.kind === 'combo').map(o => o.boxes - 1));
   // кратко име, за да се събира на телефон: „Берберин“, „Апетит“, „Energy“
-  const slotName = x => capFirst(x.shortName.replace(/^Пластири (с )?/, ''));
+  const slotName = x => SLOT_NAME[x.id] || x.shortName;
   const slotOpts = wellAll.map(x => `<option value="${x.id}"${x.id === p.id ? ' selected' : ''}>${esc(slotName(x))}</option>`).join('');
   return `
   <section class="sp-top" id="sp-top"><div class="bv-wrap sp-top__grid">
@@ -896,7 +904,7 @@ function productTop(p, d, ctx) {
         <label class="sp-opt${o.key === sel ? ' on' : ''}${o.hot ? ' is-hot' : ''}">
           <input type="radio" name="sp-opt" value="${o.key}"${o.key === sel ? ' checked' : ''}>
           ${o.hot ? `<span class="sp-opt__flag">${o.kind === 'combo' ? 'Най-изгодно' : 'Най-избиран'}</span>` : ''}
-          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${p.wellness ? (o.gift ? `<span class="sp-opt__gift"><img src="${productLook(p).img}" alt="" width="40" height="40" loading="lazy">+ подарък: ${o.boxes}-та кутия по избор <s class="gift-was">${fmt(p.price * o.gift)}</s></span>` : '') : bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: ${giftLabel(o.store ? giftPacksFor(o.store) : 1)}${giftWas(o.store ? giftPacksFor(o.store) : 1)}</span>` : ''}</span>
+          <span class="sp-opt__txt"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}${o.flag ? `<span class="sp-opt__ship">🚚 ${esc(o.flag)}</span>` : ''}${p.wellness ? (o.gift ? `<span class="sp-opt__gift"><img src="${productLook(p).img}" alt="" width="40" height="40" loading="lazy">+ подарък: ${o.boxes}-та кутия по избор <s class="gift-was">${fmt(p.price * o.gift)}</s></span>` : '') : ghalf ? ((o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift sp-opt__gift--half">🎁 + още 1 продукт по избор с −50%</span>` : '') : bfOn() && (o.units || 1) >= GIFT_FROM ? `<span class="sp-opt__gift"><img src="${GIFT_IMG}" alt="" width="40" height="40" loading="lazy">+ подарък: ${giftLabel(o.store ? giftPacksFor(o.store) : 1)}${giftWas(o.store ? giftPacksFor(o.store) : 1)}</span>` : ''}</span>
           <span class="sp-opt__price">${o.prev ? `<span class="sp-opt__bf">${BF_BLINK}${xPrice(o.prev)}</span>` : o.bft ? `<span class="sp-opt__bf">${BF_BLINK}</span>` : ''}<b>${fmt(o.price)}</b>${o.off ? `<s>${fmt(o.was)}</s><em>−${o.off}%</em>` : ''}</span>
         </label>`).join('')}</div>` : ''}
       ${packs ? bfTimer() : ''}
@@ -911,6 +919,12 @@ function productTop(p, d, ctx) {
       ${addonSelect(p)}
       ${p.wellness ? (wellGiftOpt(opts) ? `<p class="sp-gift" data-gift-yes hidden><img src="${productLook(p).img}" alt="" width="64" height="64" loading="lazy"><span><b>+ ${wellGiftOpt(opts).boxes}-та кутия подарък</b> <s class="gift-was">${fmt(p.price)}</s> – избираш вида ѝ по-горе. До 30 ноември</span></p>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${productLook(p).img}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${wellGiftOpt(opts).n} кутии</b> и получаваш <b>${wellGiftOpt(opts).boxes}-та подарък</b> – по избор</span></p>` : '')
+      : ghalf ? `<div class="sp-gift sp-gift--half" data-gift-yes hidden>
+        <p class="sp-ghalf__h">🎁 Подарък към ${GIFT_FROM} броя: <b>избери си още един продукт с −50%</b></p>
+        <div class="sp-ghalf">${ghalf.map(x => `<button type="button" class="sp-ghalf__o" data-ghalf="${x.id}" aria-pressed="false"><img src="${productLook(x).img}" alt="" width="72" height="72" loading="lazy"><span class="sp-ghalf__t"><b>${esc(x.shortName)}</b><span><b class="sp-ghalf__p">${fmt(halfPriceOf(x))}</b> <s>${fmt(x.price)}</s></span></span><i aria-hidden="true">✓</i></button>`).join('')}</div>
+        <p class="sp-ghalf__note">Натисни, за да го добавиш към поръчката. Не е задължително.</p>
+      </div>
+      <p class="sp-gift sp-gift--no" data-gift-no hidden><span>🎁 Вземи <b>${GIFT_FROM} броя</b> и си избираш още един продукт с <b>−50%</b>: ${ghalf.map(x => esc(x.shortName.toLowerCase())).join(', ')}</span></p>`
       : bfOn() ? `<p class="sp-gift" data-gift-yes hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span><b data-gift-what>+ 12 пластира за стави и мускули подарък</b><span data-gift-was>${giftWas()}</span> към тази поръчка – до 30 ноември</span></p>
       <p class="sp-gift sp-gift--no" data-gift-no hidden><img src="${GIFT_IMG}" alt="" width="64" height="64" loading="lazy"><span>Вземи <b>${GIFT_FROM} или повече</b> и получаваш <b>подарък: 12 пластира за стави и мускули</b></span></p>` : ''}
       <div class="sp-ctas">
@@ -981,6 +995,7 @@ function bindTop(root, p) {
     const earned = p.wellness ? !!x.gift : (x.kind === 'qty' ? qty : (x.units || 1)) >= GIFT_FROM, gy = $('[data-gift-yes]', top), gn = $('[data-gift-no]', top);
     if (gy) gy.hidden = !earned;
     if (gn) gn.hidden = earned;
+    if (!earned) $$('[data-ghalf]', top).forEach(b => { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     if (gy && earned && !p.wellness) { // 5 гела → 3 пакета пластири (36 бр.), иначе 1 пакет
       const gp = x.store ? giftPacksFor(x.store) : 1, gw = $('[data-gift-what]', gy), gv = $('[data-gift-was]', gy);
       if (gw) gw.textContent = `+ ${giftLabel(gp)} подарък`;
@@ -1006,9 +1021,17 @@ function bindTop(root, p) {
     if (x) $('[data-slot-img]', li).src = productLook(x).img;
   }));
   const slotIds = n => $$('.sp-slot[data-slot]', combo).slice(0, n).map(li => $('[data-slot-sel]', li).value);
+  // подаръкът „още един продукт с −50%“: избира се един (или нито един) от трите
+  $$('[data-ghalf]', top).forEach(b => b.addEventListener('click', () => {
+    const on = !b.classList.contains('on');
+    $$('[data-ghalf]', top).forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
+    if (on) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
+  }));
   const act = (goNow, btn) => {
     const x = o();
     const ad = +(($('[data-addon]', top) || {}).value || 0), extra = ad ? [ad] : [];
+    const gh = $('[data-ghalf].on', top);
+    if (gh && !$('[data-gift-yes]', top).hidden) extra.push(HALF[gh.dataset.ghalf]);
     if (x.kind === 'pack') return addFlow({ store: x.store, qty: 1, go: goNow, btn, value: x.price, contentId: x.key, bf: x.bf, extra });
     if (x.kind === 'qty') return addFlow({ store: p.store, qty, go: goNow, btn, value: p.price * qty, contentId: p.id, extra });
     return addCombo(x.n, [p.id].concat(slotIds(x.boxes - 1)), { go: goNow, btn });
@@ -1093,8 +1116,8 @@ function renderHomeBv() {
   const wl = PRODUCTS.filter(p => p.wellness);
   const combos = comboReady() ? `
   <section class="hv-combo"><div class="bv-wrap hv-combo__in">
-    <div><span class="bv-eyebrow">Уелнес пластири</span><h2>Комбинирай пластирите – <em class="bv-accent">по-изгодно</em></h2>
-      <p class="bv-lead">Избери 2 или 3 вида – например „Апетит“ с Energy или Focus.</p>
+    <div><span class="bv-eyebrow">Лепенки за всеки ден</span><h2>Комбинирай лепенките – <em class="bv-accent">по-изгодно</em></h2>
+      <p class="bv-lead">Избери 2 или 3 вида – например за апетит с тези за енергия или за фокус.</p>
       <div class="hv-combo__prices"><span><b>2 вида</b>${fmt(PATCH_COMBOS[0].price)}</span><span><b>3 вида</b>${fmt(PATCH_COMBOS[1].price)}</span></div>
       <a class="bv-btn" href="${productUrl('apetit')}">Направи своя комплект →</a></div>
     <div class="hv-combo__grid">${wl.map(p => `<a href="${productUrl(p.id)}" style="--pc:${look(p.id).a}"><img src="${look(p.id).img}" alt="" loading="lazy" width="160" height="160"><span>${esc(p.shortName.replace(/^Пластири /, ''))}</span></a>`).join('')}</div>
