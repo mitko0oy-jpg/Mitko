@@ -184,32 +184,34 @@ function packQty(p, k) {
 }
 
 /* ---------- витрина на съставките: голяма карта за основната, по-малки за останалите ---------- */
-function ingShowcase(p, list, meta) {
+function ingShowcase(p, list, meta, h2) {
   const [main, ...rest] = list;
   const card = (x, i) => `
-      <article class="bv-ingx__card${i ? '' : ' bv-ingx__card--main'}" style="--tone:${x.tone}">
-        <div class="bv-ingx__ph"><img src="${x.img}" alt="${esc(x.n)}" width="600" height="480" loading="lazy" decoding="async"></div>
+      <article class="bv-ingx__card${i ? '' : ' bv-ingx__card--main'}"${x.tone ? ` style="--tone:${x.tone}"` : ''}>
+        <div class="bv-ingx__ph">${bvMedia(x.media, x.n, 600, 480)}</div>
         <div class="bv-ingx__body">
           ${i ? `<span class="bv-ingx__n">${i + 1}</span>` : '<span class="bv-ingx__tag">Основна съставка</span>'}
+          ${i && x.tag ? `<span class="bv-ingx__kind">${esc(x.tag)}</span>` : ''}
           <h3>${esc(x.n)}</h3>
-          <p class="bv-ingx__latin">${esc(x.latin)}</p>
-          <p class="bv-ingx__t">${esc(x.t || x.short)}</p>
+          ${x.latin ? `<p class="bv-ingx__latin">${esc(x.latin)}</p>` : ''}
+          <p class="bv-ingx__t">${esc(x.t)}</p>
           ${x.facts ? `<ul class="bv-ingx__facts">${x.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
         </div>
         <span class="bv-glare" aria-hidden="true"></span>
       </article>`;
+  const many = list.length >= 5;
   return `
   <section id="bv-sastav" class="bv-ingx-sec"><div class="bv-wrap">
     <div class="bv-center">
-      <span class="bv-eyebrow">${esc(meta && meta.eyebrow ? meta.eyebrow : 'Какво има в пластира?')}</span>
-      <h2>${list.length} съставки, <em class="bv-accent">подбрани с грижа</em></h2>
+      <span class="bv-eyebrow">${esc(meta && meta.eyebrow ? meta.eyebrow : p.wellness ? 'Какво има в пластира?' : 'Какво съдържа?')}</span>
+      <h2>${h2 || `${list.length} съставки, <em class="bv-accent">подбрани с грижа</em>`}</h2>
       <p class="bv-lead">${esc(meta && meta.lead ? meta.lead : 'Пълният състав е отпечатан върху опаковката – прочети го, преди да започнеш.')}</p>
     </div>
-    <div class="bv-ingx bv-ingx--n${list.length}">
+    <div class="bv-ingx bv-ingx--n${list.length}${many ? ' bv-ingx--many' : ''}">
       ${card(main, 0)}
       <div class="bv-ingx__rest">${rest.map((x, i) => card(x, i + 1)).join('')}</div>
     </div>
-    <p class="bv-ingx__foot"><img src="${productLook(p).img}" alt="" width="56" height="56" loading="lazy"><span><b>Всичко това – в един тънък пластир.</b> Залепваш го сутрин и го носиш до 8 часа.</span></p>
+    ${p.wellness ? `<p class="bv-ingx__foot"><img src="${productLook(p).img}" alt="" width="56" height="56" loading="lazy"><span><b>Всичко това – в един тънък пластир.</b> Залепваш го сутрин и го носиш до 8 часа.</span></p>` : ''}
   </div></section>`;
 }
 
@@ -455,9 +457,11 @@ function renderLanding(p) {
   const ingD = d.ings && d.ings.items ? d.ings : null;
   const ingMeta = ingD || d.ings || c.ings || null;
   const ingItems = ingD ? ingD.items : ings.map(([n, t], i) => { const [, tag, m] = p.wellness || p.ingPlain ? [0, '', null] : ingCard(n); return [n, i ? tag : 'Основна съставка', t, m, !i]; });
-  // уелнес пластирите: витрина със снимки, когато всяка съставка има снимка
-  const showcase = !ingD && p.wellness && ings.length > 1 && ings.every(([n]) => ingInfo(n)) ? ings.map(([n, t]) => ({ n, ...ingInfo(n), short: t })) : null;
-  const ingsHtml = showcase ? ingShowcase(p, showcase, ingMeta) : ingItems.length ? `
+  // витрина със снимки (голяма карта за основната съставка), когато всяка съставка има снимка или видео
+  const ingSrc = ingD ? ingD.items.map(([n, tag, t, m]) => ({ n, tag, t, m })) : ings.map(([n, t]) => ({ n, t, tag: p.wellness || p.ingPlain ? '' : ingCard(n)[1], m: null }));
+  let showcase = ingSrc.length > 1 ? ingSrc.map((x, i) => { const inf = ingInfo(x.n) || {}; return { n: x.n, tag: i ? x.tag : '', latin: inf.latin || '', tone: inf.tone || '', t: (!i && !ingD && inf.mt) || inf.t || x.t, facts: inf.facts, media: x.m || inf.img || ingCard(x.n)[2] }; }) : null;
+  if (showcase && showcase.some(x => !x.media)) showcase = null;
+  const ingsHtml = showcase ? ingShowcase(p, showcase, ingMeta, ingD ? hTxt(ingD.h2) : '') : ingItems.length ? `
   <section id="bv-sastav"><div class="bv-wrap">
     <div class="bv-center">
       <span class="bv-eyebrow">${esc(ingMeta && ingMeta.eyebrow ? ingMeta.eyebrow : 'Какво съдържа?')}</span>

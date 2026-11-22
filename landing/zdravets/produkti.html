@@ -806,6 +806,10 @@ const ingCard = name => ING_CARD.find(([re]) => re.test(name)) || [0, '', null];
    Само описания на съставките – без обещания за действие. */
 const ZN_ING2 = 'a0ea3a126740c7439c698fed5109ad368b063dd6';
 const znIng2 = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_ING2}/landing/zdravets/media/ing-${f}.webp`;
+const ZN_ING3 = 'bf1dec6a7d33918215d580bdac68b7ad348cd996';
+const znIng3 = f => `https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@${ZN_ING3}/landing/zdravets/media/ing-${f}.webp`;
+// mt: по-дълъг текст, когато съставката е основната (голямата карта).
+// по-конкретните първи: „Шафранка и нотоженшен“ преди „женшен“, „Борнеол, ментол и камфор“ преди „ментол“ и т.н.
 const ING_INFO = [
   { re: /^берберин/i, img: znIng('berberin'), latin: 'от Berberis vulgaris – кисел трън', tone: '#E0A91B',
     t: 'Жълто растително вещество, което се извлича от корените и кората на кисел трън. От векове е част от традициите на Изтока.',
@@ -814,8 +818,65 @@ const ING_INFO = [
     t: 'Екстракт от плода на нара, богат на полифеноли. Нарът се отглежда от хилядолетия в Средиземноморието.' },
   { re: /канел/i, img: znIng2('kanela'), latin: 'Cinnamomum', tone: '#A0582B',
     t: 'Ароматната кора на канеленото дърво – позната подправка с топъл аромат, свита на пръчици.' },
-  { re: /витамин(и)?( от група)? B/i, img: znIng2('vitamini-b'), latin: 'B-комплекс', tone: '#E8A317',
-    t: 'Група витамини, които естествено се срещат в пълнозърнести храни, яйца, бобови и зелени листа.' }
+  { re: /витамин(и)?( от група)? B/i, img: znIng2('vitamini-b'), latin: 'B-комплекс', tone: '#E8A317' },
+  { re: /пчел/i, latin: 'Apis mellifera', tone: '#D99A1E',
+    mt: 'Отровата на медоносната пчела – съставката, която дава името на серията BeeVenom.' },
+  { re: /куркум/i, latin: 'Curcuma longa', tone: '#E0A020' },
+  { re: /зелен чай/i, latin: 'Camellia sinensis', tone: '#4F8A3A' },
+  { re: /витамин D/i, latin: 'холекалциферол', tone: '#E8A317' },
+  { re: /арник/i, latin: 'Arnica montana', tone: '#E5A21B' },
+  { re: /борнеол/i, latin: 'Borneol · Menthol · Camphor', tone: '#3E8E7E' },
+  { re: /ментол/i, latin: 'от мента – Mentha', tone: '#3E8E7E',
+    mt: 'Съставката, която дава на ментата хладния ѝ аромат. Носи приятно усещане за свежест там, където залепиш пластира.' },
+  { re: /магнезий и алантоин/i, latin: 'Magnesium · Allantoin', tone: '#7A8C9E' },
+  { re: /^магнезий/i, latin: 'Magnesium', tone: '#7A8C9E' },
+  { re: /хиалурон/i, latin: 'Hyaluronic acid', tone: '#3D8BC0' },
+  { re: /^мента/i, latin: 'Mentha piperita', tone: '#3E8E5A' },
+  { re: /джинджифил и лют/i, latin: 'Zingiber officinale · Capsicum', tone: '#C4561E' },
+  { re: /джинджиф/i, latin: 'Zingiber officinale', tone: '#C88A2E' },
+  { re: /пелин/i, latin: 'Artemisia absinthium', tone: '#6E8B4E' },
+  { re: /шафран|нотожен/i, latin: 'Carthamus tinctorius · Panax notoginseng', tone: '#D9731E' },
+  { re: /капсаицин/i, img: znIng3('kapsaicin'), latin: 'от лютите чушки – Capsicum', tone: '#D32F2F' },
+  { re: /^камфор/i, img: znIng3('kamfor'), latin: 'Cinnamomum camphora', tone: '#5E8C6A' },
+  { re: /плаун/i, img: znIng3('plaun'), latin: 'Lycopodium clavatum', tone: '#5F8F3A' },
+  { re: /магнит/i, img: znIng3('magniten-prah'), latin: 'минерален прах', tone: '#5A5F66' },
+  { re: /китайски билки/i, img: znIng3('kitaiski-bilki'), latin: 'традиционна китайска рецепта', tone: '#A0522D' },
+  { re: /скорпион/i, img: znIng3('skorpion'), latin: 'Buthus martensii · Scolopendra', tone: '#8B5A2B' },
+  { re: /гаултери/i, latin: 'Gaultheria procumbens', tone: '#B23A48' },
+  { re: /глицерин/i, img: znIng3('glicerin'), latin: 'Glycerin', tone: '#4F94BD' },
+  { re: /кестен/i, latin: 'Aesculus hippocastanum', tone: '#8B5A2B' },
+  { re: /растителни екстракти/i, tone: '#5F8F3A' },
+  { re: /растителни масла/i, tone: '#C9A227' },
+  { re: /чаено дърво/i, latin: 'Melaleuca alternifolia', tone: '#4F8A6A' },
+  { re: /биота/i, latin: 'Platycladus orientalis', tone: '#4F7A3A' },
+  { re: /ghk|пептид/i, latin: 'меден трипептид', tone: '#B87333' },
+  { re: /лой/i, latin: 'Tallow', tone: '#C9A27A' },
+  { re: /^мед$/i, latin: 'Mel', tone: '#D99A1E' },
+  { re: /глутамин/i, img: znIng3('l-glutamin'), tone: '#7A8C9E' },
+  { re: /кофеин/i, img: znIng3('kofein'), latin: 'Coffea arabica · Camellia sinensis', tone: '#6B4226',
+    mt: 'Естественото вещество от кафеените зърна и чаените листа – същото, което познаваш от сутрешното кафе.' },
+  { re: /женшен/i, img: znIng3('jenshen'), latin: 'Panax ginseng', tone: '#B5452B' },
+  { re: /гуарана/i, img: znIng3('guarana'), latin: 'Paullinia cupana', tone: '#C62828' },
+  { re: /бета-аланин|цитрулин/i, img: znIng3('aminokiselini'), tone: '#E05A6A' },
+  { re: /личи/i, img: znIng3('lichi'), latin: 'Litchi chinensis', tone: '#D2394B',
+    mt: 'Екстракт от сочния тропически плод личи, който расте в Южен Китай и Югоизточна Азия.' },
+  { re: /магноли/i, img: znIng3('magnolia'), latin: 'Magnolia officinalis', tone: '#B06A8A' },
+  { re: /nmn/i, img: znIng3('nmn'), latin: '', tone: '#5F8F3A',
+    mt: 'Предшественик на NAD+ – вещество, което тялото само произвежда. В малки количества се среща в броколи, едамаме и авокадо.' },
+  { re: /ресвератрол/i, img: znIng3('resveratrol'), tone: '#7B1F45' },
+  { re: /ацетилцистеин|\(nac\)/i, img: znIng3('nac'), latin: '', tone: '#7A8C9E' },
+  { re: /кордицепс/i, img: znIng3('kordiceps'), latin: 'Cordyceps militaris · Hericium erinaceus', tone: '#E07B1E' },
+  { re: /теанин/i, img: znIng3('l-teanin'), tone: '#4F8A3A',
+    mt: 'Аминокиселина, която се среща естествено в чаените листа – най-много в зеления чай.' },
+  { re: /лъвска грива/i, img: znIng3('lavska-griva'), tone: '#B08A5A' },
+  { re: /мукуна/i, img: znIng3('mukuna'), latin: 'кадифен боб', tone: '#7A5230',
+    mt: 'Семената на тропическото бобово растение мукуна, познато от векове в аюрведичната традиция.' },
+  { re: /5-htp/i, img: znIng3('5-htp'), latin: 'Griffonia simplicifolia', tone: '#5A4632' },
+  { re: /родиол/i, img: znIng3('rodiola'), latin: 'Rhodiola rosea', tone: '#D9A41E' },
+  { re: /^мака/i, img: znIng3('maka'), latin: 'Lepidium meyenii', tone: '#B5862F',
+    mt: 'Корен от високите плата на Андите в Перу, където се отглежда от хилядолетия.' },
+  { re: /дамиана/i, img: znIng3('damiana'), latin: 'Turnera diffusa', tone: '#6E8B3D' },
+  { re: /ашваганда/i, img: znIng3('ashvaganda'), latin: 'Withania somnifera', tone: '#C0642B' }
 ];
 const ingInfo = name => ING_INFO.find(x => x.re.test(name)) || null;
 
