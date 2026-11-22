@@ -11,24 +11,36 @@ import {
 
 // ---- categories ----
 export const EXPENSE_CATS: Record<string, string> = {
-  ads: "Реклама (Meta, Google, TikTok)",
+  ads: "Реклама (Google, TikTok, други)",
   goods: "Стока и производство",
   packaging: "Опаковки и консумативи",
   courier: "Куриери (фактури)",
+  fulfillment: "Фулфилмънт и склад",
   software: "Софтуер и абонаменти",
+  training: "Обучения",
   accounting: "Счетоводство и юристи",
   salaries: "Заплати и осигуровки",
   rent: "Наем и офис",
+  car: "Автомобил и гориво",
   phone: "Телефон и интернет",
   fees: "Банкови такси",
   taxes: "Данъци и такси",
+  vat97a: "ДДС по чл. 97а (преди регистрацията)",
   other: "Други разходи",
+};
+// Lines in the profit report that come by themselves (not from invoices).
+export const AUTO_CATS: Record<string, string> = {
+  ads_meta: "Реклама Meta (по рекламните профили)",
+  meta_vat: "ДДС върху Meta (чл. 97а, преди регистрацията)",
 };
 export const INCOME_CATS: Record<string, string> = { other_income: "Друг приход" };
 // Bank lines: money in from the couriers and others, or out (the expense categories above, or these).
+// The sales ones (SALES_IN) are the income of a month that is before the orders in OrderDesk.
+export const SALES_IN = ["cod_econt", "cod_speedy", "cod_abroad", "card_in", "customer"];
 export const BANK_CATS: Record<string, string> = {
   cod_econt: "Наложени платежи – Еконт",
   cod_speedy: "Наложени платежи – Спиди",
+  cod_abroad: "Наложени платежи – чужбина",
   card_in: "Плащания с карта",
   customer: "Плащане от клиент",
   vat: "ДДС към НАП",
@@ -117,6 +129,12 @@ export async function saveSettings(input: any) {
         next.paym[k] = c;
       }
   }
+  for (const k of ["vatFrom", "ordersFrom"] as const)
+    if (input?.[k] !== undefined) {
+      const m = s(input[k], 7);
+      if (m && !isMonth(m)) throw bad(k, "Месецът е във вида ГГГГ-ММ (напр. 2026-09).");
+      next[k] = m;
+    }
   if (input?.procId !== undefined) next.procId = s(input.procId, 200);
   if (input?.posN !== undefined) next.posN = s(input.posN, 200);
   if (input?.shops && typeof input.shops === "object") {
@@ -309,8 +327,18 @@ export async function expenseFromBank(id: number, b: any, who: string) {
 export async function importAll(b: any, who: string) {
   const entries = Array.isArray(b?.entries) ? b.entries : [];
   const bank = Array.isArray(b?.bank) ? b.bank : [];
-  if (entries.length > 2000 || bank.length > 5000) throw bad("too_many", "Твърде много редове наведнъж.");
+  const ads = Array.isArray(b?.ads) ? b.ads : [];
+  if (entries.length > 2000 || bank.length > 5000 || ads.length > 5000) throw bad("too_many", "Твърде много редове наведнъж.");
   const company = companyId();
+  const A = ads.map((x: any, i: number) => {
+    const account = s(x?.account, 60);
+    if (!account) throw bad("ads", `Реклама №${i + 1}: липсва рекламният профил.`);
+    const currency = (s(x?.currency, 3) || "EUR").toUpperCase();
+    const spend = money(x?.spend, "реклама");
+    const spendEur = currency === "EUR" ? spend : x?.spend_eur !== undefined ? money(x.spend_eur, "реклама в евро") : null;
+    if (spendEur === null) throw bad("ads", `Реклама №${i + 1}: дай и сумата в евро.`);
+    return { source: s(x?.source, 20) || "meta", account, name: s(x?.name, 120), day: day(x?.day), spend, currency, spendEur };
+  });
   // Everything is checked before anything is written.
   const E = entries.map((e: any, i: number) => {
     const key = s(e?.key, 120);
@@ -369,25 +397,37 @@ export async function importAll(b: any, who: string) {
       );
       r[0].inserted ? bankAdded++ : bankChanged++;
     }
-    return { entries: { added, changed }, bank: { added: bankAdded, changed: bankChanged }, missingEntryKeys: missing };
+    for (const a of A)
+      await t(
+        `INSERT INTO acc_ads (company_id, source, account, name, day, spend, currency, spend_eur) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (company_id, source, account, day) DO UPDATE SET name = EXCLUDED.name, spend = EXCLUDED.spend, currency = EXCLUDED.currency,
+           spend_eur = EXCLUDED.spend_eur, updated_at = now()`,
+        [company, a.source, a.account, a.name, a.day, a.spend, a.currency, a.spendEur],
+      );
+    return { entries: { added, changed }, bank: { added: bankAdded, changed: bankChanged }, ads: A.length, missingEntryKeys: missing };
   });
 }
 
 // ---- the month in money: profit, VAT, cash ----
 type Month = {
   month: string;
+  source: "orders" | "bank"; // откъде са приходите: поръчките в OrderDesk или постъпленията по банката (преди OrderDesk)
+  vatRegistered: boolean; // регистрирана по ДДС през месеца (иначе – само ДДС върху Meta по чл. 97а)
   orders: number;
   revenue: number; // взети пари с ДДС
   revenueVat: number;
   revenueNet: number;
   revenueVatBg: number; // ДДС в продажбите в България (за справката към НАП)
+  bankSales: number; // постъпленията от продажби по банката (наложени, карти, клиенти)
   refunds: number; // върнати суми на клиенти, без ДДС
   cogs: number; // себестойност на продадената стока
   cogsMissing: number; // редове без връзка със склада
+  goodsBought: number; // купена стока през месеца (при поръчки от OrderDesk тя е в склада, не в печалбата)
   courierAuto: number; // по товарителниците
   courierInvoices: number; // от фактурите на куриерите
   courier: number; // това, което влиза в печалбата
-  expenses: Record<string, number>; // без ДДС, по категории (без куриерите)
+  adsMeta: number; // Meta по рекламните профили
+  expenses: Record<string, number>; // без ДДС, по категории (без куриерите); преди регистрацията – с ДДС
   expensesTotal: number;
   otherIncome: number;
   purchaseVat: number;
@@ -401,6 +441,7 @@ const addMonth = (m: string, n: number) => {
   const d = new Date(Date.UTC(y, mm - 1 + n, 1));
   return d.toISOString().slice(0, 7);
 };
+const META_VAT = 0.2;
 
 export async function report(fromMonth: string, toMonth: string) {
   if (!isMonth(fromMonth) || !isMonth(toMonth) || fromMonth > toMonth) throw bad("month", "Провери месеците.");
@@ -409,11 +450,21 @@ export async function report(fromMonth: string, toMonth: string) {
   const [from] = monthRange(months[0]);
   const [, to] = monthRange(months[months.length - 1]);
   const company = companyId();
+  const set0 = await accSettings();
+  const reg = (m: string) => !set0.vatFrom || m >= set0.vatFrom;
+  const fromBank = (m: string) => Boolean(set0.ordersFrom) && m < set0.ordersFrom;
   const M = new Map<string, Month>(
-    months.map((m) => [m, { month: m, orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, refunds: 0, cogs: 0, cogsMissing: 0, courierAuto: 0, courierInvoices: 0, courier: 0, expenses: {}, expensesTotal: 0, otherIncome: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0 }]),
+    months.map((m) => [
+      m,
+      {
+        month: m, source: fromBank(m) ? "bank" : "orders", vatRegistered: reg(m), orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, bankSales: 0,
+        refunds: 0, cogs: 0, cogsMissing: 0, goodsBought: 0, courierAuto: 0, courierInvoices: 0, courier: 0, adsMeta: 0, expenses: {}, expensesTotal: 0,
+        otherIncome: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0,
+      },
+    ]),
   );
 
-  const [{ orders, set, shops }, links, courier, entries, returned] = await Promise.all([
+  const [{ orders, set, shops }, links, courier, entries, returned, ads, sales] = await Promise.all([
     deliveredBetween(from, to),
     q<any>(
       `SELECT lower(btrim(l.product)) AS p, l.units::float AS units, i.unit_cost::float AS cost
@@ -440,6 +491,16 @@ export async function report(fromMonth: string, toMonth: string) {
           AND coalesce(o.parcel_at, o.ordered_at) < ($3::date::timestamp AT TIME ZONE 'Europe/Sofia') GROUP BY 1`,
       [company, from, to],
     ),
+    q<any>(
+      `SELECT to_char(day, 'YYYY-MM') AS m, coalesce(sum(spend_eur), 0)::float AS eur FROM acc_ads
+        WHERE company_id = $1 AND source = 'meta' AND day >= $2::date AND day < $3::date GROUP BY 1`,
+      [company, from, to],
+    ),
+    q<any>(
+      `SELECT to_char(day, 'YYYY-MM') AS m, coalesce(sum(amount), 0)::float AS sum FROM acc_bank
+        WHERE company_id = $1 AND amount > 0 AND category = ANY($4) AND day >= $2::date AND day < $3::date GROUP BY 1`,
+      [company, from, to, SALES_IN],
+    ),
   ]);
   const cost = new Map<string, number>();
   for (const l of links) cost.set(l.p, (cost.get(l.p) || 0) + l.units * l.cost);
@@ -449,16 +510,30 @@ export async function report(fromMonth: string, toMonth: string) {
     const x = M.get(o.delivered.slice(0, 7));
     if (!x) continue;
     x.orders++;
+    if (x.source === "bank") continue; // приходите на месеца са от банката
     x.revenue = r2(x.revenue + o.gross);
-    x.revenueVat = r2(x.revenueVat + o.vat);
-    x.revenueNet = r2(x.revenueNet + o.net);
-    if (region.get(o.shop) === "bg") x.revenueVatBg = r2(x.revenueVatBg + o.vat);
+    if (x.vatRegistered) {
+      x.revenueVat = r2(x.revenueVat + o.vat);
+      x.revenueNet = r2(x.revenueNet + o.net);
+      if (region.get(o.shop) === "bg") x.revenueVatBg = r2(x.revenueVatBg + o.vat);
+    } else x.revenueNet = r2(x.revenueNet + o.gross);
     for (const l of o.lines) {
       if (l.kind !== "physical" || l.name === "Други") continue;
       const c = cost.get(l.name.trim().toLowerCase());
       if (c === undefined) x.cogsMissing++;
       else x.cogs = r2(x.cogs + c * l.qty);
     }
+  }
+  for (const s of sales) {
+    const x = M.get(s.m);
+    if (!x) continue;
+    x.bankSales = r2(s.sum);
+    if (x.source !== "bank") continue;
+    // Преди OrderDesk: приходите са постъпленията по банката; ДДС 20% вътре, ако фирмата е регистрирана.
+    x.revenue = r2(s.sum);
+    x.revenueNet = x.vatRegistered ? r2(s.sum / 1.2) : r2(s.sum);
+    x.revenueVat = r2(x.revenue - x.revenueNet);
+    x.revenueVatBg = x.revenueVat;
   }
   for (const c of courier) {
     const x = M.get(c.m);
@@ -468,25 +543,40 @@ export async function report(fromMonth: string, toMonth: string) {
     const x = M.get(r.m);
     if (x) x.returned = r.n;
   }
+  for (const a of ads) {
+    const x = M.get(a.m);
+    if (!x) continue;
+    x.adsMeta = r2(a.eur);
+    if (x.adsMeta) x.expenses.ads_meta = x.adsMeta;
+  }
   for (const e of entries) {
     const x = M.get(e.m);
     if (!x) continue;
-    if (e.kind === "refund") x.refunds = r2(x.refunds + e.net);
-    else if (e.kind === "income") x.otherIncome = r2(x.otherIncome + e.net);
+    // Без регистрация ДДС от фактурите не се приспада – разходът е с ДДС.
+    const net = x.vatRegistered ? e.net : e.total;
+    const vat = x.vatRegistered ? e.vat : 0;
+    if (e.kind === "refund") x.refunds = r2(x.refunds + net);
+    else if (e.kind === "income") x.otherIncome = r2(x.otherIncome + net);
     else if (e.category === "courier") {
-      x.courierInvoices = r2(x.courierInvoices + e.net);
-      x.purchaseVat = r2(x.purchaseVat + e.vat);
+      x.courierInvoices = r2(x.courierInvoices + net);
+      x.purchaseVat = r2(x.purchaseVat + vat);
+    } else if (e.category === "goods" && x.source === "orders") {
+      // Стоката отива в склада; в печалбата е себестойността на продаденото.
+      x.goodsBought = r2(x.goodsBought + net);
+      x.purchaseVat = r2(x.purchaseVat + vat);
     } else {
-      x.expenses[e.category] = r2((x.expenses[e.category] || 0) + e.net);
-      x.purchaseVat = r2(x.purchaseVat + e.vat);
+      x.expenses[e.category] = r2((x.expenses[e.category] || 0) + net);
+      x.purchaseVat = r2(x.purchaseVat + vat);
     }
   }
   for (const x of M.values()) {
-    // The couriers' invoices for the month, when there are any, else what the waybills say.
+    // Преди регистрацията ДДС върху Meta (и другите услуги от чужбина) се плаща по чл. 97а и не се приспада – разход.
+    // Ако платеното е въведено (vat97a), е то; иначе – 20% от Meta, ориентировъчно.
+    if (!x.vatRegistered && x.adsMeta && !x.expenses.vat97a) x.expenses.meta_vat = r2(x.adsMeta * META_VAT);
     x.courier = x.courierInvoices > 0 ? x.courierInvoices : x.courierAuto;
     x.expensesTotal = r2(Object.values(x.expenses).reduce((a, b) => a + b, 0));
     x.profit = r2(x.revenueNet - x.refunds + x.otherIncome - x.cogs - x.courier - x.expensesTotal);
-    x.vatDue = r2(x.revenueVatBg - x.purchaseVat);
+    x.vatDue = x.vatRegistered ? r2(x.revenueVatBg - x.purchaseVat) : r2((x.expenses.vat97a || 0) + (x.expenses.meta_vat || 0));
   }
   const list = months.map((m) => M.get(m)!);
   const sum = (k: keyof Month) => r2(list.reduce((a, x) => a + (Number(x[k]) || 0), 0));
@@ -497,9 +587,12 @@ export async function report(fromMonth: string, toMonth: string) {
     total: {
       orders: sum("orders"), revenue: sum("revenue"), revenueNet: sum("revenueNet"), refunds: sum("refunds"), cogs: sum("cogs"),
       courier: sum("courier"), expenses, expensesTotal: sum("expensesTotal"), otherIncome: sum("otherIncome"), profit: sum("profit"),
+      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"),
     },
     vatMissing: shops.filter((x) => !shopAcc(set, x).vatSet).map((x) => x.label),
-    categories: EXPENSE_CATS,
+    categories: { ...EXPENSE_CATS, ...AUTO_CATS },
+    vatFrom: set0.vatFrom,
+    ordersFrom: set0.ordersFrom,
   };
 }
 
@@ -562,7 +655,8 @@ const COURIER_SQL = `(CASE WHEN o.courier IN ('econt', 'speedy') THEN o.courier 
 /** Last month that has something, for opening the page on it. */
 export async function months() {
   const r = await q<any>(
-    `SELECT DISTINCT to_char(day, 'YYYY-MM') AS m FROM (SELECT day FROM acc_entries WHERE company_id = $1 UNION ALL SELECT day FROM acc_bank WHERE company_id = $1) x ORDER BY 1 DESC LIMIT 36`,
+    `SELECT DISTINCT to_char(day, 'YYYY-MM') AS m FROM (SELECT day FROM acc_entries WHERE company_id = $1 UNION ALL SELECT day FROM acc_bank WHERE company_id = $1
+       UNION ALL SELECT day FROM acc_ads WHERE company_id = $1) x ORDER BY 1 DESC LIMIT 36`,
     [companyId()],
   );
   return r.map((x) => x.m);

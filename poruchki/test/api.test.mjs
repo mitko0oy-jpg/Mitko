@@ -1431,16 +1431,44 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   // The profit: revenue without VAT, the refund, the couriers' invoice instead of the waybills, expenses without VAT.
   const rep = (await api(`/api/acc/report?from=${m}&to=${m}`)).data;
   const x = rep.months[0];
+  assert.equal(x.source, "orders");
   assert.equal(x.expenses.ads, 120);
-  assert.equal(x.expenses.goods, 200);
+  assert.equal(x.expenses.goods, undefined, "the goods bought go to the warehouse – the profit has the cost of what was sold");
+  assert.equal(x.goodsBought, 200);
   assert.equal(x.expenses.software, 15.5);
   assert.equal(x.expenses.packaging, 40);
   assert.equal(x.courierInvoices, 50);
   assert.equal(x.courier, 50);
   assert.equal(x.refunds, 10);
   assert.equal(x.purchaseVat, 58);
-  assert.equal(x.profit, Math.round((x.revenueNet - 10 - x.cogs - 50 - 375.5) * 100) / 100);
+  assert.equal(x.profit, Math.round((x.revenueNet - 10 - x.cogs - 50 - 175.5) * 100) / 100);
   assert.ok(x.cogs > 0, "the gels have a cost from the warehouse");
+
+  // Meta by the ad accounts (a month as one row), imported; the same account and day again changes it.
+  const prevM = (() => { const [y, mm] = m.split("-").map(Number); const d = new Date(Date.UTC(y, mm - 2, 1)); return d.toISOString().slice(0, 7); })();
+  const ads = { ads: [{ account: "act_1", name: "Bio", day: `${m}-01`, spend: 300 }, { account: "act_2", name: "HU", day: `${m}-01`, spend: 39000, currency: "HUF", spend_eur: 100 }, { account: "act_1", day: `${prevM}-01`, spend: 50 }] };
+  assert.equal((await api("/api/acc/import", ads)).data.ads, 3);
+  assert.equal((await api("/api/acc/import", ads)).data.ads, 3);
+  assert.equal((await api("/api/acc/import", { ads: [{ account: "act_9", day: `${m}-01`, spend: 5, currency: "USD" }] })).status, 400, "another currency needs the EUR");
+  // The month before: from the bank (before the orders in OrderDesk) and before the VAT registration.
+  await api("/api/acc/import", { bank: [{ key: "pb1", day: `${prevM}-10`, amount: 600, category: "cod_speedy", party: "Спиди" }, { key: "pb2", day: `${prevM}-11`, amount: -100, category: "owner" }],
+    entries: [{ key: "pg1", day: `${prevM}-12`, category: "goods", party: "Китай", total: 120, vat: 20 }] });
+  assert.equal((await api("/api/acc/settings", { vatFrom: "2026-13" })).status, 400);
+  assert.equal((await api("/api/acc/settings", { vatFrom: m, ordersFrom: m })).status, 200);
+  const rep2 = (await api(`/api/acc/report?from=${prevM}&to=${m}`)).data;
+  const [p0, p1] = rep2.months;
+  assert.equal(p1.adsMeta, 400);
+  assert.equal(p1.expenses.ads_meta, 400);
+  assert.equal(p1.expenses.meta_vat, undefined);
+  assert.equal(p1.profit, Math.round((x.profit - 400) * 100) / 100);
+  assert.deepEqual([p0.source, p0.vatRegistered, p0.revenue, p0.revenueNet, p0.revenueVatBg], ["bank", false, 600, 600, 0]);
+  assert.equal(p0.expenses.goods, 120, "before the registration with the VAT; the goods bought are the cost");
+  assert.equal(p0.expenses.ads_meta, 50);
+  assert.equal(p0.expenses.meta_vat, 10, "20% VAT on Meta (art. 97a) is a cost");
+  assert.equal(p0.vatDue, 10);
+  assert.equal(p0.profit, 600 - 120 - 50 - 10 - p0.courier);
+  assert.ok(rep2.categories.ads_meta && rep2.categories.fulfillment);
+  await api("/api/acc/settings", { vatFrom: "", ordersFrom: "" });
 
   // The refund is in the NAP file.
   const xml3 = new TextDecoder("windows-1251").decode(Buffer.from(await (await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } })).arrayBuffer()));

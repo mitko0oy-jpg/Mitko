@@ -27,6 +27,10 @@ export type AccSettings = {
   procId: string; // доставчик на платежни услуги (напр. Stripe) – при плащане с карта
   posN: string; // номер на виртуалния ПОС, ако е на името на фирмата
   shops: Record<string, ShopAcc>;
+  // Регистрация по ДДС от месец (ГГГГ-ММ); преди нея – без ДДС в продажбите, ДДС само върху Meta (чл. 97а).
+  vatFrom: string;
+  // Поръчките в OrderDesk са пълни от месец (ГГГГ-ММ); за по-ранните месеци приходите се вземат от банката.
+  ordersFrom: string;
 };
 
 export const DEFAULTS: AccSettings = {
@@ -41,6 +45,8 @@ export const DEFAULTS: AccSettings = {
   procId: "",
   posN: "",
   shops: {},
+  vatFrom: "",
+  ordersFrom: "",
 };
 
 const rate = (v: unknown): number | null => {

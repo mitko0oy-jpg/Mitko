@@ -98,17 +98,21 @@ async function otchet() {
   const from = addM(month, -11);
   const r = await api(`/api/acc/report?from=${from}&to=${month}`);
   const cur = r.months[r.months.length - 1];
-  const cats = meta.categories.expense;
+  const cats = r.categories || meta.categories.expense;
   const tile = (lbl, val, sub, cls = "") => `<div class="tile"><div class="lbl">${lbl}</div><div class="big ${cls}">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
   const exp = Object.entries(cur.expenses).sort((a, b) => b[1] - a[1]);
+  const fromBank = cur.source === "bank";
   view.innerHTML = `
     ${r.vatMissing.length ? `<p class="note">Няма зададено ДДС за ${esc(r.vatMissing.join(", "))} – приходите там са без приспаднато ДДС. Задай го в <a href="#nastroiki" data-go="nastroiki">Настройки</a>.</p>` : ""}
+    ${fromBank ? `<p class="note">${mName(month)} е преди поръчките в OrderDesk – приходите са постъпленията по банката (наложени платежи, карти, клиенти), а стоката е по фактурите за покупка.</p>` : ""}
+    ${cur.vatRegistered ? "" : `<p class="note">Преди регистрацията по ДДС: продажбите са без ДДС, разходите са с ДДС, а ДДС върху Meta (чл. 97а) е разход.</p>`}
     <section class="tiles acctiles">
-      ${tile(`Взети пари · ${mName(month)}`, eur(cur.revenue, true), `${num(cur.orders)} поръчки · ДДС ${eur(cur.revenueVat, true)}`)}
-      ${tile("Приходи без ДДС", eur(cur.revenueNet - cur.refunds + cur.otherIncome, true), cur.refunds ? `след върнати ${eur(cur.refunds, true)}` : "")}
-      ${tile("Себестойност на стоката", eur(cur.cogs, true), cur.cogsMissing ? `${num(cur.cogsMissing)} реда без връзка със склада` : "по доставните цени в склада")}
+      ${tile(`${fromBank ? "Постъпления от продажби" : "Взети пари"} · ${mName(month)}`, eur(cur.revenue, true), fromBank ? `по банката · ${num(cur.orders)} поръчки в OrderDesk` : `${num(cur.orders)} поръчки · ДДС ${eur(cur.revenueVat, true)}`)}
+      ${tile(cur.vatRegistered ? "Приходи без ДДС" : "Приходи", eur(cur.revenueNet - cur.refunds + cur.otherIncome, true), cur.refunds ? `след върнати ${eur(cur.refunds, true)}` : "")}
+      ${tile("Себестойност на стоката", eur(fromBank ? cur.expenses.goods || 0 : cur.cogs, true), fromBank ? "купената стока през месеца" : cur.cogsMissing ? `${num(cur.cogsMissing)} реда без връзка със склада` : `по доставните цени в склада${cur.goodsBought ? ` · купено ${eur(cur.goodsBought, true)}` : ""}`)}
       ${tile("Куриери", eur(cur.courier, true), cur.courierInvoices > 0 ? "от фактурите" : "по товарителниците (приблизително)")}
-      ${tile("Разходи", eur(cur.expensesTotal, true), "без ДДС, от фактурите и банката")}
+      ${tile("Реклама Meta", eur(cur.adsMeta, true), cur.adsMeta ? `${cur.revenueNet ? `${((cur.adsMeta / cur.revenueNet) * 100).toFixed(1).replace(".", ",")}% от приходите` : ""}` : "няма данни за месеца")}
+      ${tile("Други разходи", eur(cur.expensesTotal - (cur.expenses.ads_meta || 0) - (fromBank ? cur.expenses.goods || 0 : 0), true), cur.vatRegistered ? "без ДДС, от фактурите и банката" : "с ДДС, от фактурите и банката")}
       ${tile("Печалба", eur(cur.profit, true), `ДДС за внасяне ≈ ${eur(cur.vatDue, true)}`, cur.profit < 0 ? "err" : "ok")}
     </section>
     <section class="card">
@@ -122,18 +126,18 @@ async function otchet() {
     <section class="card">
       <h2>По месеци</h2>
       <div class="scroll"><table class="tbl acctbl">
-        <thead><tr><th>Месец</th><th class="r">Поръчки</th><th class="r">Взети с ДДС</th><th class="r">Без ДДС</th><th class="r">Себестойност</th><th class="r">Куриери</th><th class="r">Разходи</th><th class="r">Печалба</th><th class="r" title="ДДС в продажбите в България минус ДДС от фактурите – ориентировъчно">ДДС ≈</th><th class="r">Върнати пратки</th></tr></thead>
+        <thead><tr><th>Месец</th><th class="r">Поръчки</th><th class="r">Взети с ДДС</th><th class="r">Без ДДС</th><th class="r">Себестойност</th><th class="r">Куриери</th><th class="r">Meta</th><th class="r">Други разходи</th><th class="r">Печалба</th><th class="r" title="ДДС в продажбите в България минус ДДС от фактурите – ориентировъчно">ДДС ≈</th><th class="r">Върнати пратки</th></tr></thead>
         <tbody>${r.months
-          .slice(Math.max(0, r.months.findIndex((x) => x.orders || x.expensesTotal || x.otherIncome)))
+          .slice(Math.max(0, r.months.findIndex((x) => x.orders || x.expensesTotal || x.otherIncome || x.revenue)))
           .reverse()
           .map(
-            (x) => `<tr class="click${x.month === month ? " on" : ""}" data-m="${x.month}"><td>${mShort(x.month)}</td><td class="r">${num(x.orders)}</td><td class="r">${eur(x.revenue)}</td><td class="r">${eur(x.revenueNet - x.refunds + x.otherIncome)}</td>
-            <td class="r">${eur(x.cogs)}</td><td class="r">${eur(x.courier)}</td><td class="r">${eur(x.expensesTotal)}</td><td class="r"><b>${signed(x.profit)}</b></td><td class="r">${eur(x.vatDue)}</td><td class="r">${num(x.returned)}</td></tr>`,
+            (x) => `<tr class="click${x.month === month ? " on" : ""}" data-m="${x.month}"><td>${mShort(x.month)}${x.source === "bank" ? ` <span class="muted small" title="Приходите са от банката – преди поръчките в OrderDesk">банка</span>` : ""}</td><td class="r">${num(x.orders)}</td><td class="r">${eur(x.revenue)}</td><td class="r">${eur(x.revenueNet - x.refunds + x.otherIncome)}</td>
+            <td class="r">${eur(x.source === "bank" ? x.expenses.goods || 0 : x.cogs)}</td><td class="r">${eur(x.courier)}</td><td class="r">${eur(x.adsMeta)}</td><td class="r">${eur(x.expensesTotal - (x.expenses.ads_meta || 0) - (x.source === "bank" ? x.expenses.goods || 0 : 0))}</td><td class="r"><b>${signed(x.profit)}</b></td><td class="r">${eur(x.vatDue)}</td><td class="r">${num(x.returned)}</td></tr>`,
           )
           .join("")}</tbody>
-        <tfoot><tr><th>Общо</th><th class="r">${num(r.total.orders)}</th><th class="r">${eur(r.total.revenue)}</th><th class="r">${eur(r.total.revenueNet - r.total.refunds + r.total.otherIncome)}</th><th class="r">${eur(r.total.cogs)}</th><th class="r">${eur(r.total.courier)}</th><th class="r">${eur(r.total.expensesTotal)}</th><th class="r">${signed(r.total.profit)}</th><th></th><th></th></tr></tfoot>
+        <tfoot><tr><th>Общо</th><th class="r">${num(r.total.orders)}</th><th class="r">${eur(r.total.revenue)}</th><th class="r">${eur(r.total.revenueNet - r.total.refunds + r.total.otherIncome)}</th><th class="r">${eur(r.months.reduce((a, x) => a + (x.source === "bank" ? x.expenses.goods || 0 : x.cogs), 0))}</th><th class="r">${eur(r.total.courier)}</th><th class="r">${eur(r.total.adsMeta)}</th><th class="r">${eur(r.months.reduce((a, x) => a + x.expensesTotal - (x.expenses.ads_meta || 0) - (x.source === "bank" ? x.expenses.goods || 0 : 0), 0))}</th><th class="r">${signed(r.total.profit)}</th><th></th><th></th></tr></tfoot>
       </table></div>
-      <p class="muted small" style="margin:8px 0 0">Приходите са взетите поръчки по датата на доставка (наложеният платеж е платен, когато клиентът вземе пратката). Себестойността е по доставните цени от Склад. Куриерите – по фактурите им, ако са въведени за месеца, иначе по товарителниците. Това е наше управленско счетоводство – официалното е при счетоводителката.</p>
+      <p class="muted small" style="margin:8px 0 0">Приходите са взетите поръчки по датата на доставка (наложеният платеж е платен, когато клиентът вземе пратката). Себестойността е по доставните цени от Склад (купената стока отива в склада). Месеците преди OrderDesk („банка“) са по постъпленията в банката и купената стока. Куриерите – по фактурите им, ако са въведени за месеца, иначе по товарителниците. Meta – по разходите на рекламните профили (фактурите от Meta не се въвеждат отделно). Това е наше управленско счетоводство – официалното е при счетоводителката.</p>
     </section>`;
   view.querySelectorAll("tr[data-m]").forEach((tr) =>
     tr.addEventListener("click", () => {
@@ -440,6 +444,8 @@ async function nastroiki() {
         <label>ЕИК (за одиторския файл)<input type="text" name="eik" inputmode="numeric" maxlength="13" value="${v(s.eik)}"></label>
         <label>Име на счетоводителя<input type="text" name="a_name" maxlength="80" value="${v(s.accountant.name)}"></label>
         <label>Имейл на счетоводителя<input type="email" name="a_email" maxlength="200" value="${v(s.accountant.email)}"></label>
+        <label>Регистрация по ДДС от месец (ГГГГ-ММ; празно = винаги)<input type="text" name="vatFrom" maxlength="7" placeholder="2026-09" value="${v(s.vatFrom)}"></label>
+        <label>Поръчките в OrderDesk са пълни от месец (по-рано – приходи от банката)<input type="text" name="ordersFrom" maxlength="7" placeholder="2026-10" value="${v(s.ordersFrom)}"></label>
         <label>Изпращай писмото на (число от месеца)<input type="number" name="a_day" min="1" max="15" value="${v(s.accountant.day)}"></label>
         <div class="stack small" style="align-self:end">
           <label class="chk"><input type="checkbox" name="a_auto" ${s.accountant.auto ? "checked" : ""}> Изпращай автоматично</label>
@@ -503,6 +509,8 @@ async function nastroiki() {
           body: {
             companyName: d.companyName,
             eik: d.eik,
+            vatFrom: d.vatFrom,
+            ordersFrom: d.ordersFrom,
             accountant: { name: d.a_name, email: d.a_email, day: Number(d.a_day), auto: Boolean(d.a_auto), copyMe: Boolean(d.a_copy) },
             vat: { physical: d.vat_physical, digital: d.vat_digital, shipping: d.vat_shipping, products: prods },
             paym: Object.fromEntries(Object.keys(PAY).map((k) => [k, Number(d[`p_${k}`])])),
