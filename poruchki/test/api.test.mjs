@@ -1451,10 +1451,11 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.equal((await api("/api/acc/import", ads)).data.ads, 3);
   assert.equal((await api("/api/acc/import", { ads: [{ account: "act_9", day: `${m}-01`, spend: 5, currency: "USD" }] })).status, 400, "another currency needs the EUR");
   // The month before: from the bank (before the orders in OrderDesk) and before the VAT registration.
-  await api("/api/acc/import", { bank: [{ key: "pb1", day: `${prevM}-10`, amount: 600, category: "cod_speedy", party: "Спиди" }, { key: "pb2", day: `${prevM}-11`, amount: -100, category: "owner" }],
+  await api("/api/acc/import", { bank: [{ key: "pb1", day: `${prevM}-10`, amount: 600, category: "cod_speedy", party: "Спиди" }, { key: "pb2", day: `${prevM}-11`, amount: -100, category: "owner" },
+    { key: "pb3", day: `${prevM}-12`, amount: -40, category: "car", party: "Иван Петров Иванов", description: "Наем на автомобил" }, { key: "pb4", day: `${prevM}-13`, amount: 500, category: "loan", party: "IVAN PETROV" }],
     entries: [{ key: "pg1", day: `${prevM}-12`, category: "goods", party: "Китай", total: 120, vat: 20 }] });
   assert.equal((await api("/api/acc/settings", { vatFrom: "2026-13" })).status, 400);
-  assert.equal((await api("/api/acc/settings", { vatFrom: m, ordersFrom: m })).status, 200);
+  assert.equal((await api("/api/acc/settings", { vatFrom: m, ordersFrom: m, owner: { label: "Иван", names: "иван петров иванов, IVAN PETROV" } })).status, 200);
   const rep2 = (await api(`/api/acc/report?from=${prevM}&to=${m}`)).data;
   const [p0, p1] = rep2.months;
   assert.equal(p1.adsMeta, 400);
@@ -1466,9 +1467,10 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.equal(p0.expenses.ads_meta, 50);
   assert.equal(p0.expenses.meta_vat, 10, "20% VAT on Meta (art. 97a) is a cost");
   assert.equal(p0.vatDue, 10);
-  assert.equal(p0.profit, 600 - 120 - 50 - 10 - p0.courier);
+  assert.equal(p0.profit, 600 - 120 - 50 - 10 - p0.courier, "what the owner took or put in is not in the profit (bank lines are expenses only as entries)");
+  assert.deepEqual([p0.ownerOut, p0.ownerIn, rep2.owner], [140, 500, "Иван"], "to the owner: his withdrawal and the rent paid to him; from him: the loan");
   assert.ok(rep2.categories.ads_meta && rep2.categories.fulfillment);
-  await api("/api/acc/settings", { vatFrom: "", ordersFrom: "" });
+  await api("/api/acc/settings", { vatFrom: "", ordersFrom: "", owner: { label: "собственик", names: "" } });
 
   // The refund is in the NAP file.
   const xml3 = new TextDecoder("windows-1251").decode(Buffer.from(await (await fetch(B + `/api/acc/nap/xml?shop=bg&month=${m}`, { headers: { cookie } })).arrayBuffer()));

@@ -129,6 +129,10 @@ export async function saveSettings(input: any) {
         next.paym[k] = c;
       }
   }
+  if (input?.owner && typeof input.owner === "object") {
+    if (input.owner.label !== undefined) next.owner.label = s(input.owner.label, 30) || "собственик";
+    if (input.owner.names !== undefined) next.owner.names = s(input.owner.names, 300);
+  }
   for (const k of ["vatFrom", "ordersFrom"] as const)
     if (input?.[k] !== undefined) {
       const m = s(input[k], 7);
@@ -434,6 +438,8 @@ type Month = {
   profit: number;
   vatDue: number; // ориентировъчно
   returned: number; // върнати пратки (брой)
+  ownerOut: number; // преведено от фирмата на собственика (не е в печалбата)
+  ownerIn: number; // внесено от собственика във фирмата
 };
 
 const addMonth = (m: string, n: number) => {
@@ -459,12 +465,13 @@ export async function report(fromMonth: string, toMonth: string) {
       {
         month: m, source: fromBank(m) ? "bank" : "orders", vatRegistered: reg(m), orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, bankSales: 0,
         refunds: 0, cogs: 0, cogsMissing: 0, goodsBought: 0, courierAuto: 0, courierInvoices: 0, courier: 0, adsMeta: 0, expenses: {}, expensesTotal: 0,
-        otherIncome: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0,
+        otherIncome: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
       },
     ]),
   );
 
-  const [{ orders, set, shops }, links, courier, entries, returned, ads, sales] = await Promise.all([
+  const ownerNames = set0.owner.names.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean).map((x) => `%${x}%`);
+  const [{ orders, set, shops }, links, courier, entries, returned, ads, sales, owner] = await Promise.all([
     deliveredBetween(from, to),
     q<any>(
       `SELECT lower(btrim(l.product)) AS p, l.units::float AS units, i.unit_cost::float AS cost
@@ -500,6 +507,13 @@ export async function report(fromMonth: string, toMonth: string) {
       `SELECT to_char(day, 'YYYY-MM') AS m, coalesce(sum(amount), 0)::float AS sum FROM acc_bank
         WHERE company_id = $1 AND amount > 0 AND category = ANY($4) AND day >= $2::date AND day < $3::date GROUP BY 1`,
       [company, from, to, SALES_IN],
+    ),
+    q<any>(
+      `SELECT to_char(day, 'YYYY-MM') AS m, coalesce(sum(CASE WHEN amount < 0 THEN -amount END), 0)::float AS out,
+              coalesce(sum(CASE WHEN amount > 0 THEN amount END), 0)::float AS inn
+         FROM acc_bank WHERE company_id = $1 AND day >= $2::date AND day < $3::date
+          AND (category IN ('owner', 'loan') OR upper(party) LIKE ANY($4::text[])) GROUP BY 1`,
+      [company, from, to, ownerNames],
     ),
   ]);
   const cost = new Map<string, number>();
@@ -542,6 +556,12 @@ export async function report(fromMonth: string, toMonth: string) {
   for (const r of returned) {
     const x = M.get(r.m);
     if (x) x.returned = r.n;
+  }
+  for (const o of owner) {
+    const x = M.get(o.m);
+    if (!x) continue;
+    x.ownerOut = r2(o.out);
+    x.ownerIn = r2(o.inn);
   }
   for (const a of ads) {
     const x = M.get(a.m);
@@ -587,12 +607,13 @@ export async function report(fromMonth: string, toMonth: string) {
     total: {
       orders: sum("orders"), revenue: sum("revenue"), revenueNet: sum("revenueNet"), refunds: sum("refunds"), cogs: sum("cogs"),
       courier: sum("courier"), expenses, expensesTotal: sum("expensesTotal"), otherIncome: sum("otherIncome"), profit: sum("profit"),
-      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"),
+      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"), ownerOut: sum("ownerOut"), ownerIn: sum("ownerIn"),
     },
     vatMissing: shops.filter((x) => !shopAcc(set, x).vatSet).map((x) => x.label),
     categories: { ...EXPENSE_CATS, ...AUTO_CATS },
     vatFrom: set0.vatFrom,
     ordersFrom: set0.ordersFrom,
+    owner: set0.owner.label,
   };
 }
 
