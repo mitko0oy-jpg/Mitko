@@ -226,13 +226,15 @@ const ingShort = n => {
     .replace(/[„“"]/g, '').replace(/^Витамини от група B$/i, 'Витамини B').trim();
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
+// снимката на съставката за кръга (снимка или кадърът от видеото); без нея – иконката
+const ingPhoto = n => { const inf = ingInfo(n); if (inf && inf.img) return inf.img; const m = ingCard(n)[2]; return typeof m === 'string' ? m : m && m.poster ? m.poster : ''; };
 function ingRing(p, ings) {
   const list = ings.slice(0, 7);
   // надписът е под кръга: в средата съставките, които обикалят, минаваха върху него
   return `<div class="bv-ring__wrap"><div class="bv-ring" style="--n:${list.length}">
     <span class="bv-ring__orbit" aria-hidden="true"></span>
     <div class="bv-ring__core"><img src="${productLook(p).img}" alt="${esc(p.name)}" loading="lazy" decoding="async"></div>
-    <ul class="bv-ring__list" aria-label="Съставки">${list.map(([n], i) => `<li style="--i:${i}"><span class="bv-ring__spin"><span class="bv-ring__b"><i aria-hidden="true">${ingIcon(n)}</i><b>${esc(ingShort(n))}</b></span></span></li>`).join('')}</ul>
+    <ul class="bv-ring__list" aria-label="Съставки">${list.map(([n], i) => { const ph = ingPhoto(n); return `<li style="--i:${i}"><span class="bv-ring__spin"><span class="bv-ring__b${ph ? ' bv-ring__b--ph' : ''}">${ph ? `<img src="${ph}" alt="" loading="lazy" decoding="async">` : `<i aria-hidden="true">${ingIcon(n)}</i>`}<b>${esc(ingShort(n)).replace(/-/g, '\u2011')}</b></span></span></li>`; }).join('')}</ul>
   </div><span class="bv-ring__cap">${list.length} съставки в един пластир</span></div>`;
 }
 /* силует отпред; точките са местата за залепване – по реда на ZONE_AT */
@@ -260,7 +262,14 @@ function layersSection(L, p) {
         <div class="bv-lx2__txt"><h3 class="bv-lx2__pill"><span>${i + 1}</span>${esc(h)}</h3><p>${esc(t)}</p></div>
       </li>`).join('')}
     </ol>
-    ${L.zones ? `<div class="bv-zones">
+    ${L.zones && L.zones.every(([, k]) => ZONE_IMG[k]) ? `<div class="bv-zones bv-zones--pics">
+      <div class="bv-zones__txt">
+        <h3>Къде да го залепиш?</h3>
+        <ol class="bv-zpics">${L.zones.map(([t, k], i) => `<li class="bv-zpic bv-rv" style="--bv-d:${(i * .08).toFixed(2)}s"><span class="bv-zpic__ph"><img src="${znUse(ZONE_IMG[k])}" alt="${esc(t)}" width="400" height="400" loading="lazy" decoding="async"><span class="bv-zpic__n">${i + 1}</span></span><span class="bv-zpic__t">${esc(t)}</span></li>`).join('')}</ol>
+        ${L.when ? `<p class="bv-zones__lbl">Носиш го навсякъде – до 8 часа</p><div class="bv-zones__when">${L.when.map(([ic, t]) => `<span><i aria-hidden="true">${ic}</i>${esc(t)}</span>`).join('')}</div>` : ''}
+        ${L.note ? `<div class="bv-note"><span>🔄</span><span>${esc(L.note)}</span></div>` : ''}
+      </div>
+    </div>` : L.zones ? `<div class="bv-zones">
       <div class="bv-zones__fig bv-rv">${bodySvg(L.zones)}</div>
       <div class="bv-zones__txt">
         <h3>Къде да го залепиш?</h3>

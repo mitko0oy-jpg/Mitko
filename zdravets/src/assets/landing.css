@@ -1067,3 +1067,23 @@
   .bvp .bv-lx2__pill span{width:24px;height:24px}
   .bvp .bv-lx2__txt p{font-size:calc(var(--fs) * .88)}
 }
+
+/* ---------- кръгът на формулата: съставките са истински снимки (като при производителя) ---------- */
+.bvp .bv-ring__b--ph{padding:0;overflow:visible;background:#fff}
+.bvp .bv-ring__b--ph img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.bvp .bv-ring__b--ph b{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);white-space:normal;width:max-content;max-width:calc(var(--bs) + 24px);text-align:center;padding:4px 10px;border-radius:999px;background:#fff;color:var(--ink,#24170B);box-shadow:0 4px 12px rgba(0,0,0,.18);overflow-wrap:normal;hyphens:none}
+.bvp .bv-ring{--bs:clamp(92px,26vw,124px)}
+
+/* ---------- местата за залепване: кръгли снимки (като при производителя) ---------- */
+.bvp .bv-zones.bv-zones--pics{display:block;text-align:center}
+.bvp .bv-zones--pics h3{font-size:calc(var(--fs) * 1.333);margin:0 0 18px}
+.bvp .bv-zpics{list-style:none;margin:0 auto;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:18px 12px;max-width:860px}
+.bvp .bv-zpic{grid-column:span 2;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.bvp .bv-zpic:nth-child(4){grid-column:2 / span 2}.bvp .bv-zpic:nth-child(5){grid-column:4 / span 2}
+.bvp .bv-zpic__ph{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:50%;padding:4px;background:linear-gradient(135deg,var(--acc,#E9A13B),color-mix(in srgb,var(--acc,#E9A13B) 40%,#fff))}
+.bvp .bv-zpic__ph img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid #fff;display:block}
+.bvp .bv-zpic__n{position:absolute;right:2px;top:2px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--night,#24170B);color:#fff;font-weight:800;font-size:.9rem;border:2px solid #fff}
+.bvp .bv-zpic__t{font-weight:800;font-size:calc(var(--fs) * .88);line-height:1.25}
+.bvp .bv-zones--pics .bv-zones__when{justify-content:center}
+.bvp .bv-zones--pics .bv-note{text-align:left;max-width:640px;margin-left:auto;margin-right:auto}
+@media (min-width:760px){.bvp .bv-zpics{grid-template-columns:repeat(5,1fr);gap:18px 22px}.bvp .bv-zpic,.bvp .bv-zpic:nth-child(4),.bvp .bv-zpic:nth-child(5){grid-column:auto}}
