@@ -339,7 +339,8 @@ export async function monthSales(month: string) {
           label: s.label,
           country: shopAcc(set, s).country,
           ...x.total,
-          parts: [...x.parts.values()].sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || b.rate - a.rate),
+          // Free gifts (a PDF at 0 €) are not a part of their own.
+          parts: [...x.parts.values()].filter((p) => Math.abs(p.gross) >= 0.005).sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || b.rate - a.rate),
         };
       }),
     orders,
