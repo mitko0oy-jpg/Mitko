@@ -1059,7 +1059,10 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 .sea .seabed { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 42%; }
 .sea .kelp { transform-box: fill-box; transform-origin: 50% 100%; animation: kelp 5s ease-in-out infinite alternate; }
 @keyframes kelp { from { transform: skewX(-5deg); } to { transform: skewX(5deg); } }
-.sea .shark { position: absolute; right: -60px; top: 42%; width: 250px; opacity: .85; filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.3)); animation: shark 14s ease-in-out infinite; transition: right 1.2s ease; }
+.sea .sea-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sea .shark .stl { transform-box: fill-box; transform-origin: 0% 50%; animation: swag 1.6s ease-in-out infinite alternate; }
+@keyframes swag { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+.sea .shark { position: absolute; right: -70px; top: 38%; width: 290px; opacity: .85; filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.3)); animation: shark 14s ease-in-out infinite; transition: right 1.2s ease; }
 .lane.sea.hungry .shark { right: -14px; opacity: 1; }
 @keyframes shark { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(-16px, -10px) rotate(-1.5deg); } 60% { transform: translate(-6px, 8px) rotate(1deg); } }
 .sea .axis { position: absolute; left: 0; right: 0; bottom: 8px; height: 22px; }
@@ -1070,9 +1073,10 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 #seaLayer { position: absolute; inset: 0; }
 .fishbtn { position: absolute; border: 0; padding: 0; background: none; cursor: pointer; animation: swim 7s ease-in-out infinite; }
 .fishbtn svg { width: 100%; height: 100%; overflow: visible; transform: scaleY(var(--sy, 1)); transition: transform .15s; filter: drop-shadow(0 4px 5px rgb(0 0 0 / 0.25)); }
-.fishbtn .tl { transform-box: fill-box; transform-origin: 100% 50%; animation: wag .7s ease-in-out infinite alternate; }
+.fishbtn .tl { transform-box: fill-box; transform-origin: 100% 50%; animation: wag .75s ease-in-out infinite alternate; }
+.fishbtn.cool .tl { animation-duration: .45s; }
 @keyframes swim { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(4px, -6px) rotate(-3deg); } 50% { transform: translate(0, -10px) rotate(0); } 75% { transform: translate(-4px, -4px) rotate(3deg); } }
-@keyframes wag { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+@keyframes wag { from { transform: rotate(-12deg) scaleX(.92); } to { transform: rotate(12deg) scaleX(1); } }
 .fishbtn:hover, .fishbtn:focus-visible { z-index: 250 !important; animation-play-state: paused; outline: none; }
 .fishbtn:hover svg, .fishbtn:focus-visible svg { transform: scale(1.18) scaleY(var(--sy, 1)); }
 .fishbtn:focus-visible svg { filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 4px #fff); }
@@ -1089,7 +1093,7 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
 .sea-legend .lg-mail { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #fff; color: #2f6fed; font-size: 10px; }
 @media (max-width: 700px) {
   .lane.sea { height: 280px; }
-  .sea .shark { width: 150px; right: -50px; }
+  .sea .shark { width: 170px; right: -56px; }
   .lane.sea.hungry .shark { right: -20px; }
   .sea .axis span { font-size: 10px; padding: 1px 6px; }
   .lane.sea .ztag .zl, .lane.sea .ztag .zm { display: none; }

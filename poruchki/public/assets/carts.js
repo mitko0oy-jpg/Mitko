@@ -66,33 +66,125 @@ function place(el, target) {
   el.style.top = `${top}px`;
 }
 
-/** A cart as a fish (facing the deadline on the right); the colours come from its zone. */
-function fishSvg(z) {
-  const [a, b, c] = z.fish;
-  return `<svg viewBox="0 0 64 40" aria-hidden="true" style="--f1:${a};--f2:${b};--f3:${c}">
-    <g class="tl"><path d="M16 20 L2 6 Q7 20 2 34 Z" fill="var(--f2)"/></g>
-    <path d="M25 10 Q33 -1 47 9 Z" fill="var(--f2)"/>
-    <path d="M30 30 Q35 39 42 31 Z" fill="var(--f2)"/>
-    <path d="M14 20 C18 7 40 3 52 9 C60 13 63 18 63 20.5 C63 23 60 27 52 31 C40 37 18 33 14 20 Z" fill="var(--f1)"/>
-    <path d="M16 22 C26 33 46 35 61 23 C57 30 47 35 35 34.5 C25 34 19 29 16 22 Z" fill="var(--f3)" opacity=".75"/>
-    <path d="M44 9.5 C40 16 40 25 45 31.5" stroke="var(--f3)" stroke-width="2.4" fill="none" opacity=".85"/>
-    <ellipse cx="37" cy="12.5" rx="8" ry="2" fill="#fff" opacity=".28"/>
-    <path d="M37 21 Q31 26 34 30 Q39 27 37 21 Z" fill="var(--f2)" opacity=".85"/>
-    <circle cx="53.5" cy="16.5" r="3.7" fill="#fff"/><circle cx="54.6" cy="16.6" r="1.9" fill="#13202e"/>
-    <path d="M62 22.5 Q59.5 24 57 23.4" stroke="#0004" stroke-width="1" fill="none"/>
-  </svg>`;
-}
+// ---- the fish and the shark, drawn here (SVG): gradients, scales, fin rays, real eyes ----
+// One kind of fish per zone, in the zone's colour: Пресни – an orange damselfish, Топли – a yellow butterflyfish,
+// Изстиващи – a blue mackerel, На ръба – a violet anthias. All face the deadline on the right.
+const DEFS = `<svg class="sea-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>
+  <pattern id="od-scales" width="6" height="5" patternUnits="userSpaceOnUse"><path d="M-3 5 Q0 0 3 5 M3 5 Q6 0 9 5" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width=".6"/><path d="M0 2.5 Q3 -2.5 6 2.5" fill="none" stroke="#000" stroke-opacity=".08" stroke-width=".7"/></pattern>
+  <linearGradient id="od-shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
+  <radialGradient id="od-iris" cx=".5" cy=".5" r=".5"><stop offset=".45" stop-color="#0b0f14"/><stop offset=".5" stop-color="#6b4a14"/><stop offset=".85" stop-color="#d6a73a"/><stop offset="1" stop-color="#3a2a0e"/></radialGradient>
+  <symbol id="od-eye" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="url(#od-iris)"/><circle cx="5.2" cy="5" r="2.5" fill="#05080b"/><circle cx="3.6" cy="3.5" r="1.2" fill="#fff" opacity=".9"/><circle cx="6.6" cy="6.4" r=".5" fill="#fff" opacity=".5"/></symbol>
+  <radialGradient id="od-gari" cx=".62" cy=".32" r=".75"><stop offset="0" stop-color="#ffd59a"/><stop offset=".3" stop-color="#ff9a3c"/><stop offset=".7" stop-color="#f06a14"/><stop offset="1" stop-color="#c24a07"/></radialGradient>
+  <linearGradient id="od-garifin" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e8580c" stop-opacity=".75"/><stop offset="1" stop-color="#ff8a2a"/></linearGradient>
+  <radialGradient id="od-bfly" cx=".55" cy=".35" r=".7"><stop offset="0" stop-color="#fffbd6"/><stop offset=".35" stop-color="#ffe45c"/><stop offset=".75" stop-color="#f6c21a"/><stop offset="1" stop-color="#cf960a"/></radialGradient>
+  <linearGradient id="od-bflyfin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3bd16"/><stop offset="1" stop-color="#d79a08"/></linearGradient>
+  <linearGradient id="od-mack" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173f66"/><stop offset=".3" stop-color="#2a73a8"/><stop offset=".5" stop-color="#8fc0dc"/><stop offset=".62" stop-color="#e4f0f6"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  <linearGradient id="od-mackfin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f7c"/><stop offset="1" stop-color="#5d93bb"/></linearGradient>
+  <linearGradient id="od-anth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8e63e6"/><stop offset=".45" stop-color="#b48af7"/><stop offset=".8" stop-color="#e693d9"/><stop offset="1" stop-color="#f9c3ea"/></linearGradient>
+  <linearGradient id="od-anthfin" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7a4fd6" stop-opacity=".8"/><stop offset="1" stop-color="#c39bff"/></linearGradient>
+  <linearGradient id="od-fin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>
+  <linearGradient id="od-shark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b4852"/><stop offset=".42" stop-color="#63727d"/><stop offset=".56" stop-color="#8e9ca6"/><stop offset=".63" stop-color="#d9e0e5"/><stop offset="1" stop-color="#f3f6f8"/></linearGradient>
+  <linearGradient id="od-sfin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d4a54"/><stop offset="1" stop-color="#6a7a85"/></linearGradient>
+  <linearGradient id="od-sback" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".5" stop-color="#000" stop-opacity="0"/></linearGradient>
+</defs></svg>`;
 
-const SHARK = `<svg class="shark" viewBox="0 0 240 112" aria-hidden="true">
-  <defs><linearGradient id="shk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55697a"/><stop offset="1" stop-color="#8ea2b1"/></linearGradient></defs>
-  <path d="M120 41 L141 6 L153 42 Z" fill="#4c6070"/>
-  <path d="M206 50 L236 24 L228 58 L238 90 L206 66 Z" fill="#4c6070"/>
-  <path d="M4 63 C28 42 88 34 148 39 C182 42 205 47 214 54 C216 58 216 62 213 66 C198 72 170 77 140 79 C92 83 38 82 4 63 Z" fill="url(#shk)"/>
-  <path d="M8 66 C40 77 100 80 156 73 C124 84 62 87 8 66 Z" fill="#e8eef2"/>
-  <path d="M90 74 L112 104 L121 76 Z" fill="#4c6070"/>
-  <path d="M52 52 q3 8 0 15 M58 51 q3 8 0 16 M64 51 q3 8 0 16" stroke="#3b4c5a" stroke-width="1.6" fill="none" opacity=".7"/>
-  <circle cx="29" cy="54" r="3.2" fill="#18222d"/><circle cx="28.2" cy="53.2" r="1" fill="#fff" opacity=".7"/>
-  <path d="M9 66 Q21 71 35 66" stroke="#2c3a46" stroke-width="1.6" fill="none"/>
+const rays = (pts, col = "#000", op = 0.18) => `<path d="${pts}" stroke="${col}" stroke-opacity="${op}" stroke-width=".7" fill="none"/>`;
+const SPECIES = {
+  // Пресни: an orange damselfish – deep oval body, round tail, long soft dorsal fin.
+  fresh: {
+    ratio: 0.72,
+    svg: `<svg viewBox="0 -6 120 86" aria-hidden="true">
+      <g class="tl"><path d="M27 38 C20 28 12 19 3 15 C7 25 7 32 6 38 C7 44 7 51 3 61 C12 57 20 48 27 38 Z" fill="url(#od-garifin)"/>${rays("M25 38 L5 19 M25 38 L6 28 M25 38 L7 38 M25 38 L6 48 M25 38 L5 57")}</g>
+      <path d="M36 20 C42 5 64 -5 88 -1 C97 1 101 7 99 12 C90 12 82 11 76 11 C62 10 49 13 36 20 Z" fill="url(#od-garifin)" fill-opacity=".92"/>${rays("M44 15 L47 4 M54 12 L57 0 M64 11 L67 -3 M74 11 L78 -3 M84 11 L89 -1 M92 11 L97 5")}
+      <path d="M48 62 C54 78 74 82 88 62 C76 66 62 66 48 62 Z" fill="url(#od-garifin)" fill-opacity=".92"/>${rays("M56 66 L58 76 M66 67 L68 78 M76 66 L80 75")}
+      <path d="M22 38 C26 18 52 8 78 10 C98 12 112 24 115 36 C116 40 114 44 110 48 C100 62 78 68 56 66 C38 64 26 54 22 38 Z" fill="url(#od-gari)"/>
+      <path d="M22 38 C26 18 52 8 78 10 C98 12 112 24 115 36 C116 40 114 44 110 48 C100 62 78 68 56 66 C38 64 26 54 22 38 Z" fill="url(#od-scales)"/>
+      <path d="M22 38 C26 18 52 8 78 10 C98 12 112 24 115 36 C116 40 114 44 110 48 C100 62 78 68 56 66 C38 64 26 54 22 38 Z" fill="url(#od-shade)"/>
+      <path d="M93 17 C86 28 86 46 95 56" stroke="#a63c04" stroke-opacity=".45" stroke-width="1.4" fill="none"/>
+      <path d="M30 37 C52 33 78 30 96 31" stroke="#fff" stroke-opacity=".25" stroke-width=".8" fill="none"/>
+      <path d="M84 40 C74 42 67 48 67 54 C74 52 82 47 87 43 Z" fill="url(#od-fin)"/>
+      <use href="#od-eye" x="96" y="21" width="11" height="11"/>
+      <path d="M114 37 Q118 40 114 43" stroke="#8a3200" stroke-width="1.2" fill="none"/>
+    </svg>`,
+  },
+  // Топли: a yellow butterflyfish – tall disc, black band over the eye, a false eye-spot near the tail.
+  warm: {
+    ratio: 0.89,
+    svg: `<svg viewBox="0 -8 112 100" aria-hidden="true">
+      <g class="tl"><path d="M23 44 C17 35 11 31 4 30 C7 38 7 50 4 58 C11 57 17 53 23 44 Z" fill="#f7d34a" fill-opacity=".7" stroke="#d99a08" stroke-opacity=".6" stroke-width=".8"/>${rays("M21 44 L6 33 M21 44 L6 44 M21 44 L6 55", "#b07a00", 0.35)}</g>
+      <path d="M22 30 C26 8 52 -7 82 4 C88 7 89 11 87 14 C76 12 60 12 46 17 C36 21 28 26 22 30 Z" fill="url(#od-bflyfin)"/>
+      <path d="M22 58 C26 80 54 94 80 78 C62 78 42 72 22 58 Z" fill="url(#od-bflyfin)"/>
+      <path d="M24 28 C29 9 53 -4 80 6" stroke="#1d1d1d" stroke-opacity=".6" stroke-width="2" fill="none"/>
+      <path d="M24 60 C29 78 54 89 76 79" stroke="#1d1d1d" stroke-opacity=".55" stroke-width="2" fill="none"/>
+      ${rays("M34 18 L33 6 M44 14 L45 1 M54 12 L57 -2 M64 11 L68 -2 M74 11 L78 2 M34 70 L33 80 M46 74 L46 86 M58 76 L60 88", "#9a6a00", 0.3)}
+      <path d="M20 44 C22 18 46 6 66 8 C82 10 92 22 98 34 L107 40 C108 42 108 44 107 45 L98 50 C92 64 80 78 62 80 C42 82 22 70 20 44 Z" fill="url(#od-bfly)"/>
+      <path d="M20 44 C22 18 46 6 66 8 C82 10 92 22 98 34 L107 40 C108 42 108 44 107 45 L98 50 C92 64 80 78 62 80 C42 82 22 70 20 44 Z" fill="url(#od-scales)"/>
+      <g stroke="#c98d00" stroke-opacity=".35" stroke-width="1.1" fill="none"><path d="M34 22 L72 66"/><path d="M44 16 L82 60"/><path d="M28 34 L60 72"/><path d="M56 12 L88 48"/></g>
+      <path d="M20 44 C22 18 46 6 66 8 C82 10 92 22 98 34 L107 40 C108 42 108 44 107 45 L98 50 C92 64 80 78 62 80 C42 82 22 70 20 44 Z" fill="url(#od-shade)"/>
+      <path d="M85 12 C80 26 80 60 87 76 L94 72 C89 58 89 30 93 16 Z" fill="#141414" opacity=".9"/>
+      <path d="M74 50 C68 52 64 56 64 60 C70 58 74 55 77 52 Z" fill="url(#od-fin)"/>
+      <use href="#od-eye" x="85.5" y="31" width="9" height="9"/>
+      <path d="M106 41.5 L109 43" stroke="#6b4a00" stroke-width="1" fill="none"/>
+    </svg>`,
+  },
+  // Изстиващи: a blue mackerel – long and streamlined, dark wavy bars on the back, silver belly, forked tail.
+  cool: {
+    ratio: 0.38,
+    svg: `<svg viewBox="0 0 140 54" aria-hidden="true">
+      <g class="tl"><path d="M21 27 C15 20 9 12 1 3 C6 14 8 21 8 27 C8 33 6 40 1 51 C9 42 15 34 21 27 Z" fill="url(#od-mackfin)"/></g>
+      <path d="M68 11 L79 1 L88 10 Z" fill="url(#od-mackfin)"/>
+      <path d="M48 12 L55 6 L60 13 Z" fill="url(#od-mackfin)"/>
+      <g fill="#24608f"><path d="M28 17 l3 -3 l1 4 Z"/><path d="M34 15 l3 -3 l1 4 Z"/><path d="M40 14 l3 -3 l1 4 Z"/><path d="M28 37 l3 3 l1 -4 Z"/><path d="M34 39 l3 3 l1 -4 Z"/></g>
+      <path d="M18 27 C30 14 60 8 92 9 C114 10 130 16 137 24 C138 26 137 29 134 31 C126 39 108 44 88 44 C60 45 32 39 18 27 Z" fill="url(#od-mack)"/>
+      <path d="M18 27 C30 14 60 8 92 9 C114 10 130 16 137 24 C138 26 137 29 134 31 C126 39 108 44 88 44 C60 45 32 39 18 27 Z" fill="url(#od-scales)" opacity=".6"/>
+      <g stroke="#0f2f4f" stroke-opacity=".7" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M34 17 q3 4 -1 8"/><path d="M42 14 q4 5 -1 10"/><path d="M51 12 q4 5 -1 11"/><path d="M60 11 q4 5 -1 11"/><path d="M69 11 q4 5 0 10"/><path d="M78 11 q4 5 0 10"/><path d="M87 11 q4 4 0 9"/><path d="M96 11 q3 4 0 8"/><path d="M105 12 q3 4 0 7"/>
+      </g>
+      <path d="M24 27 C52 23 92 23 128 25" stroke="#fff" stroke-opacity=".45" stroke-width=".8" fill="none"/>
+      <path d="M18 27 C30 14 60 8 92 9 C114 10 130 16 137 24 C138 26 137 29 134 31 C126 39 108 44 88 44 C60 45 32 39 18 27 Z" fill="url(#od-shade)"/>
+      <path d="M118 15 C113 22 113 32 119 38" stroke="#1d4f7c" stroke-opacity=".5" stroke-width="1.1" fill="none"/>
+      <path d="M108 29 L94 34 L108 32 Z" fill="url(#od-fin)"/>
+      <use href="#od-eye" x="121" y="18" width="8" height="8"/>
+      <path d="M136 26 L131 28" stroke="#123" stroke-opacity=".6" stroke-width="1" fill="none"/>
+    </svg>`,
+  },
+  // На ръба: a violet anthias – slender, lyre tail with long tips, an orange streak under the eye.
+  edge: {
+    ratio: 0.54,
+    svg: `<svg viewBox="0 0 120 64" aria-hidden="true">
+      <g class="tl"><path d="M27 32 C19 24 10 13 0 3 C7 15 10 24 10 32 C10 40 7 49 0 61 C10 51 19 40 27 32 Z" fill="url(#od-anthfin)"/>${rays("M25 32 L2 6 M25 32 L9 32 M25 32 L2 58", "#fff", 0.25)}</g>
+      <path d="M42 15 L60 1 L64 10 C76 7 90 9 97 14 C80 12 60 12 42 15 Z" fill="url(#od-anthfin)"/>
+      <path d="M58 50 C64 58 74 58 82 50 Z" fill="url(#od-anthfin)"/>
+      <path d="M78 47 L70 63 L84 49 Z" fill="#c085f0"/>
+      <path d="M24 32 C30 18 54 10 76 11 C96 12 110 22 114 30 C115 32 114 34 112 36 C104 46 86 52 66 52 C46 52 30 46 24 32 Z" fill="url(#od-anth)"/>
+      <path d="M24 32 C30 18 54 10 76 11 C96 12 110 22 114 30 C115 32 114 34 112 36 C104 46 86 52 66 52 C46 52 30 46 24 32 Z" fill="url(#od-scales)"/>
+      <path d="M24 32 C30 18 54 10 76 11 C96 12 110 22 114 30 C115 32 114 34 112 36 C104 46 86 52 66 52 C46 52 30 46 24 32 Z" fill="url(#od-shade)"/>
+      <path d="M100 29 C96 31 92 33 86 35" stroke="#ffae3d" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+      <path d="M95 16 C89 24 89 38 96 45" stroke="#6a3fbf" stroke-opacity=".45" stroke-width="1.1" fill="none"/>
+      <path d="M86 34 C78 36 73 41 73 45 C79 43 85 39 89 37 Z" fill="url(#od-fin)"/>
+      <use href="#od-eye" x="99" y="19" width="9" height="9"/>
+      <path d="M113 31 Q116 33 113 35" stroke="#5a2a9a" stroke-width="1.1" fill="none"/>
+    </svg>`,
+  },
+};
+const fishSvg = (z) => SPECIES[z.id].svg;
+
+// The shark, facing left at the fish: countershaded body, gill slits, fins, a tail that sways.
+const SHARK = `<svg class="shark" viewBox="0 0 300 130" aria-hidden="true">
+  <g class="stl"><path d="M252 62 C262 54 274 36 293 9 C291 29 289 46 283 62 C289 72 293 83 297 100 C283 89 268 77 252 70 Z" fill="url(#od-sfin)"/></g>
+  <path d="M118 44 C126 31 137 14 149 3 C151 18 152 32 160 43 Z" fill="url(#od-sfin)"/>
+  <path d="M214 49 L223 39 L229 51 Z" fill="url(#od-sfin)"/>
+  <path d="M226 80 L235 91 L239 78 Z" fill="url(#od-sfin)"/>
+  <path d="M190 86 L203 99 L209 86 Z" fill="url(#od-sfin)"/>
+  <path d="M4 72 C10 62 30 52 62 47 C104 41 160 40 206 46 C228 49 246 54 258 60 C262 63 262 67 258 70 C244 76 222 82 196 85 C150 90 98 92 60 88 C34 85 14 80 4 72 Z" fill="url(#od-shark)"/>
+  <path d="M4 72 C10 62 30 52 62 47 C104 41 160 40 206 46 C228 49 246 54 258 60 C262 63 262 67 258 70 C244 76 222 82 196 85 C150 90 98 92 60 88 C34 85 14 80 4 72 Z" fill="url(#od-sback)"/>
+  <path d="M14 76 C40 74 70 70 96 72 C130 74 170 74 214 70 C190 79 150 84 104 85 C66 86 34 83 14 76 Z" fill="#9aa8b2" opacity=".35"/>
+  <path d="M96 82 C108 96 124 110 147 122 C140 108 132 94 129 83 Z" fill="url(#od-sfin)"/>
+  <g stroke="#2f3a42" stroke-opacity=".55" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M72 56 q-3 9 0 18"/><path d="M77 55 q-3 10 0 20"/><path d="M82 55 q-3 10 0 20"/><path d="M87 55 q-3 10 0 19"/><path d="M92 56 q-3 9 0 17"/></g>
+  <path d="M40 54 C60 50 90 48 120 47" stroke="#fff" stroke-opacity=".12" stroke-width="2" fill="none"/>
+  <ellipse cx="30" cy="61" rx="3.4" ry="3" fill="#0a0d10"/><circle cx="29" cy="60" r="1" fill="#fff" opacity=".75"/>
+  <path d="M12 63 q3 -1 5 0" stroke="#2a333a" stroke-width="1.2" fill="none"/>
+  <path d="M12 75 C22 78 34 80 47 81" stroke="#2a333a" stroke-opacity=".8" stroke-width="1.4" fill="none"/>
 </svg>`;
 
 /** The bottom of the sea: hills, sand, rocks, kelp and corals (drawn here). */
@@ -137,7 +229,7 @@ function scene() {
     const sz = (3 + hash(i + 3) * 6).toFixed(1);
     return `<i class="bb" style="left:${x}%;width:${sz}px;height:${sz}px;animation-duration:${(7 + hash(i + 5) * 9).toFixed(1)}s;animation-delay:-${(hash(i + 9) * 16).toFixed(1)}s"></i>`;
   }).join("");
-  return `<div class="sea-back" aria-hidden="true">
+  return `<div class="sea-back" aria-hidden="true">${DEFS}
       <div class="rays"></div>${bubbles}
       ${[1, 2, 3].map((k) => `<div class="zline" style="left:${k * 25 * WATER}%"></div>`).join("")}
       <div class="zline end" style="left:${100 * WATER}%"></div><div class="danger" style="left:${100 * WATER}%"></div>
@@ -195,13 +287,14 @@ export function renderStream() {
     carts
       .map((c) => {
         const z = zoneOf(c.hours);
-        const w = Math.round((28 + Math.sqrt(c.value.eur / max) * 44) * k);
+        // The long mackerel gets a bit more length, so all kinds look about the same size for the same money.
+        const w = Math.round((30 + Math.sqrt(c.value.eur / max) * 48) * k * (z.id === "cool" ? 1.25 : 1));
         const x = Math.min(100 * WATER - 1, Math.max(1.5, xOf(c.hours) * WATER));
         const top = 15 + hash(c.id) * 50;
         const late = stream.window - c.hours < 12;
         const sp = 5 + hash(c.id + 3) * 4;
         return `<button class="fishbtn ${z.id} ${late ? "late" : ""} ${c.reminders ? "rem" : ""}" data-cart="${c.id}" aria-label="${esc(c.name || "Без име")}, ${esc(fmtValue(c.value))}, ${z.label}"
-          style="left:calc(${x.toFixed(2)}% - ${w / 2}px);top:${top.toFixed(1)}%;width:${w}px;height:${Math.round(w * 0.64)}px;z-index:${200 - w};--sy:${(0.86 + hash(c.id + 5) * 0.3).toFixed(2)};animation-duration:${sp.toFixed(1)}s;animation-delay:-${((t + hash(c.id + 7) * sp) % sp).toFixed(2)}s">${fishSvg(z)}</button>`;
+          style="left:calc(${x.toFixed(2)}% - ${w / 2}px);top:${top.toFixed(1)}%;width:${w}px;height:${Math.round(w * SPECIES[z.id].ratio)}px;z-index:${200 - w};--sy:${(0.86 + hash(c.id + 5) * 0.3).toFixed(2)};animation-duration:${sp.toFixed(1)}s;animation-delay:-${((t + hash(c.id + 7) * sp) % sp).toFixed(2)}s">${fishSvg(z)}</button>`;
       })
       .join("") +
     (carts.length ? "" : `<div class="lane-empty">Аквариумът е празен – няма незавършени колички в последните ${stream.window} часа.</div>`);
