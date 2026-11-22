@@ -580,8 +580,8 @@ export async function report(fromMonth: string, toMonth: string) {
     else if (e.category === "courier") {
       x.courierInvoices = r2(x.courierInvoices + net);
       x.purchaseVat = r2(x.purchaseVat + vat);
-    } else if (e.category === "goods" && x.source === "orders") {
-      // Стоката отива в склада; в печалбата е себестойността на продаденото.
+    } else if (e.category === "goods" && x.source === "orders" && x.orders > 0) {
+      // Стоката отива в склада; в печалбата е себестойността на продаденото (месец без поръчки в OrderDesk – купеното е разход).
       x.goodsBought = r2(x.goodsBought + net);
       x.purchaseVat = r2(x.purchaseVat + vat);
     } else {
