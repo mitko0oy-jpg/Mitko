@@ -1375,6 +1375,213 @@ test("parcels at the office: automatic SMS on day 4 and day 6, once each, only w
   }
 });
 
+test("automatic SMS: „Изпратена пратка“ once when the courier has it; „Нова поръчка“ by product days, not after a new order or an opt-out", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const make = async (name, phone, item, sql, params = []) => {
+    const r = await api("/api/orders", { shop: "bg", name, phone, city: "Русе", delivery: { courier: "speedy", type: "office", officeId: "77", officeName: "Русе Център" }, items: [{ name: item, qty: 1, price: 30 }] });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    await db.query(`UPDATE orders SET tracking_no = $2, courier = 'speedy', tracking_source = 'cb', ${sql} WHERE id = $1`, [r.data.id, "6200" + phone.replace(/\D/g, "").slice(-7), ...params]);
+    return r.data.id;
+  };
+  const smsTo = (from, n) => sent.slice(from).filter((x) => x.path === "sms" && x.body.to === n);
+  try {
+    assert.equal((await api("/api/sms/settings", { reorder: { on: true, rules: [{ match: "", days: 3 }] } })).status, 400);
+    assert.equal((await api("/api/sms/settings", { reorder: { on: true, rules: [] } })).status, 400);
+    const set = await api("/api/sms/settings", { shippedAuto: { on: true }, reorder: { on: true, rules: [{ match: "3+2", days: 60 }, { match: "", days: 30 }] } });
+    assert.equal(set.status, 200, JSON.stringify(set.data));
+    assert.deepEqual(set.data.reorder.rules, [{ match: "3+2", days: 60 }, { match: "", days: 30 }]);
+    assert.equal(set.data.shippedAuto.on, true);
+
+    // On its way: in transit at the courier → one SMS; only a waybill (prepared) → nothing yet.
+    await make("Пешо Пътник", "0888 200 001", "BeeVenom Care Gel", "parcel_status = 'in_transit', parcel_text = 'Пътува'");
+    await make("Гошо Подготвен", "0888 200 002", "BeeVenom Care Gel", "parcel_status = 'prepared', parcel_text = 'Създадена'");
+    // Delivered: 61 days ago a 3+2 (rule 1) and a gel 31 days ago (rule 2); a 3+2 31 days ago is too early;
+    // one who ordered again; one who opted out.
+    const delivered = (days) => `parcel_status = 'delivered', parcel_text = 'Доставена', delivered_at = now() - interval '${days} days', ordered_at = now() - interval '${days + 3} days'`;
+    const a = await make("Ани Пакет", "0888 200 011", "BeeVenom 3+2 – 5 гела", delivered(61));
+    await make("Боби Гел", "0888 200 012", "BeeVenom Care Gel", delivered(31));
+    await make("Ваня Рано", "0888 200 013", "BeeVenom 3+2 – 5 гела", delivered(31));
+    await make("Гери Повторна", "0888 200 014", "BeeVenom Care Gel", delivered(31));
+    await api("/api/orders", { shop: "bg", name: "Гери Повторна", phone: "0888 200 014", city: "Русе", delivery: { courier: "speedy", type: "office", officeId: "77", officeName: "Русе Център" }, items: [{ name: "Пластири", qty: 1, price: 9.9 }] });
+    const off = await make("Дани Отписана", "0888 200 015", "BeeVenom Care Gel", delivered(31));
+    await db.query("INSERT INTO optouts (company_id, contact) VALUES (1, '888200015') ON CONFLICT DO NOTHING");
+
+    let before = sent.length;
+    assert.equal((await api("/api/settings/sync", {})).status, 200);
+    const ship = smsTo(before, "359888200001");
+    assert.equal(ship.length, 1, "in transit: one SMS");
+    assert.match(ship[0].body.message, /Пешо, поръчка № \S+ от Тест е изпратена\. Куриер: Спиди, товарителница 6200\d+/);
+    assert.equal(smsTo(before, "359888200002").length, 0, "only prepared: nothing");
+    const pack = smsTo(before, "359888200011");
+    assert.equal(pack.length, 1, "3+2 after 61 days");
+    assert.match(pack[0].body.message, /Ани, минаха 61 дни от доставката на BeeVenom 3\+2\. .*поръчайте отново: https:\/\/127\.0\.0\.1:\d+ Отказ: http\S+\/u\/1-888200011-[\w-]{8}$/);
+    assert.equal(smsTo(before, "359888200012").length, 1, "gel after 31 days (the empty rule)");
+    assert.equal(smsTo(before, "359888200013").length, 0, "3+2 after 31 days: too early");
+    assert.equal(smsTo(before, "359888200014").length, 0, "ordered again");
+    assert.equal(smsTo(before, "359888200015").length, 0, "opted out");
+    assert.ok((await api(`/api/orders/${off}`)).data.events.some((e) => /отписал/.test(e.text)));
+    assert.ok((await api(`/api/orders/${a}`)).data.events.some((e) => /Автоматичен SMS \(нова поръчка, 61 дни след доставката\)/.test(e.text)));
+
+    // Again: nothing twice.
+    before = sent.length;
+    await api("/api/settings/sync", {});
+    assert.equal(sent.slice(before).filter((x) => x.path === "sms" && /35988820001\d/.test(x.body.to)).length, 0);
+
+    // The short link from the SMS opts out (and a wrong one does not).
+    const link = /(http\S+\/u\/\S+)$/.exec(pack[0].body.message)[1].replace(/^https?:\/\/[^/]+/, B);
+    assert.equal((await fetch(link.replace(/-[\w-]{8}$/, "-AAAAAAAA"))).status, 400);
+    assert.equal((await fetch(link)).status, 200);
+    assert.ok((await db.query("SELECT 1 FROM optouts WHERE contact = '888200011'")).rows.length);
+  } finally {
+    await api("/api/sms/settings", { shippedAuto: { on: false }, reorder: { on: false } });
+    await db.end();
+  }
+});
+
+test("customers page: grouped by phone, spent from taken parcels, repeat / VIP / risk, their orders", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    const make = async (name, phone, total, stage) => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Плевен", delivery: { courier: "econt", type: "office", officeId: "5", officeName: "Плевен" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: total }] });
+      assert.equal(r.status, 200, JSON.stringify(r.data));
+      const ps = { delivered: "delivered", returned: "returned" }[stage];
+      if (ps) await db.query("UPDATE orders SET tracking_no = $2, courier = 'econt', parcel_status = $3, total_eur = $4 WHERE id = $1", [r.data.id, `1051603${String(r.data.id).padStart(6, "0")}`, ps, total]);
+      return r.data.id;
+    };
+    // A good repeat client (2 taken, 1 sent back) and one who only sent back.
+    await make("Росица Вярна", "0888 300 001", 60, "delivered");
+    await make("Росица Вярна", "+359 888 300 001", 40, "delivered");
+    await make("Росица В.", "0888300001", 30, "returned");
+    await make("Тодор Връщач", "0888 300 002", 30, "returned");
+
+    const all = await api("/api/klienti");
+    assert.equal(all.status, 200, JSON.stringify(all.data));
+    assert.ok(all.data.summary.customers >= 2);
+    assert.ok(all.data.summary.repeat >= 1);
+
+    const ros = (await api("/api/klienti?q=300001")).data.customers;
+    assert.equal(ros.length, 1, "one client for three spellings of the phone");
+    const r = ros[0];
+    assert.deepEqual([r.n, r.got, r.ret, r.spent, r.risk], [3, 2, 1, 100, "medium"]);
+    assert.equal(r.name, "Росица В.", "the name from the newest order");
+    const tod = (await api("/api/klienti?q=" + encodeURIComponent("Тодор"))).data.customers[0];
+    assert.equal(tod.risk, "high", "sent back and never took one");
+    assert.ok((await api("/api/klienti?risk=high")).data.customers.some((c) => c.k === "888300002"));
+    assert.ok((await api("/api/klienti?seg=repeat")).data.customers.some((c) => c.k === "888300001"));
+    assert.ok(!(await api("/api/klienti?seg=new")).data.customers.some((c) => c.k === "888300001"));
+
+    const d = await api("/api/klienti/888300001");
+    assert.equal(d.status, 200);
+    assert.equal(d.data.orders.length, 3);
+    assert.equal(d.data.orders[0].customer_name, "Росица В.");
+    assert.equal((await api("/api/klienti/12")).data.orders.length, 0);
+  } finally {
+    await db.end();
+  }
+});
+
+test("where orders come from: the ad from the page (utm) is kept in the order; channels, ads and landing pages in the report", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const send = (body) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` }, body: JSON.stringify(body) });
+  try {
+    const utm = { s: "facebook", m: "paid", c: "Гел Черен петък", t: "Жени 45+", n: "Видео баба", id: "120200001", ck: "fbclid" };
+    // A visit from a Meta ad: the landing, then the order form; a second visit without an ad.
+    assert.equal((await send({ t: "ping", sid: "attr000001", vid: "brws000001", page: "/gel-bf", stage: "browsing", device: "mobile", source: "Facebook / Instagram", utm })).status, 204);
+    await send({ t: "ping", sid: "attr000001", vid: "brws000001", page: "/gel-bf/checkout", stage: "filling", device: "mobile", source: "Facebook / Instagram", utm });
+    await send({ sid: "attr000001", name: "Маргарита", phone: "0888 400 001", cart: ["Гел · 1 · 19,90 €"], total: "24,40 €", page: "/gel-bf/checkout", utm });
+    await send({ t: "ping", sid: "attr000002", vid: "brws000002", page: "/gel-bf", stage: "browsing", device: "desktop", source: "Директно" });
+    const v = (await db.query("SELECT landing, page, utm FROM visits WHERE sid = 'attr000001'")).rows[0];
+    assert.deepEqual([v.landing, v.page, v.utm.c], ["/gel-bf", "/gel-bf/checkout", "Гел Черен петък"], "the landing stays the first page");
+
+    // Her order from the shop, and an older one nobody typed in a form.
+    const mk = async (name, phone, hoursAgo) => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Бургас", delivery: { courier: "econt", type: "office", officeId: "1", officeName: "Бургас" }, items: [{ name: "Гел", qty: 1, price: 19.9 }] });
+      await db.query(`UPDATE orders SET source = 'shop', src = NULL, ordered_at = now() - make_interval(hours => $2) WHERE id = $1`, [r.data.id, hoursAgo]);
+      return r.data.id;
+    };
+    const her = await mk("Маргарита", "+359888400001", 0);
+    const old = await mk("Без Форма", "0888 400 002", 3);
+    await db.query("UPDATE orders SET parcel_status = 'delivered', tracking_no = '1051604000001', courier = 'econt', total_eur = 24.4 WHERE id = $1", [her]);
+
+    assert.equal((await api("/api/settings/sync", {})).status, 200);
+    const src = (await db.query("SELECT id, src FROM orders WHERE id = ANY($1)", [[her, old]])).rows;
+    const s1 = src.find((r) => Number(r.id) === her).src;
+    assert.equal(s1.channel, "meta");
+    assert.deepEqual([s1.campaign, s1.adset, s1.ad, s1.ad_id, s1.page], ["Гел Черен петък", "Жени 45+", "Видео баба", "120200001", "/gel-bf"]);
+    assert.equal(src.find((r) => Number(r.id) === old).src.channel, "unknown");
+
+    const today = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10);
+    const rep = await api(`/api/reklami?from=${today}&to=${today}`);
+    assert.equal(rep.status, 200, JSON.stringify(rep.data));
+    const ad = rep.data.ads.find((a) => a.ad === "Видео баба");
+    assert.ok(ad, "the ad is in the report");
+    assert.deepEqual([ad.campaign, ad.orders, ad.delivered, ad.taken], ["Гел Черен петък", 1, 1, 24.4]);
+    assert.ok(rep.data.channels.some((c) => c.channel === "meta" && c.delivered >= 1));
+    const page = rep.data.pages.find((p) => p.landing === "/gel-bf");
+    assert.ok(page, "the landing page with its visits");
+    assert.equal(page.people, 2);
+    assert.equal(page.filling, 1);
+    assert.equal(page.by_channel.meta, 1);
+    assert.equal(page.orders.delivered, 1);
+    assert.ok(rep.data.coverage.total >= 2);
+    assert.equal((await api("/api/reklami?from=2026-13-01&to=x")).status, 400);
+  } finally {
+    await db.end();
+  }
+});
+
+test("Claude connection (MCP): a secret link made by the owner; tools listed and answered; a changed or wrong link is refused", async () => {
+  assert.deepEqual((await api("/api/mcp")).data, { on: false, url: "", at: null });
+  const made = await api("/api/mcp", { action: "new" });
+  assert.equal(made.status, 200, JSON.stringify(made.data));
+  assert.match(made.data.url, /\/mcp\/1\.[\w-]{30,}$/);
+  const path = new URL(made.data.url).pathname;
+  const rpc = (body, p = path) => fetch(B + p, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify(body) });
+
+  const init = await (await rpc({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } } })).json();
+  assert.equal(init.result.protocolVersion, "2025-06-18");
+  assert.equal(init.result.serverInfo.name, "orderdesk");
+  assert.equal((await rpc({ jsonrpc: "2.0", method: "notifications/initialized" })).status, 202);
+  const list = await (await rpc({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
+  const names = list.result.tools.map((t) => t.name);
+  for (const n of ["search_orders", "get_order", "get_customer", "list_customers", "sales_dashboard", "ads_report", "warehouse", "open_carts"]) assert.ok(names.includes(n), n);
+  assert.ok(list.result.tools.every((t) => t.annotations.readOnlyHint && t.inputSchema.type === "object"));
+
+  const call = async (name, args) => {
+    const r = await (await rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name, arguments: args } })).json();
+    assert.ok(!r.result.isError, r.result.content?.[0]?.text);
+    return JSON.parse(r.result.content[0].text);
+  };
+  const found = await call("search_orders", { q: "5003" });
+  assert.equal(found.orders[0].order_no, "5003");
+  assert.equal(found.orders[0].raw, undefined);
+  const one = await call("get_order", { id: found.orders[0].id });
+  assert.equal(one.order.order_no, "5003");
+  assert.ok(Array.isArray(one.history));
+  const dash = await call("sales_dashboard", {});
+  assert.ok(dash.orders >= 1);
+  assert.ok((await call("get_customer", { phone: "0888 300 001" })).orders.length >= 3);
+  const bad = await (await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "get_customer", arguments: { phone: "12" } } })).json();
+  assert.equal(bad.result.isError, true);
+  assert.equal((await (await rpc({ jsonrpc: "2.0", id: 5, method: "nope" })).json()).error.code, -32601);
+
+  // Wrong token, a GET, and the old link after „Нов линк“ / „Изключи“.
+  assert.equal((await rpc({ jsonrpc: "2.0", id: 1, method: "ping" }, path.replace(/.$/, (c) => (c === "A" ? "B" : "A")))).status, 404);
+  assert.equal((await fetch(B + path)).status, 405);
+  const again = await api("/api/mcp", { action: "new" });
+  assert.notEqual(again.data.url, made.data.url);
+  assert.equal((await rpc({ jsonrpc: "2.0", id: 1, method: "ping" })).status, 404, "the old link stopped");
+  await api("/api/mcp", { action: "off" });
+  assert.equal((await rpc({ jsonrpc: "2.0", id: 1, method: "ping" }, new URL(again.data.url).pathname)).status, 404);
+});
+
 test("duplicate orders: held as „Дублирана“ by phone or email, no waybill or call, released by „Не е дубликат“; rules in settings", async () => {
   const agent = (p) => fetch(`${B}/api/agent/${p}`, { headers: { authorization: "Bearer agent-token-agent-token-agent-token-0000" } }).then(async (r) => ({ status: r.status, data: await r.json() }));
   const rules = await api("/api/settings/duplicates");

@@ -139,13 +139,20 @@ export function unsubLink(contact: string) {
   const site = env("URL") || "https://mitko-poruchki.netlify.app";
   return `${site}/api/unsub?c=${companyId()}&k=${encodeURIComponent(k)}&s=${sign(companyId(), k)}`;
 }
+/** A short link for an SMS (every character costs): /u/<company>-<last 9 digits>-<8 signature characters>. */
+export function shortUnsubLink(phone: string) {
+  const k = contactKey(phone);
+  const site = env("URL") || "https://mitko-poruchki.netlify.app";
+  return `${site}/u/${companyId()}-${k}-${sign(companyId(), k).slice(0, 8)}`;
+}
 export async function optOut(company: number, contact: string, sig: string) {
   const k = contactKey(contact);
-  if (!k || sig !== sign(company, k)) return false;
+  // The full signature (e-mail links) or its first 8 characters (the short SMS link).
+  if (!k || !sig || (sig !== sign(company, k) && !(sig.length === 8 && sign(company, k).startsWith(sig)))) return false;
   await q("INSERT INTO optouts (company_id, contact) VALUES ($1, $2) ON CONFLICT DO NOTHING", [company, k]);
   return true;
 }
-async function optedOut(contact: string) {
+export async function optedOut(contact: string) {
   return Boolean(await one("SELECT 1 FROM optouts WHERE company_id = $1 AND contact = $2", [companyId(), contactKey(contact)]));
 }
 

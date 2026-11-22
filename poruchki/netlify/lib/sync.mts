@@ -11,7 +11,8 @@ import { syncAllProducts } from "./products.mts";
 import { purgeLeads } from "./leads.mts";
 import { purgeVisits } from "./visits.mts";
 import { runCartReminders } from "./reminders.mts";
-import { runOfficeReminders } from "./office-sms.mts";
+import { runOfficeReminders, runReorderReminders, runShippedSms } from "./auto-sms.mts";
+import { attributeOrders, rollupVisits } from "./attribution.mts";
 import { checkDuplicates } from "./duplicates.mts";
 import { syncAbandoned } from "./abandoned.mts";
 import { runMonthlyMail } from "./accmail.mts";
@@ -125,13 +126,22 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
   // 6) Abandoned carts into the orders list, then reminders to unfinished orders (each company that switched them on).
   const reminders: Record<number, unknown> = {};
   const abandoned: Record<number, unknown> = {};
-  const office: Record<number, unknown> = {}; // 6b) SMS to parcels waiting at the courier's office
+  const office: Record<number, unknown> = {}; // 6b) automatic SMS: parcel at the office, parcel on its way, time for a new order
+  const sources: Record<number, unknown> = {}; // 6c) where the new orders came from, and the visits of the day by page
   for (const company of companies) {
     if (Date.now() > deadline - 1500) break;
     abandoned[company] = await withCompany(company, () => syncAbandoned()).catch((e) => ({ error: e.message }));
+    sources[company] = await withCompany(company, async () => ({
+      orders: await attributeOrders(deadline - 1200).catch((e) => ({ error: e.message })),
+      pages: await rollupVisits().catch((e) => ({ error: e.message })),
+    }));
     reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
     if (Date.now() > deadline - 1200) continue;
-    office[company] = await withCompany(company, () => runOfficeReminders(deadline - 800)).catch((e) => ({ error: e.message }));
+    office[company] = await withCompany(company, async () => ({
+      office: await runOfficeReminders(deadline - 800).catch((e) => ({ error: e.message })),
+      shipped: Date.now() < deadline - 1000 ? await runShippedSms(deadline - 800).catch((e) => ({ error: e.message })) : { skipped: "time" },
+      reorder: Date.now() < deadline - 1000 ? await runReorderReminders(deadline - 800).catch((e) => ({ error: e.message })) : { skipped: "time" },
+    }));
   }
 
   // 7) The monthly letter to the accountant (sales by country and shop + the NAP audit files) – on the chosen day.
@@ -141,7 +151,7 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     accountant[company] = await withCompany(company, () => runMonthlyMail()).catch((e) => ({ error: e.message }));
   }
 
-  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, reminders, office, accountant };
+  const info = { ...c, shops: shops.length, errors, duplicates, mw, products, nekorekten, abandoned, sources, reminders, office, accountant };
   await logJob(opts.job || "sync", Object.keys(errors).length === 0 && !(mw as any).error, info);
   return info;
 }

@@ -92,19 +92,36 @@ function renderSms(d) {
   f.officeOn.checked = !!d.office?.on;
   f.officeDay1.value = d.office?.day1 ?? 4;
   f.officeDay2.value = d.office?.day2 ?? 6;
+  f.shippedOn.checked = !!d.shippedAuto?.on;
+  f.reorderOn.checked = !!d.reorder?.on;
+  $("reorderRules").innerHTML = "";
+  for (const r of d.reorder?.rules?.length ? d.reorder.rules : [{ match: "", days: 45 }]) addReorderRule(r);
   $("smsTemplates").innerHTML = Object.entries(d.templates)
     .map(([k, t]) => `<label>${esc(t.label)}<textarea name="tpl_${k}" rows="3" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)">${esc(t.text)}</textarea></label>`)
     .join("");
   for (const el of f.elements) el.disabled = !isAdmin;
   $("smsTest").disabled = !isAdmin || !d.configured;
 }
+function addReorderRule(r = { match: "", days: 45 }) {
+  const row = document.createElement("div");
+  row.className = "row reorderRule";
+  row.innerHTML = `<input type="number" min="7" max="365" style="width:72px" value="${esc(String(r.days ?? 45))}"> дни след доставката, продукт с думата <input type="text" maxlength="60" style="flex:1;min-width:120px" placeholder="празно = всички" value="${esc(r.match || "")}"> <button type="button" class="btn sm" title="Махни">✕</button>`;
+  row.querySelector("button").onclick = () => row.remove();
+  row.querySelectorAll("input").forEach((el) => (el.disabled = !isAdmin));
+  $("reorderRules").append(row);
+}
+$("reorderAdd").onclick = () => addReorderRule({ match: "", days: 60 });
+const reorderRules = () => [...document.querySelectorAll("#reorderRules .reorderRule")].map((row) => {
+  const [days, match] = row.querySelectorAll("input");
+  return { days: Number(days.value), match: match.value };
+});
 $("smsForm").onsubmit = async (e) => {
   e.preventDefault();
   const f = e.target;
   const templates = {};
   for (const el of f.elements) if (el.name?.startsWith("tpl_")) templates[el.name.slice(4)] = el.value;
   await busy($("smsSave"), "Записвам…", async () => {
-    renderSms(await api("/api/sms/settings", { method: "POST", body: { token: f.token.value, sender: f.sender.value, latin: f.latin.checked, templates, office: { on: f.officeOn.checked, day1: Number(f.officeDay1.value), day2: Number(f.officeDay2.value) } } }));
+    renderSms(await api("/api/sms/settings", { method: "POST", body: { token: f.token.value, sender: f.sender.value, latin: f.latin.checked, templates, office: { on: f.officeOn.checked, day1: Number(f.officeDay1.value), day2: Number(f.officeDay2.value) }, shippedAuto: { on: f.shippedOn.checked }, reorder: { on: f.reorderOn.checked, rules: reorderRules() } } }));
     f.token.value = "";
     say("SMS настройките са записани.");
   });
@@ -163,3 +180,30 @@ $("dupForm").onsubmit = async (e) => {
   });
 };
 api("/api/settings/duplicates").then(renderDup).catch((e) => say(e.message, false));
+
+// ---- Връзка с Claude (MCP), only the owner ----
+function renderMcp(d) {
+  $("mcpCard").hidden = false;
+  $("mcpUrl").value = d.url || "";
+  $("mcpState").innerHTML = d.on ? `<span class="ok">включена</span>${d.at ? ` · линкът е от ${esc(new Date(d.at).toLocaleString("bg-BG"))}` : ""}` : `<span class="muted">изключена</span>`;
+  $("mcpNew").textContent = d.on ? "Нов линк" : "Създай линк";
+  $("mcpOff").disabled = !d.on;
+  $("mcpCopy").disabled = !d.on;
+}
+if (isAdmin) {
+  api("/api/mcp").then(renderMcp).catch(() => {});
+  $("mcpNew").onclick = () => {
+    if ($("mcpUrl").value && !confirm("Старият линк ще спре да работи. Да направя нов?")) return;
+    busy($("mcpNew"), "Правя…", async () => renderMcp(await api("/api/mcp", { method: "POST", body: { action: "new" } })));
+  };
+  $("mcpOff").onclick = () => busy($("mcpOff"), "Изключвам…", async () => renderMcp(await api("/api/mcp", { method: "POST", body: { action: "off" } })));
+  $("mcpCopy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText($("mcpUrl").value);
+      say("Линкът е копиран.");
+    } catch {
+      $("mcpUrl").select();
+    }
+  };
+}
+

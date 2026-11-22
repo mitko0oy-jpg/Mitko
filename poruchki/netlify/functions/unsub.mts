@@ -11,12 +11,17 @@ const page = (title: string, text: string, status = 200) =>
   );
 
 export default async (req: Request) => {
-  const u = new URL(req.url).searchParams;
-  const company = Number(u.get("c"));
-  const ok = Number.isSafeInteger(company) && company > 0 && (await optOut(company, String(u.get("k") || ""), String(u.get("s") || "")));
+  const url = new URL(req.url);
+  const u = url.searchParams;
+  // The short SMS link: /u/<company>-<phone>-<signature>.
+  const short = /^\/u\/(\d+)-(\d{6,15})-([A-Za-z0-9_-]{8})\/?$/.exec(url.pathname);
+  const company = Number(short ? short[1] : u.get("c"));
+  const contact = short ? short[2] : String(u.get("k") || "");
+  const sig = short ? short[3] : String(u.get("s") || "");
+  const ok = Number.isSafeInteger(company) && company > 0 && (await optOut(company, contact, sig));
   return ok
-    ? page("Отписахте се", "Няма да получавате повече напомняния за незавършени поръчки.")
+    ? page("Отписахте се", "Няма да получавате повече напомняния и предложения от нас.")
     : page("Линкът не е валиден", "Опитайте пак от последния имейл или ни пишете.", 400);
 };
 
-export const config: Config = { path: "/api/unsub" };
+export const config: Config = { path: ["/api/unsub", "/u/*"] };

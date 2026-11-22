@@ -15,7 +15,7 @@ async function order(id: unknown) {
   return o;
 }
 
-const publicSettings = (s: Awaited<ReturnType<typeof smsSettings>>) => ({ configured: !!s.token, source: s.source, sender: s.sender, templates: s.templates, latin: s.latin, office: s.office, pricePerPart: PRICE_PER_PART });
+const publicSettings = (s: Awaited<ReturnType<typeof smsSettings>>) => ({ configured: !!s.token, source: s.source, sender: s.sender, templates: s.templates, latin: s.latin, office: s.office, shippedAuto: s.shippedAuto, reorder: s.reorder, pricePerPart: PRICE_PER_PART });
 
 export default handle(async (req) => {
   const user = await requireUser(req);

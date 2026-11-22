@@ -108,6 +108,28 @@
 - Одиторски файл по Н-18 (`lib/nap.mts`, приложение № 38, схема в `test/fixtures/nap-audit.xsd` – тестът проверява с `xmllint`): по един файл за магазин и месец, само за включените в настройките; windows-1251 (`cp1251()`), `<audit>` с eik, e_shop_n, domain_name, e_shop_type, creation_date, mon, god, поръчките (ord_n = № на поръчката, ord_d, doc_n, doc_date = денят на доставката, art: име, бройки, единична цена без ДДС преди отстъпка, ставка, ДДС, сума с ДДС; ord_total1 − ord_disc + ord_vat = ord_total2 = сумата на поръчката; paym по `settings.paym` – по подразбиране Еконт 3, Спиди 6, банков превод 1, карта 4 + proc_id) и върнатите суми (refund записи: r_ord, rorder, r_total). `doc_n` е цяло число, дава се веднъж за поръчка (`nap_docs`, по ред на доставка, отделна поредица за всеки магазин) и не се мени. Месец без доставени поръчки няма файл (НАП не приема празен).
 - Писмото до счетоводителката (`lib/accmail.mts`): продажбите по държави (и по ставки), по магазини – физически / дигитални / доставка с ДДС, предупрежденията; прикачени `prodazhbi_<месец>.csv` (всички взети поръчки, „;“ и BOM за Excel) и XML файловете. `runMonthlyMail()` е в синхронизацията (стъпка 7): от избрания ден (по подразбиране 5-о) тръгва веднъж за предходния месец; до 15-о, ако данните се променят (sha на CSV + върнати суми + файловете), тръгва „Поправка“ – най-много веднъж на 20 ч; заключване `pg_try_advisory_xact_lock`. Изпратеното е в `nap_sent` (`shop = '*'` – писмото, иначе по файл). Ръчно: „Изпрати сега“ (`POST /api/acc/nap/send`, копие до този, който праща). Имейлът е през Brevo (същият ключ като за напомнянията); `sendEmail` вече приема `html`, `cc` и `attachments`.
 
+## Автоматични SMS (`lib/auto-sms.mts`, идеи от RevOrder)
+
+Настройки → SMS → „Автоматични SMS“ (в `settings` `sms@<фирма>`: `office`, `shippedAuto`, `reorder`; по подразбиране изключени). Тръгват от синхронизацията (стъпка 6b), само България (куриер Спиди/Еконт), не нощем (`REMINDER_HOURS`, 9-21), не ако клиентът е получил SMS за поръчката в последните 20 ч; всеки (и неуспешният) се пише в хронологията (`order_events.kind = 'sms'`, `info.auto`), затова върви веднъж.
+- **Чака в офис** (`office1`/`office2`): на ден 4 и 6 в офиса по броенето на „Ден N в офиса“ (RevOrder: 72 ч и +48 ч). Веднъж за престой (`info.since` = `office_since`); спира при взета/върната/пренасочена.
+- **Изпратена пратка** (шаблон `shipped`): веднъж за товарителница, щом куриерът я поеме (`parcel_status = 'in_transit'`), до 3 дни след `sent_at`; не ако след изпращането вече има SMS.
+- **Време за нова поръчка** (`reorder`): правила „N дни след доставката + дума от продукта“ (първото съвпадение решава); не ако клиентът е поръчал отново, има SMS/обаждане в последните 30 дни (по телефон, всички поръчки) или се е отписал (`optouts`). Шаблонът има `{продукт} {дни} {линк} {отписване}`; `{отписване}` е къс линк `/u/<фирма>-<9 цифри>-<8 знака подпис>` (`shortUnsubLink`, `functions/unsub.mts`).
+
+## Клиенти (`/klienti/`, `functions/klienti.mts`, `lib/customers.mts`)
+
+Поръчките (без изоставени и дублирани) по телефон (последните 9 цифри): име/имейл/град от последната поръчка, поръчки (без отказаните), взети, върнати, похарчено (само взетите), загубено (върнатите), магазини. Риск: висок – ≥ 2 върнати, или върнал без нито една взета, или сигнали в nekorekten; среден – 1 върната. VIP – ≥ 2 взети и похарчено ≥ 90-ия перцентил на купувачите. Сегменти: повторни (≥ 2), с една, с поръчка в момента. `GET /api/klienti/<9 цифри>` – поръчките на клиента и броя SMS/обаждания.
+
+## Реклами и страници (`/reklami/`, `functions/reklami.mts`, `lib/attribution.mts`, миграция `20261123010000_attribution`)
+
+- `c.js` хваща `utm_source/medium/campaign/term/content/id`, `ad_id` и кой click id (fbclid/gclid/ttclid) при първата страница на таба (`pr_utm` в sessionStorage) и помни последния клик от реклама 7 дни (`pr_utm7` в localStorage, не при GPC) – тогава `later: true`. Праща го като `utm` с ping-а и с формата. `visits.utm`/`visits.landing` (първата страница), `leads.utm`.
+- `attributeOrders()` (синхронизацията, 6c): всяка поръчка от последните 4 дни без `orders.src` се връзва с формата (lead със същия телефон/имейл, отворен до ден преди поръчката) → `orders.src = {channel, source, campaign, adset, ad, ad_id, medium, utm_source, page, later}`; телефонни → `calls`, ръчни → `manual`, възстановена изоставена → по своя lead (`recovered`); без форма след 2 ч → `unknown`. По-старите без `src` в отчета са „Преди проследяването“.
+- `rollupVisits()`: днешните и вчерашните посещения → `visit_days` (магазин, ден, лендинг, канал, кампания: посещения, хора, до формата, писали, поръчали); по-старите дни не се пипат (посещенията се трият след 2 дни).
+- Отчетът: по канал, кампания › ад сет › реклама и по лендинг – поръчки, взети, върнати, на път, взети пари. В Meta: параметри на URL `utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}&utm_id={{ad.id}}`.
+
+## Връзка с Claude (MCP) (`functions/mcp.mts`, `lib/mcp.mts`)
+
+Отдалечен MCP сървър само за четене на `/mcp/<фирма>.<таен ключ>` (Streamable HTTP без потоци: JSON-RPC → един JSON отговор, известията → 202, GET → 405). Ключът е криптиран в `settings` `mcp@<фирма>`; Настройки → „Връзка с Claude“ (само собственикът, `/api/mcp`): „Създай линк“ / „Нов линк“ (старият спира) / „Изключи“. Инструменти: search_orders, get_order, get_customer, list_customers, sales_dashboard, ads_report, warehouse, open_carts. Лимит 600 заявки на час на фирма. В claude.ai: Настройки → Конектори → персонализиран конектор с линка.
+
 ## AI агентът за обаждания
 
 Отделен Netlify проект `mitko-obazhdania` (код в `poruchki-agent/`). Говори с платформата през `/api/agent/*` с `Authorization: Bearer AGENT_TOKEN` (`netlify/functions/agent.mts`, `netlify/lib/agent.mts`):
@@ -123,7 +145,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/klienti/`, `/reklami/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |

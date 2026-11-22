@@ -7,7 +7,23 @@ type Stage = (typeof STAGES)[number];
 const clean = (v: unknown, max: number) =>
   typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "";
 
-export type Ping = { sid: string; vid: string; page: string; stage: Stage; device: string; source: string; cart: number; value: string; gone: boolean };
+export type Utm = { s?: string; m?: string; c?: string; t?: string; n?: string; id?: string; ck?: string; later?: boolean };
+export type Ping = { sid: string; vid: string; page: string; stage: Stage; device: string; source: string; cart: number; value: string; gone: boolean; utm: Utm | null };
+
+/** The ad a visit came from: utm_source/medium/campaign/term/content, an ad id and which click id (fbclid, gclid, ttclid). */
+export function cleanUtm(input: any): Utm | null {
+  if (!input || typeof input !== "object") return null;
+  const u: Utm = {};
+  for (const k of ["s", "m", "c", "t", "n", "id"] as const) {
+    const v = clean(input[k], k === "id" ? 40 : 120);
+    if (v) u[k] = v;
+  }
+  const ck = clean(input.ck, 10);
+  if (["fbclid", "gclid", "ttclid"].includes(ck)) u.ck = ck;
+  if (!Object.keys(u).length) return null;
+  if (input.later === true) u.later = true; // from an earlier visit in the last 7 days, not this one
+  return u;
+}
 
 export function cleanPing(input: any): Ping | null {
   const sid = clean(input?.sid, 40);
@@ -23,6 +39,7 @@ export function cleanPing(input: any): Ping | null {
     cart: Math.max(0, Math.min(50, Math.trunc(Number(input?.cart) || 0))),
     value: clean(input?.value, 40),
     gone: input?.gone === true,
+    utm: cleanUtm(input?.utm),
   };
 }
 
@@ -31,8 +48,8 @@ const RANK: Record<string, number> = { browsing: 0, checkout: 1, filling: 2, ord
 export async function savePing(shop: string, p: Ping, geo: { country?: string; city?: string }) {
   const [row] = await q<any>(
     `WITH old AS (SELECT reached FROM visits WHERE shop = $1 AND sid = $2), up AS (
-     INSERT INTO visits (shop, sid, vid, page, stage, reached, device, source, country, city, cart_lines, value, left_at)
-     VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, CASE WHEN $12 THEN now() END)
+     INSERT INTO visits (shop, sid, vid, page, landing, stage, reached, device, source, country, city, cart_lines, value, left_at, utm)
+     VALUES ($1, $2, $3, $4, $4, $5, $5, $6, $7, $8, $9, $10, $11, CASE WHEN $12 THEN now() END, $13::jsonb)
      ON CONFLICT (shop, sid) DO UPDATE SET
        vid = CASE WHEN excluded.vid <> '' THEN excluded.vid ELSE visits.vid END,
        pages = visits.pages + CASE WHEN excluded.page <> visits.page AND excluded.page <> '' THEN 1 ELSE 0 END,
@@ -48,10 +65,12 @@ export async function savePing(shop: string, p: Ping, geo: { country?: string; c
        cart_lines = CASE WHEN excluded.cart_lines > 0 THEN excluded.cart_lines ELSE visits.cart_lines END,
        value = CASE WHEN excluded.value <> '' THEN excluded.value ELSE visits.value END,
        last_at = now(),
-       left_at = CASE WHEN $12 THEN now() ELSE NULL END
+       left_at = CASE WHEN $12 THEN now() ELSE NULL END,
+       landing = CASE WHEN visits.landing = '' THEN excluded.landing ELSE visits.landing END,
+       utm = coalesce(visits.utm, excluded.utm)
      RETURNING reached, country, city, source, device)
      SELECT (SELECT reached FROM old) AS was, up.* FROM up`,
-    [shop, p.sid, p.vid, p.page, p.stage, p.device, p.source, clean(geo.country, 2).toUpperCase(), clean(geo.city, 60), p.cart, p.value, p.gone],
+    [shop, p.sid, p.vid, p.page, p.stage, p.device, p.source, clean(geo.country, 2).toUpperCase(), clean(geo.city, 60), p.cart, p.value, p.gone, p.utm ? JSON.stringify(p.utm) : null],
   );
   if (!row) return;
   // The live feed: a new visitor, or one who went further (form, typing, ordered).

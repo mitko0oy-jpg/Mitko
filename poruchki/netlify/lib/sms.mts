@@ -18,17 +18,45 @@ export const PRICE_PER_PART = 0.054;
 
 export const DEFAULT_TEMPLATES: Record<string, { label: string; text: string }> = {
   confirm: { label: "Потвърждение", text: "Здравейте, {име}! Поръчка № {номер} от {магазин} за {сума} е приета и ще бъде изпратена до 1 работен ден. Благодарим Ви!" },
-  shipped: { label: "Изпратена", text: "{име}, поръчка № {номер} е изпратена с {куриер}, товарителница {товарителница}. Сума за плащане при получаване: {сума}." },
+  shipped: { label: "Изпратена", text: "{име}, поръчка № {номер} от {магазин} е изпратена. Куриер: {куриер}, товарителница {товарителница}. Сума за плащане при получаване: {сума}." },
   office: { label: "Чака в офис", text: "{име}, пратката Ви № {товарителница} чака в офис {офис} на {куриер}. Моля, вземете я до 7 дни. Сума: {сума}." },
   office1: { label: "Автоматично: чака в офис (1-во)", text: "{име}, пратката Ви от {магазин} чака в офис {офис} на {куриер}. Моля, вземете я в следващите дни, иначе ще бъде върната. Сума: {сума}." },
   office2: { label: "Автоматично: последно напомняне", text: "{име}, последно напомняне: пратката Ви от {магазин} в офис {офис} на {куриер} скоро ще бъде върната. Моля, вземете я днес или утре." },
+  reorder: { label: "Автоматично: време за нова поръчка", text: "{име}, минаха {дни} дни от доставката на {продукт}. Ако е към края си, поръчайте отново: {линк} Отказ: {отписване}" },
 };
 
 /** Automatic SMS to parcels waiting at the courier's office: on these days of waiting (the arrival day is day 1). */
 export type OfficeAuto = { on: boolean; day1: number; day2: number };
 export const DEFAULT_OFFICE_AUTO: OfficeAuto = { on: false, day1: 4, day2: 6 };
+/** „Нова поръчка“ N days after the delivery: the first rule whose word is in a product line decides the day. */
+export type ReorderRule = { match: string; days: number };
+export type ReorderAuto = { on: boolean; rules: ReorderRule[] };
+export const DEFAULT_REORDER: ReorderAuto = { on: false, rules: [{ match: "", days: 45 }] };
 
-type Stored = { sealed?: string; sender?: string; templates?: Record<string, string>; latin?: boolean; office?: Partial<OfficeAuto>; at?: string };
+type Stored = {
+  sealed?: string;
+  sender?: string;
+  templates?: Record<string, string>;
+  latin?: boolean;
+  office?: Partial<OfficeAuto>;
+  shippedAuto?: { on: boolean };
+  reorder?: Partial<ReorderAuto>;
+  at?: string;
+};
+
+export function cleanReorder(input: any, cur: ReorderAuto): ReorderAuto {
+  const on = typeof input?.on === "boolean" ? input.on : cur.on;
+  let rules = cur.rules;
+  if (Array.isArray(input?.rules)) {
+    rules = input.rules
+      .map((r: any) => ({ match: String(r?.match ?? "").replace(/\s+/g, " ").trim().slice(0, 60), days: Math.trunc(Number(r?.days)) }))
+      .filter((r: ReorderRule) => r.match || Number.isFinite(r.days));
+    if (rules.length > 12) throw fail("Най-много 12 правила.");
+    for (const r of rules) if (!(r.days >= 7 && r.days <= 365)) throw fail("Дните след доставката са между 7 и 365.");
+  }
+  if (on && !rules.length) throw fail("Добави поне едно правило (дни и дума от продукта или празно за всички).");
+  return { on, rules };
+}
 
 export async function smsSettings() {
   const s = (await getSetting<Stored>(cKey("sms"))) || {};
@@ -44,7 +72,9 @@ export async function smsSettings() {
   }
   const templates = Object.fromEntries(Object.entries(DEFAULT_TEMPLATES).map(([k, t]) => [k, { label: t.label, text: s.templates?.[k] || t.text }]));
   const office: OfficeAuto = { ...DEFAULT_OFFICE_AUTO, ...(s.office || {}) };
-  return { token, source, sender: s.sender || (companyId() === ENV_COMPANY ? env("SMSAPI_SENDER") : "") || "", templates, latin: s.latin ?? false, office };
+  const shippedAuto = { on: s.shippedAuto?.on ?? false };
+  const reorder: ReorderAuto = { ...DEFAULT_REORDER, ...(s.reorder || {}) };
+  return { token, source, sender: s.sender || (companyId() === ENV_COMPANY ? env("SMSAPI_SENDER") : "") || "", templates, latin: s.latin ?? false, office, shippedAuto, reorder };
 }
 
 export async function saveSmsSettings(input: any) {
@@ -78,6 +108,8 @@ export async function saveSmsSettings(input: any) {
     if (!(o.day2 > o.day1 && o.day2 <= 9)) throw fail("Второто напомняне е след първото и до 9-ия ден.");
     next.office = o;
   }
+  if (input?.shippedAuto && typeof input.shippedAuto.on === "boolean") next.shippedAuto = { on: input.shippedAuto.on };
+  if (input?.reorder && typeof input.reorder === "object") next.reorder = cleanReorder(input.reorder, { ...DEFAULT_REORDER, ...(next.reorder || {}) });
   await setSetting(cKey("sms"), next);
   return smsSettings();
 }

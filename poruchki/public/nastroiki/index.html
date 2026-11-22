@@ -84,14 +84,19 @@
           <div class="row small"><input type="tel" id="smsTestPhone" placeholder="твоят телефон" style="flex:1"><button type="button" class="btn sm" id="smsTest">Пробен SMS</button></div>
         </div>
         <div class="form" id="smsTemplates"></div>
-        <fieldset class="form" style="grid-column:1/-1;border:1px solid var(--line);border-radius:12px;padding:12px 14px">
-          <legend class="small"><b>Пратка, чакаща в офис – автоматично напомняне</b></legend>
-          <label class="chk"><input type="checkbox" name="officeOn"> Пращай SMS сам на клиентите, чиято пратка чака в офис или автомат (България – Еконт и Спиди)</label>
-          <div class="row small">1-во на <input type="number" name="officeDay1" min="2" max="7" style="width:64px"> ден, последно на <input type="number" name="officeDay2" min="3" max="9" style="width:64px"> ден в офиса</div>
-          <p class="muted small" style="margin:0">Денят на пристигане е ден 1, както е в знака „Ден N в офиса“. Не праща между 21:00 и 9:00, нито ако клиентът вече е получил SMS за поръчката в последните 20 часа. Спира веднага, щом пратката бъде взета, върната или пренасочена. Текстовете са горе: „Автоматично: чака в офис (1-во)“ и „Автоматично: последно напомняне“. Всеки изпратен SMS се записва в хронологията на поръчката.</p>
+        <fieldset style="grid-column:1/-1;display:grid;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0;min-width:0">
+          <legend class="small"><b>Автоматични SMS</b> (само България – Еконт и Спиди)</legend>
+          <p class="muted small" style="margin:0">Не се праща между 21:00 и 9:00 (тогава чака до сутринта), нито ако клиентът вече е получил SMS за поръчката в последните 20 часа. Всеки изпратен SMS се записва в хронологията на поръчката. Текстовете са горе.</p>
+          <label class="chk" style="align-items:flex-start"><input type="checkbox" name="shippedOn" style="margin-top:3px"> <span><b>Изпратена пратка</b> – веднъж, щом куриерът поеме пратката (текст „Изпратена“). Клиентът знае, че пратката идва и колко да приготви – по-малко откази.</span></label>
+          <label class="chk" style="align-items:flex-start"><input type="checkbox" name="officeOn" style="margin-top:3px"> <span><b>Чака в офис</b> – когато пратката чака в офис или автомат:</span></label>
+          <div class="row small" style="padding-left:26px">1-во на <input type="number" name="officeDay1" min="2" max="7" style="width:64px"> ден, последно на <input type="number" name="officeDay2" min="3" max="9" style="width:64px"> ден в офиса <span class="muted">(денят на пристигане е ден 1, както в „Ден N в офиса“; спира, щом я вземат, върнат или пренасочат)</span></div>
+          <label class="chk" style="align-items:flex-start"><input type="checkbox" name="reorderOn" style="margin-top:3px"> <span><b>Време за нова поръчка</b> – N дни след доставката, по продукт (текст „Автоматично: време за нова поръчка“):</span></label>
+          <div id="reorderRules" class="stack small" style="padding-left:26px"></div>
+          <div class="row small" style="padding-left:26px"><button type="button" class="btn sm" id="reorderAdd">+ правило</button></div>
+          <p class="muted small" style="margin:0;padding-left:26px">Важи първото правило, чиято дума е в името на продукт от поръчката (празна дума = всички продукти). Не се праща, ако клиентът вече е поръчал отново, ако в последните 30 дни е получил SMS или обаждане, или ако се е отписал. В текста може {продукт}, {дни}, {линк} (сайтът на магазина) и {отписване} (линк за отказ – оставете го).</p>
         </fieldset>
       </form>
-      <p class="muted small">В текстовете може: {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}.</p>
+      <p class="muted small">В текстовете може: {име}, {номер}, {сума}, {магазин}, {товарителница}, {куриер}, {офис}; в „време за нова поръчка“ и {продукт}, {дни}, {линк}, {отписване}.</p>
     </section>
 
     <section class="card stack" id="nekCard">
@@ -109,6 +114,19 @@
         <div class="row"><button class="btn primary" id="nekSave">Запиши</button><button type="button" class="btn sm" id="nekRemove">Махни ключа</button></div>
       </form>
       <p class="muted small">Условие на nekorekten.com: в политиката за поверителност на сайтовете, в частта „С кого споделяме вашите данни“, добави: „Доставчици на услуги като Nekorekten.com, които защитават търговци и клиенти от некоректни практики, измами и други.“</p>
+    </section>
+
+    <section class="card stack" id="mcpCard" hidden>
+      <h2 id="mcp">Връзка с Claude (MCP)</h2>
+      <p class="muted small" style="margin:0">Claude чете поръчките, клиентите, продажбите, отчета по реклами, склада и незавършените поръчки направо от OrderDesk – само чете, нищо не променя. Връзката е таен линк: който го има, вижда данните, затова не го пращай на други. „Нов линк“ спира стария веднага.</p>
+      <ol class="small" style="margin:0;padding-left:20px">
+        <li>Натисни „Създай линк“ и го копирай.</li>
+        <li>В claude.ai → Настройки → Конектори → „Добави персонализиран конектор“: име <b>OrderDesk</b>, URL – линкът.</li>
+        <li>В разговор включи OrderDesk от менюто с инструментите и питай: „колко поръчки имам днес“, „кой клиент върна най-много пратки“, „коя реклама носи най-много взети пари“.</li>
+      </ol>
+      <div id="mcpState" class="small"></div>
+      <div class="row"><input type="text" id="mcpUrl" readonly style="flex:1;font-family:ui-monospace,monospace;font-size:13px" placeholder="няма линк"><button type="button" class="btn sm" id="mcpCopy">Копирай</button></div>
+      <div class="row"><button type="button" class="btn primary" id="mcpNew">Създай линк</button><button type="button" class="btn sm" id="mcpOff">Изключи</button></div>
     </section>
 
   </main>

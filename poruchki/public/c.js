@@ -5,7 +5,8 @@
    2) помни името, телефона, имейла, града и адреса в браузъра на клиента (на сайта на магазина, 90 дни): ако се върне
       до формата и я остави, без да пише, пак става незавършена поръчка с тези данни;
    3) докато страницата е отворена, на ~30 s праща анонимен знак: коя страница, разглежда ли или е във
-      формата, телефон или компютър, откъде е дошъл (Facebook, Google…). Без име и телефон.
+      формата, телефон или компютър, откъде е дошъл (Facebook, Google…) и от коя реклама (utm_* параметрите).
+      Без име и телефон. Помни последния клик от реклама 7 дни (без „без проследяване“).
    Не чете пароли и данни за плащане. Нищо не променя на страницата.
    Не помни нищо дълготрайно, ако браузърът иска „без проследяване“ (Global Privacy Control). */
 (function () {
@@ -38,6 +39,49 @@
       if (navigator.sendBeacon && navigator.sendBeacon(api, new Blob([body], { type: "text/plain" }))) return;
       fetch(api, { method: "POST", body: body, mode: "no-cors", keepalive: true, credentials: "omit", headers: { "Content-Type": "text/plain" } }).catch(function () {});
     };
+
+    // ---------- the ad: utm_* and the click id of this visit, or the last ad click in 7 days ----------
+    var utm = null;
+    try {
+      utm = JSON.parse(store("session", "pr_utm") || "null");
+    } catch (e) {}
+    if (!utm || typeof utm !== "object") {
+      var uq = new URLSearchParams(location.search);
+      var pick = { s: "utm_source", m: "utm_medium", c: "utm_campaign", t: "utm_term", n: "utm_content", id: "utm_id" };
+      var u = {};
+      var any = false;
+      for (var pk in pick) {
+        var pv = uq.get(pick[pk]);
+        if (pv) {
+          u[pk] = String(pv).slice(0, 120);
+          any = true;
+        }
+      }
+      if (!u.id && uq.get("ad_id")) {
+        u.id = String(uq.get("ad_id")).slice(0, 40);
+        any = true;
+      }
+      var ck = uq.get("fbclid") ? "fbclid" : uq.get("gclid") ? "gclid" : uq.get("ttclid") ? "ttclid" : "";
+      if (ck) {
+        u.ck = ck;
+        any = true;
+      }
+      utm = {};
+      if (any) {
+        utm = u;
+        if (!noTrack) store("local", "pr_utm7", JSON.stringify({ at: Date.now(), u: u }));
+      } else if (!noTrack) {
+        try {
+          var last = JSON.parse(store("local", "pr_utm7") || "null");
+          if (last && last.u && Date.now() - last.at < 7 * 86400000) {
+            utm = last.u;
+            utm.later = true;
+          }
+        } catch (e) {}
+      }
+      store("session", "pr_utm", JSON.stringify(utm));
+    }
+    var utmOut = utm && Object.keys(utm).length ? utm : undefined;
 
     // ---------- the order form ----------
     var FIELDS = {
@@ -149,13 +193,13 @@
       var email = val(FIELDS.email);
       var data;
       if (phone.replace(/\D/g, "").length >= 9 || EMAIL.test(email)) {
-        data = { sid: sid, name: val(FIELDS.name), phone: phone, email: EMAIL.test(email) ? email : "", city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname };
+        data = { sid: sid, name: val(FIELDS.name), phone: phone, email: EMAIL.test(email) ? email : "", city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname, utm: utmOut };
         remember(data);
       } else {
         // Nothing typed this time: the visitor we know, if they stayed at the form a few seconds.
         var m = remembered();
         if (!m || seen() < 4000) return;
-        data = { sid: sid, name: m.n || "", phone: m.p || "", email: m.e || "", city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true };
+        data = { sid: sid, name: m.n || "", phone: m.p || "", email: m.e || "", city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true, utm: utmOut };
       }
       var body = JSON.stringify(data);
       if (body === lastLead) return;
@@ -216,7 +260,7 @@
       var st = stage();
       lastStage = st;
       lastPing = Date.now();
-      post({ t: "ping", sid: sid, vid: vid, page: location.pathname, stage: st, device: device, source: source, cart: cart().length, value: total(), gone: gone === true });
+      post({ t: "ping", sid: sid, vid: vid, page: location.pathname, stage: st, device: device, source: source, cart: cart().length, value: total(), gone: gone === true, utm: utmOut });
     };
     // Something changed (form on screen, started typing): tell at once, but not more than every 5 s.
     var changed = function () {
