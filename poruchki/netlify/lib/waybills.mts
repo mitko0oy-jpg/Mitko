@@ -544,7 +544,7 @@ export async function priceFor(id: number, input: any) {
   return d.courier === "speedy" ? speedyPrice(creds, d, o, def.speedy) : econtPrice(creds, d, o, def.econt);
 }
 
-async function log(orderId: number, courier: string, action: "create" | "cancel", ok: boolean, number: string | null, info: Record<string, unknown>, userId: number | null) {
+async function log(orderId: number, courier: string, action: "create" | "cancel" | "redirect", ok: boolean, number: string | null, info: Record<string, unknown>, userId: number | null) {
   await q("INSERT INTO waybill_log (order_id, courier, action, ok, number, info, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)", [orderId, courier, action, ok, number, JSON.stringify(info), userId]);
 }
 
@@ -577,7 +577,7 @@ export async function createFor(id: number, input: any, userId: number | null) {
   await q(
     `UPDATE orders SET tracking_no = $2, courier = $3, tracking_source = 'own', tracking_url = NULL, waybill = $4,
             parcel_status = 'prepared', parcel_text = 'Товарителницата е създадена', parcel_at = now(), parcel_final = false,
-            parcel_events = $5, tracked_at = NULL, track_error = NULL, delivered_at = NULL,
+            parcel_events = $5, tracked_at = NULL, track_error = NULL, delivered_at = NULL, office_since = NULL,
             courier_cost = $6, courier_cost_at = CASE WHEN $6::numeric IS NULL THEN NULL ELSE now() END
       WHERE id = $1`,
     [id, made.number, d.courier, JSON.stringify(waybill), JSON.stringify([{ at: waybill.at, text: "Товарителницата е създадена" }]), Number.isFinite(made.price) ? made.price : null],
@@ -604,7 +604,7 @@ export async function cancelFor(id: number, userId: number | null) {
     `UPDATE orders SET tracking_no = NULL, courier = NULL, tracking_source = NULL, tracking_url = NULL,
             waybill = waybill || jsonb_build_object('canceledAt', now(), 'canceledNumber', tracking_no),
             parcel_status = NULL, parcel_text = NULL, parcel_at = NULL, parcel_final = false, parcel_events = '[]'::jsonb,
-            tracked_at = NULL, track_error = NULL, delivered_at = NULL, lookup_at = now()
+            tracked_at = NULL, track_error = NULL, delivered_at = NULL, office_since = NULL, lookup_at = now()
       WHERE id = $1`,
     [id],
   );
@@ -709,4 +709,123 @@ export async function officesFor(courier: string, query: string) {
   if (query.trim().length < 2) return [];
   const creds = await credsFor(courier);
   return courier === "speedy" ? speedyOffices(creds, query) : econtOffices(creds, query);
+}
+
+// ---------------- Пренасочване (redirect to another office or address) ----------------
+// Speedy's API changes a shipment only before the courier has taken it (/shipment/update), so a parcel on its way
+// or waiting at an office is redirected through Speedy itself: the call centre, or the customer's Smart Control link
+// (free in the same town). We only write down what was asked for.
+// Econt: LabelService.updateLabel on a sent parcel becomes a paid instruction ("разпореждане", paid by the sender);
+// checkPossibleShipmentEditions says first whether the parcel can still be changed.
+
+const REDIRECTABLE = ["shipped", "at_office"];
+
+function redirectable(o: OrderRow) {
+  if (!o.tracking_no) throw fail("Поръчката няма товарителница.");
+  if (o.courier !== "speedy" && o.courier !== "econt") throw fail("Пренасочване има само за Спиди и Еконт.");
+  if (!REDIRECTABLE.includes(o.stage) || o.parcel_final) throw fail("Пратката вече не е на път – взета, върната или още не е предадена на куриера.");
+  return o.courier as "speedy" | "econt";
+}
+
+async function econtStatus(creds: Creds, number: string): Promise<any> {
+  const d = await econt("/Shipments/ShipmentService.getShipmentStatuses.json", creds, { shipmentNumbers: [number] });
+  const r = d?.shipmentStatuses?.[0];
+  if (!r?.status) throw fail(`Еконт не намери пратка № ${number}${r?.error ? `: ${econtMessage(r.error)}` : ""}.`);
+  return r.status;
+}
+
+/** What the redirect window needs: where it goes now, and (Econt) which changes Econt still allows. */
+export async function redirectInfo(id: number) {
+  const o = await loadOrder(id);
+  const courier = redirectable(o);
+  const d = o.delivery || {};
+  const out: Record<string, unknown> = {
+    courier,
+    number: o.tracking_no,
+    stage: o.stage,
+    office_since: o.office_since || null,
+    now: { type: d.type || null, officeId: d.officeId || null, officeName: d.officeName || null, city: o.city || "", address: o.address || "" },
+    order: { id: Number(o.id), order_no: o.order_no, name: o.customer_name, phone: o.phone, shop: o.shop_label },
+    api: courier === "econt",
+  };
+  if (courier === "econt") {
+    try {
+      const creds = await credsFor("econt");
+      const r = await econt("/Shipments/LabelService.checkPossibleShipmentEditions.json", creds, { shipmentNums: [Number(o.tracking_no)] });
+      const list: any[] = Array.isArray(r?.possibleShipmentEditions) ? r.possibleShipmentEditions : [];
+      const mine = list.find((x) => String(x?.shipmentNum) === String(o.tracking_no)) || list[0];
+      out.editions = Array.isArray(mine?.possibleShipmentEditions) ? mine.possibleShipmentEditions.map(String) : [];
+    } catch (e: any) {
+      out.checkError = e.message;
+    }
+  }
+  return out;
+}
+
+const digits = (v: unknown, max: number) => String(v ?? "").replace(/\D/g, "").slice(0, max);
+const text = (v: unknown, max: number) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+/**
+ * Econt: sends the change to Econt (paid by us, the sender) and checks the parcel again afterwards.
+ * Speedy: only writes down what was asked (Speedy is called by phone or the customer does it from the link).
+ */
+export async function redirectFor(id: number, input: any, userId: number | null) {
+  const o = await loadOrder(id);
+  const courier = redirectable(o);
+  const type = input?.type === "address" ? "address" : input?.type === "automat" ? "automat" : "office";
+  const to =
+    type === "address"
+      ? { type, city: text(input?.city, 80), zip: digits(input?.zip, 4), address: text(input?.address, 200) }
+      : { type, officeId: digits(input?.officeId, 12), officeName: text(input?.officeName, 160) };
+  if (type === "address" && (!("city" in to) || !to.city || !to.address)) throw fail("Напиши града и адреса.");
+  if (type !== "address" && !("officeId" in to && to.officeId)) throw fail(`Избери ${type === "automat" ? "автомат" : "офис"}.`);
+  const where = "officeId" in to ? `${type === "automat" ? "автомат" : "офис"} № ${to.officeId}${to.officeName ? ` ${to.officeName}` : ""}` : `адрес ${[to.zip, to.city].filter(Boolean).join(" ")}, ${to.address}`;
+  const courierName = courier === "speedy" ? "Спиди" : "Еконт";
+
+  if (courier === "speedy") {
+    await addEvent(id, "redirect", `Поискано пренасочване на пратка Спиди № ${o.tracking_no} към ${where} (пренасочва се през Спиди – 0 7001 7001)`, { to, courier }, userId);
+    return { ok: true, courier, api: false, where };
+  }
+
+  if (input?.confirm !== true) throw fail("Потвърди пренасочването – Еконт го таксува на подателя.");
+  const creds = await credsFor("econt");
+  const number = String(o.tracking_no);
+  const before = await econtStatus(creds, number);
+  const label: Record<string, unknown> = {
+    shipmentNumber: Number(number),
+    // The same receiver as on the waybill (only the place changes).
+    receiverClient: before.receiverClient?.name ? { name: before.receiverClient.name, phones: before.receiverClient.phones || [o.phone] } : { name: o.customer_name, phones: [o.phone] },
+    ...("officeId" in to
+      ? { receiverOfficeCode: to.officeId }
+      : { receiverAddress: { city: { country: { code3: "BGR" }, name: to.city, ...(to.zip ? { postCode: to.zip } : {}) }, other: to.address } }),
+  };
+  let data: any;
+  try {
+    data = await econt("/Shipments/LabelService.updateLabel.json", creds, { label, paymentAdditionPrice: { side: "sender", method: "credit" } });
+    const err = data?.label?.shipmentEdition?.editionError;
+    if (err) throw fail(`Еконт: ${err}`);
+  } catch (e: any) {
+    await log(id, "econt", "redirect", false, number, { error: e.message, to }, userId);
+    throw e;
+  }
+  const ed = data?.label?.shipmentEdition || {};
+  // Read the parcel again: the new place must be there, and the cash on delivery must not have dropped.
+  const after = await econtStatus(creds, number).catch(() => data?.label || {});
+  const due = (s: any) => (Number.isFinite(Number(s?.receiverDueAmount)) ? Number(s.receiverDueAmount) : null);
+  const warnings: string[] = [];
+  const [d0, d1] = [due(before), due(after)];
+  if (d0 !== null && d1 !== null && d1 < d0 - 0.01) warnings.push(`Сумата, която клиентът плаща, падна от ${d0.toFixed(2)} на ${d1.toFixed(2)} – провери наложения платеж в Еконт веднага.`);
+  if ("officeId" in to && after?.receiverOfficeCode && String(after.receiverOfficeCode) !== to.officeId) warnings.push(`Еконт още показва офис ${after.receiverOfficeCode} – провери пратката в Еконт.`);
+  const price = Number.isFinite(Number(ed.price)) ? Number(ed.price) : null;
+  await log(id, "econt", "redirect", true, number, { to, edition: ed.editionType || null, price, currency: ed.currency || null, due: [d0, d1], warnings }, userId);
+  await addEvent(
+    id,
+    "redirect",
+    `Пренасочена пратка Еконт № ${number} към ${where}${price !== null ? ` · такса ${price.toFixed(2).replace(".", ",")} ${ed.currency || "€"}` : ""}${warnings.length ? ` · ВНИМАНИЕ: ${warnings.join(" ")}` : ""}`,
+    { to, edition: ed.editionType || null, price },
+    userId,
+  );
+  // Ask Econt about it again at the next round (status and office).
+  await q("UPDATE orders SET tracked_at = NULL WHERE id = $1", [id]);
+  return { ok: true, courier, api: true, where, price, currency: ed.currency || null, edition: ed.editionType || null, warnings };
 }

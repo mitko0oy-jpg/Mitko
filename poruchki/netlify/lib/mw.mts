@@ -66,6 +66,7 @@ UPDATE orders SET
   parcel_final  = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL OR $4::text = tracking_no THEN parcel_final ELSE false END,
   parcel_events = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL OR $4::text = tracking_no THEN parcel_events ELSE '[]'::jsonb END,
   tracked_at    = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL OR $4::text = tracking_no THEN tracked_at ELSE NULL END,
+  office_since  = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL OR $4::text = tracking_no THEN office_since ELSE NULL END,
   courier       = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL THEN courier ELSE $5 END,
   tracking_url  = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL THEN tracking_url ELSE $6 END,
   tracking_source = CASE WHEN tracking_source IN ('own', 'cb') OR $4::text IS NULL THEN tracking_source ELSE 'middleware' END,

@@ -1,5 +1,5 @@
-import { api, CMARK, COURIER, esc, eur, money, num, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
-import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openWaybill } from "./waybill.js";
+import { api, CMARK, COURIER, esc, eur, money, num, officeBadge, officeDay, ONE, qs, setQs, shell, STAGE_ORDER, STAGES } from "./app.js";
+import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openRedirect, openWaybill } from "./waybill.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
 import { panelHtml } from "./order-panel.js";
@@ -30,6 +30,7 @@ if (qs().get("product")) $("product").innerHTML += `<option>${esc(qs().get("prod
 for (const f of FIELDS) $(f).value = qs().get(f) || "";
 $("nowaybill").checked = qs().get("nowaybill") === "1";
 $("sentToday").checked = qs().get("sent") === "today";
+$("soon").checked = qs().get("soon") === "1";
 $("nek").checked = qs().get("nek") === "1";
 
 const ICON = {
@@ -51,6 +52,7 @@ function params() {
   p.stage = [...state.stages].join(",");
   p.nowaybill = $("nowaybill").checked ? "1" : "";
   p.sent = $("sentToday").checked ? "today" : "";
+  p.soon = $("soon").checked ? "1" : "";
   p.nek = $("nek").checked ? "1" : "";
   p.page = state.page > 1 ? String(state.page) : "";
   p.per = state.per === 100 ? "100" : "";
@@ -70,6 +72,8 @@ function confirmCell(o) {
   return "";
 }
 
+// On its way or waiting at the office, with Speedy or Econt: can go to another office or address.
+const canRedirect = (o) => !!o.tracking_no && ["shipped", "at_office"].includes(o.stage) && ["speedy", "econt"].includes(o.courier);
 const canShip = (o) => o.stage !== "abandoned" && !o.digital_only && !o.tracking_no && o.region === "bg" && (o.currency || "EUR") === "EUR" && !["canceled", "delivered", "returned"].includes(o.stage);
 // "ekont" (as Middleware writes it) is Econt.
 const COURIER_ALIAS = { ekont: "econt", spidi: "speedy", "dpd-courier": "speedy", dpd: "speedy" };
@@ -172,7 +176,7 @@ function parcelCell(o) {
   const mw = ["speedy_ref", "econt_match", "middleware"].includes(o.tracking_source) ? `<span class="sub" title="Товарителницата е от Middleware"> · MW</span>` : "";
   const no = o.tracking_link ? `<a href="${esc(o.tracking_link)}" target="_blank" rel="noopener">${esc(o.tracking_no)}</a>` : esc(o.tracking_no);
   const pr = ["speedy", "econt"].includes(courierOf(o)) ? `<button class="linkbtn" data-act="print" data-id="${o.id}" title="Печат на етикета" aria-label="Печат на етикета">${ICON.print}</button>` : "";
-  return `${o.parcel_text ? `<div class="cour">${esc(o.parcel_text)}</div>` : ""}<div class="wb">${no}${pr}${mw}</div>`;
+  return `${o.parcel_text ? `<div class="cour">${esc(o.parcel_text)}</div>` : ""}${officeBadge(o)}<div class="wb">${no}${pr}${mw}</div>`;
 }
 
 function actions(o) {
@@ -196,6 +200,7 @@ function moreMenu(o) {
   if (canShip(o)) items.push(["ship", "Създай товарителница"]);
   if (o.tracking_no && (c === "speedy" || c === "econt")) items.push(["print", "Печат на етикета"]);
   if (canCancel(o)) items.push(["cancel", "Анулирай товарителницата"]);
+  if (canRedirect(o)) items.push(["redirect", officeDay(o) >= 5 ? "↪ Пренасочи (скоро се връща)" : "↪ Пренасочи пратката"]);
   items.push(["duplicate", "Дублирай"]);
   items.push(o.archived_at ? ["unarchive", "Върни от архива"] : ["archive", "Архивирай"]);
   return items.map(([a, t]) => `<button type="button" data-act="${a}" data-id="${o.id}" role="menuitem">${t}</button>`).join("") + `<a href="/poruchka/?id=${o.id}">Отвори поръчката</a>`;
@@ -225,6 +230,7 @@ function renderSide(f) {
       }),
   );
   $("nSent").textContent = num(f.sentToday || 0);
+  $("nSoon").textContent = num(f.soon || 0);
   const chosen = $("product").value;
   const names = (f.products || []).map((p) => p.name);
   $("product").innerHTML =
@@ -466,6 +472,7 @@ async function act(what, id, btn) {
       }
     }
     else if (what === "cancel" && (await cancelWaybill(id, o?.tracking_no))) load(true);
+    else if (what === "redirect" && (await openRedirect(id))) load(true);
   } catch (e) {
     alert(e.message);
   }
@@ -524,10 +531,17 @@ $("sentToday").onchange = () => {
   state.page = 1;
   load();
 };
+$("soon").onchange = () => {
+  // Waiting at the office, longest first.
+  if ($("soon").checked) state.tab = "";
+  state.page = 1;
+  load();
+};
 $("clear").onclick = () => {
   for (const f of FIELDS) $(f).value = "";
   $("nowaybill").checked = false;
   $("sentToday").checked = false;
+  $("soon").checked = false;
   $("nek").checked = false;
   state.stages.clear();
   state.tab = "active";

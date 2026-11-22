@@ -20,6 +20,12 @@ const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
 // "Изпратени днес": the waybill appeared today (Sofia time); sent_at is kept by a trigger.
 const SENT_TODAY = "o.sent_at >= (date_trunc('day', now() AT TIME ZONE 'Europe/Sofia') AT TIME ZONE 'Europe/Sofia')";
 
+// "Връщат се скоро": waiting at the office/automat since the 5th day (Sofia days, the arrival day is day 1).
+// The couriers send a parcel back after about 7 days, so these are the ones to call now.
+const SOON_DAY = 5;
+const RETURNING_SOON = `o.parcel_status = 'at_office' AND o.office_since IS NOT NULL
+  AND (o.office_since AT TIME ZONE 'Europe/Sofia')::date <= (now() AT TIME ZONE 'Europe/Sofia')::date - ${SOON_DAY - 1}`;
+
 const SORTS: Record<string, string> = {
   new: "o.ordered_at DESC, o.id DESC",
   old: "o.ordered_at ASC, o.id ASC",
@@ -36,13 +42,14 @@ const SORTS: Record<string, string> = {
   cour_desc: "coalesce(o.courier, o.delivery->>'courier', '') DESC, o.ordered_at DESC",
   note_desc: "(coalesce(o.note, '') <> '') DESC, o.ordered_at DESC",
   note_asc: "(coalesce(o.note, '') <> '') ASC, o.ordered_at DESC",
+  office: "o.office_since ASC NULLS LAST, o.ordered_at ASC",
 };
 
 /**
  * WHERE for the list. The stage/tab part is left out for the counts next to each status,
  * the product for the product list, and "sent today" for its own count.
  */
-function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boolean; sent?: boolean } = {}) {
+function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boolean; sent?: boolean; soon?: boolean } = {}) {
   const params: unknown[] = [];
   // Only this company's shops – the first thing in every list, count and export.
   const parts = ["s.active", `s.company_id = ${companyId()}`];
@@ -73,6 +80,7 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   if (u.get("nowaybill") === "1") parts.push("o.tracking_no IS NULL");
   if (u.get("nek") === "1") parts.push("EXISTS (SELECT 1 FROM phone_checks pc2 WHERE pc2.company_id = s.company_id AND pc2.phone_key = right(regexp_replace(o.phone, '\\D', '', 'g'), 9) AND pc2.count > 0)");
   if (u.get("sent") === "today" && !skip.sent) parts.push(SENT_TODAY);
+  if (u.get("soon") === "1" && !skip.soon) parts.push(RETURNING_SOON);
   const product = str(u.get("product"), 200);
   if (product && !skip.product) add("EXISTS (SELECT 1 FROM jsonb_array_elements(o.items) i WHERE i->>'name' = ?)", product);
   const conf = u.get("confirmed");
@@ -104,12 +112,14 @@ async function list(u: URLSearchParams) {
   const all = filters(u, false);
   const noProduct = filters(u, false, { product: true });
   const noSent = filters(u, false, { sent: true });
-  const order = SORTS[String(u.get("sort"))] || SORTS.new;
-  const [rows, count, facets, products, sent, abandoned] = await Promise.all([
+  const noSoon = filters(u, false, { soon: true });
+  // The ones going back soon: the longest waiting first, unless another order was chosen.
+  const order = SORTS[String(u.get("sort"))] || (u.get("soon") === "1" ? SORTS.office : SORTS.new);
+  const [rows, count, facets, products, sent, abandoned, soon] = await Promise.all([
     q<any>(
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
-              o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.courier, o.tracking_no, o.tracking_source,
+              o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.office_since, o.courier, o.tracking_no, o.tracking_source,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
               h.got AS delivered_before, h.ret_shops,
@@ -145,6 +155,7 @@ async function list(u: URLSearchParams) {
     ),
     one<any>(`SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop WHERE ${noSent.sql} AND ${SENT_TODAY}`, noSent.params),
     countOpenLeads(str(u.get("shop"), 20)).catch(() => 0),
+    one<any>(`SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop WHERE ${noSoon.sql} AND ${RETURNING_SOON}`, noSoon.params),
   ]);
   const stages: Record<string, number> = {};
   let refused = 0;
@@ -157,7 +168,7 @@ async function list(u: URLSearchParams) {
     perPage,
     total: count?.n || 0,
     sum: Math.round((count?.sum || 0) * 100) / 100,
-    facets: { stages, refused, products, sentToday: sent?.n || 0, abandoned },
+    facets: { stages, refused, products, sentToday: sent?.n || 0, abandoned, soon: soon?.n || 0, soonDay: SOON_DAY },
     orders: rows.map((r) => ({
       ...r,
       id: Number(r.id),

@@ -135,7 +135,7 @@ export async function summary(region?: string) {
 
 /** The bell in the top bar: orders and leads waiting for someone, and labels waiting for the printer. */
 export async function alerts() {
-  const [o, leads, print] = await Promise.all([
+  const [o, leads, print, soon] = await Promise.all([
     one<any>(
       `SELECT count(*) FILTER (WHERE o.confirmed_at IS NULL AND coalesce(o.call->>'state', '') NOT IN ('requested', 'calling'))::int AS unconfirmed,
               count(*) FILTER (WHERE o.confirmed_at IS NULL AND o.call->>'state' IN ('needs_human', 'change_requested', 'callback_later', 'wrong_person', 'wrong_number', 'canceled', 'gave_up'))::int AS ai,
@@ -145,6 +145,12 @@ export async function alerts() {
     ),
     countOpenLeads().catch(() => 0),
     printQueue().then((r) => r.length).catch(() => 0),
+    // Waiting at the office since the 5th day: the courier sends them back after about 7 (same rule as "Връщат се скоро" in Поръчки).
+    one<any>(
+      `SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop
+        WHERE s.active AND s.company_id = ${companyId()} AND o.archived_at IS NULL AND o.parcel_status = 'at_office' AND o.office_since IS NOT NULL
+          AND (o.office_since AT TIME ZONE 'Europe/Sofia')::date <= (now() AT TIME ZONE 'Europe/Sofia')::date - 4`,
+    ),
   ]);
-  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print };
+  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print, soon: soon?.n || 0 };
 }

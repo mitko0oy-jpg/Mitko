@@ -274,6 +274,10 @@ body.wide main { max-width: none; padding-inline: 20px; }
 
 .otbl .sub { color: var(--muted); font-size: 12px; }
 .otbl .cour { font-style: italic; color: var(--text-2); font-size: 13px; }
+/* How long the parcel has waited at the office (Ден N в офиса). */
+.oday { display: inline-block; max-width: 100%; margin-top: 3px; padding: 1px 7px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.45; background: color-mix(in srgb, var(--text-2) 12%, transparent); color: var(--text-2); }
+.oday.soon { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.oday.late { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
 .otbl .wb { font-variant-numeric: tabular-nums; font-size: 13px; }
 .otbl .money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
 .otbl .acts { white-space: nowrap; text-align: right; }

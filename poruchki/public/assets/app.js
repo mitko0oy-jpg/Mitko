@@ -59,6 +59,21 @@ export const CMARK = {
 // ---- dates (Sofia) ----
 const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit" });
 export const today = () => dayFmt.format(new Date());
+/** Which day the parcel has been waiting at the office/automat (the arrival day is day 1), 0 when it is not waiting. */
+export function officeDay(o) {
+  if (o?.parcel_status !== "at_office" || !o.office_since) return 0;
+  const from = Date.parse(dayFmt.format(new Date(o.office_since)) + "T12:00:00Z");
+  const to = Date.parse(today() + "T12:00:00Z");
+  return Math.max(1, Math.round((to - from) / 86400000) + 1);
+}
+/** "Ден 6 в офиса" – amber from the 5th day, red from the 7th (the couriers send it back after about a week). */
+export function officeBadge(o) {
+  const d = officeDay(o);
+  if (!d) return "";
+  const cls = d >= 7 ? "late" : d >= 5 ? "soon" : "";
+  const tip = `В офиса от ${dt.format(new Date(o.office_since))}${d >= 5 ? " – куриерът връща пратката след около 7 дни" : ""}`;
+  return `<span class="oday ${cls}" title="${esc(tip)}">${d >= 7 ? `Ден ${d} · връща се` : `Ден ${d} в офиса`}</span>`;
+}
 export function addDays(day, n) {
   const d = new Date(day + "T12:00:00Z");
   d.setUTCDate(d.getUTCDate() + n);
@@ -303,10 +318,11 @@ async function bell(top) {
     [a.ai, "AI агентът иска човек", "/poruchki/?tab=active&confirmed=no"],
     [a.unconfirmed, "непотвърдени нови поръчки", "/poruchki/?tab=active&stage=new&confirmed=no"],
     [a.toShip, "потвърдени без товарителница", "/poruchki/?tab=active&stage=new&nowaybill=1"],
+    [a.soon, "пратки чакат в офиса 5+ дни – скоро се връщат", "/poruchki/?tab=&soon=1"],
     [a.toPrint, "етикета чакат печат", "/pechat/"],
     [a.leads, "незавършени поръчки", "/nezavarsheni/"],
   ];
-  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0);
+  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0) + (a.soon || 0);
   const dot = top.querySelector("#bellN");
   dot.hidden = !n;
   dot.textContent = n > 99 ? "99+" : String(n);

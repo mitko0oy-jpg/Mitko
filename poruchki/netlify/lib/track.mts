@@ -67,10 +67,14 @@ async function apply(id: number, trackingNo: string, st: ParcelState | { error: 
   }
   const r = await q(
     `UPDATE orders SET parcel_status = $3, parcel_text = $4, parcel_at = $5, parcel_final = $6 OR ordered_at < now() - interval '75 days',
-            parcel_events = $7, delivered_at = $8, tracked_at = now(), track_error = NULL
+            parcel_events = $7, delivered_at = $8, tracked_at = now(), track_error = NULL,
+            -- When it reached the office: kept while it waits there, forgotten when it leaves (or is redirected).
+            office_since = CASE WHEN $3 <> 'at_office' THEN NULL
+                                WHEN parcel_status = 'at_office' AND office_since IS NOT NULL THEN office_since
+                                ELSE coalesce($9::timestamptz, $5::timestamptz, now()) END
       WHERE id = $1 AND tracking_no = $2 AND (parcel_status IS DISTINCT FROM $3 OR parcel_text IS DISTINCT FROM $4)
       RETURNING id`,
-    [id, trackingNo, st.status, st.text.slice(0, 300), st.at, st.final, JSON.stringify(st.events), st.deliveredAt],
+    [id, trackingNo, st.status, st.text.slice(0, 300), st.at, st.final, JSON.stringify(st.events), st.deliveredAt, st.officeAt || null],
   );
   if (!r.length) await q("UPDATE orders SET tracked_at = now(), track_error = NULL WHERE id = $1 AND tracking_no = $2", [id, trackingNo]);
   if (st.cost !== undefined) await q("UPDATE orders SET courier_cost = $3, courier_cost_at = now() WHERE id = $1 AND tracking_no = $2", [id, trackingNo, st.cost]);

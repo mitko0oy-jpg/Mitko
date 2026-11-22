@@ -80,9 +80,10 @@ export async function lookupSpeedy(creds: Creds | undefined, deadline: number) {
       const r = await q(
         `UPDATE orders SET tracking_no = $2, courier = 'speedy', tracking_source = 'speedy_ref',
                 parcel_status = $3, parcel_text = $4, parcel_at = $5, parcel_final = $6, parcel_events = $7,
-                delivered_at = $8, tracked_at = now(), track_error = NULL, lookup_at = now()
+                delivered_at = $8, tracked_at = now(), track_error = NULL, lookup_at = now(),
+                office_since = CASE WHEN $3 = 'at_office' THEN coalesce($9::timestamptz, $5::timestamptz) END
           WHERE id = $1 AND tracking_no IS NULL RETURNING id`,
-        [h.orderId, h.number, h.state.status, h.state.text.slice(0, 300), h.state.at, h.state.final, JSON.stringify(h.state.events), h.state.deliveredAt],
+        [h.orderId, h.number, h.state.status, h.state.text.slice(0, 300), h.state.at, h.state.final, JSON.stringify(h.state.events), h.state.deliveredAt, h.state.officeAt || null],
       );
       found += r.length;
     }

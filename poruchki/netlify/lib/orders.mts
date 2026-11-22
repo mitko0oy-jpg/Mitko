@@ -56,6 +56,7 @@ ON CONFLICT (shop, cb_id) DO UPDATE SET
   parcel_final = CASE WHEN ${NEW_WAYBILL} THEN false ELSE orders.parcel_final END,
   parcel_events = CASE WHEN ${NEW_WAYBILL} THEN '[]'::jsonb ELSE orders.parcel_events END,
   tracked_at = CASE WHEN ${NEW_WAYBILL} THEN NULL ELSE orders.tracked_at END,
+  office_since = CASE WHEN ${NEW_WAYBILL} THEN NULL ELSE orders.office_since END,
   delivered_at = CASE WHEN ${NEW_WAYBILL} THEN NULL ELSE orders.delivered_at END
 RETURNING (xmax = 0) AS inserted`;
 

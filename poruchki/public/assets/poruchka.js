@@ -1,5 +1,5 @@
-import { api, COURIER, esc, eur, money, ONE, qs, shell, when } from "./app.js";
-import { cancelWaybill, openLabels, openWaybill } from "./waybill.js";
+import { api, COURIER, esc, eur, money, officeBadge, ONE, qs, shell, when } from "./app.js";
+import { cancelWaybill, openLabels, openRedirect, openWaybill } from "./waybill.js";
 import { mountProducts, renderHistory } from "./order-edit.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
@@ -95,7 +95,7 @@ function render(o) {
           <dt>Куриер</dt><dd>${esc(COURIER[o.courier] || o.courier || "–")}</dd>
           <dt>Товарителница</dt><dd>${o.tracking_no ? (o.tracking_link ? `<a href="${esc(o.tracking_link)}" target="_blank" rel="noopener">${esc(o.tracking_no)}</a>` : esc(o.tracking_no)) : "още няма"}
             ${o.tracking_source ? `<div class="muted small">${SOURCE[o.tracking_source] || ""}</div>` : ""}</dd>
-          <dt>Статус</dt><dd>${esc(o.parcel_text || "–")}${o.parcel_at ? `<div class="muted small">${when(o.parcel_at)}</div>` : ""}</dd>
+          <dt>Статус</dt><dd>${esc(o.parcel_text || "–")}${o.parcel_at ? `<div class="muted small">${when(o.parcel_at)}</div>` : ""}${officeBadge(o)}</dd>
           <dt>В магазина</dt><dd>${esc(CB_STATUS[o.cb_status] || o.cb_status)}${o.mw_status ? ` <span class="muted small">· Middleware: ${esc(o.mw_status)}</span>` : ""}</dd>
           ${o.tracked_at ? `<dt>Проверена</dt><dd>${when(o.tracked_at)}</dd>` : ""}
           ${o.track_error ? `<dt>Проблем</dt><dd class="err">${esc(o.track_error)}</dd>` : ""}
@@ -183,10 +183,12 @@ function render(o) {
     canShip ? `<button class="btn primary sm" id="wbNew">Създай товарителница</button>` : "",
     o.tracking_no && (courier === "speedy" || courier === "econt") ? `<button class="btn sm" id="wbPrint">Етикет</button>` : "",
     o.tracking_source === "own" && ["prepared", "shipped", "new"].includes(o.stage) ? `<button class="btn sm danger" id="wbCancel">Анулирай</button>` : "",
+    o.tracking_no && ["shipped", "at_office"].includes(o.stage) && (o.courier === "speedy" || o.courier === "econt") ? `<button class="btn sm" id="wbRedirect">Пренасочи</button>` : "",
   ].join("");
   const reload = async () => render(await api(`/api/orders/${id}`));
   if ($("wbNew")) $("wbNew").onclick = async () => (await openWaybill(id)) && reload();
   if ($("wbPrint")) $("wbPrint").onclick = () => openLabels([id]);
+  if ($("wbRedirect")) $("wbRedirect").onclick = async () => (await openRedirect(id)) && reload();
   if ($("wbCancel"))
     $("wbCancel").onclick = async () => {
       try {

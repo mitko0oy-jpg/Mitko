@@ -14,6 +14,7 @@ export type ParcelState = {
   deliveredAt: string | null;
   events: ParcelEvent[];
   cost?: number; // what the courier charged, when it says
+  officeAt?: string | null; // when it reached the office/automat where it waits (status at_office)
 };
 
 type Fetch = typeof fetch;
@@ -78,7 +79,12 @@ export function speedyState(opsIn: any[]): ParcelState {
   if (ops.some((o) => SP_REFUSED.has(o.code))) return { ...base, status: "refused", final: true, deliveredAt: null };
   if (returned) return { ...base, status: "returned", final: true, deliveredAt: null };
   if (delivered) return { ...base, status: "delivered", final: true, deliveredAt: delivered.at };
-  if (last && SP_AT_OFFICE.has(last.code)) return { ...base, status: "at_office", final: false, deliveredAt: null };
+  if (last && SP_AT_OFFICE.has(last.code)) {
+    // The arrival is the first of the office operations at the end (the SMS notices come after it).
+    let i = ops.length - 1;
+    while (i > 0 && SP_AT_OFFICE.has(ops[i - 1].code)) i--;
+    return { ...base, status: "at_office", final: false, deliveredAt: null, officeAt: ops[i].at || last.at };
+  }
   // Only "Получена информация за пратка" (148): the waybill exists, the courier has not taken the parcel.
   if (ops.every((o) => SP_PREPARED.has(o.code))) return { ...base, status: "prepared", final: false, deliveredAt: null };
   return { ...base, status: "in_transit", final: false, deliveredAt: null };
@@ -200,7 +206,8 @@ export function econtState(st: any): ParcelState {
     return { ...base, status: "delivered", final: true, deliveredAt: toIso(st?.deliveryTime) || toIso(st?.cdCollectedTime) || base.at };
   }
   if (en === "in delivery office" || bg.startsWith("пристигнал") || /в автомат|очаква получаване/.test(bg) || (lastType === "office" && !en.startsWith("awaiting"))) {
-    return { ...base, status: "at_office", final: false, deliveredAt: null };
+    // Nothing happens after the arrival until the customer comes: the last event is the arrival.
+    return { ...base, status: "at_office", final: false, deliveredAt: null, officeAt: base.at };
   }
   if (en.startsWith("awaiting") || bg.startsWith("очаква предаване") || lastType === "prepared" || !types.length) return { ...base, status: "prepared", final: false, deliveredAt: null };
   return { ...base, status: "in_transit", final: false, deliveredAt: null };

@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { courierInfo } from "../lib/track.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
-import { cancelFor, clientsFor, createFor, draftForOrder, getDefaults, labelsFor, markPrintedPublic, officesFor, priceFor, printQueue, saveDefaults } from "../lib/waybills.mts";
+import { cancelFor, clientsFor, createFor, draftForOrder, getDefaults, labelsFor, markPrintedPublic, officesFor, priceFor, printQueue, redirectFor, redirectInfo, saveDefaults } from "../lib/waybills.mts";
 import { getAutomation, saveAutomation } from "../lib/agent.mts";
 
 const orderId = (v: unknown) => {
@@ -32,6 +32,8 @@ export default handle(async (req) => {
       });
     }
     if (what === "offices") return json({ offices: await officesFor(str(u.get("courier"), 10), str(u.get("q"), 60)) });
+    // Redirecting a parcel on its way / at the office: where it goes now and what the courier allows.
+    if (what === "redirect") return json(await redirectInfo(orderId(u.get("order"))));
     if (what === "clients") return json({ clients: await clientsFor(str(u.get("courier"), 10)) });
     if (what === "label") {
       const ids = String(u.get("ids") || "").split(",").map(Number).filter((n) => Number.isSafeInteger(n) && n > 0).slice(0, 40);
@@ -49,6 +51,7 @@ export default handle(async (req) => {
   if (what === "price") return json(await priceFor(orderId(b.orderId), b.draft));
   if (what === "create") return json(await createFor(orderId(b.orderId), b.draft, user.id));
   if (what === "cancel") return json(await cancelFor(orderId(b.orderId), user.id));
+  if (what === "redirect") return json(await redirectFor(orderId(b.orderId), b, user.id));
   if (what === "settings") {
     if (user.role !== "admin") throw bad("admin", "Само собственикът може да променя подателя.");
     const automation = b.automation ? await saveAutomation(b.automation) : await getAutomation();

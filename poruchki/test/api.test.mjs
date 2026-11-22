@@ -82,6 +82,9 @@ const shop = createServer((req, res) => {
 
 // ---- fake Speedy and Econt: what the platform sends is kept in `sent` ----
 const sent = [];
+// Econt parcels with a status of their own (the rest are delivered).
+const econtStatus = new Map();
+let dropDueOnUpdate = false; // the redirect test: Econt "loses" the cash on delivery
 const FAKE_PDF = "%PDF-1.4 fake label";
 const courier = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -105,7 +108,15 @@ const courier = createServer((req, res) => {
       case "/speedy/shipment/info":
         return json({ shipments: (b.shipmentIds || []).map((id) => ({ id, price: { amount: 3.17, vat: 0.63, total: 3.8, currency: "EUR" } })) });
       case "/econt/Shipments/ShipmentService.getShipmentStatuses.json":
-        return json({ shipmentStatuses: (b.shipmentNumbers || []).map((n) => ({ status: { shipmentNumber: n, shortDeliveryStatus: "Доставена", shortDeliveryStatusEn: "Delivered", trackingEvents: [], totalPrice: 3.24, currency: "EUR" } })) });
+        return json({ shipmentStatuses: (b.shipmentNumbers || []).map((n) => ({ status: econtStatus.get(String(n)) || { shipmentNumber: n, shortDeliveryStatus: "Доставена", shortDeliveryStatusEn: "Delivered", trackingEvents: [], totalPrice: 3.24, currency: "EUR" } })) });
+      case "/econt/Shipments/LabelService.checkPossibleShipmentEditions.json":
+        return json({ possibleShipmentEditions: (b.shipmentNums || []).map((n) => ({ shipmentNum: n, possibleShipmentEditions: ["change_receiver_office", "change_receiver_address"] })) });
+      case "/econt/Shipments/LabelService.updateLabel.json": {
+        const n = String(b.label?.shipmentNumber);
+        const st = econtStatus.get(n);
+        if (st) econtStatus.set(n, { ...st, receiverOfficeCode: b.label.receiverOfficeCode || null, ...(dropDueOnUpdate ? { receiverDueAmount: 4.5 } : {}) });
+        return json({ label: { ...(st || {}), shipmentNumber: n, shipmentEdition: { shipmentNum: Number(n), editionNum: 1, editionType: "change_receiver_office", editionError: "", price: "1.69", currency: "EUR" } } });
+      }
       case "/speedy/client/contract":
         return json({ clients: [{ clientId: 100000000001, clientName: "БИ ВЕНОМ ЕООД", objectName: "Склад", address: { fullAddressString: "Пловдив, ул. Тест 1" } }] });
       case "/speedy/calculate":
@@ -1147,4 +1158,91 @@ test("checkout settings like Middleware: the link, couriers for /k.js, seen on t
   const js = await fetch(B + "/k.js");
   assert.equal(js.status, 200);
   assert.match(await js.text(), /До офис/);
+});
+
+test("parcels at the office: the day counter, „Връщат се скоро“, redirect with Econt and a written request for Speedy", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    // An Econt parcel that reached the office 6 days ago (day 7 by Sofia days counts the arrival day as day 1).
+    const made = await api("/api/orders", { shop: "bg", name: "Клиент Офис", phone: "0888 100 777", city: "София", delivery: { courier: "econt", type: "office", officeId: "1234", officeName: "София Осогово" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
+    assert.equal(made.status, 200, JSON.stringify(made.data));
+    const id = made.data.id;
+    await db.query("UPDATE orders SET tracking_no = '1051600007777', courier = 'econt', tracking_source = 'cb' WHERE id = $1", [id]);
+    const arrived = new Date(Date.now() - 6 * 86400000).toISOString();
+    econtStatus.set("1051600007777", {
+      shipmentNumber: "1051600007777", shortDeliveryStatus: "Пристигнала в офис", shortDeliveryStatusEn: "In delivery office",
+      trackingEvents: [
+        { time: new Date(Date.now() - 7 * 86400000).toISOString(), destinationType: "office", destinationDetails: "София Стамболийски", officeName: "София Стамболийски" },
+        { time: arrived, destinationType: "office", destinationDetails: "София Осогово", officeName: "София Осогово" },
+      ],
+      receiverClient: { name: "Клиент Офис", phones: ["0888100777"] }, receiverOfficeCode: "1234", receiverDueAmount: 24.5, totalPrice: 3.24, currency: "EUR",
+    });
+    const r = await api(`/api/orders/${id}/refresh`, {});
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.data.stage, "at_office");
+    assert.equal(new Date(r.data.office_since).toISOString(), arrived, "the arrival, not the first office of the route");
+
+    // The list: only the ones waiting since the 5th day, the longest first; the bell counts them.
+    const soon = (await api("/api/orders?tab=&soon=1")).data;
+    assert.ok(soon.orders.some((o) => o.id === id));
+    assert.ok(soon.orders.every((o) => o.parcel_status === "at_office"));
+    assert.equal(soon.facets.soon, soon.total);
+    assert.equal(soon.facets.soonDay, 5);
+    assert.ok((await api("/api/stats/alerts")).data.soon >= 1);
+    // A newer arrival is not in it.
+    await db.query("UPDATE orders SET office_since = now() - interval '1 day' WHERE id = $1", [id]);
+    assert.ok(!(await api("/api/orders?tab=&soon=1")).data.orders.some((o) => o.id === id));
+    await db.query("UPDATE orders SET office_since = $2 WHERE id = $1", [id, arrived]);
+    // A new status text while it still waits keeps the arrival.
+    econtStatus.set("1051600007777", { ...econtStatus.get("1051600007777"), shortDeliveryStatus: "Пристигнала в офис (напомняне)" });
+    assert.equal(new Date((await api(`/api/orders/${id}/refresh`, {})).data.office_since).toISOString(), arrived);
+
+    // Redirect with Econt: what Econt allows first, then a confirmed change; the COD is not touched.
+    const info = await api(`/api/waybills/redirect?order=${id}`);
+    assert.equal(info.status, 200, JSON.stringify(info.data));
+    assert.equal(info.data.courier, "econt");
+    assert.deepEqual(info.data.editions, ["change_receiver_office", "change_receiver_address"]);
+    const noOk = await api("/api/waybills/redirect", { orderId: id, type: "office", officeId: "5678", officeName: "София Център" });
+    assert.equal(noOk.status, 400);
+    assert.match(noOk.data.message || noOk.data.error || "", /Потвърди/);
+    const done = await api("/api/waybills/redirect", { orderId: id, confirm: true, type: "office", officeId: "5678", officeName: "София Център" });
+    assert.equal(done.status, 200, JSON.stringify(done.data));
+    assert.equal(done.data.price, 1.69);
+    assert.deepEqual(done.data.warnings, []);
+    const call = sent.filter((x) => x.path === "/econt/Shipments/LabelService.updateLabel.json").pop().body;
+    assert.equal(call.label.shipmentNumber, 1051600007777);
+    assert.equal(call.label.receiverOfficeCode, "5678");
+    assert.equal(call.label.receiverClient.name, "Клиент Офис");
+    assert.equal(call.label.services, undefined, "the cash on delivery is left as it is");
+    assert.deepEqual(call.paymentAdditionPrice, { side: "sender", method: "credit" });
+    const hist = (await api(`/api/orders/${id}`)).data.events;
+    assert.ok(hist.some((e) => /Пренасочена пратка Еконт № 1051600007777 към офис № 5678 София Център/.test(e.text)));
+    // If the amount the client pays drops after the change, it says so loudly.
+    dropDueOnUpdate = true;
+    const warn = await api("/api/waybills/redirect", { orderId: id, confirm: true, type: "address", city: "София", zip: "1000", address: "ул. Тест 5" });
+    dropDueOnUpdate = false;
+    assert.equal(warn.status, 200, JSON.stringify(warn.data));
+    assert.match(warn.data.warnings.join(" "), /падна от 24.50 на 4.50/);
+    const addrCall = sent.filter((x) => x.path === "/econt/Shipments/LabelService.updateLabel.json").pop().body;
+    assert.deepEqual(addrCall.label.receiverAddress, { city: { country: { code3: "BGR" }, name: "София", postCode: "1000" }, other: "ул. Тест 5" });
+
+    // Speedy: its API cannot change a parcel the courier has taken – the request is written down, nothing is sent to Speedy.
+    const sp = await api("/api/orders", { shop: "bg", name: "Клиент Спиди", phone: "0888 100 778", city: "София", delivery: { courier: "speedy", type: "office", officeId: "5", officeName: "СОФИЯ - МЛАДОСТ" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
+    await db.query("UPDATE orders SET tracking_no = '62000000777', courier = 'speedy', tracking_source = 'cb', parcel_status = 'at_office', parcel_text = 'В офис', office_since = now() - interval '5 days' WHERE id = $1", [sp.data.id]);
+    const spInfo = await api(`/api/waybills/redirect?order=${sp.data.id}`);
+    assert.equal(spInfo.data.api, false);
+    const before = sent.length;
+    const spDone = await api("/api/waybills/redirect", { orderId: sp.data.id, type: "office", officeId: "141", officeName: "БОТЕВГРАД - СКЛАД" });
+    assert.equal(spDone.status, 200, JSON.stringify(spDone.data));
+    assert.equal(spDone.data.api, false);
+    assert.ok(!sent.slice(before).some((x) => x.path.startsWith("/speedy/shipment")));
+    assert.ok((await api(`/api/orders/${sp.data.id}`)).data.events.some((e) => /Поискано пренасочване на пратка Спиди № 62000000777 към офис № 141/.test(e.text)));
+    // Not for a parcel that is already delivered.
+    const delivered = (await api("/api/orders?stage=delivered&per=50")).data.orders.find((o) => o.tracking_no);
+    if (delivered) assert.equal((await api(`/api/waybills/redirect?order=${delivered.id}`)).status, 400);
+  } finally {
+    await db.end();
+  }
 });
