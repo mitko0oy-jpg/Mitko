@@ -55,6 +55,12 @@ export function platform({ env, fetchImpl = fetch }) {
     /** One call's result; the platform writes the comment, confirms, corrects and makes the waybill. */
     report: (rec, body) => (rec.platformId ? call(`orders/${rec.platformId}/result`, body) : null),
     createPhoneOrder: (body) => call("orders", body),
+    /** Parcels waiting at the courier's office since day `day` (the arrival day is day 1), not called yet for this stay. */
+    async pickupOrders(day = 6) {
+      return (await call(`pickup?day=${encodeURIComponent(day)}`)).orders || [];
+    },
+    /** What the customer said about the waiting parcel (OrderDesk writes it in the order and a note when someone must act). */
+    pickupResult: (id, body) => call(`orders/${id}/pickup`, body),
     /** Offices of a town, best matches for the words first. */
     async offices(courier, city, query = "") {
       const d = await call(`offices?courier=${encodeURIComponent(courier)}&city=${encodeURIComponent(city)}&q=${encodeURIComponent(query)}`);

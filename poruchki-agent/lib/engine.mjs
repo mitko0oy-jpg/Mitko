@@ -10,6 +10,7 @@ import { orderKey, getSettings } from "./store.mjs";
 import { reportBody } from "./platform.mjs";
 import { handleFeedbackCall } from "./feedback.mjs";
 import { runFeedbackQueue } from "./feedback-queue.mjs";
+import { handlePickupCall, runPickupQueue } from "./pickup-calls.mjs";
 import { NO_ANSWER_MIN } from "./callback.mjs";
 
 const seenKey = (site, orderNo) => `seen/${site}/${orderNo}`;
@@ -227,6 +228,15 @@ export async function handleWebhook(/** @type {Deps} */ deps, payload, now = new
     outcome = data.failure_reason || "unknown";
   } else {
     return { ignored: type };
+  }
+
+  // „Невзета пратка“ (lib/pickup-calls.mjs): OrderDesk and Telegram, then the next parcel.
+  if (call?.variables?.campaign === "pickup") {
+    const r = await handlePickupCall(deps, call, now);
+    if (call.variables.test !== "yes" && deps.call) {
+      r.next = (await runPickupQueue(deps, now).catch((err) => ({ pickup: `error: ${err.message}` }))).pickup;
+    }
+    return r;
   }
 
   if (call?.variables?.campaign === "feedback") {

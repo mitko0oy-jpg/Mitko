@@ -7,18 +7,21 @@
 //    - may have its script, first sentence and language replaced per call,
 //    - also collects the order-confirmation fields (outcome, cancel_reason, …),
 //      so results of callback calls reach the order the same way as before,
-//    - and the feedback call's fields (fb_outcome, fb_reorder_pack, …).
+//    - the feedback call's fields (fb_outcome, fb_reorder_pack, …),
+//    - and the „невзета пратка“ call's fields (pk_outcome, pk_when, pk_new_place, …).
 // 3. The incoming agent's order tools (get_total, submit_order): the product code is any text –
 //    our server checks it against the zdravets.eu catalogue (lib/zdravets.mjs), so a new product
 //    on the site needs no change in ElevenLabs.
 
-import { FEEDBACK_SCRIPT } from "./scripts.generated.mjs";
+import { FEEDBACK_SCRIPT, PICKUP_SCRIPT } from "./scripts.generated.mjs";
 
 const API = "https://api.elevenlabs.io";
 
 // The feedback call's fields, with a "fb_" prefix: the incoming agent's own
 // "outcome" and "summary" mean something else (lib/feedback.mjs reads both).
 export const FEEDBACK_FIELDS = Object.fromEntries(Object.entries(FEEDBACK_SCRIPT.dataCollection).map(([k, d]) => [`fb_${k}`, d]));
+// The „невзета пратка“ call's fields, with a "pk_" prefix (lib/pickup-calls.mjs reads them).
+export const PICKUP_FIELDS = Object.fromEntries(Object.entries(PICKUP_SCRIPT.dataCollection).map(([k, d]) => [`pk_${k}`, d]));
 
 export const PRODUCT_ID_HELP = "Кодът на продукта от „Каталог“ – думата след „код“, например gel, spray, vein, skin, berberin, trio, addon_bvpatch.";
 export const QUANTITY_HELP = "Общ брой от този продукт (например три гела = 3; уелнес лепенки – брой кутии).";
@@ -110,12 +113,13 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
   const outDc = outbound.platform_settings?.data_collection || {};
   const added = Object.keys(outDc).filter((k) => !(k in inDc));
   const fbAdded = Object.keys(FEEDBACK_FIELDS).filter((k) => !(k in inDc));
+  const pkAdded = Object.keys(PICKUP_FIELDS).filter((k) => !(k in inDc));
   const ov = inbound.platform_settings?.overrides || {};
   const agentOv = ov.conversation_config_override?.agent || {};
   await api("PATCH", `/v1/convai/agents/${inboundAgentId}`, {
     platform_settings: {
       // Our feedback fields last: a changed description replaces the old one.
-      data_collection: { ...outDc, ...inDc, ...FEEDBACK_FIELDS },
+      data_collection: { ...outDc, ...inDc, ...FEEDBACK_FIELDS, ...PICKUP_FIELDS },
       overrides: {
         ...ov,
         enable_conversation_initiation_client_data_from_webhook: true,
@@ -139,8 +143,10 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
   const afterDc = after.platform_settings?.data_collection || {};
   const dcOk = added.every((k) => k in afterDc);
   const fbOk = Object.keys(FEEDBACK_FIELDS).every((k) => k in afterDc);
+  const pkOk = Object.keys(PICKUP_FIELDS).every((k) => k in afterDc);
   report.push(`${dcOk ? "✅" : "⚠️"} полета за резултата: ${added.length ? added.join(", ") : "вече ги има"}`);
   report.push(`${fbOk ? "✅" : "⚠️"} полета за обратна връзка: ${fbAdded.length ? `добавени ${fbAdded.length}` : "вече ги има"}`);
+  report.push(`${pkOk ? "✅" : "⚠️"} полета за невзета пратка: ${pkAdded.length ? `добавени ${pkAdded.length}` : "вече ги има"}`);
   report.push(`${fetchOn ? "✅" : "⚠️"} входящият агент взима данните от webhook-а`);
   report.push(`${overridesOn ? "✅" : "⚠️"} сценарият и първото изречение може да се сменят при обаждане`);
   report.push(`${voiceOn ? "✅" : "⚠️"} гласът може да се сменя при обаждане (за Александра)`);
@@ -153,5 +159,5 @@ export async function setupCallback({ apiKey, inboundAgentId, outboundAgentId, i
       ? `✅ инструментите за поръчка приемат всички продукти от zdravets.eu (${tools.fixed})`
       : `⚠️ инструментите за поръчка: оправени ${tools.fixed}${tools.errors.length ? ` – грешка: ${tools.errors[0]}` : ""}`,
   );
-  return { ok: fetchOn && overridesOn && dcOk && fbOk && voiceOn && toolsOk, report };
+  return { ok: fetchOn && overridesOn && dcOk && fbOk && pkOk && voiceOn && toolsOk, report };
 }

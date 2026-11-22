@@ -4,6 +4,7 @@ import { realDeps, env } from "../../lib/config.mjs";
 import { ensureTelegramWebhook } from "../../lib/telegram.mjs";
 import { syncOrders, runDueCalls, purgeOld } from "../../lib/engine.mjs";
 import { runFeedbackQueue } from "../../lib/feedback-queue.mjs";
+import { runPickupQueue } from "../../lib/pickup-calls.mjs";
 import { sofiaNow } from "../../lib/format.mjs";
 import { getSettings, saveSettings } from "../../lib/store.mjs";
 import { reviewPending, buildDigest, sofiaDay, DIGEST_AT } from "../../lib/coach.mjs";
@@ -24,6 +25,8 @@ export default async (_req: Request, context: Context) => {
   const report = await runDueCalls(deps, now);
   // Feedback calls Mitko started from Telegram (/obratna_start): one at a time, after the order calls.
   const feedback = await runFeedbackQueue(deps, now).catch((e) => ({ feedback: `error: ${e.message}` }));
+  // „Невзета пратка“ calls (/nevzeti_start): when the line is free.
+  const pickup = await runPickupQueue(deps, now).catch((e) => ({ pickup: `error: ${e.message}` }));
   const t = sofiaNow(now);
   let purged = 0;
   if (t.hour === 4 && t.minute < 5) purged = await purgeOld(deps.store, now);
@@ -45,7 +48,7 @@ export default async (_req: Request, context: Context) => {
       digest = text ? "sent" : "no calls";
     }
   }
-  console.log(JSON.stringify({ added, ...report, ...feedback, purged, telegram, reviews, sales, digest }));
+  console.log(JSON.stringify({ added, ...report, ...feedback, ...pickup, purged, telegram, reviews, sales, digest }));
 };
 
 export const config: Config = {

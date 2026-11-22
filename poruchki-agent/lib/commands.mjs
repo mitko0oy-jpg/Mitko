@@ -5,6 +5,7 @@ import { personaFromText, voiceFromText, PERSONAS, ALEKSANDRA_VOICES } from "./p
 import { approveLessons, dismissProposal, lessonsList, removeLesson, abStats, abText, reviewPending, buildDigest } from "./coach.mjs";
 import { prepareFeedback, testFeedback, startFeedback, stopFeedback, feedbackStatus, promisedCalls } from "./feedback-queue.mjs";
 import { approveFbRule, rejectFbRule, fbRulesList, removeFbRule } from "./sales-coach.mjs";
+import { pickupStatus, startPickup, stopPickup, testPickup } from "./pickup-calls.mjs";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -28,6 +29,11 @@ const HELP = [
   "/obratna_obeshtani – на кого обещахме да звъннем пак и кога (звъня сама в този ден)",
   "/da_N, /ne_N – добави или откажи правило, предложено след разговор без продажба",
   "/pravila – научените правила за обратната връзка; /mahni_p_N – махни едно",
+  "",
+  "Невзети пратки (чакат в офиса след двата SMS-а от OrderDesk):",
+  "/nevzeti_start – Елена звъни на всеки от 6-ия ден в офиса (/nevzeti_start 5 – от 5-ия), по един, в часовете за обратна връзка",
+  "/nevzeti_stop – спира; /nevzeti – кои чакат сега и какво казаха",
+  "/nevzeti_test 123 – Елена звъни на теб като за пратката с id 123 (от /nevzeti)",
   "",
   "Учене от разговорите:",
   "/uroci – какво е научила",
@@ -174,6 +180,10 @@ export async function handleTelegram(deps, update, opts = {}) {
   if (cmd === "/obratna_stop") return { chatId, reply: await stopFeedback(deps) };
   if (cmd === "/obratna_status") return { chatId, reply: await feedbackStatus(deps) };
   if (cmd === "/obratna_obeshtani") return { chatId, reply: await promisedCalls(deps) };
+  if (cmd === "/nevzeti_start") return { chatId, reply: await startPickup(deps, text.slice(cmd.length)) };
+  if (cmd === "/nevzeti_stop") return { chatId, reply: await stopPickup(deps) };
+  if (cmd === "/nevzeti") return { chatId, reply: await pickupStatus(deps) };
+  if (cmd === "/nevzeti_test") return { chatId, reply: await testPickup(deps, text.slice(cmd.length)) };
   const da = /^\/da_(\d+)$/.exec(cmd);
   if (da) return { chatId, reply: await approveFbRule(store, Number(da[1])) };
   const ne = /^\/ne_(\d+)$/.exec(cmd);

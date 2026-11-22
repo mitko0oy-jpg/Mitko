@@ -13,7 +13,8 @@ import { NIKOLAY_VOICE, PERSONAS } from "./persona.mjs";
 import { feedbackVariables } from "./feedback.mjs";
 import { normalizePhoneBG, sofiaNow, inCallingHours } from "./format.mjs";
 import { getSettings, saveSettings } from "./store.mjs";
-import { PENDING_TTL_MIN, phoneDigits } from "./callback.mjs";
+import { phoneDigits } from "./callback.mjs";
+import { lineBusy } from "./line.mjs";
 import { salesStats, salesText } from "./sales-coach.mjs";
 import { alreadyCalled, callbackDue, dateBG } from "./feedback-callbacks.mjs";
 
@@ -313,10 +314,9 @@ export async function runFeedbackQueue(deps, now = new Date()) {
   if (settings.paused) return { feedback: "paused" };
   if (!feedbackHoursOpen(now)) return { feedback: "outside hours" };
   if (busy) return { feedback: "call in progress" };
-  for (const { key } of (await store.list({ prefix: "pending/" })).blobs) {
-    const p = await store.get(key, { type: "json" });
-    if (p && now - new Date(p.at) < PENDING_TTL_MIN * 60_000) return { feedback: "another call is connecting" };
-  }
+  // One line: not while another callback connects or a „невзета пратка“ call runs (lib/line.mjs).
+  const line = await lineBusy(store, now, "fb-");
+  if (line) return { feedback: line };
   const next = open.find((r) => r.rec.status === "waiting" && new Date(r.rec.notBefore || 0) <= now);
   if (!next) return { feedback: "waiting for retries" };
 

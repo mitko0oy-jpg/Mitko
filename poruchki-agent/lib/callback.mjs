@@ -12,13 +12,13 @@
 import { requestCallback } from "./zadarma.mjs";
 import { pickPersona, renamePersona, personaNote, PERSONAS } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
-import { FEEDBACK_SCRIPT, INBOUND_SCRIPT } from "./scripts.generated.mjs";
+import { FEEDBACK_SCRIPT, INBOUND_SCRIPT, PICKUP_SCRIPT } from "./scripts.generated.mjs";
 import { fbRulesSection } from "./sales-coach.mjs";
 import { renderPriceList } from "./inbound.mjs";
 import inboundPriceList from "../agent/pricelist-zdravets.json" with { type: "json" };
 
 // Scripts that live in git (scripts/build-scripts.mjs) instead of an ElevenLabs agent.
-const BUNDLED = { feedback: FEEDBACK_SCRIPT };
+const BUNDLED = { feedback: FEEDBACK_SCRIPT, pickup: PICKUP_SCRIPT };
 
 // A callback that has not reached the agent in this time is no longer ours.
 export const PENDING_TTL_MIN = 15;
@@ -152,7 +152,7 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
       agent: {
         // Learned rules are about confirming orders: not added to another agent's script.
         // Each script gets the rules learned for it: order rules, or the feedback rules Mitko approved.
-        prompt: { prompt: renamePersona(script.prompt, persona) + personaNote(persona) + (bundled ? fbRulesSection(feedbackRules) : pending.agentId ? "" : lessonsSection(lessons)) },
+        prompt: { prompt: renamePersona(script.prompt, persona) + personaNote(persona) + (pending.script === "feedback" ? fbRulesSection(feedbackRules) : bundled || pending.agentId ? "" : lessonsSection(lessons)) },
         ...(script.firstMessage ? { first_message: renamePersona(script.firstMessage, persona) } : {}),
         ...(script.language ? { language: script.language } : {}),
       },
