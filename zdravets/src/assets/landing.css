@@ -1031,3 +1031,39 @@
   .bvp .bv-ingx--many .bv-ingx__rest .bv-ingx__body{align-self:stretch;padding:18px 44px 20px 18px}
   .bvp .bv-ingx--many .bv-ingx__rest .bv-ingx__body::before{left:18px}
 }
+
+/* ---------- трите слоя: илюстрация с номерата върху самите слоеве ---------- */
+.bvp .bv-lx{position:relative;margin:0 auto;max-width:520px;width:100%}
+.bvp .bv-lx img{width:100%;height:auto;display:block}
+.bvp .bv-lx__pin{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--night,#24170B);color:#fff;font-weight:800;font-size:1.1rem;border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.bvp .bv-lx__skin{position:absolute;transform:translate(-50%,-50%);padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.92);color:var(--ink);font-weight:800;font-size:.9rem;box-shadow:0 4px 12px rgba(0,0,0,.12);white-space:nowrap}
+@media (max-width:520px){.bvp .bv-lx__pin{width:36px;height:36px;font-size:.95rem}}
+@media (min-width:960px){.bvp .bv-layers__grid{grid-template-columns:1.05fr 1fr}}
+
+/* ---------- трите слоя: кръговете един под друг, с пунктир до надписите (като при производителя) ---------- */
+.bvp .bv-lx2{--d:200px;--ov:-74px;list-style:none;margin:40px auto 0;padding:0;max-width:880px}
+.bvp .bv-lx2__row{position:relative;display:grid;grid-template-columns:var(--d) 64px 1fr;align-items:center}
+.bvp .bv-lx2__row+.bv-lx2__row{margin-top:var(--ov)}
+.bvp .bv-lx2__row:nth-child(1){z-index:3}.bvp .bv-lx2__row:nth-child(2){z-index:2}.bvp .bv-lx2__row:nth-child(3){z-index:1}
+.bvp .bv-lx2__disc{position:relative;width:var(--d);height:var(--d);border-radius:50%;box-shadow:0 14px 30px rgba(var(--sh,36,23,11),.16)}
+.bvp .bv-lx2__disc--1{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--acc,#E9A13B) 70%,#fff),var(--acc,#E9A13B) 70%);color:var(--night,#2B1B0E);display:grid;place-items:center}
+.bvp .bv-lx2__ring{position:absolute;inset:16%;border-radius:50%;border:3px solid currentColor;opacity:.8}
+.bvp .bv-lx2__tree{width:46%;height:46%;position:relative}
+.bvp .bv-lx2__disc--2{background:linear-gradient(160deg,#FFFFFF 0%,#F1F1F4 55%,#E2E3E8 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 14px 30px rgba(var(--sh,36,23,11),.14)}
+.bvp .bv-lx2__disc--2::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.9) 45%,transparent 55%)}
+.bvp .bv-lx2__disc--3{background:var(--specks,none),repeating-linear-gradient(45deg,#F6F0E3 0 2px,#ECE3D1 2px 4px);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 14px 30px rgba(var(--sh,36,23,11),.12)}
+.bvp .bv-lx2__lead{position:relative;height:0;border-top:2px dashed var(--acc,#E9A13B);margin-left:calc(var(--d) * -.12)}
+.bvp .bv-lx2__lead::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--night,#2B1B0E);box-shadow:0 0 0 3px #fff}
+.bvp .bv-lx2__txt{padding:8px 0 8px 10px}
+.bvp .bv-lx2__pill{display:inline-flex;align-items:center;gap:10px;margin:0 0 8px;padding:8px 18px 8px 8px;border-radius:999px;background:var(--acc,#E9A13B);color:#fff;font-size:calc(var(--fs) * 1.02);font-weight:800;letter-spacing:.02em;line-height:1.2}
+.bvp .bv-lx2__pill span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--night,#2B1B0E);font-size:.9rem;flex:none}
+.bvp .bv-lx2__txt p{margin:0;color:var(--ink-2);font-size:calc(var(--fs) * .95);line-height:1.5;max-width:46ch}
+@media (max-width:640px){
+  .bvp .bv-lx2{--d:112px;--ov:-14px}
+  .bvp .bv-lx2__row{grid-template-columns:var(--d) 22px 1fr}
+  .bvp .bv-lx2__lead{margin-left:calc(var(--d) * -.18)}
+  .bvp .bv-lx2__txt{padding-left:6px}
+  .bvp .bv-lx2__pill{font-size:calc(var(--fs) * .9);padding:6px 12px 6px 6px}
+  .bvp .bv-lx2__pill span{width:24px;height:24px}
+  .bvp .bv-lx2__txt p{font-size:calc(var(--fs) * .88)}
+}

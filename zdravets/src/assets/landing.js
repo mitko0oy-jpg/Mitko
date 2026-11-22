@@ -244,14 +244,22 @@ const bodySvg = zones => `<svg class="bv-body" viewBox="0 0 200 350" role="img" 
 </svg>`;
 function layersSection(L, p) {
   if (!L) return '';
-  const plate = (i, cls) => `<div class="bv-plate bv-plate--${i + 1}"><div class="bv-plate__face ${cls}"></div><span class="bv-plate__n">${i + 1}</span></div>`;
+  // като схемата на производителя: трите кръга един под друг, от всеки – пунктир до надписа му
+  const items = L.items.map(([h, t], i) => [h, i === 2 && wellList(p) ? `Той докосва кожата. Тук е формулата: ${wellList(p)}.` : t]);
+  // точици в цветовете на съставките върху слоя със съставките
+  const tones = (p.ingredients || []).map(([n]) => (ingInfo(n) || {}).tone).filter(Boolean);
+  const specks = tones.length ? Array.from({ length: 14 }, (_, k) => { const a = k * 2.399, r = 18 + (k * 37 % 26); return `radial-gradient(circle at ${(50 + r * Math.cos(a)).toFixed(1)}% ${(50 + r * Math.sin(a)).toFixed(1)}%, ${tones[k % tones.length]} 0 2.2%, transparent 2.6%)`; }).join(',') : '';
+  const tree = `<svg class="bv-lx2__tree" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M32 58V38"/><path d="M32 40Q23.8 30.2 13.9 21.5"/><path d="M32 40Q26.8 26.6 20.5 13.6"/><path d="M32 40Q32.0 25.0 32.0 10.0"/><path d="M32 40Q37.2 26.6 43.5 13.6"/><path d="M32 40Q40.2 30.2 50.1 21.5"/><path d="M32 52Q27 54 23 58"/><path d="M32 52Q37 54 41 58"/></g><g fill="currentColor"><ellipse cx="22.3" cy="27.4" rx="2.3" ry="4.3" transform="rotate(285 22.3 27.4)"/><ellipse cx="25.9" cy="22.1" rx="2.3" ry="4.3" transform="rotate(322 25.9 22.1)"/><ellipse cx="32.0" cy="20.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 20.0)"/><ellipse cx="38.1" cy="22.1" rx="2.3" ry="4.3" transform="rotate(398 38.1 22.1)"/><ellipse cx="41.7" cy="27.4" rx="2.3" ry="4.3" transform="rotate(435 41.7 27.4)"/><ellipse cx="15.6" cy="25.6" rx="2.3" ry="4.3" transform="rotate(285 15.6 25.6)"/><ellipse cx="18.3" cy="19.9" rx="2.3" ry="4.3" transform="rotate(306 18.3 19.9)"/><ellipse cx="23.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(328 23.0 15.6)"/><ellipse cx="28.8" cy="13.3" rx="2.3" ry="4.3" transform="rotate(349 28.8 13.3)"/><ellipse cx="35.2" cy="13.3" rx="2.3" ry="4.3" transform="rotate(371 35.2 13.3)"/><ellipse cx="41.0" cy="15.6" rx="2.3" ry="4.3" transform="rotate(392 41.0 15.6)"/><ellipse cx="45.7" cy="19.9" rx="2.3" ry="4.3" transform="rotate(414 45.7 19.9)"/><ellipse cx="48.4" cy="25.6" rx="2.3" ry="4.3" transform="rotate(435 48.4 25.6)"/><ellipse cx="8.8" cy="23.8" rx="2.3" ry="4.3" transform="rotate(285 8.8 23.8)"/><ellipse cx="11.2" cy="18.0" rx="2.3" ry="4.3" transform="rotate(300 11.2 18.0)"/><ellipse cx="15.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(315 15.0 13.0)"/><ellipse cx="20.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(330 20.0 9.2)"/><ellipse cx="25.8" cy="6.8" rx="2.3" ry="4.3" transform="rotate(345 25.8 6.8)"/><ellipse cx="32.0" cy="6.0" rx="2.3" ry="4.3" transform="rotate(360 32.0 6.0)"/><ellipse cx="38.2" cy="6.8" rx="2.3" ry="4.3" transform="rotate(375 38.2 6.8)"/><ellipse cx="44.0" cy="9.2" rx="2.3" ry="4.3" transform="rotate(390 44.0 9.2)"/><ellipse cx="49.0" cy="13.0" rx="2.3" ry="4.3" transform="rotate(405 49.0 13.0)"/><ellipse cx="52.8" cy="18.0" rx="2.3" ry="4.3" transform="rotate(420 52.8 18.0)"/><ellipse cx="55.2" cy="23.8" rx="2.3" ry="4.3" transform="rotate(435 55.2 23.8)"/></g></svg>`;
   return `
   <section class="bv-layers"><div class="bv-wrap">
     <div class="bv-center"><span class="bv-eyebrow">${esc(L.eyebrow)}</span><h2>${hTxt(L.h2)}</h2><p class="bv-lead">${esc(L.lead)}</p></div>
-    <div class="bv-layers__grid">
-      <div class="bv-layers__stack bv-rv" aria-hidden="true">${plate(0, 'bv-plate__face--top')}${plate(1, 'bv-plate__face--mid')}${plate(2, 'bv-plate__face--glue')}</div>
-      <ol class="bv-layers__list">${L.items.map(([h, t], i) => [h, i === 1 && wellList(p) ? `Тук е формулата: ${wellList(p)}.` : t]).map(([h, t], i) => `<li class="bv-rv" style="--bv-d:${(i * .15).toFixed(2)}s"><span class="bv-layers__n">${i + 1}</span><div><h3>${esc(h)}</h3><p>${esc(t)}</p></div></li>`).join('')}</ol>
-    </div>
+    <ol class="bv-lx2">
+      ${items.map(([h, t], i) => `<li class="bv-lx2__row bv-rv" style="--bv-d:${(i * .15).toFixed(2)}s">
+        <div class="bv-lx2__disc bv-lx2__disc--${i + 1}"${i === 2 && specks ? ` style="--specks:${specks}"` : ''} aria-hidden="true">${i === 0 ? `<span class="bv-lx2__ring"></span>${tree}` : ''}</div>
+        <span class="bv-lx2__lead" aria-hidden="true"></span>
+        <div class="bv-lx2__txt"><h3 class="bv-lx2__pill"><span>${i + 1}</span>${esc(h)}</h3><p>${esc(t)}</p></div>
+      </li>`).join('')}
+    </ol>
     ${L.zones ? `<div class="bv-zones">
       <div class="bv-zones__fig bv-rv">${bodySvg(L.zones)}</div>
       <div class="bv-zones__txt">
