@@ -1582,6 +1582,50 @@ test("Claude connection (MCP): a secret link made by the owner; tools listed and
   assert.equal((await rpc({ jsonrpc: "2.0", id: 1, method: "ping" }, new URL(again.data.url).pathname)).status, 404);
 });
 
+test("phone agent „невзета пратка“: parcels at the office from day 6, the result in the history and a note when someone must act; once per stay", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    const make = async (name, phone, courier, days, status = "at_office") => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Шумен", delivery: { courier, type: "office", officeId: "31", officeName: "Шумен Център" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 24.4 }] });
+      await db.query("UPDATE orders SET tracking_no = $2, courier = $3, tracking_source = 'cb', parcel_status = $4, parcel_text = 'В офис', office_since = now() - make_interval(days => $5) WHERE id = $1", [r.data.id, `10516050${phone.slice(-4)}`, courier, status, days]);
+      return r.data.id;
+    };
+    const e6 = await make("Пенка Офисова", "0888 500 001", "econt", 5); // day 6
+    const s7 = await make("Стоян Спидов", "0888 500 002", "speedy", 6); // day 7
+    await make("Рано Още", "0888 500 003", "econt", 3); // day 4: only SMS so far
+    await make("Взела Вече", "0888 500 004", "econt", 5, "delivered");
+    await make("Късно Връщат", "0888 500 005", "econt", 9); // day 10: being returned
+
+    assert.equal((await fetch(B + "/api/agent/pickup")).status, 403);
+    const list = (await agent("pickup?day=6")).data.orders;
+    const ids = list.map((o) => o.id);
+    assert.ok(ids.includes(e6) && ids.includes(s7), JSON.stringify(list.map((o) => o.name)));
+    assert.ok(!list.some((o) => /Рано|Взела|Късно/.test(o.name)));
+    const p = list.find((o) => o.id === e6);
+    assert.deepEqual([p.courier, p.office, p.officeDay, p.canRedirect, p.total], ["econt", "Шумен Център", 6, true, 24.4]);
+    assert.equal(list.find((o) => o.id === s7).canRedirect, false);
+
+    // No answer (not the last try): still on the list. Then she wants another office: a note for a person, off the list.
+    assert.equal((await agent(`orders/${e6}/pickup`, { outcome: "no_answer", since: p.since, attempt: 1 })).status, 200);
+    assert.ok((await agent("pickup?day=6")).data.orders.some((o) => o.id === e6));
+    const r = await agent(`orders/${e6}/pickup`, { outcome: "redirect", new_place: "Еконт Шумен Тракия", since: p.since, attempt: 2, summary: "Работи до късно." });
+    assert.equal(r.data.done, true);
+    assert.ok(!(await agent("pickup?day=6")).data.orders.some((o) => o.id === e6));
+    const one = (await api(`/api/orders/${e6}`)).data;
+    assert.match(one.note, /Провери \(невзета пратка\): пренасочи пратката към „Еконт Шумен Тракия“/);
+    assert.ok(one.events.some((e) => e.kind === "call" && /Обаждане за невзета пратка \(опит 2\): иска друг офис или адрес/.test(e.text)));
+    // „Ще я взема“: written, no note.
+    await agent(`orders/${s7}/pickup`, { outcome: "will_pickup", when: "утре следобед", since: list.find((o) => o.id === s7).since });
+    const two = (await api(`/api/orders/${s7}`)).data;
+    assert.ok(two.events.some((e) => /ще я вземе; кога: „утре следобед“/.test(e.text)));
+    assert.ok(!/Провери/.test(two.note || ""));
+  } finally {
+    await db.end();
+  }
+});
+
 test("duplicate orders: held as „Дублирана“ by phone or email, no waybill or call, released by „Не е дубликат“; rules in settings", async () => {
   const agent = (p) => fetch(`${B}/api/agent/${p}`, { headers: { authorization: "Bearer agent-token-agent-token-agent-token-0000" } }).then(async (r) => ({ status: r.status, data: await r.json() }));
   const rules = await api("/api/settings/duplicates");

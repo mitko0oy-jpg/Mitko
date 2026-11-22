@@ -9,6 +9,7 @@ import { getAutomation } from "../lib/agent.mts";
 import { createFor, matchOffice, searchOffices } from "../lib/waybills.mts";
 import { one } from "../lib/db.mts";
 import { ownOrder } from "../lib/tenant.mts";
+import { pickupResult, pickupToCall } from "../lib/pickup.mts";
 
 const idOf = (v: unknown) => {
   const n = Number(v);
@@ -33,6 +34,8 @@ export default handle(async (req) => {
       return json(o);
     }
     if (what === "by-phone") return json({ orders: await ordersByPhone(str(u.get("phone"), 40), Number(u.get("days")) || 45) });
+    // Parcels still waiting at the office (Елена's „невзета пратка“ calls).
+    if (what === "pickup") return json({ orders: await pickupToCall(Number(u.get("day")) || 6, Number(u.get("limit")) || 30) });
     if (what === "products") return json({ products: await catalog(str(u.get("shop"), 20), str(u.get("q"), 60)) });
     // Courier offices of a city for the agent to read to the customer (best matches for the words first).
     if (what === "offices") {
@@ -79,6 +82,7 @@ export default handle(async (req) => {
     return json({ ok: true });
   }
   if (action === "result") return json(await applyCallResult(id, b));
+  if (action === "pickup") return json(await pickupResult(id, b));
   if (action === "edit") return json(await editOrder(id, b, null, AI));
   if (action === "note") {
     await addNote(id, str(b.text, 1000), null, AI);

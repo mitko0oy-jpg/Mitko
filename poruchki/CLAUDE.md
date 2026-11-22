@@ -130,6 +130,10 @@
 
 Отдалечен MCP сървър само за четене на `/mcp/<фирма>.<таен ключ>` (Streamable HTTP без потоци: JSON-RPC → един JSON отговор, известията → 202, GET → 405). Ключът е криптиран в `settings` `mcp@<фирма>`; Настройки → „Връзка с Claude“ (само собственикът, `/api/mcp`): „Създай линк“ / „Нов линк“ (старият спира) / „Изключи“. Инструменти: search_orders, get_order, get_customer, list_customers, sales_dashboard, ads_report, warehouse, open_carts. Лимит 600 заявки на час на фирма. В claude.ai: Настройки → Конектори → персонализиран конектор с линка.
 
+## Невзета пратка – обаждания на Елена (`lib/pickup.mts`)
+
+`GET /api/agent/pickup?day=6` – пратките в офис/автомат (Спиди, Еконт), които чакат от ден `day` до `day+2` (броенето на „Ден N в офиса“), още не са звънени за този престой; `POST /api/agent/orders/:id/pickup` – резултатът (`outcome`, `when`, `new_place`, `reason`, `summary`, `since`, `attempt`, `final`) → ред `kind = 'call'` с `info.pickup = since` и `info.done` (разговор или последен опит → не се звъни пак за престоя); при пренасочване, отказ, „вече я взех“, грешен номер, „колега“ или неясен резултат – бележка „Провери (невзета пратка): …“. Агентът: `poruchki-agent/lib/pickup-calls.mjs` (`/nevzeti_start` в Telegram).
+
 ## AI агентът за обаждания
 
 Отделен Netlify проект `mitko-obazhdania` (код в `poruchki-agent/`). Говори с платформата през `/api/agent/*` с `Authorization: Bearer AGENT_TOKEN` (`netlify/functions/agent.mts`, `netlify/lib/agent.mts`):
