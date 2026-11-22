@@ -181,7 +181,7 @@ const DEFAULT_VAT = 20;
 
 // ---- entries (expenses, other income, refunds) ----
 const ENTRY_COLS = `id::int AS id, day::text AS day, kind, category, party, description, doc_no, net::float AS net, vat::float AS vat,
-  total::float AS total, currency, total_eur::float AS total_eur, paid_by, order_no, refund_paym, shop, source, note, who, updated_at`;
+  total::float AS total, currency, total_eur::float AS total_eur, paid_by, order_no, refund_paym, shop, source, note, who, updated_at, orders::int AS orders`;
 
 function cleanEntry(b: any) {
   const kind = ["expense", "income", "refund"].includes(b?.kind) ? b.kind : "expense";
@@ -202,6 +202,7 @@ function cleanEntry(b: any) {
   if (totalEur === null) throw bad("currency", "За сума в друга валута дай и сумата в евро.");
   const paid = PAID_BY.includes(b?.paid_by) ? b.paid_by : kind === "refund" ? "bank" : "bank";
   const rp = Number(b?.refund_paym);
+  const n = Number(b?.orders);
   return {
     day: day(b?.day),
     kind,
@@ -219,6 +220,8 @@ function cleanEntry(b: any) {
     refund_paym: kind === "refund" ? ([1, 2, 3, 4].includes(rp) ? rp : 1) : null,
     shop: kind === "refund" ? s(b?.shop, 20) || null : null,
     note: s(b?.note, 500),
+    // Колко поръчки са продажбите от другите страници.
+    orders: category === "sales_cb" && Number.isInteger(n) && n >= 0 && n < 1e6 ? n : null,
   };
 }
 
@@ -237,9 +240,9 @@ export async function createEntry(b: any, who: string, opts: { source?: string; 
   const e = cleanEntry(b);
   await checkRefundShop(e);
   const row = await one<any>(
-    `INSERT INTO acc_entries (company_id, day, kind, category, party, description, doc_no, net, vat, total, currency, total_eur, paid_by, order_no, refund_paym, shop, note, who, source, ext_key)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING id::int AS id`,
-    [companyId(), e.day, e.kind, e.category, e.party, e.description, e.doc_no, e.net, e.vat, e.total, e.currency, e.total_eur, e.paid_by, e.order_no, e.refund_paym, e.shop, e.note, who, opts.source || "manual", opts.extKey || null],
+    `INSERT INTO acc_entries (company_id, day, kind, category, party, description, doc_no, net, vat, total, currency, total_eur, paid_by, order_no, refund_paym, shop, note, who, source, ext_key, orders)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING id::int AS id`,
+    [companyId(), e.day, e.kind, e.category, e.party, e.description, e.doc_no, e.net, e.vat, e.total, e.currency, e.total_eur, e.paid_by, e.order_no, e.refund_paym, e.shop, e.note, who, opts.source || "manual", opts.extKey || null, e.orders],
   );
   return Number(row.id);
 }
@@ -253,9 +256,9 @@ export async function updateEntry(id: number, b: any, who: string) {
   await checkRefundShop(e);
   await q(
     `UPDATE acc_entries SET day = $3, kind = $4, category = $5, party = $6, description = $7, doc_no = $8, net = $9, vat = $10, total = $11, currency = $12,
-            total_eur = $13, paid_by = $14, order_no = $15, refund_paym = $16, shop = $17, note = $18, who = $19, updated_at = now()
+            total_eur = $13, paid_by = $14, order_no = $15, refund_paym = $16, shop = $17, note = $18, who = $19, orders = $20, updated_at = now()
       WHERE id = $1 AND company_id = $2`,
-    [id, companyId(), e.day, e.kind, e.category, e.party, e.description, e.doc_no, e.net, e.vat, e.total, e.currency, e.total_eur, e.paid_by, e.order_no, e.refund_paym, e.shop, e.note, who],
+    [id, companyId(), e.day, e.kind, e.category, e.party, e.description, e.doc_no, e.net, e.vat, e.total, e.currency, e.total_eur, e.paid_by, e.order_no, e.refund_paym, e.shop, e.note, who, e.orders],
   );
 }
 
@@ -374,14 +377,14 @@ export async function importAll(b: any, who: string) {
     const ids = new Map<string, number>();
     for (const { key, v } of E) {
       const r = await t<any>(
-        `INSERT INTO acc_entries (company_id, day, kind, category, party, description, doc_no, net, vat, total, currency, total_eur, paid_by, order_no, refund_paym, shop, note, who, source, ext_key)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'import', $19)
+        `INSERT INTO acc_entries (company_id, day, kind, category, party, description, doc_no, net, vat, total, currency, total_eur, paid_by, order_no, refund_paym, shop, note, who, source, ext_key, orders)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'import', $19, $20)
          ON CONFLICT (company_id, ext_key) DO UPDATE SET day = EXCLUDED.day, kind = EXCLUDED.kind, category = EXCLUDED.category, party = EXCLUDED.party,
            description = EXCLUDED.description, doc_no = EXCLUDED.doc_no, net = EXCLUDED.net, vat = EXCLUDED.vat, total = EXCLUDED.total,
            currency = EXCLUDED.currency, total_eur = EXCLUDED.total_eur, paid_by = EXCLUDED.paid_by, order_no = EXCLUDED.order_no,
-           refund_paym = EXCLUDED.refund_paym, shop = EXCLUDED.shop, note = EXCLUDED.note, who = EXCLUDED.who, updated_at = now()
+           refund_paym = EXCLUDED.refund_paym, shop = EXCLUDED.shop, note = EXCLUDED.note, who = EXCLUDED.who, orders = EXCLUDED.orders, updated_at = now()
          RETURNING id::int AS id, (xmax = 0) AS inserted`,
-        [company, v.day, v.kind, v.category, v.party, v.description, v.doc_no, v.net, v.vat, v.total, v.currency, v.total_eur, v.paid_by, v.order_no, v.refund_paym, v.shop, v.note, who, key],
+        [company, v.day, v.kind, v.category, v.party, v.description, v.doc_no, v.net, v.vat, v.total, v.currency, v.total_eur, v.paid_by, v.order_no, v.refund_paym, v.shop, v.note, who, key, v.orders],
       );
       ids.set(key, r[0].id);
       r[0].inserted ? added++ : changed++;
@@ -440,6 +443,7 @@ type Month = {
   expensesTotal: number;
   otherIncome: number;
   otherSales: number; // продажби от несвързани страници (в приходите)
+  otherOrders: number; // броят им (не влиза в orders – за тях няма себестойност от склада)
   purchaseVat: number;
   profit: number;
   vatDue: number; // ориентировъчно
@@ -471,7 +475,7 @@ export async function report(fromMonth: string, toMonth: string) {
       {
         month: m, source: fromBank(m) ? "bank" : "orders", vatRegistered: reg(m), orders: 0, revenue: 0, revenueVat: 0, revenueNet: 0, revenueVatBg: 0, bankSales: 0,
         refunds: 0, cogs: 0, cogsMissing: 0, goodsBought: 0, courierAuto: 0, courierInvoices: 0, courier: 0, adsMeta: 0, expenses: {}, expensesTotal: 0,
-        otherIncome: 0, otherSales: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
+        otherIncome: 0, otherSales: 0, otherOrders: 0, purchaseVat: 0, profit: 0, vatDue: 0, returned: 0, ownerOut: 0, ownerIn: 0,
       },
     ]),
   );
@@ -493,7 +497,8 @@ export async function report(fromMonth: string, toMonth: string) {
     ),
     q<any>(
       `SELECT to_char(day, 'YYYY-MM') AS m, kind, category, coalesce(sum(net * total_eur / nullif(total, 0)), 0)::float AS net,
-              coalesce(sum(vat * total_eur / nullif(total, 0)), 0)::float AS vat, coalesce(sum(total_eur), 0)::float AS total
+              coalesce(sum(vat * total_eur / nullif(total, 0)), 0)::float AS vat, coalesce(sum(total_eur), 0)::float AS total,
+              coalesce(sum(orders), 0)::int AS n
          FROM acc_entries WHERE company_id = $1 AND day >= $2::date AND day < $3::date GROUP BY 1, 2, 3`,
       [company, from, to],
     ),
@@ -585,6 +590,7 @@ export async function report(fromMonth: string, toMonth: string) {
     else if (e.kind === "income" && e.category === "sales_cb") {
       // Продажби от несвързаните страници: приход като поръчките (в месец „банка“ вече са в постъпленията).
       x.otherSales = r2(x.otherSales + e.total);
+      x.otherOrders += Number(e.n) || 0;
       if (x.source === "bank") continue;
       x.revenue = r2(x.revenue + e.total);
       x.revenueNet = r2(x.revenueNet + net);
@@ -621,7 +627,7 @@ export async function report(fromMonth: string, toMonth: string) {
     total: {
       orders: sum("orders"), revenue: sum("revenue"), revenueNet: sum("revenueNet"), refunds: sum("refunds"), cogs: sum("cogs"),
       courier: sum("courier"), expenses, expensesTotal: sum("expensesTotal"), otherIncome: sum("otherIncome"), profit: sum("profit"),
-      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"), otherSales: sum("otherSales"), ownerOut: sum("ownerOut"), ownerIn: sum("ownerIn"),
+      goodsBought: sum("goodsBought"), adsMeta: sum("adsMeta"), otherSales: sum("otherSales"), otherOrders: sum("otherOrders"), ownerOut: sum("ownerOut"), ownerIn: sum("ownerIn"),
     },
     vatMissing: shops.filter((x) => !shopAcc(set, x).vatSet).map((x) => x.label),
     categories: { ...EXPENSE_CATS, ...AUTO_CATS },

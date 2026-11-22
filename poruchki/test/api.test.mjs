@@ -1472,7 +1472,7 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.ok(rep2.categories.ads_meta && rep2.categories.fulfillment);
   // Sales from the pages that are not in OrderDesk (phone orders): in the revenue like the orders, with the VAT once registered;
   // in a month from the bank they are already in the money in.
-  await api("/api/acc/import", { entries: [{ key: "cb1", day: `${m}-20`, kind: "income", category: "sales_cb", party: "Телефонни", total: 120, vat: 20 },
+  await api("/api/acc/import", { entries: [{ key: "cb1", day: `${m}-20`, kind: "income", category: "sales_cb", party: "Телефонни", total: 120, vat: 20, orders: 4 },
     { key: "cb0", day: `${prevM}-20`, kind: "income", category: "sales_cb", party: "Телефонни", total: 60 }] });
   const rep3 = (await api(`/api/acc/report?from=${prevM}&to=${m}`)).data;
   const [q0, q1] = rep3.months;
@@ -1480,6 +1480,7 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   assert.equal(q1.profit, Math.round((p1.profit + 100) * 100) / 100);
   assert.deepEqual([q0.otherSales, q0.revenue, q0.profit], [60, 600, p0.profit], "the bank month has them in the money in already");
   assert.equal(rep3.total.otherSales, 180);
+  assert.deepEqual([q1.otherOrders, q1.orders, q0.otherOrders], [4, p1.orders, 0], "their count is apart from the orders (no cost from the warehouse)");
   await api("/api/acc/settings", { vatFrom: "", ordersFrom: "", owner: { label: "собственик", names: "" } });
 
   // The refund is in the NAP file.
