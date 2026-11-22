@@ -387,7 +387,7 @@ function renderLanding(p) {
     <p class="bv-lead">${esc(sits.lead)}</p>
     <div class="bv-sits">${sits.items.map(([t, m]) => typeof m === 'string' && !/^https?:/.test(m)
       ? `<figure class="bv-sit bv-sit--ico"><div class="bv-sit__ico" aria-hidden="true">${m}</div><p>${esc(t)}</p></figure>`
-      : `<figure class="bv-sit"><div class="bv-sit__img">${bvMedia(m, t, 640, 480)}</div><p>${esc(t)}</p></figure>`).join('')}</div>
+      : `<figure class="bv-sit"><div class="bv-sit__img">${typeof m === 'string' && PH_PATCH[m.split('/').pop()] ? patchPhoto(p, m, t, 640, 480) : bvMedia(m, t, 640, 480)}</div><p>${esc(t)}</p></figure>`).join('')}</div>
     <div class="bv-sits-foot"><a class="bv-btn" href="${toOffers}">${esc(sits.cta)} ${arr}</a><a class="bv-btn-ghost" href="tel:${CONFIG.phoneHref}">📞 Поръчай по телефона: ${CONFIG.phone}</a></div>
   </div></section>` : '';
 
@@ -528,7 +528,7 @@ function renderLanding(p) {
   const vs = vsD ? `
   <section class="bv-vs"><div class="bv-wrap">
     <div class="bv-center"><span class="bv-eyebrow">Сравни сам</span><h2>${hTxt(vsD.h2)}</h2><p class="bv-lead">${esc(vsD.lead)}</p></div>
-    <div class="bv-vs__grid">
+    <div class="bv-vs__grid" style="--vs-m:${2 * vsD.rows.length + 2};--vs-d:${vsD.rows.length + 1}">
       <div class="bv-vs__hl" aria-hidden="true"></div>
       <div class="bv-vs__corner">Какво получаваш</div>
       <div class="bv-vs__head bv-vs__head--us"><img src="${vsUs[2]}" alt="" width="106" height="180" loading="lazy" decoding="async"><div><b>${esc(vsUs[0])}</b><span>${esc(vsUs[1])}</span></div></div>

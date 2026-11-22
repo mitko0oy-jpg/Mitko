@@ -327,8 +327,8 @@
 
 /* ---------- силните страни: сравнение ---------- */
 .bvp .bv-vs{background:#fff}
-.bvp .bv-vs__grid{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(14,auto);margin:52px auto 0;max-width:1000px}
-.bvp .bv-vs__hl{position:absolute;inset:-12px -8px;grid-column:1 / 2;grid-row:1 / span 7;border-radius:26px;background:linear-gradient(180deg,#FFF7E2 0%,#FFEAB8 100%);box-shadow:inset 0 0 0 2px var(--bd,#F5C76A),0 24px 60px rgba(var(--t2rgb,224,138,0),.22);overflow:hidden}
+.bvp .bv-vs__grid{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:repeat(var(--vs-m,14),auto);margin:52px auto 0;max-width:1000px}
+.bvp .bv-vs__hl{position:absolute;inset:-12px -8px;grid-column:1 / 2;grid-row:1 / span var(--vs-d,7);border-radius:26px;background:linear-gradient(180deg,#FFF7E2 0%,#FFEAB8 100%);box-shadow:inset 0 0 0 2px var(--bd,#F5C76A),0 24px 60px rgba(var(--t2rgb,224,138,0),.22);overflow:hidden}
 .bvp .bv-vs__hl::after{content:"";position:absolute;left:0;right:0;top:-40%;height:40%;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.6),rgba(255,255,255,0));animation:bv-vsweep 5.5s ease-in-out infinite}
 @keyframes bv-vsweep{0%,45%{top:-40%}100%{top:110%}}
 .bvp .bv-vs__corner{display:none}
@@ -585,7 +585,7 @@
   .bvp .bv-stories{grid-template-columns:repeat(2,1fr)}
 }
 @media (min-width:720px){
-  .bvp .bv-vs__grid{grid-template-columns:1.05fr 1.2fr 1fr;grid-template-rows:repeat(7,auto);background:#FFFDF8;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+  .bvp .bv-vs__grid{grid-template-columns:1.05fr 1.2fr 1fr;grid-template-rows:repeat(var(--vs-d,7),auto);background:#FFFDF8;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
   .bvp .bv-vs__hl{grid-column:2 / 3;grid-row:1 / -1;inset:-16px 0}
   .bvp .bv-vs__corner{display:flex;align-items:flex-end;grid-row:1;grid-column:1;padding:22px 22px 18px;font-size:calc(var(--fs) * 0.7222);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
   .bvp .bv-vs__head{grid-row:1;padding:22px 18px 18px}
