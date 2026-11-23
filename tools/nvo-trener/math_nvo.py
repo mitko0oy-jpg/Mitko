@@ -19,7 +19,7 @@ errors, warns = [], []
 
 
 def check_html(where, s):
-    for t in re.findall(r"</?\s*([a-zA-Z0-9]+)", s or ""):
+    for t in re.findall(r"</?([a-zA-Z][a-zA-Z0-9]*)", s or ""):
         if t.lower() not in OK_TAGS:
             errors.append(f"{where}: таг <{t}> не се показва в тренажора")
     for a in re.findall(r"<[a-zA-Z]+\s+([^>]*)>", s or ""):
@@ -104,7 +104,7 @@ if opt("--review"):
                 body += f"<details><summary>Решение</summary>{q['sol']}</details>"
             rows.append(f"<article><span class='id'>{H.escape(q['id'])}</span>{body}<label class='mark'><input type='checkbox'> прегледано</label></article>")
     page = f"""<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Задачи по математика – преглед</title><style>
+<title>Математика за преглед</title><style>
 :root{{--bg:#F4F1FF;--paper:#fff;--ink:#1D1640;--muted:#5D5880;--ok:#0E8F67;--okbg:#E3F6EF;--line:#E1DBF5}}
 @media (prefers-color-scheme:dark){{:root:not([data-theme=light]){{--bg:#0E0A22;--paper:#191337;--ink:#EEEAFF;--muted:#B4ADD8;--ok:#5FD3A8;--okbg:#123A2E;--line:#2E265F}}}}
 :root[data-theme=dark]{{--bg:#0E0A22;--paper:#191337;--ink:#EEEAFF;--muted:#B4ADD8;--ok:#5FD3A8;--okbg:#123A2E;--line:#2E265F}}
@@ -118,6 +118,14 @@ article{{background:var(--paper);border:1px solid var(--line);border-radius:14px
 .fr>span:first-child{{border-bottom:1.5px solid currentColor;padding:0 .2em .1em}}.fr>span:last-child{{padding:.1em .2em 0}}
 </style></head><body><main><h1>Задачи по математика „като на НВО“ – за преглед от учител</h1>
 <p>{len(questions)} задачи в {len(modules)} теми. Верният отговор е оцветен в зелено. Отговорите в тренажора се разбъркват. Пишете на Митко номера на задачата (напр. mz-chisla-04) и какво да се поправи.</p>
-{''.join(rows)}</main></body></html>"""
+{''.join(rows)}</main>
+<script>
+// The ticks stay in this browser only (the teacher's own list of what is checked).
+document.querySelectorAll("article").forEach((a) => {{
+  const id = a.querySelector(".id").textContent, box = a.querySelector(".mark input"), k = "mz-review:" + id;
+  try {{ box.checked = localStorage.getItem(k) === "1"; }} catch (e) {{}}
+  box.addEventListener("change", () => {{ try {{ localStorage.setItem(k, box.checked ? "1" : "0"); }} catch (e) {{}} }});
+}});
+</script></body></html>"""
     open(opt("--review"), "w", encoding="utf8").write(page)
     print(f"✓ {opt('--review')}")
