@@ -51,6 +51,7 @@
 5. Правилата за съдържанието и AI безопасността: `docs/CONTENT_RULES.md`, `docs/AI_SAFETY.md`.
 6. Кратък урок = модул `lesson` (напр. `bel7-uroci`), по един елемент на тема: `{"unit": "<slug>", "section": "literature|language", "sections": {…}}`. Разделите и подсказките са в `public/assets/lesson-view.js` (`LESSON_TEMPLATES`): литература – short, author, plot[], characters[{name,text}], ideas[], craft[], quotes[{q,why}], traps[], check[{q,a}]; език – short, steps[], examples[{ok,bad,why}], traps[], check[{q,a}]. Липсващ раздел се показва като празен шаблон.
 7. Четене = модул `reading`: `{"unit": "<slug>", "text": "…", "glossary": [{"w","m"}], "audio": "<url>", "audioBy": "…", "source": "…"}` – само за автори, починали преди повече от 70 години. За аудио от друг домейн трябва `media-src` в CSP (`netlify.toml`).
+8. Подаръчен интерактивен PDF „300 въпроса“ (БЕЛ + математика, 5.–7. клас, формат за телефон): `python3 scripts/quiz-pdf/build_quiz_pdf.py private/quiz/content.json 300-vaprosa.pdf` (нужни са `pip install reportlab pypdf cryptography`; шрифтовете се свалят сами). Въпросите са в `content.json` – извън git, копие има Митко. Частите се подреждат по клас (Литература → Български език → Математика), броят на страниците, менюто и титлите се смятат сами; файлът се заключва за копиране (без `--no-encrypt`).
 
 ## Тестове
 
