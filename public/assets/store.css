@@ -1031,3 +1031,26 @@ dialog.pv:not([open]){display:none}
 }
 
 #produkti .pc-ship{color:#2E7D4F;font-weight:700}
+
+/* ---------- math page: the exam in three kinds of tasks, the count of tasks, the year round ---------- */
+.buy-trust.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:420px){.buy-trust.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.xm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:clamp(28px,4vw,44px)}
+.xm{display:flex;flex-direction:column;padding:26px 24px;border-radius:24px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line),0 20px 44px -34px rgba(23,41,74,.5)}
+.xm-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.xm-n{font:italic 700 42px/1 var(--serif);color:var(--accent);letter-spacing:-.02em}
+.xm-pts{padding:7px 13px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:15px;white-space:nowrap}
+.xm h3{margin:0 0 8px;font-size:21px;line-height:1.2;letter-spacing:-.015em}
+.xm p{margin:0;color:var(--muted);font-size:17px;line-height:1.45}
+.xm p.xm-cards{margin-top:auto;padding-top:16px;color:var(--ink);font-weight:700;font-size:16px}
+.xm.key{box-shadow:inset 0 0 0 2px #D25A24,0 30px 60px -34px rgba(210,90,36,.55)}
+.xm.key .xm-n{color:#D25A24}
+.xm.key .xm-pts{background:rgba(240,122,62,.14);color:#C2491A}
+.xm-total{display:grid;grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr));gap:18px;align-items:center;margin-top:16px;padding:24px 28px;border-radius:24px;background:#13233E;color:#fff}
+.xm-total p{margin:0;font-size:16px;line-height:1.35;color:rgba(255,255,255,.86)}
+.xm-total b{display:block;margin-bottom:4px;font-size:38px;font-weight:800;line-height:1;letter-spacing:-.03em;color:#fff;font-variant-numeric:tabular-nums}
+.xm-total .xt-h{font:700 24px/1.2 var(--serif);color:#fff}
+.xm-total .xt-h span{display:block;color:#7FD6CF}
+.xm-note{max-width:72ch;margin:16px auto 0;text-align:center;color:var(--muted);font-size:16px;line-height:1.5}
+@media (max-width:980px){.xm-grid{grid-template-columns:1fr}.xm-total{grid-template-columns:repeat(3,minmax(0,1fr))}.xm-total .xt-h{grid-column:1/-1}}
+@media (max-width:560px){.xm-total{grid-template-columns:1fr;padding:22px 20px}.xm-total b{font-size:32px}}
