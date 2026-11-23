@@ -1,0 +1,786 @@
+<!-- ЕДУ БЕЛ · Ъпсел: „200 въпроса“ – интерактивен PDF за 5., 6. и 7. клас · целият код отива в един HTML/Code елемент в ConvertBuilder.
+     Точно под него сложи елемента „Upsell бутон“ на ConvertBuilder: продукт – „200 въпроса“, цена – същата като price в CONFIG.
+     Нашите бутони „Да“ и „Не“ натискат него. Настройките са в CONFIG най-долу (цена, телефон, до кога важи подаръкът за Черния петък).
+     Механиката е същата като в upsell-90-karti.html (клон claude/peaceful-rubin-rcjdxp, marketing/README.md там).
+     Примерният въпрос е написан само за тази страница – не е от платения сборник. -->
+<style>
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/golos-text-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Golos Text';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/golos-text-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Literata';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/literata-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Literata';font-style:normal;font-weight:400 700;font-display:swap;src:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/fonts/literata-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+:is(#q2,#q2f){--ink:#1B2A4A; --ink-2:#131E36; --ink-3:#0C1426; --gold:#C49A3C; --gold-hi:#D9B45F; --gold-deep:#8F6C1F; --gold-soft:#F4EAD3;
+  --paper:#FFFDF8; --cream:#F7F2E7; --edge:#E6DFCF; --line:#DCE1E8; --card:#FFFFFF;
+  --text:#1F2633; --muted:#545C70; --on-ink:#E9EDF5; --on-ink-2:#B9C2D6;
+  --ok:#2E7D4F; --ok-ink:#1E5A38; --ok-soft:#E5F2EA; --bad:#B23A3A; --bad-soft:#FBECEC;
+  --lv1:#3F7A8C; --lv2:#B88A2E; --lv3:#8C3F5A;
+  --serif:Literata,Georgia,"Times New Roman",serif;
+  --sans:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 1px 2px rgba(27,42,74,.06),0 12px 32px rgba(27,42,74,.10);
+  --logo:url(https://cdn.jsdelivr.net/gh/mitko0oy-jpg/Mitko@9be3005f66d6089063134e8d66e56296a3c82f5b/public/assets/logo.png);
+  color-scheme:light;}
+/* --- изолация от стиловете на платформата --- */
+:is(#q2,#q2f),:is(#q2,#q2f) *,:is(#q2,#q2f) *::before,:is(#q2,#q2f) *::after{box-sizing:border-box}
+:is(#q2,#q2f){-webkit-text-size-adjust:100%;text-size-adjust:100%;color:var(--text);font:400 17px/1.55 var(--sans);-webkit-font-smoothing:antialiased;text-align:left;letter-spacing:normal;text-transform:none;word-spacing:normal}
+#q2{position:relative;display:block;margin:0 calc(50% - 50vw);padding:0;width:auto;max-width:none;background:var(--paper);overflow:hidden;overflow:clip}
+:is(#q2,#q2f) :is(section,header,footer,main,article,figure,div,nav){margin:0;padding:0;border:0;max-width:none;box-shadow:none}
+:is(#q2,#q2f) :is(h1,h2,h3,h4,p,span,a,b,strong,em,small,li,summary,button,figcaption){letter-spacing:inherit;text-transform:none;text-shadow:none;word-spacing:normal}
+:is(#q2,#q2f) :is(ul,ol,li,figure,blockquote){margin:0;padding:0}
+:is(#q2,#q2f) :is(p,li,span,a,b,strong,em,small,figcaption,summary,label){font-size:inherit;line-height:inherit;font-family:inherit;color:inherit}
+:is(#q2,#q2f) li{list-style:none}
+:is(#q2,#q2f) a{text-decoration:none;color:inherit}
+:is(#q2,#q2f) button{margin:0;box-shadow:none;line-height:inherit;font-family:inherit;text-align:inherit;background-image:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:is(#q2,#q2f) img,:is(#q2,#q2f) svg{display:block;max-width:100%}
+:is(#q2,#q2f) h1,:is(#q2,#q2f) h2,:is(#q2,#q2f) h3{font-family:var(--serif);color:var(--ink);margin:0;text-wrap:balance;font-weight:700}
+:is(#q2,#q2f) h3{line-height:1.25}
+:is(#q2,#q2f) p{margin:0}
+:is(#q2,#q2f) b,:is(#q2,#q2f) strong{font-weight:650}
+:is(#q2,#q2f) :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:8px}
+:is(#q2,#q2f) .q2-wrap{width:100%;max-width:1140px;margin-inline:auto;padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}
+@media (min-width:640px){:is(#q2,#q2f) .q2-wrap{padding-inline:28px}}
+@media (min-width:1024px){:is(#q2,#q2f) .q2-wrap{padding-inline:40px}}
+:is(#q2,#q2f) .q2-logo{display:block;width:72px;aspect-ratio:300/217;background:var(--logo) center/contain no-repeat}
+:is(#q2,#q2f) .q2-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* --- горе: стъпки на поръчката --- */
+#q2 .q2-top{background:var(--paper);border-bottom:1px solid var(--edge)}
+#q2 .q2-top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:66px;padding-block:8px}
+#q2 .q2-steps{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--muted)}
+#q2 .q2-steps li{display:flex;align-items:center;gap:6px;white-space:nowrap}
+#q2 .q2-steps li+li::before{content:"";width:12px;height:2px;border-radius:2px;background:var(--line)}
+#q2 .q2-dot{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;border:2px solid var(--line);color:var(--muted);background:var(--card)}
+#q2 .q2-dot svg{width:13px;height:13px}
+#q2 .q2-done .q2-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+#q2 .q2-now .q2-dot{background:var(--ink);border-color:var(--ink);color:#fff}
+#q2 .q2-now .q2-lbl{color:var(--ink);font-weight:650}
+@media (max-width:440px){#q2 .q2-steps li:not(.q2-now) .q2-lbl{display:none}}
+@media (min-width:640px){#q2 .q2-steps{gap:10px} #q2 .q2-steps li+li::before{width:28px} #q2 .q2-top .q2-logo{width:84px}}
+#q2 .q2-notice{background:var(--ok-soft);color:var(--ok-ink);border-bottom:1px solid #CFE6D7}
+#q2 .q2-notice-in{display:flex;gap:10px;align-items:flex-start;padding-block:11px;font-size:15px;line-height:1.45}
+#q2 .q2-notice svg{flex:none;width:20px;height:20px;margin-top:1px}
+@media (min-width:640px){#q2 .q2-notice-in{justify-content:center;align-items:center}}
+
+/* --- HERO: тъмен фон, телефон с жив пример --- */
+#q2 .q2-hero{position:relative;color:var(--on-ink);padding-block:34px 48px;
+  background:radial-gradient(640px 380px at 86% 8%,rgba(217,180,95,.24),rgba(217,180,95,0) 70%),
+             radial-gradient(560px 420px at 0% 100%,rgba(63,122,140,.30),rgba(63,122,140,0) 70%),
+             linear-gradient(165deg,var(--ink) 0%,var(--ink-2) 62%,var(--ink-3) 100%)}
+#q2 .q2-hero::after{content:"";position:absolute;inset:auto 0 0 0;height:1px;background:linear-gradient(90deg,transparent,rgba(217,180,95,.6),transparent)}
+#q2 .q2-hero-grid{display:grid;gap:28px;grid-template-areas:"head" "phone" "buy"}
+#q2 .q2-hero-head{grid-area:head}
+#q2 .q2-hero-phone{grid-area:phone}
+#q2 .q2-hero-buy{grid-area:buy}
+@media (min-width:960px){
+  #q2 .q2-hero{padding-block:56px 72px}
+  #q2 .q2-hero-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);grid-template-areas:"head phone" "buy phone";column-gap:56px;row-gap:26px;align-items:start}
+  #q2 .q2-hero-phone{align-self:center}
+}
+#q2 .q2-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;background:rgba(217,180,95,.14);border:1px solid rgba(217,180,95,.4);color:#F1DDAF;font-size:13px;font-weight:650;letter-spacing:.02em}
+#q2 .q2-pill i{width:8px;height:8px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 0 4px rgba(217,180,95,.22)}
+#q2 .q2-hero h1{color:#fff;font-size:clamp(32px,7.4vw,54px);line-height:1.06;letter-spacing:-.012em;margin-top:16px}
+#q2 .q2-hero h1 em{font-style:normal;color:var(--gold-hi);background:linear-gradient(transparent 72%,rgba(217,180,95,.25) 72%)}
+#q2 .q2-lead{margin-top:16px;font-size:clamp(17px,2.3vw,19px);color:var(--on-ink-2);max-width:40ch}
+#q2 .q2-lead b{color:#fff}
+#q2 .q2-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px}
+#q2 .q2-stat{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:14px;padding:10px 8px;text-align:center}
+#q2 .q2-stat b{display:block;font-family:var(--serif);font-size:clamp(24px,5vw,30px);line-height:1.05;color:var(--gold-hi);font-weight:700}
+#q2 .q2-stat span{display:block;margin-top:3px;font-size:12.5px;line-height:1.25;color:var(--on-ink-2)}
+
+/* оферта */
+#q2 .q2-offer{background:var(--card);color:var(--text);border-radius:22px;padding:18px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+@media (min-width:640px){#q2 .q2-offer{padding:22px 24px}}
+#q2 .q2-price-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;margin-bottom:16px}
+#q2 .q2-price-label{display:block;white-space:nowrap;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#q2 .q2-price{display:block;margin-top:4px;font-family:var(--serif);font-weight:800;font-size:clamp(40px,9vw,48px);line-height:1;color:var(--ink);white-space:nowrap}
+#q2 .q2-format{flex:none;font-size:13px;line-height:1.35;color:var(--muted);text-align:right;padding:8px 11px;border:1px dashed #D5CBB4;border-radius:11px;background:var(--paper)}
+#q2 .q2-format b{display:block;color:var(--ink)}
+:is(#q2,#q2f) .q2-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;min-height:62px;padding:12px 18px;border-radius:15px;text-align:center;color:var(--ink);background:linear-gradient(180deg,var(--gold-hi),var(--gold));box-shadow:0 2px 0 #9C7726,0 10px 22px rgba(196,154,60,.35);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;-webkit-tap-highlight-color:transparent}
+:is(#q2,#q2f) .q2-btn:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 3px 0 #9C7726,0 14px 28px rgba(196,154,60,.4)}
+:is(#q2,#q2f) .q2-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #9C7726,0 6px 14px rgba(196,154,60,.3)}
+:is(#q2,#q2f) .q2-btn-main{display:inline-flex;align-items:center;gap:8px;font-weight:750;font-size:18px;line-height:1.2}
+:is(#q2,#q2f) .q2-btn-main svg{width:20px;height:20px;flex:none}
+:is(#q2,#q2f) .q2-btn-sub{font-size:13.5px;font-weight:500;color:#3A3216}
+:is(#q2,#q2f) .q2-btn.q2-busy{opacity:.75;pointer-events:none}
+@media (max-width:440px){:is(#q2,#q2f) .q2-btn-main svg{display:none} :is(#q2,#q2f) .q2-btn-main{font-size:17px} #q2 .q2-offer{padding:16px}}
+#q2 .q2-no{display:block;width:fit-content;margin:12px auto 0;padding:10px 8px;font-size:15px;color:var(--muted);text-decoration:underline;text-decoration-color:#B9BFCB;text-underline-offset:3px;text-align:center}
+#q2 .q2-no:hover{color:var(--ink)}
+#q2 .q2-assure{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;margin-top:6px;padding-top:12px;border-top:1px solid #EFEAE0;font-size:13.5px;color:var(--muted)}
+#q2 .q2-assure span{display:inline-flex;align-items:center;gap:6px}
+#q2 .q2-assure svg{width:15px;height:15px;color:var(--ok)}
+#q2 .q2-fallback{display:none;margin:10px 0 0;font-size:14.5px;line-height:1.45;color:var(--bad);text-align:center}
+#q2 .q2-fallback.q2-on{display:block}
+#q2 .q2-fallback a{color:var(--ink);font-weight:650;text-decoration:underline}
+
+/* --- телефонът --- */
+#q2 .q2-demo{display:flex;flex-direction:column;align-items:center}
+#q2 .q2-hint{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:14px;font-weight:600;color:#fff}
+#q2 .q2-hint svg{width:18px;height:18px;color:var(--gold-hi)}
+#q2 .q2-phone{position:relative;width:min(310px,86vw);aspect-ratio:9/18.6;border-radius:44px;padding:11px;background:linear-gradient(145deg,#2A3756,#0A0F1C 60%);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 40px 80px rgba(0,0,0,.55),inset 0 0 0 2px rgba(255,255,255,.06)}
+#q2 .q2-phone::before{content:"";position:absolute;top:19px;left:50%;width:86px;height:22px;transform:translateX(-50%);border-radius:999px;background:#05080F;z-index:3}
+#q2 .q2-screen{position:relative;height:100%;border-radius:34px;overflow:hidden;background:#F4EFE6;color:var(--text)}
+#q2 .q2-view{position:absolute;inset:0;display:flex;flex-direction:column;padding:44px 15px 14px;transition:opacity .35s ease,transform .35s ease}
+#q2 .q2-view.q2-res-view{opacity:0;transform:translateX(18px);pointer-events:none}
+#q2 .q2-screen.q2-answered .q2-q-view{opacity:0;transform:translateX(-18px);pointer-events:none}
+#q2 .q2-screen.q2-answered .q2-res-view{opacity:1;transform:none;pointer-events:auto}
+#q2 .q2-shead{display:flex;align-items:center;justify-content:space-between}
+#q2 .q2-sbrand{display:flex;align-items:center;gap:6px;font-family:var(--serif);font-weight:700;font-size:13px;color:var(--ink)}
+#q2 .q2-sbrand .q2-logo{width:26px}
+#q2 .q2-stitle{font-size:8.5px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+#q2 .q2-ssub{display:flex;justify-content:space-between;margin-top:8px;font-size:9.5px;font-weight:600;color:var(--muted)}
+#q2 .q2-sprog{height:3px;margin-top:5px;border-radius:3px;background:#E2DCD0;overflow:hidden}
+#q2 .q2-sprog i{display:block;height:100%;width:35%;background:var(--lv1);border-radius:3px}
+#q2 .q2-qhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px}
+#q2 .q2-qhead h4{margin:0;font-family:var(--serif);font-weight:800;font-size:21px;color:var(--ink);line-height:1}
+#q2 .q2-chip{padding:4px 9px;border-radius:999px;background:#E3E9EE;color:var(--ink);font-size:9.5px;font-weight:700;white-space:nowrap}
+#q2 .q2-sq{margin-top:10px;font-weight:700;font-size:14.5px;line-height:1.35;color:var(--ink)}
+#q2 .q2-opts{display:grid;gap:7px;margin-top:auto}
+#q2 .q2-opt{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 10px 8px 8px;border-radius:12px;background:#fff;border:1px solid #ECE6DA;box-shadow:0 2px 6px rgba(27,42,74,.06);font-size:13.5px;line-height:1.3;color:var(--text);text-align:left;transition:border-color .15s ease,transform .1s ease}
+#q2 .q2-opt:hover{border-color:var(--gold)}
+#q2 .q2-opt:active{transform:scale(.985)}
+#q2 .q2-opt .q2-k{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--ink);color:#fff;font-weight:700;font-size:11.5px}
+#q2 .q2-opts.q2-pulse .q2-opt:nth-child(2){animation:q2pulse 2.2s ease-in-out 1.2s 3}
+@keyframes q2pulse{0%,100%{box-shadow:0 2px 6px rgba(27,42,74,.06)}50%{box-shadow:0 0 0 5px rgba(196,154,60,.3)}}
+#q2 .q2-snav{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin-top:10px}
+#q2 .q2-snav span{display:flex;align-items:center;justify-content:center;gap:6px;min-height:34px;border-radius:10px;font-size:11px;font-weight:700}
+#q2 .q2-snav span:first-child{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(27,42,74,.08)}
+#q2 .q2-snav span:last-child{background:var(--ink);color:#fff;justify-content:space-between;padding-inline:12px}
+#q2 .q2-verdict{display:flex;align-items:center;gap:10px;margin-top:16px}
+#q2 .q2-mark{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--ok);color:#fff;transform:scale(.6);transition:transform .35s cubic-bezier(.2,1.6,.4,1) .1s}
+#q2 .q2-screen.q2-answered .q2-mark{transform:scale(1)}
+#q2 .q2-mark svg{width:24px;height:24px}
+#q2 .q2-verdict h3{font-size:24px;color:var(--ok);line-height:1.05}
+#q2 .q2-verdict small{display:block;margin-top:3px;font-family:var(--sans);font-weight:500;font-size:10.5px;color:var(--muted)}
+#q2 .q2-screen.q2-wrong .q2-mark{background:var(--bad)}
+#q2 .q2-screen.q2-wrong .q2-verdict h3{color:var(--bad)}
+#q2 .q2-rcard{margin-top:14px;padding:11px 12px 12px;border-radius:12px;background:#fff;border-top:3px solid var(--ok);box-shadow:0 2px 8px rgba(27,42,74,.07)}
+#q2 .q2-screen.q2-wrong .q2-rcard{border-top-color:var(--bad)}
+#q2 .q2-slbl{font-size:8.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ok)}
+#q2 .q2-screen.q2-wrong .q2-slbl{color:var(--bad)}
+#q2 .q2-slbl.q2-why{margin-top:9px;padding-top:8px;border-top:1px solid #EFE9DE;color:var(--gold-deep)!important}
+#q2 .q2-sans{margin-top:3px;font-size:13px;font-weight:600;color:var(--ink)}
+#q2 .q2-swhy{margin-top:3px;font-size:12px;line-height:1.45}
+#q2 .q2-srev{margin-top:7px;font-size:10.5px;color:var(--lv1);font-weight:600}
+#q2 .q2-rnav{margin-top:auto;display:grid;gap:7px}
+#q2 .q2-again,#q2 .q2-next{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:38px;padding-inline:13px;border-radius:10px;font-weight:700;font-size:12px}
+#q2 .q2-again{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(27,42,74,.08);display:none}
+#q2 .q2-screen.q2-wrong .q2-again{display:flex}
+#q2 .q2-next{background:var(--ink);color:#fff}
+#q2 .q2-again svg,#q2 .q2-next svg{width:14px;height:14px}
+#q2 .q2-demo-cap{margin-top:14px;font-size:12.5px;color:var(--on-ink-2);text-align:center;max-width:32ch}
+
+/* --- подаръкът за Черния петък --- */
+#q2 .q2-gift{background:linear-gradient(90deg,#F7EBCB,var(--gold-soft));border-bottom:1px solid #E8D7AE}
+#q2 .q2-gift-in{display:flex;gap:14px;align-items:center;padding-block:16px;font-size:15.5px;line-height:1.5;color:var(--text)}
+#q2 .q2-gift-ic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--ink);color:var(--gold-hi)}
+#q2 .q2-gift-ic svg{width:24px;height:24px}
+#q2 .q2-gift b{color:var(--ink)}
+#q2 .q2-gift[hidden]{display:none}
+
+/* --- секции --- */
+#q2 .q2-sec{padding-block:56px}
+@media (min-width:900px){#q2 .q2-sec{padding-block:80px}}
+#q2 .q2-alt{background:var(--cream)}
+#q2 .q2-kicker{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep)}
+#q2 h2{margin-top:8px;font-size:clamp(27px,5vw,40px);line-height:1.12;letter-spacing:-.01em}
+#q2 .q2-sec-lead{margin-top:12px;font-size:17.5px;color:var(--muted);max-width:60ch}
+#q2 .q2-center{text-align:center}
+#q2 .q2-center .q2-sec-lead{margin-inline:auto}
+
+/* ползи */
+#q2 .q2-benefits{display:grid;gap:14px;margin-top:30px}
+@media (min-width:700px){#q2 .q2-benefits{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1040px){#q2 .q2-benefits{grid-template-columns:repeat(4,1fr)}}
+#q2 .q2-ben{background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+#q2 .q2-ben-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--gold-soft);color:var(--gold-deep)}
+#q2 .q2-ben-ic svg{width:24px;height:24px}
+#q2 .q2-ben h3{margin-top:14px;font-size:19.5px}
+#q2 .q2-ben p{margin-top:6px;font-size:15.5px;color:var(--muted)}
+#q2 .q2-ben.q2-star{background:linear-gradient(160deg,var(--ink),var(--ink-2));border-color:transparent;color:var(--on-ink)}
+#q2 .q2-ben.q2-star h3{color:#fff}
+#q2 .q2-ben.q2-star p{color:var(--on-ink-2)}
+#q2 .q2-ben.q2-star .q2-ben-ic{background:rgba(217,180,95,.16);color:var(--gold-hi)}
+
+/* как работи */
+#q2 .q2-how{display:grid;gap:14px;margin-top:30px;counter-reset:s}
+@media (min-width:900px){#q2 .q2-how{grid-template-columns:repeat(4,1fr);gap:18px}}
+#q2 .q2-how li{position:relative;display:grid;grid-template-columns:48px 1fr;gap:14px;align-items:start}
+@media (min-width:900px){#q2 .q2-how li{grid-template-columns:1fr;gap:12px}
+  #q2 .q2-how li:not(:last-child)::after{content:"";position:absolute;top:24px;left:60px;right:-10px;height:2px;background:repeating-linear-gradient(90deg,var(--gold) 0 6px,transparent 6px 12px);opacity:.6}}
+#q2 .q2-n{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;font-family:var(--serif);font-weight:700;font-size:20px;box-shadow:0 0 0 6px var(--paper)}
+#q2 .q2-how h3{font-size:18.5px}
+#q2 .q2-how p{margin-top:4px;font-size:15.5px;color:var(--muted)}
+#q2 .q2-time{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:999px;background:var(--gold-soft);color:var(--gold-deep);font-size:13px;font-weight:700}
+
+/* какво има вътре: по класове */
+#q2 .q2-tabs{display:inline-flex;gap:4px;margin-top:26px;padding:5px;border-radius:999px;background:var(--card);border:1px solid var(--edge);box-shadow:var(--shadow);max-width:100%;overflow-x:auto}
+#q2 .q2-tab{flex:none;padding:10px 18px;border-radius:999px;background:transparent;color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap;min-height:44px}
+#q2 .q2-tab[aria-selected="true"]{background:var(--ink);color:#fff}
+#q2 .q2-panel{display:grid;gap:14px;margin-top:20px}
+@media (min-width:820px){#q2 .q2-panel{grid-template-columns:1fr 1fr}}
+#q2 .q2-panel[hidden]{display:none}
+#q2 .q2-partc{position:relative;background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:20px 20px 18px;box-shadow:var(--shadow);overflow:hidden}
+#q2 .q2-partc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c,var(--gold))}
+#q2 .q2-partc.q2-lang{--c:var(--lv1)}
+#q2 .q2-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#q2 .q2-ph small{font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#q2 .q2-ph b{font-family:var(--serif);font-size:15px;color:var(--c,var(--gold-deep))}
+#q2 .q2-partc h3{margin-top:4px;font-size:22px}
+#q2 .q2-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+#q2 .q2-chips li{padding:5px 10px;border-radius:999px;background:var(--cream);border:1px solid var(--edge);font-size:13.5px;color:var(--text)}
+#q2 .q2-note{margin-top:16px;font-size:15px;color:var(--muted)}
+#q2 .q2-note b{color:var(--ink)}
+
+/* нива и титли */
+#q2 .q2-score{display:grid;gap:18px;margin-top:30px}
+@media (min-width:900px){#q2 .q2-score{grid-template-columns:1fr 1.15fr;gap:24px}}
+#q2 .q2-box{background:var(--card);border:1px solid var(--edge);border-radius:22px;padding:22px;box-shadow:var(--shadow)}
+#q2 .q2-box h3{font-size:21px}
+#q2 .q2-levels{display:grid;gap:10px;margin-top:16px}
+#q2 .q2-level{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--cream)}
+#q2 .q2-level .q2-stars svg{width:16px;height:16px}
+#q2 .q2-level b{display:block;color:var(--ink)}
+#q2 .q2-level span{font-size:14px;color:var(--muted)}
+#q2 .q2-level em{font-style:normal;font-family:var(--serif);font-weight:700;font-size:20px;color:var(--c)}
+#q2 .q2-ladder{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:end;margin-top:18px;height:220px}
+#q2 .q2-rung{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;text-align:center}
+#q2 .q2-bar{width:100%;border-radius:12px 12px 6px 6px;background:linear-gradient(180deg,#E9EDF5,#D9DFEA);position:relative}
+#q2 .q2-rung:nth-child(1) .q2-bar{height:22%}
+#q2 .q2-rung:nth-child(2) .q2-bar{height:38%}
+#q2 .q2-rung:nth-child(3) .q2-bar{height:54%}
+#q2 .q2-rung:nth-child(4) .q2-bar{height:72%}
+#q2 .q2-rung:nth-child(5) .q2-bar{height:92%;background:linear-gradient(180deg,var(--gold-hi),var(--gold))}
+#q2 .q2-rung b{font-family:var(--serif);font-size:14.5px;line-height:1.15;color:var(--ink)}
+#q2 .q2-rung span{font-size:12px;color:var(--muted)}
+#q2 .q2-rung:nth-child(5) b{color:var(--gold-deep)}
+@media (max-width:480px){#q2 .q2-ladder{height:190px;gap:5px} #q2 .q2-rung b{font-size:12.5px}}
+
+/* финал */
+#q2 .q2-final{position:relative;color:var(--on-ink);padding-block:56px;background:radial-gradient(600px 300px at 90% 0%,rgba(217,180,95,.2),transparent 70%),linear-gradient(165deg,var(--ink),var(--ink-3))}
+@media (min-width:900px){#q2 .q2-final{padding-block:80px}}
+#q2 .q2-final-grid{display:grid;gap:26px;align-items:center}
+@media (min-width:900px){#q2 .q2-final-grid{grid-template-columns:1.1fr .9fr;gap:56px}}
+#q2 .q2-final h2{color:#fff}
+#q2 .q2-final .q2-kicker{color:var(--gold-hi)}
+#q2 .q2-final .q2-sec-lead{color:var(--on-ink-2)}
+#q2 .q2-phone-line{margin-top:18px;font-size:15px;color:var(--on-ink-2)}
+#q2 .q2-phone-line a{color:#fff;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+
+/* въпроси */
+#q2 .q2-faq{max-width:800px;margin:30px auto 0;border-top:1px solid var(--edge)}
+#q2 .q2-faq details{border-bottom:1px solid var(--edge)}
+#q2 .q2-faq summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 2px;cursor:pointer;list-style:none;font-weight:650;font-size:17px;color:var(--ink)}
+#q2 .q2-faq summary::-webkit-details-marker{display:none}
+#q2 .q2-faq summary::after{content:"";flex:none;width:28px;height:28px;border-radius:50%;background:var(--gold-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 6v12M6 12h12' stroke='%238F6C1F' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") center/16px no-repeat;transition:transform .2s ease}
+#q2 .q2-faq details[open] summary::after{transform:rotate(45deg)}
+#q2 .q2-faq details p{padding:0 2px 18px;color:var(--muted);max-width:66ch}
+
+#q2 .q2-foot{padding-block:30px;border-top:1px solid var(--edge);background:var(--paper);text-align:center;font-size:14px;color:var(--muted)}
+#q2 .q2-foot .q2-logo{width:96px;margin:0 auto 12px}
+#q2 .q2-foot a{color:var(--ink);font-weight:650}
+#q2 .q2-foot p+p{margin-top:4px}
+
+/* лентата долу на телефона */
+#q2f .q2-sbar2{position:fixed;left:0;right:0;bottom:0;z-index:9000;padding:10px max(16px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:rgba(255,253,248,.97);border-top:1px solid var(--edge);box-shadow:0 -10px 28px rgba(27,42,74,.12);transform:translateY(110%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s}
+#q2f .q2-sbar2.q2-show{transform:none;visibility:visible;transition:transform .25s ease}
+#q2f .q2-sbar2-in{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:640px;margin-inline:auto}
+#q2f .q2-sbar2-t{min-width:0;line-height:1.2}
+#q2f .q2-sbar2-t b{display:block;font-size:14.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#q2f .q2-sbar2-t span{font-family:var(--serif);font-weight:800;font-size:21px;color:var(--ink)}
+#q2f .q2-btn.q2-sm{width:auto;flex:none;min-height:50px;padding:10px 18px}
+#q2f .q2-btn.q2-sm .q2-btn-main{font-size:16.5px}
+@media (min-width:900px){#q2f .q2-sbar2{display:none}}
+@media (max-width:899px){#q2 .q2-foot{padding-bottom:calc(30px + 80px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-motion:reduce){:is(#q2,#q2f) *,:is(#q2,#q2f) *::before,:is(#q2,#q2f) *::after{transition:none!important;animation:none!important}}
+
+/* Фонът минава през цялата ширина на екрана, без хоризонтален скрол */
+body{overflow-x:hidden;overflow-x:clip}
+/* Скрива вградения ъпсел бутон (нашите бутони го натискат вместо клиента) */
+html.q2-hide-native .upsellWidget{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;margin:0!important;padding:0!important}
+</style>
+
+<div id="q2">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="q2-star" viewBox="0 0 24 24"><path d="M12 2.6l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="currentColor"/></symbol>
+  <symbol id="q2-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="q2-cross" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="q2-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="q2-top">
+  <div class="q2-wrap q2-top-in">
+    <span class="q2-logo" role="img" aria-label="Еду БЕЛ – учебен център по български език и литература"></span>
+    <ol class="q2-steps" aria-label="Стъпки на поръчката">
+      <li class="q2-done"><span class="q2-dot"><svg aria-hidden="true"><use href="#q2-check"/></svg></span><span class="q2-lbl">Поръчка</span></li>
+      <li class="q2-now" aria-current="step"><span class="q2-dot">2</span><span class="q2-lbl">Предложение</span></li>
+      <li><span class="q2-dot">3</span><span class="q2-lbl">Готово</span></li>
+    </ol>
+  </div>
+</header>
+
+<div class="q2-notice" role="status">
+  <div class="q2-wrap q2-notice-in">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2E7D4F"/><path d="M7 12.4l3.3 3.3L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <p><b>Поръчката ви е приета.</b> Преди да я изпратим – вижте едно допълнение към нея.</p>
+  </div>
+</div>
+
+<main>
+  <!-- ===== HERO ===== -->
+  <section class="q2-hero" aria-labelledby="q2-h1">
+    <div class="q2-wrap q2-hero-grid">
+      <div class="q2-hero-head">
+        <span class="q2-pill"><i aria-hidden="true"></i>Интерактивен PDF · 5., 6. и 7. клас</span>
+        <h1 id="q2-h1">Литература <em>и български език</em> – 200 въпроса, които сами проверяват</h1>
+        <p class="q2-lead">Детето докосва отговора и веднага вижда <b>„Вярно!“</b> или <b>„Не е вярно“</b>, верния отговор и защо. На телефона, без интернет.</p>
+        <ul class="q2-stats">
+          <li class="q2-stat"><b>200</b><span>въпроса</span></li>
+          <li class="q2-stat"><b>100</b><span>по български език</span></li>
+          <li class="q2-stat"><b>3</b><span>класа</span></li>
+          <li class="q2-stat"><b>3</b><span>нива трудност</span></li>
+        </ul>
+      </div>
+
+      <div class="q2-hero-phone">
+        <div class="q2-demo">
+          <p class="q2-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.8-2.4L4.4 15.6a1.6 1.6 0 0 1 2.4-2.1L9 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Опитайте – докоснете отговор</p>
+          <div class="q2-phone">
+            <div class="q2-screen" data-q2-screen>
+              <!-- въпросът -->
+              <div class="q2-view q2-q-view">
+                <div class="q2-shead"><span class="q2-sbrand"><span class="q2-logo" aria-hidden="true"></span>Еду БЕЛ</span><span class="q2-stitle">200 ВЪПРОСА</span></div>
+                <div class="q2-ssub"><span>7. клас · Български език</span><span>12 / 34</span></div>
+                <div class="q2-sprog" aria-hidden="true"><i></i></div>
+                <div class="q2-qhead"><h4>Пример</h4><span class="q2-chip">Разбирам · 2 т.</span></div>
+                <p class="q2-sq" id="q2-demo-q">Кое изречение е написано правилно?</p>
+                <ul class="q2-opts q2-pulse" role="group" aria-labelledby="q2-demo-q" data-q2-opts>
+                  <li><button type="button" class="q2-opt"><span class="q2-k">А</span><span>Мисля че, ще вали.</span></button></li>
+                  <li><button type="button" class="q2-opt" data-q2-right><span class="q2-k">Б</span><span>Мисля, че ще вали.</span></button></li>
+                  <li><button type="button" class="q2-opt"><span class="q2-k">В</span><span>Мисля че ще вали.</span></button></li>
+                  <li><button type="button" class="q2-opt"><span class="q2-k">Г</span><span>Мисля, че, ще вали.</span></button></li>
+                </ul>
+                <p class="q2-snav" aria-hidden="true"><span>Части</span><span>Пропусни<svg width="12" height="12"><use href="#q2-arrow"/></svg></span></p>
+              </div>
+              <!-- отговорът -->
+              <div class="q2-view q2-res-view" aria-hidden="true" data-q2-res>
+                <div class="q2-shead"><span class="q2-sbrand"><span class="q2-logo" aria-hidden="true"></span>Еду БЕЛ</span><span class="q2-stitle">200 ВЪПРОСА</span></div>
+                <div class="q2-ssub"><span>7. клас · Български език</span><span>12 / 34</span></div>
+                <div class="q2-sprog" aria-hidden="true"><i></i></div>
+                <div class="q2-verdict" aria-live="polite">
+                  <span class="q2-mark" aria-hidden="true"><svg data-q2-icon><use href="#q2-check"/></svg></span>
+                  <h3><span data-q2-verdict>Вярно!</span><small data-q2-sub>+2 точки при първи опит</small></h3>
+                </div>
+                <div class="q2-rcard">
+                  <p class="q2-slbl">Верният отговор</p>
+                  <p class="q2-sans">Б) Мисля, че ще вали.</p>
+                  <p class="q2-slbl q2-why">Защо</p>
+                  <p class="q2-swhy">„Че“ въвежда подчинено изречение. Пред него се пише запетая, а след него – не: Мисля, / че ще вали.</p>
+                  <p class="q2-srev">Преговори: Запетая в сложното изречение</p>
+                </div>
+                <div class="q2-rnav">
+                  <button type="button" class="q2-again" data-q2-again>Опитай пак<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4.5h4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" class="q2-next" data-q2-next>Следващ въпрос<svg aria-hidden="true"><use href="#q2-arrow"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="q2-demo-cap">Примерен въпрос, написан за тази страница. Въпросите в сборника са други.</p>
+        </div>
+      </div>
+
+      <div class="q2-hero-buy">
+        <div class="q2-offer">
+          <div class="q2-price-row">
+            <div>
+              <span class="q2-price-label">Към поръчката ви</span>
+              <span class="q2-price" data-q2-price>9,90 €</span>
+            </div>
+            <span class="q2-format"><b>PDF</b>на телефона</span>
+          </div>
+          <a class="q2-btn" href="#" role="button" data-q2-accept>
+            <span class="q2-btn-main">Да, добавете 200-те въпроса<svg aria-hidden="true"><use href="#q2-arrow"/></svg></span>
+            <span class="q2-btn-sub">Плащате всичко заедно с поръчката</span>
+          </a>
+          <p class="q2-fallback" data-q2-fallback role="alert">Не успяхме да добавим въпросите автоматично. Обадете ни се на <a data-q2-tel href="tel:+359893425292"><span data-q2-phone>0893 42 52 92</span></a> и ще ги добавим към поръчката.</p>
+          <a class="q2-no" href="#" role="button" data-q2-decline>Не, благодаря – продължавам без тях</a>
+          <div class="q2-assure">
+            <span><svg aria-hidden="true"><use href="#q2-check"/></svg>Без ново попълване на данни</span>
+            <span><svg aria-hidden="true"><use href="#q2-check"/></svg>Без интернет и регистрация</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ПОДАРЪКЪТ (само докато важи, виж CONFIG.giftUntil) ===== -->
+  <div class="q2-gift" data-q2-gift hidden>
+    <div class="q2-wrap q2-gift-in">
+      <span class="q2-gift-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM3 7h18v4H3zM12 7v14M12 7S9.5 3 7.5 4.2 9 7 12 7zm0 0s2.5-4 4.5-2.8S15 7 12 7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+      <p><b>Подаръкът ви за Черния петък – 90-те интерактивни карти – е литературата за НВО.</b> 200-те въпроса добавят това, което картите нямат: българския език и програмата на 5. и 6. клас.</p>
+    </div>
+  </div>
+
+  <!-- ===== ПОЛЗИ ===== -->
+  <section class="q2-sec" aria-labelledby="q2-h-ben">
+    <div class="q2-wrap">
+      <div class="q2-center">
+        <p class="q2-kicker">Какво получава детето</p>
+        <h2 id="q2-h-ben">Един файл – цялата програма по БЕЛ за 5., 6. и 7. клас</h2>
+        <p class="q2-sec-lead">На изпита има задачи и по литература, и по български език. Тук са и двете – с проверка след всеки отговор.</p>
+      </div>
+      <div class="q2-benefits">
+        <article class="q2-ben q2-star">
+          <span class="q2-ben-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM8 13h8M8 17h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>100 въпроса по български език</h3>
+          <p>Правопис, граматика, запетаи, части на изречението и редактиране – като задачите от НВО.</p>
+        </article>
+        <article class="q2-ben">
+          <span class="q2-ben-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <h3>100 въпроса по литература</h3>
+          <p>Творбите от програмата на трите класа – автори, герои, идеи и художествени средства.</p>
+        </article>
+        <article class="q2-ben">
+          <span class="q2-ben-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.5l2.7 2.7L16.5 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>Проверка веднага</h3>
+          <p>След всеки отговор – верният, кратко обяснение защо и коя тема да преговори.</p>
+        </article>
+        <article class="q2-ben">
+          <span class="q2-ben-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>Точки и титли</h3>
+          <p>Лесните въпроси носят 1 точка, трудните – 3. В края на частта детето вижда титлата си.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== КАК РАБОТИ ===== -->
+  <section class="q2-sec q2-alt" aria-labelledby="q2-h-how">
+    <div class="q2-wrap">
+      <p class="q2-kicker">Как работи</p>
+      <h2 id="q2-h-how">Въпрос, докосване, обяснение – и напред</h2>
+      <p class="q2-sec-lead">Когато детето само търси отговора и веднага разбере дали е прав, запомня повече, отколкото ако просто прочете урока.</p>
+      <ol class="q2-how">
+        <li><span class="q2-n">1</span><div><h3>Избира частта</h3><p>По две части за всеки клас – литература и български език.</p></div></li>
+        <li><span class="q2-n">2</span><div><h3>Докосва отговора</h3><p>Въпрос и четири отговора. Едно докосване – и файлът отива на проверката.</p></div></li>
+        <li><span class="q2-n">3</span><div><h3>Вижда защо</h3><p>„Вярно!“ или „Не е вярно“, верният отговор, обяснение и коя тема да преговори.</p></div></li>
+        <li><span class="q2-n">4</span><div><h3>Събира точки</h3><p>Въпросите вървят от лесни към трудни. В края – титлата.</p><span class="q2-time">По 10 въпроса на ден</span></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== ВЪТРЕ: ПО КЛАСОВЕ ===== -->
+  <section class="q2-sec" aria-labelledby="q2-h-in">
+    <div class="q2-wrap">
+      <p class="q2-kicker">Какво има вътре</p>
+      <h2 id="q2-h-in">Шест части – по две за всеки клас</h2>
+      <p class="q2-sec-lead">Темите са по учебната програма на МОН. Изберете клас, за да видите какво включва.</p>
+      <div class="q2-tabs" role="tablist" aria-label="Класове">
+        <button type="button" class="q2-tab" role="tab" id="q2-t5" aria-controls="q2-p5" aria-selected="false" tabindex="-1" data-q2-tab>5. клас</button>
+        <button type="button" class="q2-tab" role="tab" id="q2-t6" aria-controls="q2-p6" aria-selected="false" tabindex="-1" data-q2-tab>6. клас</button>
+        <button type="button" class="q2-tab" role="tab" id="q2-t7" aria-controls="q2-p7" aria-selected="true" data-q2-tab>7. клас · НВО</button>
+      </div>
+
+      <div class="q2-panel" role="tabpanel" id="q2-p5" aria-labelledby="q2-t5" hidden>
+        <article class="q2-partc"><div class="q2-ph"><small>Част 1</small><b>33 въпроса</b></div><h3>Литература</h3>
+          <ul class="q2-chips"><li>Митове за началото на света</li><li>Легенди и приказки</li><li>Народни песни</li><li>Фолклорният календар</li><li>„Хайдути“</li><li>„Котаракът в чизми“</li><li>„Грозното патенце“</li><li>„Похитителят на мълнии“</li></ul></article>
+        <article class="q2-partc q2-lang"><div class="q2-ph"><small>Част 2</small><b>33 въпроса</b></div><h3>Български език</h3>
+          <ul class="q2-chips"><li>Общуване и текст</li><li>Значение на думата</li><li>Правопис и звукови промени</li><li>Части на речта</li><li>Местоимения</li><li>Минали времена и причастия</li><li>Части на изречението</li></ul></article>
+      </div>
+      <div class="q2-panel" role="tabpanel" id="q2-p6" aria-labelledby="q2-t6" hidden>
+        <article class="q2-partc"><div class="q2-ph"><small>Част 3</small><b>33 въпроса</b></div><h3>Литература</h3>
+          <ul class="q2-chips"><li>„Хубава си, моя горо“</li><li>„Отечество любезно…“</li><li>„Косачи“</li><li>„Художник“</li><li>„Под игото“</li><li>„Братчетата на Гаврош“</li><li>„Серафим“</li><li>„Принцът и просякът“</li><li>„Малкият принц“</li><li>и още</li></ul></article>
+        <article class="q2-partc q2-lang"><div class="q2-ph"><small>Част 4</small><b>33 въпроса</b></div><h3>Български език</h3>
+          <ul class="q2-chips"><li>Научен текст</li><li>Местоимения</li><li>Причастия и деепричастие</li><li>Сложни глаголни времена</li><li>Съюз, междуметие, частица</li><li>Еднородни части</li><li>Сложно съчинено изречение</li><li>Променливо я</li></ul></article>
+      </div>
+      <div class="q2-panel" role="tabpanel" id="q2-p7" aria-labelledby="q2-t7">
+        <article class="q2-partc"><div class="q2-ph"><small>Част 5</small><b>34 въпроса</b></div><h3>Литература</h3>
+          <ul class="q2-chips"><li>Чинтулов</li><li>„На прощаване в 1868 г.“</li><li>„Немили-недраги“</li><li>„Една българка“</li><li>„Опълченците на Шипка“</li><li>„Българският език“</li><li>„До Чикаго и назад“</li><li>„Бай Ганьо пътува“</li><li>„Неразделни“</li><li>„Заточеници“</li><li>„По жътва“</li><li>„По жицата“</li></ul></article>
+        <article class="q2-partc q2-lang"><div class="q2-ph"><small>Част 6</small><b>34 въпроса</b></div><h3>Български език</h3>
+          <ul class="q2-chips"><li>Медиен и художествен текст</li><li>Лексика</li><li>Правопис и пунктуация</li><li>Пълен и кратък член</li><li>Наклонения и преизказ</li><li>Сложно изречение</li><li>Пряка и непряка реч</li><li>Редактиране като задача 17</li></ul></article>
+      </div>
+      <p class="q2-note"><b>За седмокласниците:</b> творбите от 5. и 6. клас също са в НВО, затова всички шест части са преговор за изпита.</p>
+    </div>
+  </section>
+
+  <!-- ===== НИВА И ТИТЛИ ===== -->
+  <section class="q2-sec q2-alt" aria-labelledby="q2-h-score">
+    <div class="q2-wrap">
+      <div class="q2-center">
+        <p class="q2-kicker">Нива и титли</p>
+        <h2 id="q2-h-score">Колкото по-труден въпросът, толкова повече точки</h2>
+        <p class="q2-sec-lead">Детето вижда как напредва – от първите лесни въпроси до задачите като на изпита.</p>
+      </div>
+      <div class="q2-score">
+        <div class="q2-box">
+          <h3>Три нива трудност</h3>
+          <div class="q2-levels">
+            <div class="q2-level" style="--c:var(--lv1)"><span class="q2-stars" style="color:var(--lv1)"><svg aria-hidden="true"><use href="#q2-star"/></svg><svg aria-hidden="true" style="color:var(--line)"><use href="#q2-star"/></svg><svg aria-hidden="true" style="color:var(--line)"><use href="#q2-star"/></svg></span><div><b>Знам</b><span>Автор, жанр, герой, основно правило</span></div><em>1 т.</em></div>
+            <div class="q2-level" style="--c:var(--lv2)"><span class="q2-stars" style="color:var(--lv2)"><svg aria-hidden="true"><use href="#q2-star"/></svg><svg aria-hidden="true"><use href="#q2-star"/></svg><svg aria-hidden="true" style="color:var(--line)"><use href="#q2-star"/></svg></span><div><b>Разбирам</b><span>Защо, как, кое средство, коя форма</span></div><em>2 т.</em></div>
+            <div class="q2-level" style="--c:var(--lv3)"><span class="q2-stars" style="color:var(--lv3)"><svg aria-hidden="true"><use href="#q2-star"/></svg><svg aria-hidden="true"><use href="#q2-star"/></svg><svg aria-hidden="true"><use href="#q2-star"/></svg></span><div><b>Мисля</b><span>Анализ, сравнение, капани като на НВО</span></div><em>3 т.</em></div>
+          </div>
+        </div>
+        <div class="q2-box">
+          <h3>Пет титли – от Четец до Будител</h3>
+          <ol class="q2-ladder" aria-label="Титлите според дела от точките">
+            <li class="q2-rung"><div class="q2-bar"></div><b>Четец</b><span>до 39%</span></li>
+            <li class="q2-rung"><div class="q2-bar"></div><b>Книжовник</b><span>40%+</span></li>
+            <li class="q2-rung"><div class="q2-bar"></div><b>Летописец</b><span>60%+</span></li>
+            <li class="q2-rung"><div class="q2-bar"></div><b>Майстор на словото</b><span>75%+</span></li>
+            <li class="q2-rung"><div class="q2-bar"></div><b>Будител</b><span>90%+</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ФИНАЛ ===== -->
+  <section class="q2-final" aria-labelledby="q2-h-final">
+    <div class="q2-wrap q2-final-grid">
+      <div>
+        <p class="q2-kicker">Последна стъпка</p>
+        <h2 id="q2-h-final">Добавете 200-те въпроса към поръчката си</h2>
+        <p class="q2-sec-lead">По 10 въпроса на ден са достатъчни. Детето вижда само къде греши и какво да преговори – докато има време да навакса.</p>
+        <p class="q2-phone-line">Въпроси? Обадете ни се: <a data-q2-tel href="tel:+359893425292"><span data-q2-phone>0893 42 52 92</span></a></p>
+      </div>
+      <div class="q2-offer">
+        <div class="q2-price-row">
+          <div>
+            <span class="q2-price-label">200 въпроса · PDF</span>
+            <span class="q2-price" data-q2-price>9,90 €</span>
+          </div>
+          <span class="q2-format"><b>5.–7. клас</b>литература и език</span>
+        </div>
+        <a class="q2-btn" href="#" role="button" data-q2-accept>
+          <span class="q2-btn-main">Да, добавете 200-те въпроса<svg aria-hidden="true"><use href="#q2-arrow"/></svg></span>
+          <span class="q2-btn-sub">Плащате всичко заедно с поръчката</span>
+        </a>
+        <p class="q2-fallback" data-q2-fallback role="alert">Не успяхме да добавим въпросите автоматично. Обадете ни се на <a data-q2-tel href="tel:+359893425292"><span data-q2-phone>0893 42 52 92</span></a> и ще ги добавим към поръчката.</p>
+        <a class="q2-no" href="#" role="button" data-q2-decline>Не, благодаря – продължавам без тях</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ВЪПРОСИ ===== -->
+  <section class="q2-sec" aria-labelledby="q2-h-faq">
+    <div class="q2-wrap">
+      <div class="q2-center">
+        <p class="q2-kicker">Въпроси</p>
+        <h2 id="q2-h-faq">Често питат</h2>
+      </div>
+      <div class="q2-faq">
+        <details><summary>Как получавам въпросите?</summary><p>Като PDF файл на имейла си, след като получите пратката – заедно с другите дигитални продукти от поръчката.</p></details>
+        <details><summary>На какво се отварят?</summary><p>На телефон, таблет или компютър – в приложението за PDF, Adobe Acrobat Reader, „Файлове“ на iPhone или Google Drive. Не трябва интернет, приложение или регистрация.</p></details>
+        <details><summary>За кой клас са?</summary><p>За 5., 6. и 7. клас – по две части за всеки клас: литература и български език. Седмокласниците могат да минат през всички части, защото творбите от 5. и 6. клас също са в НВО.</p></details>
+        <details><summary>С какво се различават от картите?</summary><p>Картите са литературата. В 200-те въпроса има и 100 въпроса по български език, и програмата на 5. и 6. клас. Въпросите са различни – не повтарят картите.</p></details>
+        <details><summary>Колко време отнемат?</summary><p>По 10 въпроса на ден – около 10 минути. Детето може да се върне към менюто с частите по всяко време.</p></details>
+        <details><summary>Ще плащам ли отделно?</summary><p>Не. 200-те въпроса се добавят към същата поръчка и плащате всичко заедно.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="q2-foot">
+  <span class="q2-logo" role="img" aria-label="Еду БЕЛ"></span>
+  <p>Еду БЕЛ – учебен център по български език и литература</p>
+  <p><a href="https://edubel.site">edubel.site</a> · <a data-q2-tel href="tel:+359893425292"><span data-q2-phone>0893 42 52 92</span></a></p>
+</footer>
+</div>
+<div id="q2f">
+<div class="q2-sbar2" data-q2-bar>
+  <div class="q2-sbar2-in">
+    <div class="q2-sbar2-t"><b>200 въпроса · PDF</b><span data-q2-price>9,90 €</span></div>
+    <a class="q2-btn q2-sm" href="#" role="button" data-q2-accept tabindex="-1"><span class="q2-btn-main">Добавете</span></a>
+  </div>
+</div>
+</div>
+<script>
+(function () {
+  /* ============ НАСТРОЙКИ – промени само тук ============ */
+  var CONFIG = {
+    price: 9.90,               // цената в ъпсела – трябва да е същата като в „Upsell бутона“ на ConvertBuilder
+    phone: '0893 42 52 92',    // показва се, ако бутонът не може да добави въпросите
+    giftUntil: '2026-12-01',   // до тази дата (включително) се показва лентата за подаръка – 90-те карти за Черния петък; '' = никога
+    hideNativeWidget: true,    // скрива вградения ъпсел бутон – нашите бутони го натискат вместо клиента
+    busyText: 'Добавяме…',     // текст на бутона, докато се добавя
+    acceptUrl: '',             // резервно: линк при „Да“, ако на страницата няма ъпсел бутон
+    declineUrl: ''             // резервно: линк при „Не“ (напр. страницата „Благодарим“)
+  };
+  /* ====================================================== */
+
+  var root = document.getElementById('q2');
+  if (!root || root.getAttribute('data-q2-ready')) return;
+  root.setAttribute('data-q2-ready', '1');
+  var fixed = document.getElementById('q2f');
+  function each(sel, fn) {
+    Array.prototype.forEach.call(root.querySelectorAll(sel), fn);
+    if (fixed) Array.prototype.forEach.call(fixed.querySelectorAll(sel), fn);
+  }
+
+  // Цена и телефон
+  var priceText = CONFIG.price.toFixed(2).replace('.', ',') + ' €';
+  each('[data-q2-price]', function (el) { el.textContent = priceText; });
+  each('[data-q2-phone]', function (el) { el.textContent = CONFIG.phone; });
+  each('[data-q2-tel]', function (el) { el.href = 'tel:' + CONFIG.phone.replace(/[^\d+]/g, '').replace(/^0/, '+359'); });
+  if (CONFIG.hideNativeWidget) document.documentElement.classList.add('q2-hide-native');
+
+  // Лентата за подаръка – само до CONFIG.giftUntil (по часа на устройството)
+  var gift = root.querySelector('[data-q2-gift]');
+  if (gift && CONFIG.giftUntil) {
+    var until = new Date(CONFIG.giftUntil + 'T23:59:59');
+    if (!isNaN(until) && new Date() <= until) gift.hidden = false;
+  }
+
+  // Фонът на цялата ширина: родителските колони на платформата да не го изрязват
+  for (var el = root.parentElement; el && el !== document.body; el = el.parentElement) {
+    var ox = getComputedStyle(el).overflowX;
+    if (ox === 'hidden' || ox === 'clip') el.style.overflow = 'visible';
+  }
+  // Лентата долу отива направо под <body>: обвивка на платформата с transform би я заковала към себе си
+  if (fixed && fixed.parentNode !== document.body) document.body.appendChild(fixed);
+
+  // Телефонът: докосваш отговор → екранът с „Вярно!“ или „Не е вярно“, както в истинския файл
+  var screen = root.querySelector('[data-q2-screen]');
+  if (screen) {
+    var opts = screen.querySelectorAll('.q2-opt');
+    var list = screen.querySelector('[data-q2-opts]');
+    var res = screen.querySelector('[data-q2-res]');
+    var qView = screen.querySelector('.q2-q-view');
+    var verdict = screen.querySelector('[data-q2-verdict]');
+    var icon = screen.querySelector('[data-q2-icon] use');
+    var again = screen.querySelector('[data-q2-again]');
+    var next = screen.querySelector('[data-q2-next]');
+    var sub = screen.querySelector('[data-q2-sub]');
+    Array.prototype.forEach.call(opts, function (b) {
+      b.addEventListener('click', function () {
+        var ok = b.hasAttribute('data-q2-right');
+        list.classList.remove('q2-pulse');
+        screen.classList.toggle('q2-wrong', !ok);
+        verdict.textContent = ok ? 'Вярно!' : 'Не е вярно';
+        sub.textContent = ok ? '+2 точки при първи опит' : 'Прочети обяснението и опитай пак.';
+        icon.setAttribute('href', ok ? '#q2-check' : '#q2-cross');
+        screen.classList.add('q2-answered');
+        qView.setAttribute('aria-hidden', 'true');
+        res.removeAttribute('aria-hidden');
+        setTimeout(function () { (ok ? next : again).focus({ preventScroll: true }); }, 380);
+      });
+    });
+    function restart() {
+      screen.classList.remove('q2-answered', 'q2-wrong');
+      res.setAttribute('aria-hidden', 'true');
+      qView.removeAttribute('aria-hidden');
+      setTimeout(function () { opts[0].focus({ preventScroll: true }); }, 380);
+    }
+    // В примера има само един въпрос: и „Опитай пак“, и „Следващ въпрос“ го започват отначало.
+    again.addEventListener('click', restart);
+    next.addEventListener('click', restart);
+  }
+
+  // Табовете по класове
+  var tabs = root.querySelectorAll('[data-q2-tab]');
+  function selectTab(t) {
+    Array.prototype.forEach.call(tabs, function (x) {
+      var on = x === t;
+      x.setAttribute('aria-selected', on ? 'true' : 'false');
+      x.tabIndex = on ? 0 : -1;
+      var p = document.getElementById(x.getAttribute('aria-controls'));
+      if (p) p.hidden = !on;
+    });
+  }
+  Array.prototype.forEach.call(tabs, function (t, i) {
+    t.addEventListener('click', function () { selectTab(t); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var n = tabs[(i + d + tabs.length) % tabs.length];
+      selectTab(n);
+      n.focus();
+    });
+  });
+
+  function track(name) {
+    try {
+      if (window.fbq) window.fbq('trackCustom', name);
+      if (window.gtag) window.gtag('event', name);
+    } catch (e) {}
+  }
+
+  // „Да“ → натиска вградения ъпсел бутон на платформата (добавя въпросите към същата поръчка)
+  var busy = false;
+  var accepts = [];
+  each('[data-q2-accept]', function (b) {
+    accepts.push(b);
+    var m = b.querySelector('.q2-btn-main');
+    b.setAttribute('data-q2-label', m.firstChild.nodeValue);
+  });
+  function setBusy(on) {
+    busy = on;
+    accepts.forEach(function (b) {
+      b.classList.toggle('q2-busy', on);
+      b.querySelector('.q2-btn-main').firstChild.nodeValue = on ? CONFIG.busyText : b.getAttribute('data-q2-label');
+    });
+  }
+  function fallback(on) {
+    each('[data-q2-fallback]', function (el) { el.classList.toggle('q2-on', on); });
+  }
+  function accept(e) {
+    e.preventDefault();
+    if (busy) return;
+    track('Upsell200Accept');
+    fallback(false);
+    var native = document.querySelector('.upsell-positive-action');
+    if (!native && !CONFIG.acceptUrl) {
+      fallback(true);
+      if (window.console) console.warn('Еду БЕЛ ъпсел: на страницата няма „Upsell бутон“ на ConvertBuilder (.upsell-positive-action). Добави го под този блок и избери „200 въпроса“ в него.');
+      return;
+    }
+    if (native && document.cookie.indexOf('last-order-token') === -1 && window.console) {
+      console.warn('Еду БЕЛ ъпсел: няма поръчка в браузъра (last-order-token). Бутонът работи само във фунията след реална (тестова) поръчка, не в редактора.');
+    }
+    setBusy(true);
+    // ако след 10 сек. сме още тук и платформата не е отворила прозорец – връщаме бутона и показваме телефона
+    setTimeout(function () {
+      if (!busy) return;
+      setBusy(false);
+      if (!document.querySelector('[id^="platform-popup-"]')) fallback(true);
+    }, 10000);
+    if (native) native.click();
+    else window.location.href = CONFIG.acceptUrl;
+  }
+
+  // „Не“ → следващата стъпка от фунията
+  function decline(e) {
+    e.preventDefault();
+    track('Upsell200Decline');
+    var native = document.querySelector('.upsell-negative-action');
+    if (native) { native.click(); return; }
+    var F = window.WebPlatform && window.WebPlatform.Funnels;
+    if (F && F.show && F.isInFunnel && F.isInFunnel()) { F.show('next', false, true); return; }
+    if (CONFIG.declineUrl) window.location.href = CONFIG.declineUrl;
+  }
+
+  accepts.forEach(function (b) { b.addEventListener('click', accept); });
+  each('[data-q2-decline]', function (b) { b.addEventListener('click', decline); });
+
+  // Лентата на телефона: показва се, когато нито едно от предложенията не е на екрана
+  var bar = fixed && fixed.querySelector('[data-q2-bar]');
+  var offers = root.querySelectorAll('.q2-offer');
+  if (!bar || !offers.length) return;
+  var barBtn = bar.querySelector('a');
+  var queued = false;
+  function update() {
+    queued = false;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var anyVisible = false;
+    Array.prototype.forEach.call(offers, function (o) {
+      var r = o.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < vh) anyVisible = true;
+    });
+    var show = !anyVisible && offers[0].getBoundingClientRect().bottom <= 0;
+    bar.classList.toggle('q2-show', show);
+    if (barBtn) barBtn.tabIndex = show ? 0 : -1;
+  }
+  function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue);
+  update();
+})();
+</script>

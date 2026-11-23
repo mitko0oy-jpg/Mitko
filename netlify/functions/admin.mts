@@ -7,7 +7,7 @@ import { getSetting, savePlans, setSetting } from "../lib/pay.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
 
-const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading"];
+const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading", "challenge"];
 
 // JSONB does not keep key order, so compare content with sorted keys.
 function stable(v: any): string {

@@ -2,7 +2,9 @@
 import { $, api, esc, guard, toast, topbar } from "./app.js";
 import { lessonHtml, readingHtml } from "./lesson-view.js";
 
-const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене" };
+const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене", challenge: "200 въпроса (подарък)" };
+const LETTERS = "АБВГ";
+const gradeLabel = (g) => (Number(g) ? `${g}. клас` : "5.–7. клас");
 let filter = "review";
 let current = null;
 
@@ -12,6 +14,13 @@ function itemBody(kind, d) {
       <ol class="ropts">${d.o.map((o, i) => `<li class="${i === 0 ? "right" : ""}">${esc(o)}${i === 0 ? ' <span class="pill ok">верен</span>' : ""}</li>`).join("")}</ol>
       <p class="rlbl">Защо</p><p>${esc(d.e)}</p>
       <p class="small muted">Творби: ${(d.ws || []).map(esc).join(", ")} · преговор: ${esc(d.w)}</p>`;
+  }
+  // The gift: options in the order printed in the PDF, the right letter marked.
+  if (kind === "challenge") {
+    return `<p class="small muted">Въпрос ${d.n} · част ${d.part} · ${"★".repeat(d.pts)} ${d.pts} т. · тема: ${esc(d.unit)}</p>
+      <p class="rq">${esc(d.q)}</p>${d.qt ? `<blockquote class="rquote">${esc(d.qt)}</blockquote>` : ""}
+      <ol class="ropts" style="list-style:none;padding-left:0">${d.o.map((o, i) => `<li class="${i === d.a ? "right" : ""}"><b>${LETTERS[i]})</b> ${esc(o)}${i === d.a ? ' <span class="pill ok">верен</span>' : ""}</li>`).join("")}</ol>
+      <p class="rlbl">Защо</p><p>${esc(d.e)}</p>${d.check ? `<p class="notice info small">За проверка: ${esc(d.check)}</p>` : ""}`;
   }
   if (kind === "t25") {
     return `<p class="small muted">${esc(d.w)} · ${esc(d.a)}</p><p class="rq">${esc(d.task)}</p>${d.q ? `<blockquote class="rquote">${esc(d.q)}</blockquote>` : '<p class="small muted">Без цитат</p>'}
@@ -64,7 +73,7 @@ async function openModule(slug) {
   const approved = d.items.filter((i) => i.status === "approved").length;
   $("main").innerHTML = `<button class="linkbtn" id="toList">← Всички модули</button>
     <h1>${esc(d.module.title)}</h1>
-    <p class="muted">${d.module.grade}. клас · ${esc(KIND[d.module.kind] || d.module.kind)} · одобрени <b>${approved}</b> от ${d.items.length}</p>
+    <p class="muted">${gradeLabel(d.module.grade)} · ${esc(KIND[d.module.kind] || d.module.kind)} · одобрени <b>${approved}</b> от ${d.items.length}</p>
     <div class="tabs" role="tablist">
       <button role="tab" data-f="review" aria-selected="${filter === "review"}">Чакащи (${d.items.length - approved})</button>
       <button role="tab" data-f="comments" aria-selected="${filter === "comments"}">С коментар</button>
@@ -124,7 +133,7 @@ async function list() {
     <div class="mods">${d.modules
       .map(
         (m) => `<button class="mod" data-m="${esc(m.slug)}" style="--c:var(${m.review ? "--gold" : "--ok"})">
-        <p class="t">${esc(m.title)}</p><p class="d">${m.grade}. клас · ${esc(KIND[m.kind] || m.kind)}</p>
+        <p class="t">${esc(m.title)}</p><p class="d">${gradeLabel(m.grade)} · ${esc(KIND[m.kind] || m.kind)}</p>
         <div class="meta"><span>${m.review ? `Чакат: ${m.review}` : "Всичко е одобрено"}</span><span>${m.open_comments ? `коментари: ${m.open_comments}` : `${m.approved} / ${m.total}`}</span></div>
         <div class="bar"><i style="width:${m.total ? (m.approved / m.total) * 100 : 0}%"></i></div></button>`,
       )
