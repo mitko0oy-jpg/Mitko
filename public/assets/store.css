@@ -935,6 +935,14 @@ dialog.pv:not([open]){display:none}
   .shero-trio .hero-ctas{margin-top:16px;gap:10px}
   .shero-trio .hero-ctas .btn{width:100%;padding:0 18px;font-size:17px}
   .trio-sample{margin-top:14px}
+  /* on a phone the offer and the order button come right under the title, the description after them */
+  .shero-trio .shero-copy{display:flex;flex-direction:column;align-items:flex-start}
+  .shero-trio .shero-title{order:1}
+  .shero-trio .trio-offer{order:2;align-self:stretch}
+  .shero-trio .hero-ctas{order:3;align-self:stretch}
+  .shero-trio .hero-sub{order:4;margin-top:18px}
+  .shero-trio .trio-has{order:5}
+  .shero-trio .trio-sample{order:6}
 }
 
 /* ---------- home: one real card – the question, then the answer ---------- */
