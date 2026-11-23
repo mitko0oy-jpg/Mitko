@@ -408,11 +408,12 @@ for (const a of $$("a[data-checkout]")) if (CHECKOUT[a.dataset.checkout]) a.href
 // a line of a limited offer: <p data-until="2026-11-29T23:59:59+02:00"> is gone after that moment
 for (const el of $$("[data-until]")) if (Date.now() > Date.parse(el.dataset.until)) el.remove();
 
-/* ---------- home: the real card – "Виж отговора" turns it over (a tap on the card does too) ---------- */
+/* ---------- home: the real cards – the button turns its card over (a tap on the card does too) ---------- */
 for (const btn of $$("[data-primer-flip]")) {
-  const card = btn.closest(".primer")?.querySelector(".flip");
+  const card = btn.closest(".primer-item")?.querySelector(".flip");
   if (!card) continue;
-  const label = () => (btn.textContent = card.classList.contains("flipped") ? "Виж въпроса" : "Виж отговора");
+  const { front = "Виж отговора", back = "Виж въпроса" } = btn.dataset;
+  const label = () => (btn.textContent = card.classList.contains("flipped") ? back : front);
   btn.addEventListener("click", () => {
     card.classList.toggle("flipped");
     card.setAttribute("aria-pressed", String(card.classList.contains("flipped")));
