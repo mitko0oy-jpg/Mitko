@@ -130,7 +130,8 @@ export const DELIVERY_FROM = 490;
 export const FREE_SHIP_DECKS = 2;
 // A planned change of the above: from this moment the site says FREE_SHIP_LATER.decks by itself
 // (texts, cart, package flags). The store's shipping threshold in ConvertBuilder is changed by hand.
-export const FREE_SHIP_LATER = { from: "2026-11-23T00:00:00+02:00", decks: 3 };
+// null = no planned change. 23.11.2026: free delivery with 2 decks is back (store threshold 44 €).
+export const FREE_SHIP_LATER = null;
 
 export const CONTACT = {
   phone: "0893 42 52 92",
