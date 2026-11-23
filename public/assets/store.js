@@ -289,7 +289,9 @@ function render() {
   cartDlg.classList.toggle("is-empty", !n);
   const pkg = pkgOf();
   const p = pkg ? PACKAGES[pkg] : null;
-  const sub = KEYS.reduce((s, k) => s + cart[k] * single(k).price, 0);
+  // counted from the regular prices (the struck-through ones on the lines, in the shop and in the order),
+  // so the saving here is the same as the "−45%" and "спестяваш" everywhere else on the site
+  const sub = KEYS.reduce((s, k) => s + cart[k] * Math.max(single(k).was || 0, single(k).price), 0);
   const disc = p ? sub - p.price : 0;
 
   $(".cart-items", cartDlg).innerHTML = KEYS
@@ -357,7 +359,7 @@ function render() {
   const bar = $(".meter span", cartDlg);
   const left = FREE - n;
   if (n >= FREE) {
-    msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестявате ${euro(disc)} от цената.${n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : ""}</span>`;
+    msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестявате ${euro(disc)} от редовната цена.${n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : ""}</span>`;
     bar.style.width = "100%";
   } else if (n) {
     msg.innerHTML = `<span>Добавете още <b>${left === 1 ? "1 тесте" : `${left} тестета`}</b> – ${n === 1 ? `второто е за ${euro(ladder(2) - ladder(1))}` : `третото е за ${euro(ladder(3) - ladder(2))}`} и доставката става <b>безплатна</b>.</span>`;
@@ -370,7 +372,7 @@ function render() {
 
   $(".s-sub", cartDlg).textContent = euro(sub + xSum());
   $(".s-disc-row", cartDlg).hidden = !(disc > 0);
-  $(".s-disc-t", cartDlg).textContent = `Отстъпка за ${n} тестета`;
+  $(".s-disc-t", cartDlg).textContent = "Отстъпка";
   $(".s-disc", cartDlg).textContent = `−${euro(disc)}`;
   $(".s-ship", cartDlg).textContent = n >= FREE ? "Безплатна" : `от ${euro(DELIVERY_FROM)}`;
   $(".s-tot", cartDlg).textContent = p ? euro(p.price + xSum()) : euro(0);
