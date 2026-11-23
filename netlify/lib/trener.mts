@@ -152,7 +152,16 @@ export function accessOf(key: any) {
   return { tier, subject, expired, paidTier: key.tier || "full" };
 }
 
-export function tierBank(data: any, tier: string, subject: string | null) {
+// Modules marked draft (new tasks waiting for the teacher) reach only the review codes (batch „преглед…“).
+export const isReviewBatch = (batch: unknown) => /^преглед/i.test(String(batch || ""));
+export function withoutDrafts(data: any) {
+  const drafts = new Set((data.modules || []).filter((m: any) => m.draft).map((m: any) => m.id));
+  if (!drafts.size) return data;
+  return { ...data, modules: data.modules.filter((m: any) => !drafts.has(m.id)), questions: (data.questions || []).filter((q: any) => !drafts.has(q.m)) };
+}
+
+export function tierBank(data: any, tier: string, subject: string | null, drafts = false) {
+  if (!drafts) data = withoutDrafts(data);
   if (tier === "full") return data;
   const isMath = (m: any) => m.area === "math";
   const mathOk = (n: number) => (tier === "start" ? n <= START_MATH : subject === "math");

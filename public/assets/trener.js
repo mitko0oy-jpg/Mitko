@@ -872,7 +872,7 @@ function mathTasks() {
     const n = ofMod(m.id).length, last = lastOf(m.id), best = bestOf(m.id), cnt = attemptsOf(m.id).length;
     const g = last ? gradeOf(pct(last.p, last.n)) : null;
     h += `<article class="mod ${last ? "played" : ""}" id="mod-${m.id}"><span class="mod-art">${pic(modImg(m))}</span>
-      <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc || "")}</p>
+      <div class="body"><h3>${esc(m.title)}${m.draft ? ` <span class="soon-tag">Чернова</span>` : ""}</h3><p>${esc(m.desc || "")}</p>
         <div class="meta">${starRow(starsOf(m.id))}<span>${n} ${pl(n, "задача", "задачи")}</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
         ${cnt ? `<div><button class="link" data-act="resetModAsk" data-m="${m.id}">Нулирай модула</button></div>` : ""}</div>
       <div class="side ${g ? "" : "nog"}">${g ? gradeBadge(g, "sm") : ""}<button class="btn sm ${last ? "line" : ""}" data-act="start" data-m="${m.id}">${last ? "Реши пак" : "Реши"}</button></div>

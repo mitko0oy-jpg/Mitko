@@ -5,7 +5,7 @@ import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { activateIfPaid } from "../lib/pay.mts";
-import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
+import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, isReviewBatch, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
 // the code is the key, each code works on up to max_devices browsers, and the grades are kept with the code.
@@ -131,7 +131,8 @@ export default handle(async (req, ctx) => {
     if (!bank) throw new HttpError(503, "not_ready", "Тренажорът още се подготвя. Опитай пак след малко.");
     // The level decides which tasks reach the browser; the cached copy is kept per bank and level.
     const acc = accessOf(res.key);
-    const bankKey = `${bank.id}.${acc.tier}${acc.subject ? "-" + acc.subject : ""}`;
+    const review = isReviewBatch(res.key.batch);
+    const bankKey = `${bank.id}.${acc.tier}${acc.subject ? "-" + acc.subject : ""}${review ? ".r" : ""}`;
     return json({
       code: formatCode(code),
       maxDevices: res.key.max_devices,
@@ -142,7 +143,7 @@ export default handle(async (req, ctx) => {
       devices: await devicesOf(code, dev),
       state: res.state,
       bankId: bankKey,
-      bank: String(b.have) === bankKey ? undefined : watermark(tierBank(bank.data, acc.tier, acc.subject), code),
+      bank: String(b.have) === bankKey ? undefined : watermark(tierBank(bank.data, acc.tier, acc.subject, review), code),
     });
   }
 

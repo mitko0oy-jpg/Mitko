@@ -240,6 +240,19 @@ export default handle(async (req, ctx) => {
     return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length });
   }
 
+  // НВО тренажор: drafts the teacher approved go to everybody (draft: false on these modules, a new bank version).
+  if (parts[0] === "trener-bank-approve") {
+    const ids = new Set((Array.isArray(b.ids) ? b.ids : []).map(String));
+    const cur = await one<{ data: any }>("SELECT data FROM trener_bank ORDER BY id DESC LIMIT 1");
+    if (!cur) throw bad("bank", "Няма банка.");
+    const hit = (cur.data.modules || []).filter((m: any) => m.draft && (ids.has(m.id) || ids.has("all")));
+    if (!hit.length) throw bad("bank", "Няма такива чернови.");
+    const names = new Set(hit.map((m: any) => m.id));
+    const modules = cur.data.modules.map((m: any) => (names.has(m.id) ? { ...m, draft: false } : m));
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ ...cur.data, modules })]);
+    return json({ ok: true, id: Number(row.id), approved: [...names] });
+  }
+
   // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.
   if (parts[0] === "trener-codes") {
     const count = Math.max(1, Math.min(2000, Number(b.count) || 1));

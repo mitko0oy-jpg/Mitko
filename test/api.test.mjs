@@ -641,3 +641,21 @@ test("math tasks like on the NVO: added on top of the bank, the first module fre
   assert.ok(o.bank.locked.modules.some((m) => m.id === "mz-geometria"));
   assert.ok(!o.bank.questions.some((q) => q.m === "mz-geometria"), "locked tasks never reach the browser");
 });
+
+test("draft modules reach only the review codes until the teacher approves them", async () => {
+  const t = client();
+  const mods = [{ id: "mz-danni", area: "math", sec: "dat", title: "Данни и вероятности", desc: "", draft: true }];
+  const questions = [1, 2, 3].map((i) => ({ id: `mz-danni-0${i}`, m: "mz-danni", t: "input", h: 1, q: `Колко е 3 · ${i}?`, a: [String(3 * i)], num: [3 * i], why: "Обяснение, което е достатъчно дълго за водния знак." }));
+  assert.equal((await admin("trener-bank-add", { modules: mods, questions })).ok, true);
+  const pupil = (await admin("trener-codes", { count: 1, batch: `draft-${run}` })).codes[0];
+  const teacher = (await admin("trener-codes", { count: 1, batch: `преглед-${run}` })).codes[0];
+  let r = await t("trener/open", { code: pupil, device: "cd".repeat(24) });
+  assert.ok(!r.bank.modules.some((m) => m.id === "mz-danni") && !r.bank.questions.some((q) => q.m === "mz-danni"), "a pupil does not see a draft");
+  r = await t("trener/open", { code: teacher, device: "ce".repeat(24) });
+  assert.ok(r.bank.modules.some((m) => m.id === "mz-danni" && m.draft), "the teacher sees it, marked as a draft");
+  assert.match(r.bankId, /\.r$/, "the teacher's copy is cached apart");
+  r = await admin("trener-bank-approve", { ids: ["mz-danni"] });
+  assert.deepEqual(r.approved, ["mz-danni"]);
+  r = await t("trener/open", { code: pupil, device: "cd".repeat(24) });
+  assert.ok(r.bank.modules.some((m) => m.id === "mz-danni" && !m.draft), "after approval everybody sees it");
+});
