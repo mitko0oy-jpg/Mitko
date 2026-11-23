@@ -352,6 +352,15 @@ for (const wall of $$("[data-wall]")) {
   });
 }
 
+/* ---------- a few real cards in a row: a click opens the card in the lightbox, at half the screen ---------- */
+for (const row of $$("[data-cardrow]")) {
+  const cards = $$("[data-front]", row);
+  row.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-front]");
+    if (c) openLightbox(cards, Math.max(0, cards.indexOf(c)), "half");
+  });
+}
+
 /* ---------- home page: which deck fits the child; the answer morphs with a view transition ---------- */
 const PICKS = {
   lit: { title: "Карти по литература", desc: "22-те творби за НВО в 40 карти: резюме, герои, цитати, образи и въпроси за самопроверка.", pkg: "lit-1", c: "#1E5A42" },
@@ -516,8 +525,9 @@ function renderLightbox() {
   flip.disabled = !hasBack;
   for (const b of $$(".lb-side button", lb)) b.setAttribute("aria-pressed", String(b.dataset.side === "front"));
 }
-function openLightbox(items, i) {
+function openLightbox(items, i, size = "") {
   if (!lb) return;
+  lb.classList.toggle("lb-half", size === "half");
   lbItems = items;
   lbIndex = i;
   renderLightbox();
