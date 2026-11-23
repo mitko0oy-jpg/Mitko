@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { formatCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q } from "../lib/db.mts";
 import { bad, body, clientIp, env, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
-import { checkWithStripe, fakeMode, fulfill, getSetting, isLive, plans, startCheckout, stripeKey, trialCode, verifySignature } from "../lib/pay.mts";
+import { checkWithStripe, demoCode, fakeMode, fulfill, getSetting, isLive, plans, startCheckout, stripeKey, trialCode, verifySignature } from "../lib/pay.mts";
 import { TIER_NAME, TIER_RANK } from "../lib/trener.mts";
 
 // /dostap/ – the parent's page: the free trial, the plans and paying with a card (see netlify/lib/pay.mts).
@@ -83,6 +83,15 @@ export default handle(async (req, ctx) => {
     await event("trener_trial", { months: t.months, days: t.days });
     const link = `${originOf(req)}/t/?k=${formatCode(t.code)}`;
     return json({ code: formatCode(t.code), link, months: t.months, days: t.days });
+  }
+
+  // The demo from the trainer: a code at once – the free trial if it is open (3 a day from one address), else Старт.
+  if (req.method === "POST" && parts[0] === "demo") {
+    const ip = clientIp(req, ctx);
+    if (!(await hit(`demo:${ip}`, 20, 86400))) throw tooMany("Днес от тази връзка вече са отворени много демо достъпи. Опитай утре или въведи код.");
+    const d = await demoCode(await hit(`trial:${ip}`, 3, 86400));
+    await event("trener_demo", { tier: d.tier, months: d.months, days: d.days });
+    return json({ code: formatCode(d.code), tier: d.tier, months: d.months, days: d.days, link: `${originOf(req)}/t/?k=${formatCode(d.code)}` });
   }
 
   // Starts paying: the parent goes to Stripe's page and comes back to /dostap/?s=…

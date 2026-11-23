@@ -4,6 +4,12 @@
 [functions]
   directory = "netlify/functions"
 
+# The demo: one tap and the trainer opens (a new free code, or the code this device already has).
+[[redirects]]
+  from = "/demo"
+  to = "/t/?demo=1"
+  status = 302
+
 # The QR code on each math card ("Още задачи и видео") leads to app.edubel.site/m/N: that card in the trainer.
 [[redirects]]
   from = "/m/:n"
@@ -37,3 +43,9 @@
   for = "/fonts/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# The live version (written by scripts/release.mjs): open trainers ask for it to notice an update.
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-store"

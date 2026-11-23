@@ -43,23 +43,28 @@ const LEVELS = [
   ["Пробна матура с оценка", "–", "с БЕЛ", "✓"],
   ["„Литературни досиета“ – играта с героите", "–", "с БЕЛ", "✓"],
   ["Бележник, прогноза за НВО, тетрадка с грешки", "✓", "✓", "✓"],
-  ["Скоро: аудио уроци, говорещи герои, AI помощник за задача 25", "–", "–", "влизат без доплащане"],
+  ["Скоро: AI помощник за задача 25", "–", "–", "влиза без доплащане"],
 ];
 function levelsTable(plans) {
   const from = (tier) => {
     const ps = plans.filter((p) => p.tier === tier);
     return ps.length ? `от ${eur(Math.min(...ps.map((p) => p.price)))}` : "–";
   };
-  return `<section class="panel"><h2>Трите нива</h2>
-    <div class="tblwrap"><table class="lvtbl"><thead><tr><th></th><th>Старт</th><th>Стандарт</th><th>Пълен</th></tr></thead><tbody>
-    ${LEVELS.map((r) => `<tr><th scope="row">${esc(r[0])}</th>${r.slice(1).map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}
-    <tr class="price"><th scope="row">Цена</th><td>безплатно</td><td>${from("std")}</td><td>${from("full")}</td></tr></tbody></table></div>
+  // „Стандарт“ shows only while there is a plan for it (the site sells the full trainer).
+  const std = plans.some((p) => p.tier === "std");
+  const cols = (r) => (std ? r.slice(1) : [r[1], r[3]]);
+  return `<section class="panel"><h2>${std ? "Трите нива" : "Безплатно и пълен достъп"}</h2>
+    <div class="tblwrap"><table class="lvtbl"><thead><tr><th></th><th>Старт</th>${std ? "<th>Стандарт</th>" : ""}<th>Пълен</th></tr></thead><tbody>
+    ${LEVELS.map((r) => `<tr><th scope="row">${esc(r[0])}</th>${cols(r).map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}
+    <tr class="price"><th scope="row">Цена</th><td>безплатно</td>${std ? `<td>${from("std")}</td>` : ""}<td>${from("full")}</td></tr></tbody></table></div>
     <p class="small muted">Когато платеният срок свърши, тренажорът не се заключва: детето остава на „Старт“ с всичките си оценки, докато решите дали да продължите.</p></section>`;
 }
 
 function plansForm(d) {
   if (!d.plans.length) return `<section class="panel"><h2>Пакети</h2><p class="muted">Пакетите скоро ще са тук.</p></section>`;
-  const list = d.plans.map((p, i) => `<label class="plan ${p.tier}"><input type="radio" name="plan" value="${esc(p.id)}" ${i === 0 ? "checked" : ""}>
+  // /dostap/?plan=<id> (the buttons on edubel.bg) opens with that plan chosen.
+  const want = d.plans.some((p) => p.id === params.get("plan")) ? params.get("plan") : d.plans[0].id;
+  const list = d.plans.map((p) => `<label class="plan ${p.tier}"><input type="radio" name="plan" value="${esc(p.id)}" ${p.id === want ? "checked" : ""}>
       <span class="pl-body"><span class="pl-tier">${esc(p.tierName)}${p.subject ? ` · ${esc(SUBJ[p.subject])}` : ""}</span><b>${esc(p.title)}</b><span class="pl-term">${esc(termOf(p))}</span>${p.note ? `<span class="small muted">${esc(p.note)}</span>` : ""}</span>
       <span class="pl-price">${eur(p.price)}</span></label>`).join("");
   return `<section class="panel" id="buy"><h2>${d.code ? "Удължи или надгради" : "Купи достъп"}</h2>
@@ -77,7 +82,7 @@ function trialPanel(d) {
   try { saved = JSON.parse(localStorage.getItem(K_TRIAL) || "null"); } catch (e) {}
   return `<section class="panel trial" id="trial"><h2>Пробвай безплатно – ${esc(len)} пълен достъп</h2>
     <p>Целият тренажор – БЕЛ и математика, пробни матури и играта с героите. Без карта и без имейл. След пробата детето остава на безплатното ниво „Старт“ с всичките си оценки.</p>
-    <div id="trialOut">${saved ? codeBox(saved.code, saved.link, `<p class="small muted">Този код взе от това устройство.</p>`) : `<button class="btn gold" id="trialBtn">Вземи безплатен код</button>`}</div></section>`;
+    <div id="trialOut">${saved ? codeBox(saved.code, saved.link, `<p class="small muted">Този код взе от това устройство.</p>`) : `<button class="btn gold" id="trialBtn">Пробвай безплатно</button>`}</div></section>`;
 }
 
 function render(d) {
@@ -94,6 +99,7 @@ function render(d) {
     if (!c) h += trialPanel(d);
     h += levelsTable(d.plans) + plansForm(d);
   }
+  if (params.get("plan") && !c) setTimeout(() => $("buy")?.scrollIntoView({ block: "start" }), 0);
   h += `<section class="panel"><h2>Честно и спокойно</h2><ul class="small">
       <li>Плаща родителят. В тренажора детето никога не вижда цени и предложения за покупка.</li>
       <li>Без реклами и без проследяване. Не продаваме данни.</li>

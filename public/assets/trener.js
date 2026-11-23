@@ -6,7 +6,10 @@ const EMBED = window.TRENER_BANK || null;
 const ONLINE = !EMBED;
 const LOGO = window.TRENER_LOGO || "/assets/logo.png";
 // The version of the app; it goes with every signal about a problem, so a fix can be checked. Change it with each release.
-const APP_V = "2026-11-11";
+const APP_V = "2026-11-23";
+// Erčo's voice and „Чуй задачата“ are paused for now: nothing is said and no button for them shows.
+// true brings them back (the recorded lines stay in public/media/voice/).
+const AUDIO = false;
 // Signals about problems (netlify/lib/reports.mts): errors the app notices by itself and „Мисля, че тук има грешка“
 // under a task. Nobody is identified – no code and no device go with them, only what, where and in which version.
 // Only on the site; at most 8 per visit and each one once.
@@ -37,6 +40,30 @@ const Report = (() => {
   }, true);
   addEventListener("unhandledrejection", (e) => error(`promise: ${e.reason?.message || e.reason}`, e.reason?.stack || ""));
   return { error, task: (id, note) => send({ kind: "task", ref: id, note, message: "" }) };
+})();
+// A new version on the site (scripts/release.mjs writes /version.json): an open page notices it when it comes back to
+// the front or every 15 minutes, and loads the new version – only on the board, never in the middle of a test.
+// The grades are already saved in this browser and go to the server after the reload.
+const Update = (() => {
+  let last = 0, newer = "";
+  async function check() {
+    if (!ONLINE || Date.now() - last < 10 * 60e3) return;
+    last = Date.now();
+    try {
+      const r = await fetch("/version.json", { cache: "no-store" });
+      if (!r.ok) return;
+      const j = await r.json();
+      if (j && j.version && j.version !== APP_V) newer = j.version;
+    } catch (e) {}
+  }
+  const onBoard = () => !sess && !!document.querySelector("#app .hero");
+  function reloadIfIdle() { if (newer && onBoard()) location.reload(); }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check().then(reloadIfIdle); });
+  setInterval(() => { if (document.visibilityState === "visible") check().then(() => { if (newer && onBoard() && !document.getElementById("updBar")) home(); }); }, 15 * 60e3);
+  return {
+    banner: () => (newer ? `<p class="okbox" id="updBar" role="status">Има нова версия на тренажора. <button class="btn sm" data-act="update">Обнови</button></p>` : ""),
+    go: () => location.reload(),
+  };
 })();
 // Illustrations, sounds and the video: on the site from /media/ (cached for 30 days), in the standalone file built in (window.TRENER_IMG).
 const IMGS = window.TRENER_IMG || null;
@@ -309,7 +336,7 @@ const Voice = (() => {
   const K = "edubel-trener-voice", V = 1;
   const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
   let on = ls.get(K) !== "0", el = null, queue = [], timer = 0, unlocked = false;
-  const can = () => FX.on && on;
+  const can = () => AUDIO && FX.on && on;
   const elem = () => {
     if (!el) {
       el = new Audio(); el.preload = "auto"; el.addEventListener("ended", next);
@@ -393,7 +420,7 @@ const Hello = (() => {
     greet();
   }
   function greet() {
-    if (!FX.on || !Voice.on || ls.get(K) === day() || waiting) return;
+    if (!AUDIO || !FX.on || !Voice.on || ls.get(K) === day() || waiting) return;
     const line = pick();
     Voice.now(line).then((ok) => {
       if (ok) { ls.set(K, day()); show(line); }
@@ -440,7 +467,7 @@ const Speak = (() => {
     u.rate = 0.95;
     speechSynthesis.speak(u);
   }
-  return { ok: () => has && !!bg, read, stop: () => { if (has) speechSynthesis.cancel(); } };
+  return { ok: () => AUDIO && has && !!bg, read, stop: () => { if (has) speechSynthesis.cancel(); } };
 })();
 
 /* ---------- progress you can see: XP, levels, stars, badges (all worked out from the saved results – nothing to buy, nothing random) ---------- */
@@ -524,7 +551,7 @@ function home(scrollTo) {
   const mx = M ? mathNext() : null;
   let h = `<header class="top">
       <div class="topbar"><img class="logo" src="${LOGO}" alt="Еду БЕЛ" width="44" height="44"><span class="eyebrow">${M ? "Математика за НВО" : "НВО по БЕЛ · 7. клас"}</span>
-        <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}" title="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button><button class="iconbtn ${FX.on ? "" : "dim"}" data-act="voice" aria-pressed="${Voice.on}" aria-label="${Voice.on ? "Ерчо да мълчи" : "Ерчо да говори"}" title="${Voice.on ? "Ерчо говори – докосни, за да мълчи" : "Ерчо мълчи – докосни, за да говори"}">${Voice.on ? "🗣️" : "🤐"}</button></span></div>
+        <span class="tb-btns"><button class="iconbtn" data-act="theme" aria-label="${Theme.dark() ? "Светла тема" : "Нощна смяна (тъмна тема)"}" title="${Theme.dark() ? "Светла тема" : "Нощна смяна"}">${Theme.dark() ? "☀️" : "🌙"}</button><button class="iconbtn" data-act="sound" aria-pressed="${FX.on}" aria-label="${FX.on ? "Изключи звука" : "Включи звука"}" title="${FX.on ? "Изключи звука" : "Включи звука"}">${FX.on ? "🔊" : "🔇"}</button>${AUDIO ? `<button class="iconbtn ${FX.on ? "" : "dim"}" data-act="voice" aria-pressed="${Voice.on}" aria-label="${Voice.on ? "Ерчо да мълчи" : "Ерчо да говори"}" title="${Voice.on ? "Ерчо говори – докосни, за да мълчи" : "Ерчо мълчи – докосни, за да говори"}">${Voice.on ? "🗣️" : "🤐"}</button>` : ""}</span></div>
       ${hasMath() ? `<div class="subj" role="group" aria-label="Предмет"><button data-act="subj" data-s="bel" aria-pressed="${!M}">${pic("i-lit1", "sj-i", "", true)}<span>БЕЛ</span></button><button data-act="subj" data-s="math" aria-pressed="${M}">${pic("mt-geo", "sj-i", "", true)}<span>Математика</span></button></div>` : ""}
       <section class="hero ${M ? "long" : ""}" aria-labelledby="heroT">
         <div class="hero-txt">
@@ -534,7 +561,7 @@ function home(scrollTo) {
           <div class="xp" role="img" aria-label="${lv.x - lv.from} от ${lv.to - lv.from} точки опит до ниво ${lv.L + 1}"><i style="width:${Math.max(3, Math.round(((lv.x - lv.from) / (lv.to - lv.from)) * 100))}%"></i></div>
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
-        <div class="hero-art"><button class="hero-say" data-act="hello" aria-label="Чуй Ерчо">${avatarPic("hero-m", true)}</button><p class="bubble" aria-live="polite">${esc(tip)}</p></div>
+        <div class="hero-art"><button class="hero-say" data-act="hello" aria-label="${AUDIO ? "Чуй Ерчо" : "Какво казва Ерчо"}">${avatarPic("hero-m", true)}</button><p class="bubble" aria-live="polite">${esc(tip)}</p></div>
         <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : LOCK() && LOCK().mock ? `<button class="btn gold big" data-act="parentShow"><span>🔓</span> Още задачи – покажи на родител</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
       </section>
       <div class="facts">${M ? `<span>${BANK.math.cards.length} ${pl(BANK.math.cards.length, "карта", "карти")}</span><span>${BANK.questions.filter(qMath).length} задачи</span><span>Решен пример и капани</span><span>Оценки 2–6</span>`
@@ -543,7 +570,7 @@ function home(scrollTo) {
   if (!canSave) h += `<p class="warnbox">Този браузър не позволява да се пазят данни (например в личен прозорец). Можеш да решаваш, но оценките ще изчезнат, когато затвориш страницата.</p>`;
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
-  if (ONLINE) h += Online.levelBanner();
+  if (ONLINE) h += Update.banner() + Online.levelBanner();
   if (M) h += mathBoard();
   else h += forecastPanel(f, mist) + Game.card() + modulesSection() + soonSection();
   h += badgesSection();
@@ -645,7 +672,7 @@ function modulesSection() {
   return h + `</section>`;
 }
 // What is coming: visible, but not open yet (and not sold before it is ready).
-const SOON = [["🎧", "Аудио уроци", "Ерчо разказва творбите – за слушане по пътя и преди сън."], ["🎭", "Говорещи герои", "Героите от творбите оживяват и ти казват нещо."], ["🤖", "AI помощник за задача 25", "Подсказва как да подредиш мислите си, без да пише вместо теб."]];
+const SOON = [...(AUDIO ? [["🎧", "Аудио уроци", "Ерчо разказва творбите – за слушане по пътя и преди сън."], ["🎭", "Говорещи герои", "Героите от творбите оживяват и ти казват нещо."]] : []), ["🤖", "AI помощник за задача 25", "Подсказва как да подредиш мислите си, без да пише вместо теб."]];
 function soonSection() {
   return `<section class="soon-sec" aria-labelledby="soonT"><h2 class="sec-t" id="soonT">Скоро в тренажора</h2><div class="soon-list">${SOON.map(([e, t, d]) => `<div class="soon-i"><span class="soon-e" aria-hidden="true">${e}</span><span><b>${t}</b><small>${d}</small></span><span class="soon-tag">Скоро</span></div>`).join("")}</div></section>`;
 }
@@ -809,7 +836,7 @@ function mathNext() {
 }
 function mathBoard() {
   const M = BANK.math, idx = M.index && M.index.length ? M.index : M.cards, total = idx.length;
-  const mods = MODULES.filter((m) => isMath(m) && !m.mix), done = mods.filter((m) => lastOf(m.id)).length;
+  const mods = MODULES.filter((m) => isMath(m) && /^mk-/.test(m.id)), done = mods.filter((m) => lastOf(m.id)).length;
   const got = mods.reduce((s, m) => s + starsOf(m.id), 0), mist = mistIds(true).length;
   let h = `<section class="fc mx-top" aria-labelledby="mxT"><div class="mx-sum">
       ${pic("mt-sys", "mx-i", "", true)}<div><span class="eyebrow">${esc(M.title || "Математика за НВО")}</span>
@@ -817,7 +844,7 @@ function mathBoard() {
       <p class="muted small">Отвори карта, обърни я и я упражни. Числовите отговори се проверяват сами, а големите задачи решаваш на лист и сравняваш.</p></div></div>
     <div class="mx-stats"><div class="stat"><b>${done}/${mods.length}</b><span>упражнени карти</span></div><div class="stat"><b>★ ${got}</b><span>от ${mods.length * 3} звезди</span></div>${M.cards.length < total ? `<div class="stat"><b>${M.cards.length}/${total}</b><span>карти вече тук</span></div>` : ""}</div>
     <div class="fc-actions"><button class="tool alt" data-act="mist" ${mist ? "" : "disabled"}>${pic("i-mist", "tool-i")}<span class="tool-t"><b>Грешки по математика${mist ? ` · ${mist}` : ""}</b><span>${mist ? "Задачите, в които си сгрешил. Реши ги вярно 2 пъти и изчезват." : "Тук ще се събират задачите, в които сгрешиш."}</span></span></button></div></section>
-    <section class="parts" id="modules"><h2 class="sec-t">Картите по раздели</h2>`;
+    ${mathTasks()}<section class="parts" id="modules"><h2 class="sec-t">Картите по раздели</h2>`;
   for (const sec of M.sections || []) {
     const list = idx.filter((e) => (e.sec || e.area) === sec.id);
     if (!list.length) continue;
@@ -834,6 +861,29 @@ function mathBoard() {
     h += `</div>${mix ? `<button class="btn line sm mx-mix" data-act="mmix" data-m="${mix.id}">🔀 Смесено упражнение по раздела</button>` : ""}</div>`;
   }
   return h + `</section>`;
+}
+// Math tasks like on the NVO, by topic (modules "mz-…"): a grade after each, like the БЕЛ modules.
+function mathTasks() {
+  const ms = MODULES.filter((m) => isMath(m) && /^mz-/.test(m.id));
+  const lk = ((LOCK() && LOCK().modules) || []).filter((m) => /^mz-/.test(m.id));
+  if (!ms.length && !lk.length) return "";
+  let h = `<section class="parts" id="mtasks"><h2 class="sec-t">Задачи като на НВО</h2><div class="part" style="--c:var(--sky)"><div class="mods">`;
+  for (const m of ms) {
+    const n = ofMod(m.id).length, last = lastOf(m.id), best = bestOf(m.id), cnt = attemptsOf(m.id).length;
+    const g = last ? gradeOf(pct(last.p, last.n)) : null;
+    h += `<article class="mod ${last ? "played" : ""}" id="mod-${m.id}"><span class="mod-art">${pic(modImg(m))}</span>
+      <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc || "")}</p>
+        <div class="meta">${starRow(starsOf(m.id))}<span>${n} ${pl(n, "задача", "задачи")}</span>${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n}</span><span>Най-добро: ${best.p}/${best.n}</span>` : `<span>Още не е решаван</span>`}${spark(m.id)}</div>
+        ${cnt ? `<div><button class="link" data-act="resetModAsk" data-m="${m.id}">Нулирай модула</button></div>` : ""}</div>
+      <div class="side ${g ? "" : "nog"}">${g ? gradeBadge(g, "sm") : ""}<button class="btn sm ${last ? "line" : ""}" data-act="start" data-m="${m.id}">${last ? "Реши пак" : "Реши"}</button></div>
+      <div class="zone" id="zone-${m.id}" hidden></div></article>`;
+  }
+  for (const m of lk) {
+    h += `<article class="mod locked" id="mod-${m.id}"><span class="mod-art">${pic(modImg(m))}</span>
+      <div class="body"><h3>${esc(m.title)}</h3><p>${esc(m.desc || "")}</p><div class="meta"><span>${m.n} ${pl(m.n, "задача", "задачи")}</span><span class="lockt">🔒 ${lockedWhere()}</span></div></div>
+      <div class="side nog"><button class="btn sm line" data-act="parentShow">Покажи на родител</button></div></article>`;
+  }
+  return h + `</div></div></section>`;
 }
 function mathCard(n, back = false, flip = false) {
   const c = mCard(n);
@@ -1227,6 +1277,7 @@ const ACT = {
   home: () => home(),
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
   hello: () => Hello.tap(),
+  update: () => Update.go(),
   subj: (b) => { SUBJ = b.dataset.s === "math" ? "math" : "bel"; ls.set(K_SUBJ, SUBJ); FX.pop(); home(); },
   mcard: (b) => mathCard(+b.dataset.n),
   mflip: () => { if (mview) { FX.pop(); mathCard(mview.n, !mview.back, true); } },
@@ -1363,7 +1414,9 @@ const Online = (() => {
   // The level this code gives now (from the server): {tier: start|std|full, name, subject, expired}.
   let access = null;
 
-  const norm = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Typed on a Bulgarian keyboard: Cyrillic letters that look like Latin ones count as those (as on the server).
+  const LOOK = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", Р: "P", С: "C", Т: "T", Х: "X", У: "Y" };
+  const norm = (c) => String(c || "").toUpperCase().replace(/[АВЕКМНРСТХУ]/g, (x) => LOOK[x]).replace(/[^A-Z0-9]/g, "");
   const fmt = (c) => { c = norm(c); return c.length === 10 ? `${c.slice(0, 5)}-${c.slice(5)}` : c; };
   const link = () => `${location.origin}/t/?k=${fmt(code)}`;
 
@@ -1422,24 +1475,55 @@ const Online = (() => {
   const btns = (list) => `<div class="row">${list.map(([act, text], i) => `<button class="${i ? "link" : "btn"}" data-act="${act}">${esc(text)}</button>`).join("")}</div>`;
   const message = (title, text, list) => screen(`<h1>${esc(title)}</h1><p class="lead">${esc(text)}</p>${list ? btns(list) : ""}`);
   function codeScreen(err) {
-    screen(`<h1>НВО тренажор <em>по БЕЛ</em></h1>
-      <p class="lead">Сканирай QR кода с камерата на телефона или въведи кода от PDF-а или от стикера на кутията.</p>
+    screen(`<h1>НВО тренажор <em>по БЕЛ и математика</em></h1>
+      <p class="lead">Въведи кода от PDF-а или от стикера на кутията – или сканирай QR кода с камерата на телефона.</p>
       <form id="codeForm" class="codeform" novalidate><label for="codeIn">Код за достъп</label>
         <div class="row"><input id="codeIn" class="field code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX" maxlength="14">
         <button class="btn gold">Отвори</button></div></form>
       ${err ? `<p class="err" role="alert">${esc(err)}</p>` : ""}
-      <p class="small muted">Кодът е от 10 букви и цифри. Не е нужно да пишеш тирето и главните букви.</p>
-      <p class="small">Нямаш код? Покажи на родител страницата <a href="/dostap/">app.edubel.site/dostap</a> – там има безплатна проба.</p>`);
+      <p class="small muted">Кодът е от 10 букви и цифри. Тирето и главните букви не са задължителни.</p>
+      <section class="demobox" aria-labelledby="demoT"><h2 id="demoT">Нямаш код?</h2>
+        <p>Разгледай тренажора безплатно – веднага, без регистрация, имейл и карта. Оценките ти се пазят.</p>
+        <button class="btn" data-act="demo">Разгледай безплатно</button><p class="small" id="demoMsg" role="status"></p></section>
+      <p class="small muted">За родители: всичко за достъпа е на <a href="/dostap/">app.edubel.site/dostap</a>.</p>`);
     const f = document.getElementById("codeForm"), inp = document.getElementById("codeIn");
-    inp.focus();
+    if (!matchMedia("(pointer: coarse)").matches) inp.focus();
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       const c = norm(inp.value);
+      if (/[\u0400-\u04FF]/.test(inp.value.toUpperCase().replace(/[АВЕКМНРСТХУ]/g, ""))) return codeScreen("Кодът е с латински букви. Превключи клавиатурата на английски (🌐) и го въведи пак.");
       if (c.length < 8) return codeScreen("Провери кода – той е от 10 букви и цифри.");
       code = c;
       ls.set(K_CODE, c);
       start();
     });
+  }
+  // „Разгледай безплатно“ (and app.edubel.site/demo): a code at once – the free trial while it is open, otherwise
+  // the free level Старт – and the trainer opens on this device.
+  let demoBusy = false;
+  async function demo() {
+    if (demoBusy) return;
+    demoBusy = true;
+    const b = document.querySelector('[data-act="demo"]'), m = document.getElementById("demoMsg");
+    if (b) { b.disabled = true; b.textContent = "Отварям…"; }
+    try {
+      let r, j = {};
+      try { r = await fetch("/api/pay/demo", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }); } catch (e) { throw new Error("Няма връзка с интернет."); }
+      try { j = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(j.message || "Нещо се обърка. Опитай пак след малко.");
+      code = norm(j.code);
+      ls.set(K_CODE, code);
+      const len = j.months ? `${j.months} ${j.months === 1 ? "месец" : "месеца"}` : j.days ? `${j.days} ${j.days === 1 ? "ден" : "дни"}` : "";
+      o.flash = j.tier === "full"
+        ? `Добре дошъл! Целият тренажор е отворен за теб${len ? ` за ${len}` : ""}. После остават безплатните модули и всичките ти оценки.`
+        : "Добре дошъл! Отворена е безплатната част на тренажора – с оценки, бележник и прогноза за НВО.";
+      start();
+    } catch (e) {
+      if (b) { b.disabled = false; b.textContent = "Разгледай безплатно"; }
+      if (m) { m.className = "err"; m.textContent = e.message; }
+    } finally {
+      demoBusy = false;
+    }
   }
   function inAppScreen(url) {
     screen(`<h1>Отвори тренажора в Chrome или Safari</h1>
@@ -1616,6 +1700,7 @@ const Online = (() => {
   // The level of the code: a short line on the board, and a box with a QR code for the parent (no prices for the child).
   function levelBanner() {
     const a = access;
+    if (a && a.trial && a.tier === "full") return `<section class="lvlbar trial"><p>Пробен достъп${expiresAt ? ` до ${esc(fmtDate(expiresAt))}` : ""}: целият тренажор е отворен. После остават безплатните модули и всичките ти оценки.</p><button class="btn sm line" data-act="parentShow">Покажи на родител</button></section><div id="parentBox"></div>`;
     if (!a || a.tier === "full") return `<div id="parentBox"></div>`;
     const what = a.tier === "std" ? `Твоето ниво е „Стандарт“ – ${a.subject === "math" ? "математика" : "БЕЛ"}.`
       : a.expired ? `Пълният достъп свърши${expiresAt ? ` на ${fmtDate(expiresAt)}` : ""}. Сега си на „Старт“ – безплатната част. Оценките ти са запазени.`
@@ -1674,6 +1759,7 @@ const Online = (() => {
       if (!ok) { try { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ok = document.execCommand("copy"); } catch (e) {} }
       if (out) out.textContent = ok ? "Линкът е копиран." : "Линкът е маркиран – копирай го ръчно.";
     },
+    demo: () => demo(),
     stayInApp: () => { stay = true; try { sessionStorage.setItem("edubel-trener-stay", "1"); } catch (e) {} boot(); },
     retryOpen: () => { if (!code) return codeScreen(); start(); },
     otherCode: () => { ls.del(K_CODE); code = ""; codeScreen(); },
@@ -1696,10 +1782,13 @@ const Online = (() => {
     if (fromUrl.length >= 8) ls.set(K_CODE, fromUrl);
     const renew = norm(url.searchParams.get("r"));
     if (renew.length >= 8) ls.set(K_RENEW, renew);
+    const wantDemo = url.searchParams.has("demo");
     try { stay = stay || sessionStorage.getItem("edubel-trener-stay") === "1"; } catch (e) {}
-    if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : `${location.origin}/t/`);
-    if (url.searchParams.has("k") || url.searchParams.has("r") || url.searchParams.has("m") || location.hash) history.replaceState(null, "", "/t/");
+    if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : wantDemo ? `${location.origin}/demo` : `${location.origin}/t/`);
+    if (url.searchParams.has("k") || url.searchParams.has("r") || url.searchParams.has("m") || wantDemo || location.hash) history.replaceState(null, "", "/t/");
     code = norm(ls.get(K_CODE)) || fromUrl;
+    // app.edubel.site/demo: a device that already has a code just opens it.
+    if (code.length < 8 && wantDemo && !ls.get(K_RENEW)) { codeScreen(); return demo(); }
     if (code.length < 8) return codeScreen(ls.get(K_RENEW) ? "Въведи първо своя код за достъп (от PDF-а или стикера) – удължаването ще се добави след това." : "");
     start();
   }

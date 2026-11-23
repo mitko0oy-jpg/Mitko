@@ -738,3 +738,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .soon-i b{display:block;color:var(--ink)}
 .soon-i small{display:block;color:var(--muted);font-size:13.5px}
 .soon-tag{font:800 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#2B1C00;background:linear-gradient(180deg,#FFD866,#FFB81C);border-radius:99px;padding:6px 9px}
+
+/* The free trial on the board, the demo on the code screen, the "new version" line */
+.lvlbar.trial{box-shadow:inset 0 0 0 2px var(--mint),0 1px 0 var(--edge)}
+.demobox{display:grid;gap:8px;justify-items:start;background:var(--band);border-radius:20px;padding:16px 18px}
+.demobox h2{margin:0;font-size:clamp(19px,4.6vw,22px)}
+.demobox p{margin:0;color:var(--text);max-width:52ch}
+.demobox .err{color:var(--coral)}
+#updBar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}

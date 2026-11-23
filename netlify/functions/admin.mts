@@ -105,6 +105,13 @@ export default handle(async (req, ctx) => {
     return json({ modules, items });
   }
 
+  // НВО тренажор: the questions served now (the newest bank), to add to it from a container without private/.
+  if (req.method === "GET" && parts[0] === "trener-bank") {
+    const bank = await one<{ id: string; created_at: string; data: any }>("SELECT id, created_at, data FROM trener_bank ORDER BY id DESC LIMIT 1");
+    if (!bank) throw notFound("Още няма задачи.");
+    return json({ id: Number(bank.id), createdAt: bank.created_at, ...bank.data });
+  }
+
   // НВО тренажор: a full copy of the codes and the pupils' grades (to keep somewhere safe).
   if (req.method === "GET" && parts[0] === "trener-backup") {
     const keys = await q("SELECT * FROM trener_keys ORDER BY created_at, code");
@@ -206,6 +213,31 @@ export default handle(async (req, ctx) => {
     const math = b.math && typeof b.math === "object" && Array.isArray(b.math.cards) && Array.isArray(b.math.sections) ? b.math : null;
     const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math })]);
     return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0, mathCards: math ? math.cards.length : 0 });
+  }
+
+  // НВО тренажор: new or changed modules on top of the newest bank (e.g. the math tasks „като на НВО“).
+  // Each given module replaces the module with the same id and all its tasks; everything else stays as it is.
+  if (parts[0] === "trener-bank-add") {
+    const mods = Array.isArray(b.modules) ? b.modules : [];
+    const add = Array.isArray(b.questions) ? b.questions : [];
+    if (!mods.length || !add.length) throw bad("bank", "Дай модули и задачи.");
+    const ids = new Set(mods.map((m: any) => String(m.id || "")));
+    if ([...ids].some((id) => !/^[a-z0-9-]{2,40}$/.test(id))) throw bad("bank", "id на модул: малки латински букви, цифри и тире.");
+    const stray = add.filter((x: any) => !ids.has(String(x.m)));
+    if (stray.length) throw bad("bank", `Задачи без модул в списъка: ${stray.slice(0, 3).map((x: any) => x.id).join(", ")}`);
+    const qids = new Set<string>();
+    for (const x of add) {
+      if (!x.id || qids.has(x.id) || !["mc", "input", "match", "order", "self"].includes(x.t) || !x.q) throw bad("bank", `Задача ${x.id || "?"}: id, вид и текст.`);
+      qids.add(x.id);
+    }
+    const cur = await one<{ data: any }>("SELECT data FROM trener_bank ORDER BY id DESC LIMIT 1");
+    if (!cur) throw bad("bank", "Първо качи цялата банка (trener-bank).");
+    const d = cur.data;
+    const keepMods = (d.modules || []).filter((m: any) => !ids.has(m.id));
+    const keepQs = (d.questions || []).filter((x: any) => !ids.has(x.m) && !qids.has(x.id));
+    const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) } };
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify(next)]);
+    return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length });
   }
 
   // НВО тренажор: new personal codes. They are printed as QR codes on PDFs and box stickers.

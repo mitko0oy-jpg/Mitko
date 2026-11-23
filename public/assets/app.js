@@ -154,7 +154,7 @@ export async function saveProgress(module, results) {
 
 // Where each kind of module opens, and how resources and planned materials are named.
 export const PATHS = { cards: "/karti/", diagnostic: "/karti/", t25: "/zadacha25/", chars: "/geroi/", pesho: "/pesho/", exam: "/izpit/" };
-export const KIND_LABEL = { cards: "Карти", t25: "Задача 25", chars: "Интервю с героя", pesho: "Научи Пешо", diagnostic: "Входен тест", exam: "Пробна матура", lesson: "Кратък урок", reading: "Прочети и чуй" };
+export const KIND_LABEL = { cards: "Карти", t25: "Задача 25", chars: "Интервю с героя", pesho: "Научи Пешо", diagnostic: "Входен тест", exam: "Пробна матура", lesson: "Кратък урок", reading: "Прочети" };
 // The steps of every work or topic, always in this order.
 export const STEP_ORDER = ["reading", "lesson", "cards", "t25", "chars", "pesho"];
 export const stepLabel = (kind, section) => (kind === "cards" && section === "language" ? "Упражнения" : kind === "lesson" && section === "language" ? "Правилото" : KIND_LABEL[kind] || kind);

@@ -140,7 +140,8 @@ export const cleanLabel = (v: unknown) => (typeof v === "string" ? v.replace(/[^
 export const TIERS = ["start", "std", "full"] as const;
 export const TIER_NAME: Record<string, string> = { start: "Старт", std: "Стандарт", full: "Пълен" };
 export const TIER_RANK: Record<string, number> = { start: 0, std: 1, full: 2 };
-const START_MODULES = new Set(["chetene", "pravopis", "lit1"]);
+// Старт: one module of each NVO part in БЕЛ, the first math cards and the first math module „като на НВО“.
+const START_MODULES = new Set(["chetene", "pravopis", "lit1", "mz-chisla"]);
 const START_MATH = 8;
 
 // The level a code gives now: after its term it falls back to Старт (never locked, the grades stay).
@@ -155,7 +156,8 @@ export function tierBank(data: any, tier: string, subject: string | null) {
   if (tier === "full") return data;
   const isMath = (m: any) => m.area === "math";
   const mathOk = (n: number) => (tier === "start" ? n <= START_MATH : subject === "math");
-  const modOk = (m: any) => (tier === "start" ? (isMath(m) ? mathOk(Number(String(m.id).slice(3))) : START_MODULES.has(m.id)) : subject === "math" ? isMath(m) : !isMath(m));
+  const cardNo = (m: any) => (/^mk-\d+$/.test(String(m.id)) ? Number(String(m.id).slice(3)) : 0);
+  const modOk = (m: any) => (tier === "start" ? START_MODULES.has(m.id) || (isMath(m) && cardNo(m) > 0 && mathOk(cardNo(m))) : subject === "math" ? isMath(m) : !isMath(m));
   const modules = (data.modules || []).filter(modOk);
   const ok = new Set(modules.map((m: any) => m.id));
   const questions = (data.questions || []).filter((q: any) => ok.has(q.m));

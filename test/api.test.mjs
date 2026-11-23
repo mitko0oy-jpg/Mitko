@@ -558,3 +558,86 @@ test("levels of access, the free trial and paying (practice payment and a signed
   const pays = await admin("payments");
   assert.equal(pays.payments.find((p) => p.session === s2).email, "parent@example.com");
 });
+
+test("demo in one tap, a code typed in Cyrillic, the code of a card payment chosen before paying", async () => {
+  const t = client();
+  const dev = (n) => `${n}`.padStart(2, "0").repeat(24).replace(/^../, "ef");
+  const fmt = (c) => `${c.slice(0, 5)}-${c.slice(5)}`;
+
+  // With the free trial closed, the demo is the free level Старт (no term) – the trainer still opens at once.
+  await admin("trial", { open: false });
+  let r = await t("pay/demo", {});
+  assert.equal(r.status, 200);
+  assert.equal(r.tier, "start");
+  assert.match(r.link, /\/t\/\?k=[A-Z0-9]{5}-[A-Z0-9]{5}$/);
+  r = await t("trener/open", { code: r.code, device: dev(1) });
+  assert.equal(r.access.tier, "start");
+  assert.equal(r.access.trial, true, "the board knows it is a demo");
+  assert.equal(r.expiresAt, null);
+  // With the trial open, the demo is the trial while this address has trials left today (3), then Старт.
+  await admin("trial", { open: true, days: 7, daily: 1000 });
+  r = await t("pay/demo", {});
+  assert.ok(["full", "start"].includes(r.tier));
+  if (r.tier === "full") {
+    assert.equal(r.days, 7);
+    const o = await t("trener/open", { code: r.code, device: dev(2) });
+    assert.equal(o.access.tier, "full");
+    assert.equal(o.access.trial, true);
+    assert.ok(new Date(o.expiresAt) > new Date(Date.now() + 6 * 86400e3));
+  }
+  await admin("trial", { open: true, months: 1, daily: 1000 });
+
+  // A code typed on a Bulgarian keyboard: Cyrillic letters that look like Latin ones count as those.
+  const made = await admin("trener-codes", { count: 1, batch: `cyr-${run}` });
+  const code = made.codes[0].replace(/-/g, "");
+  const LOOK = { A: "А", B: "В", E: "Е", K: "К", M: "М", H: "Н", P: "Р", C: "С", T: "Т", X: "Х", Y: "У" };
+  const typed = code.replace(/[ABEKMHPCTXY]/g, (c) => LOOK[c]).toLowerCase();
+  r = await t("trener/open", { code: typed, device: dev(3) });
+  assert.equal(r.status, 200);
+  assert.equal(r.code, fmt(code));
+
+  // A new code bought with a card is chosen before paying (it is in the receipt) and works only after the payment.
+  await admin("plans", { plans: [{ id: `full12-${run}`, title: "Пълен – 12 месеца", tier: "full", months: 12, price: 39.9 }] });
+  r = await t("pay/checkout", { plan: `full12-${run}`, agree: true });
+  const session = new URL(r.url).searchParams.get("fake");
+  const pay = (await admin("payments")).payments.find((p) => p.session === session);
+  assert.match(pay.code, /^[A-Z0-9]{10}$/, "the code is chosen at the start");
+  assert.equal(pay.status, "open");
+  r = await t("trener/open", { code: pay.code, device: dev(4) });
+  assert.equal(r.status, 404, "not before the payment");
+  await t("pay/fake-pay", { session });
+  r = await t(`pay/status?s=${session}`);
+  assert.equal(r.status, "paid");
+  assert.equal(r.code, fmt(pay.code), "the code in the receipt is the code that works");
+  r = await t("trener/open", { code: pay.code, device: dev(4) });
+  assert.equal(r.access.tier, "full");
+  assert.equal(r.access.trial, false);
+});
+
+test("math tasks like on the NVO: added on top of the bank, the first module free in Старт", async () => {
+  const t = client();
+  const before = await admin("trener-bank");
+  assert.ok(before.questions.length > 0);
+  const mods = [{ id: "mz-chisla", area: "math", sec: "num", title: "Числа и действия", desc: "" }, { id: "mz-geometria", area: "math", sec: "geo", title: "Геометрия", desc: "" }];
+  const questions = mods.flatMap((m) => [1, 2, 3].map((i) => ({ id: `${m.id}-0${i}`, m: m.id, t: "input", h: 1, q: `Колко е 2 · ${i}?`, a: [String(2 * i)], num: [2 * i], why: "Обяснение, което е достатъчно дълго за водния знак." })));
+  let r = await admin("trener-bank-add", { modules: mods, questions });
+  assert.equal(r.ok, true);
+  const after = await admin("trener-bank");
+  assert.equal(after.questions.length, before.questions.length + 6);
+  assert.ok(before.modules.every((m) => after.modules.some((x) => x.id === m.id)), "nothing else is lost");
+  assert.deepEqual(after.math, before.math);
+  // Again with fewer tasks: the module is replaced, not doubled.
+  await admin("trener-bank-add", { modules: mods, questions: questions.slice(0, 4) });
+  assert.equal((await admin("trener-bank")).questions.length, before.questions.length + 4);
+  r = await admin("trener-bank-add", { modules: mods.slice(0, 1), questions });
+  assert.equal(r.error, "bank", "a task of a module that is not in the list is refused");
+
+  // Старт: the first math module is open, the others come only as locked titles; the cards are as before.
+  const c = await admin("trener-codes", { count: 1, batch: `mz-${run}`, tier: "start" });
+  const o = await t("trener/open", { code: c.codes[0], device: "ab".repeat(24) });
+  const ids = o.bank.modules.map((m) => m.id);
+  assert.ok(ids.includes("mz-chisla") && ids.includes("mk-4"));
+  assert.ok(!ids.includes("mz-geometria") && !ids.includes("mk-12"));
+  assert.ok(o.bank.locked.modules.some((m) => m.id === "mz-geometria"));
+  assert.ok(!o.bank.questions.some((q) => q.m === "mz-geometria"), "locked tasks never reach the browser");
+});

@@ -76,5 +76,6 @@ export function readingHtml(data) {
   const audio = d.audio ? `<audio controls preload="none" src="${esc(d.audio)}"></audio>${d.audioBy ? `<p class="small muted">Чете: ${esc(d.audioBy)}</p>` : ""}` : "";
   const glossary = d.glossary?.length ? `<dl class="gloss">${d.glossary.map((g) => `<div><dt>${esc(g.w)}</dt><dd>${esc(g.m)}</dd></div>`).join("")}</dl>` : "";
   const text = d.text ? `<div class="ltext">${paras(d.text)}</div>${d.source ? `<p class="small muted">Източник: ${esc(d.source)}</p>` : ""}` : "";
-  return part(READING_PARTS[0], audio) + part(READING_PARTS[1], glossary) + part(READING_PARTS[2], text);
+  // The recordings are paused: the audio part shows only where a reading already has its recording.
+  return (audio ? part(READING_PARTS[0], audio) : "") + part(READING_PARTS[1], glossary) + part(READING_PARTS[2], text);
 }

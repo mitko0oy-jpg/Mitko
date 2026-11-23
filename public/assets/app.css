@@ -141,7 +141,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--l1);outline:none}
 
 /* landing */
 .hero{padding:10px 0 6px}
-.hero h1 .accent{color:var(--gold)}
+.hero h1 .accent,.hero h2 .accent{color:var(--gold)}
+.hero h2{font-size:clamp(24px,5vw,32px)}
+hr.sep{border:0;border-top:1px solid var(--paper-edge);margin:26px 0 18px}
 .points{display:grid;gap:12px;margin:22px 0 0;padding:0;list-style:none}
 .points li{background:var(--paper);border:1px solid var(--paper-edge);border-radius:12px;padding:12px 14px}
 .points li b{display:block;color:var(--ink);font-family:var(--serif);font-size:18px}

@@ -1,0 +1,6 @@
+{
+  "about": "Files that are live on app.edubel.site but are not in git (paid content, *.pdf is ignored). scripts/release.mjs puts each one in the release folder: from this checkout if it is here, otherwise downloaded from the live site.",
+  "files": [
+    "public/podarak/Edu-BEL-200-vaprosa.pdf"
+  ]
+}

@@ -7,6 +7,8 @@
 //   ... node scripts/admin.mjs users example.com
 //   ... node scripts/admin.mjs delete-user parent@example.com
 //   ... node scripts/admin.mjs trener-bank private/nvo-trener/bank-all.json   (НВО тренажор: questions)
+//   ... node scripts/admin.mjs trener-bank-get [private/nvo-trener/bank-live.json]   (the questions served now)
+//   ... node scripts/admin.mjs trener-bank-add <file with {modules, questions}>   (add or replace whole modules)
 //   ... node scripts/admin.mjs trener-codes '{"count":150,"batch":"pdf-2026-11"}' | trener-list pdf-2026-11
 //   ... node scripts/admin.mjs role owner@example.com admin
 //   ... node scripts/admin.mjs trener-backup [private/backups/trener-YYYY-MM-DD.json]   (codes + grades, keep it safe)
@@ -45,6 +47,15 @@ else if (cmd === "codes") out = await call("POST", "codes", JSON.parse(a || "{}"
 else if (cmd === "item") out = await call("POST", `items/${a}`, JSON.parse(b || "{}"));
 else if (cmd === "trener-bank") out = await call("POST", "trener-bank", JSON.parse(await readFile(a, "utf8")));
 else if (cmd === "trener-codes") out = await call("POST", "trener-codes", JSON.parse(a || "{}"));
+else if (cmd === "trener-bank-add") out = await call("POST", "trener-bank-add", JSON.parse(await readFile(a, "utf8")));
+else if (cmd === "trener-bank-get") {
+  const data = await call("GET", "trener-bank");
+  const file = a || "private/nvo-trener/bank-live.json";
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(data));
+  const math = (data.modules || []).filter((m) => m.area === "math");
+  out = { file, id: data.id, modules: (data.modules || []).length, questions: (data.questions || []).length, mathCards: data.math ? data.math.cards.length : 0, mathModules: math.map((m) => m.id).join(" ") };
+}
 else if (cmd === "trener-list") out = await call("GET", `trener-codes?batch=${encodeURIComponent(a || "")}`);
 else if (cmd === "role") out = await call("POST", "role", { email: a, role: b });
 else if (cmd === "trener-trace") out = await call("POST", "trener-trace", { text: await readFile(a, "utf8") });

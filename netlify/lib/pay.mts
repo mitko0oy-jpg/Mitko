@@ -11,7 +11,7 @@ import { env, HttpError } from "./http.mts";
 import { TIER_RANK } from "./trener.mts";
 
 export const stripeKey = () => env("STRIPE_SECRET_KEY") || "";
-export const isLive = () => stripeKey().startsWith("sk_live_");
+export const isLive = () => /^(sk|rk)_live_/.test(stripeKey());
 export const fakeMode = () => !stripeKey() && env("PAY_FAKE") === "1";
 
 /* ---------- settings (the free trial) ---------- */
@@ -93,8 +93,21 @@ export function verifySignature(payload: string, header: string, secret: string,
 }
 
 /* ---------- a checkout ---------- */
+// A code that is free both among the codes and among the payments still waiting.
+async function freshCode() {
+  for (let i = 0; i < 10; i++) {
+    const c = newCode();
+    const taken = await one("SELECT 1 FROM trener_keys WHERE code = $1 UNION ALL SELECT 1 FROM trener_payments WHERE code = $1", [c]);
+    if (!taken) return c;
+  }
+  throw new HttpError(500, "server_error", "Нещо се обърка. Опитай пак.");
+}
+
 export async function startCheckout(plan: any, forCode: string | null, origin: string) {
-  const name = `НВО тренажор – ${plan.title}`;
+  // A new code is chosen now and written in the name of the purchase, so it is also in Stripe's receipt by e-mail:
+  // the parent keeps it even if the page after paying is closed. It starts to work only once the payment is through.
+  const newOne = forCode ? null : await freshCode();
+  const name = `НВО тренажор – ${plan.title} · ${forCode ? `удължаване на код ${formatCode(forCode)}` : `код ${formatCode(newOne!)}`}`;
   let session: string, url: string;
   if (stripeKey()) {
     const s = await stripe("POST", "checkout/sessions", {
@@ -105,8 +118,11 @@ export async function startCheckout(plan: any, forCode: string | null, origin: s
       line_items: { 0: { quantity: 1, price_data: { currency: plan.currency || "eur", unit_amount: plan.price_cents, product_data: { name, description: plan.note || undefined } } } },
       // EU: digital content that starts at once – the parent agrees to the terms (they explain the 14 days) before paying.
       consent_collection: env("STRIPE_TERMS") === "1" ? { terms_of_service: "required" } : undefined,
-      payment_intent_data: { description: forCode ? `${name} · ${formatCode(forCode)}` : name },
-      metadata: { plan: plan.id, for_code: forCode || "" },
+      custom_text: { submit: { message: forCode
+        ? `След плащането достъпът на код ${formatCode(forCode)} се удължава веднага – детето продължава със същия бележник.`
+        : `Кодът на детето е ${formatCode(newOne!)}. Ще го видиш веднага след плащането, а го има и в разписката на имейла ти.` } },
+      payment_intent_data: { description: name },
+      metadata: { plan: plan.id, for_code: forCode || "", code: newOne || "" },
     });
     session = s.id;
     url = s.url;
@@ -117,9 +133,9 @@ export async function startCheckout(plan: any, forCode: string | null, origin: s
     throw new HttpError(503, "pay_off", "Плащането с карта още не е включено. Пиши ни и ще помогнем.");
   }
   await q(
-    `INSERT INTO trener_payments (session, plan, tier, subject, months, until, amount_cents, currency, for_code, live)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [session, plan.id, plan.tier, plan.subject, plan.months, plan.until, plan.price_cents, plan.currency || "eur", forCode, isLive()],
+    `INSERT INTO trener_payments (session, plan, tier, subject, months, until, amount_cents, currency, for_code, code, live)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [session, plan.id, plan.tier, plan.subject, plan.months, plan.until, plan.price_cents, plan.currency || "eur", forCode, newOne, isLive()],
   );
   return { session, url };
 }
@@ -150,8 +166,10 @@ export async function fulfill(session: string, email?: string | null) {
         else await t("UPDATE trener_keys SET valid_until = $2::timestamptz, months = NULL, days = NULL, tier = $3, subject = $4 WHERE code = $1", [code, until, tier, subject]);
       }
     } else {
+      // The code chosen at the start of the payment (it is in the receipt); a new one only if it got taken meanwhile.
+      code = null;
       for (let i = 0; i < 10 && !code; i++) {
-        const c = newCode();
+        const c = i === 0 && p.code ? p.code : newCode();
         const r = await t(
           `INSERT INTO trener_keys (code, batch, max_devices, months, valid_until, kind, tier, subject, note)
            VALUES ($1, $2, 3, $3, $4, 'access', $5, $6, $7) ON CONFLICT (code) DO NOTHING RETURNING code`,
@@ -174,6 +192,15 @@ export async function checkWithStripe(session: string) {
   return null;
 }
 
+// A code from a payment whose page was closed before we heard about it (and no webhook came): ask Stripe now.
+// True when the code exists after this.
+export async function activateIfPaid(code: string) {
+  const p = await one<{ session: string }>("SELECT session FROM trener_payments WHERE code = $1 AND for_code IS NULL AND status = 'open'", [code]);
+  if (!p) return false;
+  const done = await checkWithStripe(p.session).catch(() => null);
+  return !!(done && done.status === "paid");
+}
+
 /* ---------- the free trial ---------- */
 // One click on /dostap/: a new code at the full level for a short time (setting "trial": {open, months|days, daily}).
 // After that the code falls back to Старт with all its grades. A few per address a day, a cap a day for everybody.
@@ -191,6 +218,28 @@ export async function trialCode() {
       [c, `проба-${new Date().toISOString().slice(0, 7)}`, months, days],
     );
     if (r.length) return { code: c, months, days };
+  }
+  throw new HttpError(500, "server_error", "Нещо се обърка. Опитай пак.");
+}
+
+// The demo: one tap in the trainer („Разгледай безплатно“) or app.edubel.site/demo. While the free trial is open and
+// today's places last, it is the trial (everything, for a short time); otherwise a code at the free level Старт
+// (no term). Either way the child is in the trainer at once, with no card, e-mail or account.
+export async function demoCode(trialAllowed: boolean) {
+  if (trialAllowed) {
+    try {
+      return { ...(await trialCode()), tier: "full" };
+    } catch (e: any) {
+      if (!["trial_closed", "trial_full"].includes(e?.code)) throw e;
+    }
+  }
+  for (let i = 0; i < 10; i++) {
+    const c = newCode();
+    const r = await q(
+      `INSERT INTO trener_keys (code, batch, max_devices, kind, tier) VALUES ($1, $2, 3, 'access', 'start') ON CONFLICT (code) DO NOTHING RETURNING code`,
+      [c, `демо-${new Date().toISOString().slice(0, 7)}`],
+    );
+    if (r.length) return { code: c, months: null, days: null, tier: "start" };
   }
   throw new HttpError(500, "server_error", "Нещо се обърка. Опитай пак.");
 }

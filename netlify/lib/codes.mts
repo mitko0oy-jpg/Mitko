@@ -5,7 +5,9 @@ import { bad } from "./http.mts";
 // No 0/O, 1/I/L: codes are read from paper and typed on phones.
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-export const normalizeCode = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+// Typed on a Bulgarian keyboard: Cyrillic letters that look like the Latin ones count as those (А → A, В → B …).
+const LOOKALIKE: Record<string, string> = { А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H", Р: "P", С: "C", Т: "T", Х: "X", У: "Y" };
+export const normalizeCode = (s: string) => String(s || "").toUpperCase().replace(/[АВЕКМНРСТХУ]/g, (c) => LOOKALIKE[c]).replace(/[^A-Z0-9]/g, "");
 export const formatCode = (c: string) => (c.length === 10 ? `${c.slice(0, 5)}-${c.slice(5)}` : c);
 
 export function newCode(len = 10) {

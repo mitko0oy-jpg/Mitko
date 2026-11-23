@@ -4,6 +4,7 @@ import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { listReports, setReport } from "../lib/reports.mts";
+import { activateIfPaid } from "../lib/pay.mts";
 import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
@@ -45,7 +46,11 @@ async function findKey(req: Request, ctx: any, code: string, forUpdate?: (text: 
   const rows = forUpdate
     ? await forUpdate("SELECT * FROM trener_keys WHERE code = $1 FOR UPDATE", [code])
     : await q("SELECT * FROM trener_keys WHERE code = $1", [code]);
-  const key = rows[0];
+  let key = rows[0];
+  // Paid a minute ago, but the page after paying was closed (and no webhook yet): the code from the receipt still opens.
+  if (!key && (await activateIfPaid(code))) {
+    key = (forUpdate ? await forUpdate("SELECT * FROM trener_keys WHERE code = $1 FOR UPDATE", [code]) : await q("SELECT * FROM trener_keys WHERE code = $1", [code]))[0];
+  }
   if (!key) {
     // Guessing codes is pointless (31^10 combinations), but slow it down anyway.
     if (!(await hit(`trener-miss:${clientIp(req, ctx)}`, 20, 3600))) throw tooMany();
@@ -132,7 +137,8 @@ export default handle(async (req, ctx) => {
       maxDevices: res.key.max_devices,
       idleDays: DEVICE_IDLE_DAYS,
       expiresAt: res.expiresAt,
-      access: { tier: acc.tier, name: TIER_NAME[acc.tier], subject: acc.subject, expired: acc.expired, paid: acc.paidTier },
+      // trial: the free trial or the demo (the board says so, without any offer to the child)
+      access: { tier: acc.tier, name: TIER_NAME[acc.tier], subject: acc.subject, expired: acc.expired, paid: acc.paidTier, trial: /^(проба|демо)-/.test(String(res.key.batch || "")) },
       devices: await devicesOf(code, dev),
       state: res.state,
       bankId: bankKey,
