@@ -403,6 +403,23 @@ if (cartDlg) document.addEventListener("click", (e) => {
 
 /* ---------- links between the store pages follow the settings ---------- */
 for (const a of $$("[data-store]")) a.href = href(a.dataset.store, a.hash || "");
+// a button straight to a package's own order page (no cart, no choosing again): <a data-checkout="trio">
+for (const a of $$("a[data-checkout]")) if (CHECKOUT[a.dataset.checkout]) a.href = CHECKOUT[a.dataset.checkout];
+// a line of a limited offer: <p data-until="2026-11-29T23:59:59+02:00"> is gone after that moment
+for (const el of $$("[data-until]")) if (Date.now() > Date.parse(el.dataset.until)) el.remove();
+
+/* ---------- home: the real card – "Виж отговора" turns it over (a tap on the card does too) ---------- */
+for (const btn of $$("[data-primer-flip]")) {
+  const card = btn.closest(".primer")?.querySelector(".flip");
+  if (!card) continue;
+  const label = () => (btn.textContent = card.classList.contains("flipped") ? "Виж въпроса" : "Виж отговора");
+  btn.addEventListener("click", () => {
+    card.classList.toggle("flipped");
+    card.setAttribute("aria-pressed", String(card.classList.contains("flipped")));
+    label();
+  });
+  new MutationObserver(label).observe(card, { attributes: true, attributeFilter: ["class"] });
+}
 
 // Texts that follow the free-delivery threshold: <span data-free="или">2 или 3</span> gets the deck counts,
 // [data-free-duo] is about free delivery with two decks – without it the text in the attribute stays, or nothing.

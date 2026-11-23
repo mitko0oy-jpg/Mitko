@@ -141,7 +141,8 @@ function markup(html) {
   let body = html.slice(html.indexOf(">", html.indexOf("<body")) + 1, html.indexOf("</body>"));
   body = body.replace(/"\/karti-nvo\/media\//g, `"${CDN}/karti-nvo/media/`).replace(/"\/assets\/logo\.png"/g, `"${CDN}/assets/logo.png"`);
   body = body.replace(/href="(\/[^"#]*)(#[^"]*)?"/g, (m, page, hash = "") => (PATHS[page] ? `href="${PATHS[page]}${hash}"` : m));
-  const ownPaths = new Set(Object.values(LINKS));
+  // links to the store pages and to the order pages of the packages (a button straight to an order)
+  const ownPaths = new Set([...Object.values(LINKS), ...Object.values(CHECKOUT)]);
   for (const m of body.matchAll(/(src|href|poster)="(\/[^"]*)"/g)) {
     if (m[2].startsWith("//")) continue;
     if (!ownPaths.has(m[2].split("#")[0])) throw new Error(`Relative link left: ${m[0]}`);
