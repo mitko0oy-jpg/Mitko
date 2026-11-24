@@ -18,6 +18,8 @@ process.env.ADMIN_TOKEN ||= "local-admin-token-local-admin-token-0000";
 process.env.TEST_MODE ||= "1";
 // Paying locally: a practice payment instead of Stripe, and a known webhook secret for the tests (never in production).
 process.env.PAY_FAKE ||= "1";
+// AI locally: a practice text instead of the model (there is no AI Gateway on the local server).
+process.env.AI_FAKE ||= "1";
 process.env.STRIPE_WEBHOOK_SECRET ||= "whsec_local_test_secret";
 globalThis.Netlify = { env: { get: (k) => process.env[k] } };
 

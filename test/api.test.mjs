@@ -688,3 +688,45 @@ test("an invitation link: every device gets its own code with everything and no 
   const d = await admin("invites", { batch: `тест-чернови-${run}`, drafts: true });
   assert.match(d.batch, /^преглед-/);
 });
+
+test("personal trainer: skills travel with the bank, the log of answers merges, „Обясни ми“ only for visible tasks", async () => {
+  const t = client();
+  const skills = [{ id: "b-chlen", t: "Пълен и кратък член", sec: "lang", w: 3, n: 1 }, { id: "b-zapetaya", t: "Запетая", sec: "lang", w: 2, n: 2 }, { id: "m-procenti", t: "Проценти", sec: "m-pct", w: 3, n: 1 }];
+  const mods = [{ id: "pravopis", area: "lang", title: "Правопис", desc: "" }, { id: "glagol", area: "lang", title: "Глагол", desc: "" }, { id: "mk-4", area: "math", sec: "pct", title: "Карта 4", desc: "" }];
+  const questions = [];
+  for (const [m, sk] of [["pravopis", "b-chlen"], ["glagol", "b-zapetaya"], ["mk-4", "m-procenti"]]) for (let i = 0; i < 4; i++) questions.push({ id: `${m}-${i}`, m, sk, t: "mc", q: `Въпрос ${i}`, o: ["верен", "грешен", "друг", "трети"], a: 0, why: "Правилото е такова, обяснение достатъчно дълго за водния знак." });
+  await admin("trener-bank", { passages: {}, questions, modules: mods, skills, math: { title: "М", sections: [{ id: "pct", t: "Проценти" }], index: [{ n: 4, title: "Карта 4", sec: "pct" }], cards: [{ n: 4, title: "Карта 4", sec: "pct", front: [], back: [] }] } });
+  const code = (await admin("trener-codes", { count: 1, batch: `sk-${run}` })).codes[0];
+  const d1 = "d1".repeat(24), d2 = "d2".repeat(24);
+  let r = await t("trener/open", { code, device: d1 });
+  assert.deepEqual(r.bank.skills.map((x) => x.id), skills.map((x) => x.id));
+  assert.equal(r.bank.questions.find((q) => q.id === "pravopis-0").sk, "b-chlen");
+
+  // The log from two devices is merged; the same answer twice counts once.
+  const now = Date.now();
+  await t("trener/save", { code, device: d1, state: { hist: [], log: [[now - 3000, "pravopis-0", 0], [now - 2000, "pravopis-1", 1]], diag: { bel: now - 4000 }, at: now - 1000 } });
+  await t("trener/open", { code, device: d2 });
+  r = await t("trener/save", { code, device: d2, state: { hist: [], log: [[now - 2000, "pravopis-1", 1], [now - 500, "mk-4-0", 1], ["bad", "x", 1]], diag: {}, at: now } });
+  assert.deepEqual(r.state.log.map((e) => e[1]), ["pravopis-0", "pravopis-1", "mk-4-0"]);
+  assert.ok(r.state.diag.bel > 0, "the entry test stays done");
+
+  // „Обясни ми“: a short explanation built on the task (the local server gives a practice text).
+  r = await t("trener/explain", { code, device: d1, id: "pravopis-0", answer: "грешен" });
+  assert.equal(r.status, 200);
+  assert.ok(r.text.includes("верен"), "it names the right answer");
+  r = await t("trener/explain", { code, device: "ff".repeat(24), id: "pravopis-0", answer: "x" });
+  assert.equal(r.error, "device_removed", "only from a device of the code");
+  // Старт sees neither glagol nor mk-4 → no explanation for them; and at most 5 a day.
+  const start = (await admin("trener-codes", { count: 1, batch: `sk-start-${run}`, tier: "start" })).codes[0];
+  await t("trener/open", { code: start, device: d1 });
+  r = await t("trener/explain", { code: start, device: d1, id: "glagol-0", answer: "x" });
+  assert.equal(r.status, 404);
+  for (let i = 0; i < 4; i++) await t("trener/explain", { code: start, device: d1, id: "pravopis-0", answer: "x" });
+  r = await t("trener/explain", { code: start, device: d1, id: "pravopis-0", answer: "x" });
+  assert.equal(r.error, "explain_daily", "five a day without the full level (the 404 counted too)");
+
+  // A full reset clears the log and the entry tests.
+  r = await t("trener/save", { code, device: d1, state: { hist: [], log: [], diag: {}, resetAt: Date.now(), at: Date.now() + 10 } });
+  assert.equal(r.state.log.length, 0);
+  assert.deepEqual(r.state.diag, {});
+});

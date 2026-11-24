@@ -220,7 +220,9 @@ export default handle(async (req, ctx) => {
     const dossiers = b.dossiers && typeof b.dossiers === "object" && Array.isArray(b.dossiers.dossiers) ? b.dossiers : null;
     // Math for НВО (the 50 cards; their practice is in questions/modules), also optional.
     const math = b.math && typeof b.math === "object" && Array.isArray(b.math.cards) && Array.isArray(b.math.sections) ? b.math : null;
-    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math })]);
+    // The skills of the skill map (each task names its skill in "sk"), also optional.
+    const skills = Array.isArray(b.skills) ? b.skills : null;
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math, skills })]);
     return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0, mathCards: math ? math.cards.length : 0 });
   }
 
@@ -244,7 +246,9 @@ export default handle(async (req, ctx) => {
     const d = cur.data;
     const keepMods = (d.modules || []).filter((m: any) => !ids.has(m.id));
     const keepQs = (d.questions || []).filter((x: any) => !ids.has(x.m) && !qids.has(x.id));
-    const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) } };
+    // New skills (for the skill map) are added or replace the ones with the same id.
+    const skills = Array.isArray(b.skills) ? [...(d.skills || []).filter((x: any) => !b.skills.some((y: any) => y.id === x.id)), ...b.skills] : d.skills || null;
+    const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) }, skills };
     const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify(next)]);
     return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length });
   }

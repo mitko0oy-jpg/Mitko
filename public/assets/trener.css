@@ -746,3 +746,35 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .demobox p{margin:0;color:var(--text);max-width:52ch}
 .demobox .err{color:var(--coral)}
 #updBar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+
+/* The personal trainer: the skill map („Какво знам“), today's plan, the entry test and „Обясни ми“ */
+.skmap{background:var(--paper);border-radius:22px;padding:16px 16px 18px;display:grid;gap:12px;box-shadow:0 1px 0 var(--edge)}
+.skmap.intro{box-shadow:inset 0 0 0 2px var(--gold),0 1px 0 var(--edge)}
+.skmap.intro p{margin:0;max-width:60ch}
+.skmap .sec-hd{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
+.sk-plan{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;background:var(--band);border-radius:16px;padding:12px 14px}
+.sk-plan div{display:grid;gap:2px;flex:1 1 220px}
+.sk-plan small{color:var(--muted)}
+.sk-sec{display:grid;gap:8px}
+.sk-sec h3{margin:4px 0 0;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sk-list{display:flex;flex-wrap:wrap;gap:8px}
+.sk{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:8px 12px;font:600 14px/1.2 var(--sans,inherit);color:var(--ink);background:var(--band);cursor:pointer;text-align:left}
+.sk i{width:12px;height:12px;border-radius:50%;flex:none;background:var(--muted);opacity:.45}
+.sk.good{background:color-mix(in srgb,var(--mint) 16%,var(--paper))}.sk.good i{background:var(--mint);opacity:1}
+.sk.mid{background:color-mix(in srgb,var(--gold) 20%,var(--paper))}.sk.mid i{background:var(--gold);opacity:1}
+.sk.weak{background:color-mix(in srgb,var(--coral) 15%,var(--paper))}.sk.weak i{background:var(--coral);opacity:1}
+.sk:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.sk-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;font-size:13px;color:var(--muted)}
+.sk-legend span{display:inline-flex;align-items:center;gap:6px}
+.sk-legend i{width:10px;height:10px;border-radius:50%;background:var(--muted);opacity:.45}
+.sk-legend i.good{background:var(--mint);opacity:1}.sk-legend i.mid{background:var(--gold);opacity:1}.sk-legend i.weak{background:var(--coral);opacity:1}
+.skmap.after h2{margin:0;font-size:18px}
+.sk-moves{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.sk-moves li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.sk-moves small{color:var(--muted);font-weight:600}
+.res.diag .medal{display:none}
+.explain{margin-top:10px}
+.explain.ask{display:flex}
+.explain[role="status"]{background:var(--band);border-radius:16px;padding:12px 14px;display:grid;gap:4px}
+.explain p{margin:0}
+.explain .err{color:var(--coral)}

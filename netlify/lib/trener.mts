@@ -66,6 +66,7 @@ export function readMarks(text: string) {
 //   resetAt, resets: {module: ts}, at }
 const ID = /^[a-z0-9-]{1,24}$/;
 const MIN_TS = Date.UTC(2026, 0, 1);
+const LOG_MAX = 3000;
 const int = (v: unknown, lo: number, hi: number) => (Number.isFinite(Number(v)) ? Math.max(lo, Math.min(hi, Math.round(Number(v)))) : lo);
 const ts = (v: unknown) => {
   const n = Number(v);
@@ -73,7 +74,7 @@ const ts = (v: unknown) => {
 };
 
 export function cleanState(s: any) {
-  const out: any = { name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 };
+  const out: any = { name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0, log: [], diag: {} };
   if (!s || typeof s !== "object") return out;
   out.name = typeof s.name === "string" ? s.name.trim().slice(0, 40) : "";
   // The picture the child chose (Erčo or a hero from the game), by its file name.
@@ -110,6 +111,15 @@ export function cleanState(s: any) {
       if (ID.test(k) && v && typeof v === "object") out.mist[k] = { n: int(v.n, 0, 999), ok: int(v.ok, 0, 9), d: ts(v.d) };
     }
   }
+  // The log of answers – [time, task id, 1 right / 0 wrong] – from which the browser works out the skill map,
+  // the review days and today's plan. The newest 3000 are kept.
+  if (Array.isArray(s.log)) {
+    for (const e of s.log.slice(-LOG_MAX)) {
+      if (Array.isArray(e) && ts(e[0]) && typeof e[1] === "string" && ID.test(e[1])) out.log.push([ts(e[0]), e[1], e[2] ? 1 : 0]);
+    }
+  }
+  // When the entry test of each subject was done.
+  if (s.diag && typeof s.diag === "object") for (const k of ["bel", "math"]) if (ts(s.diag[k])) out.diag[k] = ts(s.diag[k]);
   return out;
 }
 
@@ -128,7 +138,13 @@ export function mergeState(a: any, b: any) {
     .sort((x, y) => x.d - y.d)
     .slice(-1000);
   const newer = b.at >= a.at ? b : a;
-  return { name: newer.name, avatar: newer.avatar, hist, mist: newer.mist, dos: newer.dos, resetAt, resets, at: Math.max(a.at, b.at) };
+  // Answers from both devices are all kept (the same answer twice is one), apart from those before a full reset.
+  const seen = new Map<string, [number, string, number]>();
+  for (const e of [...a.log, ...b.log]) if (e[0] > resetAt) seen.set(`${e[0]}|${e[1]}`, e);
+  const log = [...seen.values()].sort((x, y) => x[0] - y[0]).slice(-LOG_MAX);
+  const diag: Record<string, number> = {};
+  for (const k of ["bel", "math"]) { const v = Math.max(a.diag[k] || 0, b.diag[k] || 0); if (v > resetAt) diag[k] = v; }
+  return { name: newer.name, avatar: newer.avatar, hist, mist: newer.mist, dos: newer.dos, resetAt, resets, at: Math.max(a.at, b.at), log, diag };
 }
 
 // "iPhone · Safari", "Android · Chrome" – just enough for the family to recognise its devices.

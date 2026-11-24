@@ -2,7 +2,8 @@ import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
-import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { bad, body, clientIp, env, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { explainMistake } from "../lib/ai.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { activateIfPaid, settleRenewals } from "../lib/pay.mts";
 import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, isReviewBatch, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
@@ -192,6 +193,28 @@ export default handle(async (req, ctx) => {
   }
 
   // Frees a place: from one of the registered devices, remove another one (or this one).
+  // „Обясни ми“: after a wrong answer, a short explanation of this very mistake by AI, built on the task's checked
+  // explanation. Only for tasks this code can see. A day: 30 with everything, 5 otherwise; a cap for everybody.
+  if (parts[0] === "explain") {
+    await requireDevice(code, b.device);
+    const key = await findKey(req, ctx, code);
+    const acc = accessOf(key);
+    const day = new Date().toISOString().slice(0, 10);
+    if (!(await hit(`explain:${code}:${day}`, acc.tier === "full" ? 30 : 5, 86400)))
+      throw new HttpError(429, "explain_daily", "За днес обясненията на Ерчо свършиха. Прочети обяснението под задачата – утре пак.");
+    if (!(await hit(`ai:global:${day}`, Number(env("AI_GLOBAL_DAILY") || 3000), 86400)))
+      throw new HttpError(503, "ai_busy", "Ерчо е зает днес. Прочети обяснението под задачата.");
+    const bank = await latestBank();
+    if (!bank) throw new HttpError(503, "not_ready", "Тренажорът още се подготвя.");
+    const data = tierBank(bank.data, acc.tier, acc.subject, isReviewBatch(key.batch));
+    const task = (data.questions || []).find((x: any) => x.id === str(b.id, 40));
+    if (!task) throw notFound("Няма такава задача.");
+    const ps = task.p ? data.passages?.[task.p] : null;
+    const text = await explainMistake(task, str(b.answer, 300), ps ? (Array.isArray(ps.text) ? ps.text.join(" ") : String(ps.text || "")) : undefined);
+    await event("trener_explain", { tier: acc.tier });
+    return json({ text });
+  }
+
   if (parts[0] === "forget") {
     await findKey(req, ctx, code);
     const dev = await requireDevice(code, b.device);

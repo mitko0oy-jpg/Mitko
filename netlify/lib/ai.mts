@@ -84,3 +84,37 @@ export async function jsonCall<T = any>(system: string, user: string, schema: ob
     wrapErr(e);
   }
 }
+
+// „Обясни ми“ in the НВО тренажор: after a wrong answer, a short explanation of this very mistake. It is built only on
+// the task, its right answer and the checked explanation (why), so nothing new is made up. Locally (AI_FAKE=1) a
+// practice text instead of the AI.
+const plainText = (v: unknown) => String(v ?? "").replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ").replace(/[\u200B-\u200D\u2060\uFEFF]/g, "").replace(/\s+/g, " ").trim();
+export function rightAnswerText(q: any) {
+  if (q.t === "mc") return plainText(q.o?.[q.a]);
+  if (q.t === "input" || q.t === "self") return plainText(q.a?.[0]);
+  if (q.t === "match") return (q.pairs || []).map((p: any) => `${plainText(p[0])} – ${plainText(p[1])}`).join("; ");
+  if (q.t === "order") return (q.items || []).map(plainText).join(" → ");
+  return "";
+}
+export async function explainMistake(q: any, answer: string, passage?: string): Promise<string> {
+  const right = rightAnswerText(q);
+  if (env("AI_FAKE") === "1") return `Тренировъчно обяснение: верният отговор е „${right}“. ${plainText(q.why)}`;
+  const system = `${safety(7)}
+
+Ти си Ерчо – треньорът в НВО тренажора. Ученикът току-що сгреши една задача и натисна „Обясни ми“. Обясни му само тази грешка:
+- 3–5 кратки изречения, на „ти“, топло и спокойно, без укор и без шеги за грешката;
+- първо кое е вярното и по кое правило или кой факт, после защо неговият отговор изкушава, но не е верен;
+- накрая една кратка подсказка как да разпознае подобна задача следващия път;
+- използваш САМО задачата, верния отговор и проверения коментар по-долу – без нови факти, дати, цитати или примери от други творби;
+- обикновен текст: без markdown, списъци и заглавия.`;
+  const user = [
+    passage ? `Текст към задачата (откъс): ${plainText(passage).slice(0, 2500)}` : "",
+    q.text ? `Към задачата: ${plainText(q.text)}` : "",
+    `Задача: ${plainText(q.q)}`,
+    q.t === "mc" ? `Възможни отговори: ${(q.o || []).map(plainText).join(" | ")}` : "",
+    `Верен отговор: ${right}`,
+    `Отговор на ученика: ${plainText(answer).slice(0, 300) || "без отговор"}`,
+    `Проверен коментар: ${plainText(q.why)}`,
+  ].filter(Boolean).join("\n");
+  return chat(system, [{ role: "user", content: user }], 450);
+}

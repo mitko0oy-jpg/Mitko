@@ -114,7 +114,7 @@ const KEY = "edubel-nvo-trener-v1";
 /* ---------- saved progress ---------- */
 // Standalone file: this browser only. On the site: a copy in this browser, synced to the server with the code.
 let canSave = true;
-const blank = () => ({ v: 1, name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0 });
+const blank = () => ({ v: 1, name: "", avatar: "", hist: [], mist: {}, dos: {}, resetAt: 0, resets: {}, at: 0, log: [], diag: {} });
 const ls = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
@@ -122,7 +122,7 @@ const ls = {
 };
 function normState(o) {
   if (!o || typeof o !== "object" || !Array.isArray(o.hist)) return blank();
-  return { ...blank(), ...o, v: 1, name: o.name || "", avatar: typeof o.avatar === "string" ? o.avatar : "", mist: o.mist || {}, dos: o.dos && typeof o.dos === "object" ? o.dos : {}, resets: o.resets || {} };
+  return { ...blank(), ...o, v: 1, name: o.name || "", avatar: typeof o.avatar === "string" ? o.avatar : "", mist: o.mist || {}, dos: o.dos && typeof o.dos === "object" ? o.dos : {}, resets: o.resets || {}, log: Array.isArray(o.log) ? o.log : [], diag: o.diag && typeof o.diag === "object" ? o.diag : {} };
 }
 function loadLocal() {
   try {
@@ -525,6 +525,153 @@ const ERCHO = [
   "Не бързай. Прочети въпроса два пъти – той често сам подсказва.",
 ];
 
+/* ---------- personal trainer: the skill map, the entry test and today's plan ----------
+   Each task names its skill (q.sk; the list with names and weights is BANK.skills). Every checked answer goes to
+   S.log [time, task, 1|0] (kept with the code, merged between devices). From the log the browser works out how sure
+   the child is in each skill (newer answers weigh more) and when each task comes back for review (1, 3, 7, 16, 35
+   days, back to the start after a mistake). The entry test gives the first map; „Планът за днес“ then mixes review,
+   the two skills that give most on the NVO and two from the rest. Practice here does not go to the gradebook. */
+const DAY = 864e5;
+const PRACTICE = ["mist", "plan", "skill", "diag"];
+const Skills = (() => {
+  const INT = [0, 1, 3, 7, 16, 35];
+  const SEC = { read: "Четене с разбиране", lang: "Български език", lit: "Литература", write: "Писане", "m-num": "Числа и действия", "m-pct": "Проценти и пари", "m-alg": "Алгебра", "m-mod": "Текстови задачи", "m-geo": "Геометрия", "m-dat": "Данни и вероятности" };
+  const ORDER = Object.keys(SEC);
+  const LV = { none: "още не е решавано", weak: "за упражнение", mid: "почти", good: "сигурно" };
+  const all = () => (BANK && Array.isArray(BANK.skills) ? BANK.skills : []);
+  const isM = (sk) => /^m-/.test(sk.sec || "");
+  let tasksBy = null, tasksFor = null;
+  function tasksOf(id) {
+    if (tasksFor !== BANK) { tasksBy = {}; tasksFor = BANK; for (const q of BANK.questions) if (q.sk && MOD[q.m]) (tasksBy[q.sk] || (tasksBy[q.sk] = [])).push(q); }
+    return tasksBy[id] || [];
+  }
+  const avail = (math) => all().filter((sk) => isM(sk) === !!math && tasksOf(sk.id).length);
+  const has = (math) => ONLINE && avail(math).length >= 3;
+  const subj = (math) => (math ? "math" : "bel");
+  const done = (math) => !!(S.diag && S.diag[subj(math)]);
+  let cache = null, cacheKey = "";
+  function stats() {
+    const log = S.log || [];
+    const key = `${log.length}:${log.length ? log[log.length - 1][0] : 0}:${BANK ? BANK.questions.length : 0}`;
+    if (cache && key === cacheKey) return cache;
+    const sk = {}, box = {};
+    for (const [t, id, c] of log) {
+      const q = Q[id];
+      if (!q) continue;
+      const w = q.t === "self" ? 0.5 : 1; // a self-check counts half
+      if (q.sk) { const x = sk[q.sk] || (sk[q.sk] = { num: 0.5, den: 1, n: 0 }); x.num = x.num * 0.8 + w * c; x.den = x.den * 0.8 + w; x.n++; }
+      const b = box[id] || (box[id] = { b: 0, due: 0, last: 0, n: 0 });
+      b.b = c ? Math.min(b.b + 1, 5) : 0; b.last = t; b.n++; b.due = t + INT[b.b] * DAY;
+    }
+    cache = { sk, box };
+    cacheKey = key;
+    return cache;
+  }
+  const score = (id) => { const x = stats().sk[id]; return x ? x.num / x.den : null; };
+  const levelOf = (id) => { const v = score(id); return v === null ? "none" : v < 0.45 ? "weak" : v < 0.7 ? "mid" : "good"; };
+  const snapshot = () => (BANK ? Object.fromEntries(all().map((sk) => [sk.id, levelOf(sk.id)])) : {});
+  const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return +d; };
+  const bySec = (a, b) => ORDER.indexOf(a.sec) - ORDER.indexOf(b.sec) || (a.n || 0) - (b.n || 0);
+
+  // The entry test: one task from every skill (two from the heaviest), at most 18 (БЕЛ) or 14 (математика).
+  function buildDiag(math) {
+    const cap = math ? 14 : 18, out = [];
+    const sks = avail(math).sort((a, b) => (b.w || 1) - (a.w || 1) || bySec(a, b));
+    let reading = 0;
+    for (const sk of sks) {
+      if (out.length >= cap) break;
+      const pool = shuffle(tasksOf(sk.id).filter((q) => q.t !== "self" && (!q.p || reading < 2)));
+      const take = pool.slice(0, (sk.w || 1) >= 3 && out.length < cap - 1 ? 2 : 1);
+      for (const q of take) { if (q.p) reading++; out.push(q); }
+    }
+    const sec = (q) => all().find((sk) => sk.id === q.sk) || {};
+    return out.slice(0, cap).sort((a, b) => bySec(sec(a), sec(b)) || (a.p || "").localeCompare(b.p || ""));
+  }
+  // Today's plan: up to 4 tasks whose review day has come, 3 + 3 from the two skills that give most
+  // (weight on the NVO × how unsure), 2 from other skills that are already fair. About 12 tasks, 15 minutes.
+  function buildPlan(math) {
+    const st = stats(), now = Date.now(), t0 = today0(), used = new Set(), out = [];
+    const add = (q) => { if (q && !used.has(q.id) && out.length < 12) { used.add(q.id); out.push(q); } };
+    const mine = (q) => q && q.sk && MOD[q.m] && qMath(q) === !!math;
+    Object.entries(st.box).filter(([id, b]) => mine(Q[id]) && b.due <= now && b.last < t0).sort((a, b) => a[1].due - b[1].due).slice(0, 4).forEach(([id]) => add(Q[id]));
+    const focus = avail(math).map((sk) => ({ sk, v: (sk.w || 1) * (1 - (score(sk.id) ?? 0.5)) })).sort((a, b) => b.v - a.v).slice(0, 2).map((x) => x.sk);
+    const fresh = (q) => (!st.box[q.id] ? 2 : st.box[q.id].last < now - 2 * DAY ? 1 : 0);
+    for (const sk of focus) shuffle(tasksOf(sk.id).filter((q) => q.t !== "self" && !used.has(q.id))).sort((a, b) => fresh(b) - fresh(a)).slice(0, 3).forEach(add);
+    for (const sk of shuffle(avail(math).filter((x) => !focus.includes(x) && (score(x.id) ?? 0) >= 0.45)).slice(0, 2)) add(shuffle(tasksOf(sk.id).filter((q) => !used.has(q.id)))[0]);
+    return { qs: out, focus };
+  }
+  function start(kind, m, title, qs, math) {
+    if (!qs.length) return home();
+    newSess(kind, m, title, qs);
+    sess.subj = subj(math);
+  }
+  const startDiag = (math) => start("diag", `diag-${subj(math)}`, math ? "Входен тест по математика" : "Входен тест по БЕЛ", buildDiag(math), math);
+  const startPlan = (math) => start("plan", "plan", "Планът за днес", buildPlan(math).qs, math);
+  function startSkill(id) {
+    const sk = all().find((x) => x.id === id);
+    if (!sk) return;
+    const st = stats(), now = Date.now();
+    const fresh = (q) => (!st.box[q.id] ? 2 : st.box[q.id].last < now - 2 * DAY ? 1 : 0);
+    start("skill", "skill", sk.t, shuffle(tasksOf(id)).sort((a, b) => fresh(b) - fresh(a)).slice(0, 8), isM(sk));
+    if (sess) sess.skillId = id;
+  }
+
+  function heroButton(math) {
+    if (!has(math)) return "";
+    if (!done(math)) return `<button class="btn gold big" data-act="diag"><span>▶</span> Започни с входния тест</button>`;
+    const n = buildPlan(math).qs.length;
+    return n ? `<button class="btn gold big" data-act="plan"><span>▶</span> Планът за днес · ${n} ${pl(n, "задача", "задачи")}</button>` : "";
+  }
+  function mapHtml(math) {
+    const sks = avail(math).sort(bySec), secs = [...new Set(sks.map((x) => x.sec))];
+    return secs.map((sec) => `<div class="sk-sec"><h3>${esc(SEC[sec] || sec)}</h3><div class="sk-list">${sks.filter((x) => x.sec === sec).map((x) => {
+      const lv = levelOf(x.id);
+      return `<button class="sk ${lv}" data-act="skill" data-k="${esc(x.id)}" aria-label="${esc(x.t)}: ${LV[lv]}. Упражни"><i aria-hidden="true"></i><span>${esc(x.t)}</span></button>`;
+    }).join("")}</div></div>`).join("") + `<p class="sk-legend"><span><i class="good"></i>сигурно</span><span><i class="mid"></i>почти</span><span><i class="weak"></i>за упражнение</span><span><i class="none"></i>още не е решавано</span></p>`;
+  }
+  function panel(math) {
+    if (!has(math)) return "";
+    if (!done(math)) {
+      const n = buildDiag(math).length;
+      return `<section class="skmap intro" id="skmap" aria-labelledby="skT"><h2 class="sec-t" id="skT">Започни оттук</h2>
+        <p>Входен тест: ${n} задачи от всичко ${math ? "по математика" : "по БЕЛ"}, около ${Math.max(10, Math.round(n * 1.1))} минути. После тренажорът знае какво вече можеш и всеки ден ти дава точно това, което ще ти донесе най-много точки.</p>
+        <button class="btn gold" data-act="diag">▶ Започни входния тест</button></section>`;
+    }
+    const sks = avail(math), c = { good: 0, mid: 0, weak: 0, none: 0 };
+    for (const x of sks) c[levelOf(x.id)]++;
+    const plan = buildPlan(math);
+    return `<section class="skmap" id="skmap" aria-labelledby="skT"><div class="sec-hd"><h2 class="sec-t" id="skT">Какво знам</h2><span class="muted small">${c.good} сигурни · ${c.mid} почти · ${c.weak} за упражнение</span></div>
+      ${plan.qs.length ? `<div class="sk-plan"><div><b>Планът за днес</b><small>${plan.qs.length} ${pl(plan.qs.length, "задача", "задачи")}, около ${Math.max(5, Math.round(plan.qs.length * 1.2))} минути · най-много ще ти донесат: ${plan.focus.map((x) => esc(x.t)).join(" и ")}</small></div><button class="btn gold" data-act="plan">▶ Започни</button></div>` : ""}
+      ${mapHtml(math)}
+      <p class="small muted">Докосни умение, за да го упражниш. Цветът се сменя с всяка решена задача, а сгрешеното се връща за преговор след 1, 3, 7 и 16 дни.</p></section>`;
+  }
+  // After practice: which skills moved.
+  function changes(s) {
+    const before = s.skBefore || {}, now = snapshot(), rank = { none: 0, weak: 1, mid: 2, good: 3 };
+    const ids = [...new Set(s.qs.map((q) => q.sk).filter(Boolean))];
+    if (!ids.length) return "";
+    const name = (id) => (all().find((x) => x.id === id) || {}).t || id;
+    return `<section class="skmap after"><h2>Как се промени картата</h2><ul class="sk-moves">${ids.map((id) => {
+      const a = before[id] || "none", b = now[id] || "none", up = rank[b] > rank[a], down = rank[b] < rank[a];
+      return `<li><span class="sk ${b}"><i aria-hidden="true"></i><span>${esc(name(id))}</span></span><small>${up ? `↑ ${LV[b]}` : down ? `↓ ${LV[b]} – ще се върне за преговор` : LV[b]}</small></li>`;
+    }).join("")}</ul></section>`;
+  }
+  // The end of the entry test: the first map and today's plan right away.
+  function diagResult(s, p, n) {
+    const math = s.subj === "math";
+    app.innerHTML = `<div class="qbar"><button class="back" data-act="home">← Табло</button><span class="qtitle">${esc(s.title)}</span><span></span></div>
+      <section class="res diag"><div class="res-art">${pic(mascot("detective"), "res-m", "", true)}</div>
+        <div class="info"><span class="eyebrow">Входен тест · не влиза в бележника</span><h1>Картата ти е готова</h1>
+          <p class="score">${p} от ${n} верни</p>
+          <p>Зеленото вече го можеш. Жълтото и червеното са мястото, където ще спечелиш най-много точки – оттам започва планът ти за днес.</p></div></section>
+      <section class="skmap" aria-label="Какво знам">${mapHtml(math)}</section>
+      <div class="row"><button class="btn gold" data-act="plan">▶ Планът за днес</button><button class="btn line" data-act="home">Към таблото</button></div>`;
+    window.scrollTo(0, 0);
+    if (p / n >= 0.7) setTimeout(() => FX.win(false), 250);
+  }
+  return { has, done, snapshot, heroButton, panel, changes, diagResult, startDiag, startPlan, startSkill };
+})();
+
 /* ---------- home: forecast, modules, gradebook ---------- */
 let sess = null, timer = null, histAll = false;
 
@@ -562,7 +709,7 @@ function home(scrollTo) {
           <p class="xp-t"><b>${lv.x} XP</b> · още ${lv.to - lv.x} до ниво ${lv.L + 1}</p>
         </div>
         <div class="hero-art"><button class="hero-say" data-act="hello" aria-label="${AUDIO ? "Чуй Ерчо" : "Какво казва Ерчо"}">${avatarPic("hero-m", true)}</button><p class="bubble" aria-live="polite">${esc(tip)}</p></div>
-        <div class="hero-go">${M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : LOCK() && LOCK().mock ? `<button class="btn gold big" data-act="parentShow"><span>🔓</span> Още задачи – покажи на родител</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`}</div>
+        <div class="hero-go">${Skills.heroButton(M) || (M ? (mx ? `<button class="btn gold big" data-act="mcard" data-n="${mx.c.n}"><span>▶</span> ${mx.again ? "Упражни пак" : "Започни"}: карта ${mx.c.n}</button>` : "") : nx ? `<button class="btn gold big" data-act="start" data-m="${nx.m.id}"><span>▶</span> ${nx.p === null ? "Започни" : "Продължи"}: ${esc(nx.m.title)}</button>` : LOCK() && LOCK().mock ? `<button class="btn gold big" data-act="parentShow"><span>🔓</span> Още задачи – покажи на родител</button>` : `<button class="btn gold big" data-act="mock"><span>▶</span> Пробна матура</button>`)}</div>
       </section>
       <div class="facts">${M ? `<span>${BANK.math.cards.length} ${pl(BANK.math.cards.length, "карта", "карти")}</span><span>${BANK.questions.filter(qMath).length} задачи</span><span>Решен пример и капани</span><span>Оценки 2–6</span>`
         : `<span>${nvoCount} задачи</span>${cardCount ? `<span>${cardCount} карти</span>` : ""}${BANK.dossiers ? `<span>${BANK.dossiers.dossiers.length} досиета</span>` : ""}<span>Оценки 2–6</span>${LOCK() && LOCK().mock ? "" : "<span>Пробна матура</span>"}`}</div>
@@ -571,6 +718,7 @@ function home(scrollTo) {
   if (ONLINE && Online.flash) { h += `<p class="okbox" role="status">${esc(Online.flash)}</p>`; Online.flash = ""; }
   if (ONLINE && Online.offline) h += `<p class="warnbox">Няма връзка с интернет. Можеш да решаваш – оценките ще се запишат, когато връзката се върне.</p>`;
   if (ONLINE) h += Update.banner() + Online.levelBanner();
+  h += Skills.panel(M);
   if (M) h += mathBoard();
   else h += forecastPanel(f, mist) + Game.card() + modulesSection() + soonSection();
   h += badgesSection();
@@ -933,7 +1081,7 @@ function initAns(q, v) {
 }
 function newSess(kind, m, title, qs) {
   const view = qs.map(prepView);
-  sess = { kind, m, title, qs, view, i: 0, ans: qs.map((q, i) => initAns(q, view[i])), ok: qs.map(() => null), checked: qs.map(() => false), t0: Date.now(), touched: false };
+  sess = { kind, m, title, qs, view, i: 0, ans: qs.map((q, i) => initAns(q, view[i])), ok: qs.map(() => null), checked: qs.map(() => false), t0: Date.now(), touched: false, skBefore: Skills.snapshot() };
   if (kind === "mock") startTimer();
   renderQ();
 }
@@ -1028,6 +1176,9 @@ function rightText(q) {
   return "";
 }
 function track(id, ok) {
+  // every checked answer goes to the log: the skill map and the review days are worked out from it
+  (S.log || (S.log = [])).push([Date.now(), id, ok ? 1 : 0]);
+  if (S.log.length > 3000) S.log.splice(0, S.log.length - 3000);
   if (!ok) {
     const m = S.mist[id] || { n: 0, ok: 0 };
     m.n++; m.ok = 0; m.d = Date.now();
@@ -1099,6 +1250,7 @@ function renderQ() {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
     h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
+    if (ONLINE && !ok && q.t !== "self") h += s.expl?.[s.i] ? `<div class="explain" role="status"><b>Ерчо обяснява</b><p>${esc(s.expl[s.i])}</p></div>` : `<div class="explain ask" id="expl"><button class="btn sm line" data-act="explain">Обясни ми тази грешка</button></div>`;
     if (ONLINE) h += s.reported?.[s.i] ? `<p class="repdone" role="status">Благодарим! Ще проверим задачата.</p>` : `<div class="rep" id="rep"><button class="replink" data-act="repOpen">Мисля, че тук има грешка</button></div>`;
   }
   h += `<div class="qact">`;
@@ -1181,10 +1333,17 @@ function finish(timeUp) {
   if (s.kind === "mock") s.qs.forEach((q, i) => { s.ok[i] = isRight(q, s.ans[i]); track(q.id, s.ok[i]); });
   const p = s.ok.filter(Boolean).length, n = s.qs.length;
   const sec = Math.min(Math.round((Date.now() - s.t0) / 1000), s.kind === "mock" ? MOCK_MIN * 60 : Infinity);
-  const prev = s.kind === "mist" ? null : lastOf(s.m);
+  const practice = PRACTICE.includes(s.kind);
+  const prev = practice ? null : lastOf(s.m);
   const before = { lv: level(), badges: earned(), stars: s.kind === "module" ? starsOf(s.m) : 0 };
   let rec = null;
-  if (s.kind !== "mist") {
+  if (s.kind === "diag") {
+    S.diag = { ...(S.diag || {}), [s.subj]: Date.now() };
+    save();
+    if (ONLINE) Online.syncNow();
+    return Skills.diagResult(s, p, n);
+  }
+  if (!practice) {
     rec = { m: s.m, d: Date.now(), p, n, s: sec, w: s.qs.filter((q, i) => !s.ok[i]).map((q) => q.id) };
     if (s.kind === "mock") {
       rec.a = {};
@@ -1219,7 +1378,7 @@ function result(r) {
   let h = `<div class="qbar"><button class="back" data-act="home">← Табло</button><span class="qtitle">${esc(s.title)}</span><span></span></div>
     <section class="res g${g}">
       <div class="res-art">${pic(pose, "res-m", "", true)}<div class="medal" role="img" aria-label="Оценка ${GW[g]} ${g}"><b>${g}</b><small>${GW[g]}</small></div></div>
-      <div class="info"><span class="eyebrow">${s.kind === "mist" ? "Упражнение · не влиза в бележника" : `Записано в бележника · ${fmtDate(r.rec.d, true)}`}</span>
+      <div class="info"><span class="eyebrow">${PRACTICE.includes(s.kind) ? "Упражнение · не влиза в бележника" : `Записано в бележника · ${fmtDate(r.rec.d, true)}`}</span>
         <h1>${esc(s.title)}</h1>
         ${s.kind === "module" || s.kind === "mock" ? starRow(thisStars, "big pop") : ""}
         <p class="score">${p} от ${n} ${pl(n, "точка", "точки")} · ${pc(pct(p, n))}</p>
@@ -1240,8 +1399,9 @@ function result(r) {
   const mc = s.kind === "module" && isMath(MOD[s.m]) && /^mk-\d+$/.test(s.m) ? +s.m.slice(3) : 0;
   h += `<div class="row">${mc ? `<button class="btn" data-act="mcard" data-n="${mc}">← Към картата</button><button class="btn line" data-act="start" data-m="${s.m}">Реши пак</button>` : s.kind === "module" ? `<button class="btn" data-act="start" data-m="${s.m}">Реши модула пак</button>` : s.kind === "mock" ? `<button class="btn" data-act="mock">Нова пробна матура</button>` : ""}
     ${wrongIdx.length ? `<button class="btn gold" data-act="mistThese">Упражни ${wrongIdx.length} ${pl(wrongIdx.length, "грешка", "грешки")}</button>` : ""}
-    <button class="btn line" data-act="home">Към таблото</button></div>`;
-  if (s.kind !== "mist") h += shareBlock("res", "Покажи на родител", "Изпрати резултата с едно докосване или копирай текста.", resultMsg(r));
+    ${s.kind === "plan" ? `<button class="btn" data-act="plan">Още един план</button>` : ""}<button class="btn line" data-act="home">Към таблото</button></div>`;
+  if (s.kind === "plan" || s.kind === "skill") h += Skills.changes(s);
+  if (!PRACTICE.includes(s.kind)) h += shareBlock("res", "Покажи на родител", "Изпрати резултата с едно докосване или копирай текста.", resultMsg(r));
   if (wrongIdx.length) {
     h += `<section class="review"><h2>Какво да запомниш</h2>`;
     for (const i of wrongIdx) {
@@ -1277,6 +1437,22 @@ const ACT = {
   home: () => home(),
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
   hello: () => Hello.tap(),
+  diag: () => Skills.startDiag(mathOn()),
+  plan: () => Skills.startPlan(mathOn()),
+  skill: (b) => Skills.startSkill(b.dataset.k),
+  explain: async () => {
+    if (!sess || !ONLINE) return;
+    const i = sess.i, q = sess.qs[i], box = document.getElementById("expl");
+    if (box) box.innerHTML = `<p class="muted small" role="status">Ерчо мисли…</p>`;
+    try {
+      const r = await Online.explain(q, answerText(q, sess.ans[i]));
+      (sess.expl || (sess.expl = {}))[i] = r.text;
+      if (sess.i === i) renderQ();
+    } catch (e) {
+      const b2 = document.getElementById("expl");
+      if (b2) b2.innerHTML = `<p class="err small" role="alert">${esc(e.message)}</p>`;
+    }
+  },
   update: () => Update.go(),
   subj: (b) => { SUBJ = b.dataset.s === "math" ? "math" : "bel"; ls.set(K_SUBJ, SUBJ); FX.pop(); home(); },
   mcard: (b) => mathCard(+b.dataset.n),
@@ -1377,7 +1553,10 @@ const ACT = {
 };
 function restart() {
   if (!sess) return home();
-  if (sess.kind === "module") startModule(sess.m);
+  if (sess.kind === "plan") Skills.startPlan(sess.subj === "math");
+  else if (sess.kind === "diag") Skills.startDiag(sess.subj === "math");
+  else if (sess.kind === "skill") Skills.startSkill(sess.skillId);
+  else if (sess.kind === "module") startModule(sess.m);
   else if (sess.kind === "mock") startMock();
   else startMistakes(mistIds(mathOn()));
 }
@@ -1803,8 +1982,9 @@ const Online = (() => {
     start();
   }
 
+  const explain = (q, answer) => call("explain", { code, device, id: q.id, answer: String(answer || "").slice(0, 300) });
   return Object.assign(o, {
-    boot, changed, accessSection, levelBanner, parentShow,
+    boot, changed, accessSection, levelBanner, parentShow, explain,
     syncNow: () => syncNow(),
     soon: () => soon(),
     act: (b, e) => { const f = ACTS[b.dataset.act]; if (f) f(b, e); },
