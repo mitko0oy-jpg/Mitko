@@ -2004,3 +2004,38 @@ test("accounting: sales by country and shop (physical / digital VAT), NAP audit 
   const log = (await api(`/api/acc/nap?month=${m}`)).data.log;
   assert.ok(log.some((l) => l.shop === "*" && !l.auto));
 });
+
+test("Табло: the day as it ended – parcels taken, sent and sent back that day, whenever they were ordered", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    const today = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10);
+    const before = (await api("/api/stats/summary")).data.periods.today.happened;
+    const dayBefore = (await api(`/api/stats?from=${today}&to=${today}`)).data;
+    const mk = async (name, phone) => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Варна", delivery: { courier: "econt", type: "office", officeId: "1", officeName: "Варна" }, items: [{ name: "Гел", qty: 1, price: 30 }] });
+      assert.equal(r.status, 200, JSON.stringify(r.data));
+      return r.data.id;
+    };
+    const took = await mk("Взела Днес", "0888 600 001");
+    const back = await mk("Върнала Днес", "0888 600 002");
+    // Ordered five days ago; today one was taken and one came back.
+    await db.query("UPDATE orders SET ordered_at = now() - interval '5 days', day = ((now() - interval '5 days') AT TIME ZONE 'Europe/Sofia')::date, total_eur = 34.5 WHERE id = ANY($1)", [[took, back]]);
+    await db.query("UPDATE orders SET courier = 'econt', tracking_no = '1051606000001', parcel_status = 'delivered', parcel_at = now(), delivered_at = now() WHERE id = $1", [took]);
+    await db.query("UPDATE orders SET courier = 'econt', tracking_no = '1051606000002', parcel_status = 'returned', parcel_at = now() WHERE id = $1", [back]);
+
+    const after = (await api("/api/stats/summary")).data.periods.today;
+    assert.equal(after.happened.got.n, before.got.n + 1, "taken today, ordered five days ago");
+    assert.equal(Math.round((after.happened.got.sum - before.got.sum) * 100) / 100, 34.5);
+    assert.equal(after.happened.back.n, before.back.n + 1);
+    assert.equal(after.happened.sent, before.sent + 2, "both got their waybill today");
+    const d = (await api(`/api/stats?from=${today}&to=${today}`)).data;
+    assert.equal(d.happened.got.n, dayBefore.happened.got.n + 1);
+    assert.equal(d.orders, dayBefore.orders, "not new orders of today");
+    const week = (await api(`/api/stats?from=${new Date(Date.now() - 6 * 86400e3).toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10)}&to=${today}`)).data;
+    assert.ok(week.days.find((x) => x.day === today).happened.got.n >= 1, "the day's row knows it too");
+  } finally {
+    await db.end();
+  }
+});

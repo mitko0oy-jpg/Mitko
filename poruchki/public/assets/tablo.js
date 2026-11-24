@@ -67,16 +67,19 @@ $("refresh").onclick = async () => {
 async function loadTiles() {
   const s = await api(`/api/stats/summary?region=${state.region}`);
   $("synced").textContent = `Обновено ${ago(s.syncedAt)}`;
-  const tile = (k, label, showDelivered) => {
+  // New orders of the period, and what happened in it: parcels the customers took (whenever ordered), sent, sent back.
+  const tile = (k, label) => {
     const p = s.periods[k];
+    const h = p.happened || { got: { n: 0, sum: 0 }, back: { n: 0, sum: 0 }, sent: 0 };
     return `<button class="tile" data-from="${p.from}" data-to="${p.to}">
       <div class="lbl">${label}</div>
       <div class="big">${num(p.orders)} ${p.orders === 1 ? "поръчка" : "поръчки"}</div>
       <div class="sub">за <b>${eur(p.sum)}</b>${p.canceled ? ` · отказани ${num(p.canceled)}` : ""}</div>
-      ${showDelivered ? `<div class="sub">взети ${num(p.delivered)} за <b>${eur(p.deliveredSum)}</b></div>` : ""}
+      <div class="sub got" title="Пратки, които клиентите са взели (платили) в този период – без значение кога е направена поръчката">получени <b>${num(h.got.n)}</b> за <b>${eur(h.got.sum)}</b></div>
+      <div class="sub">изпратени ${num(h.sent)}${h.back.n ? ` · <span class="back">върнати ${num(h.back.n)} (${eur(h.back.sum)})</span>` : " · върнати 0"}</div>
     </button>`;
   };
-  $("tiles").innerHTML = tile("today", "Днес", false) + tile("week", "Тази седмица", true) + tile("month", "Този месец", true);
+  $("tiles").innerHTML = tile("today", "Днес") + tile("yesterday", "Вчера") + tile("week", "Тази седмица") + tile("month", "Този месец");
   $("tiles").onclick = (e) => {
     const t = e.target.closest(".tile");
     if (t) setPeriod(t.dataset.from, t.dataset.to);
@@ -113,7 +116,12 @@ function renderHeads(d) {
     <div class="head"><div class="lbl">Поръчки</div><div class="big">${num(d.orders)}</div><div class="sub">за ${eur(d.sum)}</div></div>
     <div class="head"><div class="lbl">Взети (оборот)</div><div class="big">${eur(st.delivered.sum)}</div><div class="sub">${num(st.delivered.n)} поръчки</div></div>
     <div class="head"><div class="lbl">Още не са приключили</div><div class="big">${eur(st.new.sum + st.prepared.sum + st.shipped.sum + st.at_office.sum)}</div><div class="sub">${num(open)} поръчки</div></div>
-    <div class="head"><div class="lbl">Взети от приключилите</div><div class="big">${pct(d.takenRate)}</div><div class="sub">върнати ${num(st.returned.n)}${d.refused ? `, от тях отказани на място ${num(d.refused)}` : ""}</div></div>`;
+    <div class="head"><div class="lbl">Взети от приключилите</div><div class="big">${pct(d.takenRate)}</div><div class="sub">върнати ${num(st.returned.n)}${d.refused ? `, от тях отказани на място ${num(d.refused)}` : ""}</div></div>
+    ${d.happened ? `<div class="happened" title="Горе са поръчките, направени в периода. Тук е какво се случи в самия период, без значение кога е поръчано.">
+      <span><b>В периода:</b></span>
+      <span class="got">получени <b>${num(d.happened.got.n)}</b> пратки за <b>${eur(d.happened.got.sum)}</b></span>
+      <span>изпратени <b>${num(d.happened.sent)}</b></span>
+      <span class="back">върнати <b>${num(d.happened.back.n)}</b> за ${eur(d.happened.back.sum)}</span></div>` : ""}`;
 }
 
 function renderStages(d) {
@@ -148,8 +156,17 @@ function renderDays(d) {
   $("daysCard").hidden = days.length < 2;
   if (days.length < 2) return;
   // table view
-  $("daysTable").innerHTML = `<table class="tbl"><thead><tr><th>Ден</th><th class="r">Поръчки</th><th class="r">Сума</th><th class="r">Взети</th><th class="r">Върнати</th><th class="r">Отказани</th></tr></thead><tbody>
-    ${[...days].reverse().map((x) => `<tr><td>${dayLong(x.day)}</td><td class="r">${num(x.orders)}</td><td class="r">${eur(x.sum)}</td><td class="r">${num(x.stages.delivered.n)}</td><td class="r">${num(x.stages.returned.n)}</td><td class="r">${num(x.stages.canceled.n)}</td></tr>`).join("")}
+  // Left: the orders made that day and what became of them. Right: what happened on the day itself.
+  $("daysTable").innerHTML = `<table class="tbl"><thead><tr><th>Ден</th><th class="r">Поръчки</th><th class="r">Сума</th><th class="r" title="от поръчките на този ден">Взети</th><th class="r" title="от поръчките на този ден">Върнати</th><th class="r">Отказани</th>
+      <th class="r got" title="пратки, взети от клиентите в този ден">Получени в деня</th><th class="r" title="пратки, предадени на куриер в този ден">Изпратени</th><th class="r" title="пратки, върнати в този ден">Върнати в деня</th></tr></thead><tbody>
+    ${[...days]
+      .reverse()
+      .map((x) => {
+        const h = x.happened || { got: { n: 0, sum: 0 }, back: { n: 0, sum: 0 }, sent: 0 };
+        return `<tr><td>${dayLong(x.day)}</td><td class="r">${num(x.orders)}</td><td class="r">${eur(x.sum)}</td><td class="r">${num(x.stages.delivered.n)}</td><td class="r">${num(x.stages.returned.n)}</td><td class="r">${num(x.stages.canceled.n)}</td>
+          <td class="r got"><b>${eur(h.got.sum)}</b><div class="muted small">${num(h.got.n)}</div></td><td class="r">${num(h.sent)}</td><td class="r">${num(h.back.n)}</td></tr>`;
+      })
+      .join("")}
   </tbody></table>`;
   drawChart(days);
 }

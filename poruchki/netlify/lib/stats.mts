@@ -6,6 +6,7 @@ import { companyId } from "./tenant.mts";
 import { STAGES } from "./orders.mts";
 import { countOpenLeads } from "./leads.mts";
 import { printQueue } from "./waybills.mts";
+import { DELIVERED_AT } from "./sales.mts";
 
 export type Filter = { from: string; to: string; region?: "bg" | "abroad" | ""; shop?: string };
 type Cell = { n: number; sum: number };
@@ -37,6 +38,40 @@ function totalsOf(stages: Record<string, Cell>) {
     // Of the parcels that already have an outcome, how many were taken.
     takenRate: done ? Math.round((stages.delivered.n / done) * 1000) / 10 : null,
   };
+}
+
+
+// What happened on the days themselves (not to the orders made on them): parcels the customers took – by the day
+// they took them (DELIVERED_AT, as in Счетоводство), sent back – by the courier's last status, and sent – by sent_at.
+const RETURNED_AT = "coalesce(o.parcel_at, o.ordered_at)";
+const sofiaDate = (col: string) => `(${col} AT TIME ZONE 'Europe/Sofia')::date`;
+
+async function happened(from: string, to: string, extra: { region?: string; shop?: string }, byDay = false) {
+  const params: unknown[] = [from, to];
+  const parts = ["s.active", `s.company_id = ${companyId()}`];
+  if (extra.region === "bg" || extra.region === "abroad") {
+    params.push(extra.region);
+    parts.push(`s.region = $${params.length}`);
+  }
+  if (extra.shop) {
+    params.push(extra.shop);
+    parts.push(`o.shop = $${params.length}`);
+  }
+  const base = `FROM orders o JOIN shops s ON s.id = o.shop WHERE ${parts.join(" AND ")}`;
+  const between = (col: string) => `${sofiaDate(col)} BETWEEN $1::date AND $2::date`;
+  const [got, back, sent] = await Promise.all([
+    q<any>(`SELECT ${byDay ? `${sofiaDate(DELIVERED_AT)}::text AS day, ` : ""}count(*)::int AS n, coalesce(sum(o.total_eur), 0)::float AS sum ${base} AND o.stage = 'delivered' AND ${between(DELIVERED_AT)}${byDay ? " GROUP BY 1" : ""}`, params),
+    q<any>(`SELECT ${byDay ? `${sofiaDate(RETURNED_AT)}::text AS day, ` : ""}count(*)::int AS n, coalesce(sum(o.total_eur), 0)::float AS sum ${base} AND o.stage = 'returned' AND ${between(RETURNED_AT)}${byDay ? " GROUP BY 1" : ""}`, params),
+    q<any>(`SELECT ${byDay ? `${sofiaDate("o.sent_at")}::text AS day, ` : ""}count(*)::int AS n ${base} AND o.sent_at IS NOT NULL AND o.stage NOT IN ('abandoned', 'duplicate') AND ${between("o.sent_at")}${byDay ? " GROUP BY 1" : ""}`, params),
+  ]);
+  const cell = (r: any) => ({ n: r?.n || 0, sum: round(r?.sum || 0) });
+  if (!byDay) return { got: cell(got[0]), back: cell(back[0]), sent: sent[0]?.n || 0 };
+  const days: Record<string, { got: Cell; back: Cell; sent: number }> = {};
+  const day = (d: string) => (days[d] ||= { got: { n: 0, sum: 0 }, back: { n: 0, sum: 0 }, sent: 0 });
+  for (const r of got) day(r.day).got = cell(r);
+  for (const r of back) day(r.day).back = cell(r);
+  for (const r of sent) day(r.day).sent = r.n;
+  return days;
 }
 
 export async function dashboard(f: Filter) {
@@ -77,10 +112,13 @@ export async function dashboard(f: Filter) {
     if (!dayMap.has(r.day)) dayMap.set(r.day, emptyStages());
     dayMap.get(r.day)![r.stage] = { n: r.n, sum: round(r.sum) };
   }
-  const days = [...dayMap.entries()].map(([day, st]) => ({ day, stages: st, ...totalsOf(st) }));
+  const [onDays, period] = await Promise.all([happened(f.from, f.to, f, true) as Promise<Record<string, any>>, happened(f.from, f.to, f)]);
+  const days = [...dayMap.entries()].map(([day, st]) => ({ day, stages: st, ...totalsOf(st), happened: onDays[day] || { got: { n: 0, sum: 0 }, back: { n: 0, sum: 0 }, sent: 0 } }));
 
   return {
     filter: f,
+    // In the period itself: taken by the customers, sent back, sent (whenever the orders were made).
+    happened: period,
     stages,
     refused: refused?.n || 0,
     ...totalsOf(stages),
@@ -126,8 +164,9 @@ export async function summary(region?: string) {
   params.push(lastMonthStart);
   const row = await one<any>(`SELECT ${cols.join(", ")} FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.stage NOT IN ('abandoned', 'duplicate') AND o.day >= $${params.length}${regionSql}`, params);
   const out: Record<string, any> = {};
-  for (const [k, [from, to]] of Object.entries(periods)) {
-    out[k] = { from, to, orders: row?.[`${k}_n`] || 0, sum: round(row?.[`${k}_sum`] || 0), delivered: row?.[`${k}_dn`] || 0, deliveredSum: round(row?.[`${k}_dsum`] || 0), canceled: row?.[`${k}_cn`] || 0 };
+  const done = await Promise.all(Object.values(periods).map(([a, b]) => happened(a, b, { region })));
+  for (const [i, [k, [from, to]]] of Object.entries(periods).entries()) {
+    out[k] = { from, to, orders: row?.[`${k}_n`] || 0, sum: round(row?.[`${k}_sum`] || 0), delivered: row?.[`${k}_dn`] || 0, deliveredSum: round(row?.[`${k}_dsum`] || 0), canceled: row?.[`${k}_cn`] || 0, happened: done[i] };
   }
   const sync = await one<any>("SELECT max(synced_at) AS at FROM shops WHERE active AND company_id = $1", [companyId()]);
   return { today, periods: out, syncedAt: sync?.at || null };
