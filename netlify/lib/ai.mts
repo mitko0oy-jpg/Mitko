@@ -87,14 +87,14 @@ export async function jsonRaw(system: string, user: string, schema: object, stro
   return { model: msg?.model, ms: Date.now() - t0, stop_reason: msg?.stop_reason, usage: msg?.usage, blocks: (msg?.content || []).map((b: any) => b.type), text: textOf(msg) };
 }
 
-export async function jsonCall<T = any>(system: string, user: string, schema: object, strong = false, maxTokens = 1200): Promise<T> {
+export async function jsonCall<T = any>(system: string, user: string, schema: object, strong = false, maxTokens = 1200, effort?: string): Promise<T> {
   try {
     const msg = await ai().messages.create({
       model: strong ? MODEL_STRONG() : MODEL_FAST(),
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: user }],
-      output_config: { effort: strong ? "medium" : "low", format: { type: "json_schema", schema } },
+      output_config: { effort: effort || (strong ? "medium" : "low"), format: { type: "json_schema", schema } },
     } as any);
     const t = textOf(msg);
     try {

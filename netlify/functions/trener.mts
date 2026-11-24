@@ -1,7 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { requireUser } from "../lib/auth.mts";
 import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
-import { event, hit, one, q, tx } from "../lib/db.mts";
+import { event, hit, one, q, tx, unhit } from "../lib/db.mts";
 import { bad, body, clientIp, env, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { explainMistake } from "../lib/ai.mts";
 import { gradeRetelling, RETELL_MIN_WORDS, wordCount } from "../lib/retell.mts";
@@ -236,7 +236,9 @@ export default handle(async (req, ctx) => {
       throw new HttpError(429, "retell_daily", full ? "Днес вече предаде 4 преразказа – утре Ерчо пак ще провери. Междувременно прочети бележките." : "Днес вече предаде преразказ. Утре пак!");
     if (!(await hit(`ai:global:${day}`, Number(env("AI_GLOBAL_DAILY") || 3000), 86400)))
       throw new HttpError(503, "ai_busy", "Проверката е натоварена днес. Опитай утре.");
-    const g = await gradeRetelling(r, text);
+    let g;
+    try { g = await gradeRetelling(r, text); }
+    catch (e) { await unhit(`retell:${code}:${day}`); throw e; } // a check that failed on our side does not count
     await event("trener_retell", { tier: acc.tier, points: g.points, words: g.words });
     return json({ ...g, events: r.events || [] });
   }

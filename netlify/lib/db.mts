@@ -43,6 +43,11 @@ export async function event(name: string, props: Record<string, unknown> = {}, u
 }
 
 // Fixed-window counter. Returns false when the limit is exceeded.
+// Gives back one use (e.g. a check that failed on our side should not count against the day).
+export async function unhit(key: string) {
+  await q("UPDATE rate_hits SET count = GREATEST(count - 1, 0) WHERE key = $1", [key]);
+}
+
 export async function hit(key: string, max: number, windowSec: number): Promise<boolean> {
   const row = await one<{ count: number }>(
     `INSERT INTO rate_hits (key, window_start, count) VALUES ($1, now(), 1)
