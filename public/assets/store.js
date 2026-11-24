@@ -7,6 +7,7 @@
 import { PACKAGES, PLAIN, REGULAR, setRegular, euro } from "/assets/shop-catalog.js";
 import * as CFG from "/assets/store-config.js";
 import { ROOT } from "/assets/eb-root.js";
+import { payInApp } from "/assets/trn-pay.js";
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -422,6 +423,9 @@ const DIG = Object.fromEntries(Object.entries(CFG.DIGITAL).map(([k, d]) => {
 }));
 for (const a of $$("[data-dig]")) if (DIG[a.dataset.dig]) a.href = DIG[a.dataset.dig].checkout;
 for (const el of $$("[data-dig-price]")) if (DIG[el.dataset.digPrice]) el.textContent = euro(DIG[el.dataset.digPrice].price);
+// the trainer's plans: by card in the app once it takes real payments (trn-pay.js); on delivery – ConvertBuilder
+const TRN_BTNS = $$('[data-dig^="trn-"]').filter((a) => DIG[a.dataset.dig]).map((a) => [a, a.dataset.dig.slice(4)]);
+payInApp(TRN_BTNS, Object.fromEntries(TRN_BTNS.map(([, k]) => [k, DIG[`trn-${k}`].checkout])));
 
 /* ---------- product page: gallery, package options, add / buy now ---------- */
 for (const pdp of $$("[data-pdp]")) {

@@ -173,3 +173,5 @@ body[data-deck="trn"] .final .v{color:var(--gold)}
 .tt-help{margin:24px 0 0;color:var(--muted);font-size:14.5px}
 .tt-help a{color:var(--accent);font-weight:700}
 @media (max-width:760px){.tt-ways,.tt-steps{grid-template-columns:1fr}}
+/* paying on delivery for the trainer: shown only once the plans go to the card payment in the app (trn-pay.js) */
+[data-trn-cod][hidden]{display:none}

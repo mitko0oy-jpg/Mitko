@@ -1,6 +1,7 @@
 // НВО тренажор landing: plan prices and their checkout pages from the settings. Runs before shop.js.
 import { TRN as BASE } from "/assets/trenazhor-config.js";
 import { euro } from "/assets/shop-catalog.js";
+import { payInApp } from "/assets/trn-pay.js";
 
 const $$ = (s) => [...document.querySelectorAll(s)];
 const SET = window.EB_LANDING?.trn || {};
@@ -26,5 +27,7 @@ for (const el of $$("[data-plan-save]")) {
   el.textContent = save > 0 ? `Спестяваш ${euro(save)}` : "Без обвързване";
 }
 for (const a of $$("[data-plan-go]")) a.href = checkout[a.dataset.planGo] || "#";
+// by card in the app once it takes real payments (the code at once, no e-mail by hand); on delivery – ConvertBuilder
+payInApp($$("[data-plan-go]").map((a) => [a, a.dataset.planGo]), checkout, SET.appPay ?? BASE.appPay);
 for (const a of $$("[data-trn-app]")) a.href = app;
 for (const a of $$("[data-store-link]")) a.href = store;

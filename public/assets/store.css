@@ -1054,3 +1054,5 @@ dialog.pv:not([open]){display:none}
 .xm-note{max-width:72ch;margin:16px auto 0;text-align:center;color:var(--muted);font-size:16px;line-height:1.5}
 @media (max-width:980px){.xm-grid{grid-template-columns:1fr}.xm-total{grid-template-columns:repeat(3,minmax(0,1fr))}.xm-total .xt-h{grid-column:1/-1}}
 @media (max-width:560px){.xm-total{grid-template-columns:1fr;padding:22px 20px}.xm-total b{font-size:32px}}
+/* paying on delivery for the trainer: shown only once the plans go to the card payment in the app (trn-pay.js) */
+[data-trn-cod][hidden]{display:none}

@@ -11,4 +11,8 @@ export const TRN = {
   // the trainer itself: opens with the personal code
   app: "https://app.edubel.site/t/",
   store: "/",
+  // paying by card in the app (see trn-pay.js): its page and the app's plan for each of ours. The buttons go there
+  // only while the app takes real card payments; "" keeps them on the ConvertBuilder order pages.
+  appPay: "https://app.edubel.site/dostap/",
+  appPlans: { m1: "full-1m", m6: "full-6m", m12: "full-12m" },
 };
