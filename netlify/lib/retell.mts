@@ -11,7 +11,7 @@
 // (key events in order, characters, details); spelling, grammar and punctuation come from the counted mistakes it quotes
 // (so the points match the list the pupil sees), and the paragraphs are counted here. The result is a guide
 // („ориентировъчна оценка“) until a teacher has compared it with her own marks.
-import { jsonCall, safety } from "./ai.mts";
+import { jsonCall, jsonRaw, safety } from "./ai.mts";
 import { env } from "./http.mts";
 
 type Crit = { id: string; g: string; t: string; max: number; how: string; auto?: "count" | "paras"; kind?: string; steps?: number[] };
@@ -124,6 +124,12 @@ export async function gradeRetelling(r: any, text: string): Promise<Graded> {
       next: "Тренировъчен съвет.",
     });
   }
+  const q = retellRequest(r, text);
+  return assemble(text, await jsonCall<any>(q.system, q.user, q.schema, true, 4000));
+}
+
+// The request to the AI: the scale, the text with its checking data, the pupil's retelling.
+export function retellRequest(r: any, text: string) {
   const source = (r.text || []).map(plain);
   const hasSpeech = source.some((p: string) => /^[–—-]\s|„[^“]{2,}“/.test(p));
   const system = `${safety(7)}
@@ -147,24 +153,27 @@ export async function gradeRetelling(r: any, text: string): Promise<Graded> {
     `Преразказът на ученика (${wordCount(text)} думи):\n"""${String(text).slice(0, 9000)}"""`,
     `Върни "related"; "criteria" – по един обект за всеки от критериите горе, с "id", "points" и "comment"; "missing" – пропуснатите важни епизоди (взети от списъка, най-много 6); "errors" – грешките с "quote", "fix" и "kind" (${KINDS.join(", ")}), най-много 30; "strengths" – до 3 силни страни; "next" – едно изречение: най-важното за следващия опит.`,
   ].filter(Boolean).join("\n\n");
-  const out = await jsonCall<any>(
-    system,
-    user,
-    {
-      type: "object",
-      properties: {
-        related: { type: "boolean" },
-        criteria: { type: "array", items: { type: "object", properties: { id: { type: "string", enum: JUDGED.map((c) => c.id) }, points: { type: "integer" }, comment: { type: "string" } }, required: ["id", "points", "comment"], additionalProperties: false } },
-        missing: { type: "array", items: { type: "string" } },
-        errors: { type: "array", items: { type: "object", properties: { quote: { type: "string" }, fix: { type: "string" }, kind: { type: "string", enum: KINDS } }, required: ["quote", "fix", "kind"], additionalProperties: false } },
-        strengths: { type: "array", items: { type: "string" } },
-        next: { type: "string" },
-      },
-      required: ["related", "criteria", "missing", "errors", "strengths", "next"],
-      additionalProperties: false,
+  const schema = {
+    type: "object",
+    properties: {
+      related: { type: "boolean" },
+      criteria: { type: "array", items: { type: "object", properties: { id: { type: "string", enum: JUDGED.map((c) => c.id) }, points: { type: "integer" }, comment: { type: "string" } }, required: ["id", "points", "comment"], additionalProperties: false } },
+      missing: { type: "array", items: { type: "string" } },
+      errors: { type: "array", items: { type: "object", properties: { quote: { type: "string" }, fix: { type: "string" }, kind: { type: "string", enum: KINDS } }, required: ["quote", "fix", "kind"], additionalProperties: false } },
+      strengths: { type: "array", items: { type: "string" } },
+      next: { type: "string" },
     },
-    true,
-    4000,
-  );
-  return assemble(text, out);
+    required: ["related", "criteria", "missing", "errors", "strengths", "next"],
+    additionalProperties: false,
+  };
+  return { system, user, schema };
+}
+
+// The admin check: the raw answer of the AI for one retelling, next to the result made from it.
+export async function tryRetelling(r: any, text: string, opt: { model?: string; effort?: string } = {}) {
+  const q = retellRequest(r, text);
+  const raw = await jsonRaw(q.system, q.user, q.schema, true, 4000, opt);
+  let parsed: any = null;
+  try { parsed = JSON.parse(raw.text); } catch { /* shown as text */ }
+  return { raw, result: parsed ? assemble(text, parsed) : null };
 }

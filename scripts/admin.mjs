@@ -15,6 +15,7 @@
 //   ... node scripts/admin.mjs role owner@example.com admin
 //   ... node scripts/admin.mjs trener-backup [private/backups/trener-YYYY-MM-DD.json]   (codes + grades, keep it safe)
 //   ... node scripts/admin.mjs trener-trace <leaked-text-file>   (which code a copied text came from)
+//   ... node scripts/admin.mjs retell-try <text id> <retelling.txt> ['{"model":"claude-opus-5-5","effort":"high"}']   (the AI's raw check)
 //   ... node scripts/admin.mjs reports [all] | report <id> [seen|fixed]   (signals about problems from the app)
 //   ... node scripts/admin.mjs plans [plans.json | '[{"id":"full-nvo","title":"Пълен до НВО","tier":"full","until":"2027-06-30","price":59}]'] | payments
 //   ... node scripts/admin.mjs trial ['{"open":true,"months":1}' | '{"open":true,"days":1}' | '{"open":false}']
@@ -53,6 +54,7 @@ else if (cmd === "invites") out = await call("GET", "invites");
 else if (cmd === "invite-new") out = await call("POST", "invites", { batch: a, drafts: process.argv.includes("--drafts") });
 else if (cmd === "invite-off" || cmd === "invite-on") out = await call("POST", "invites", { batch: a, off: cmd === "invite-off" });
 else if (cmd === "trener-bank-approve") out = await call("POST", "trener-bank-approve", { ids: String(a || "").split(",").filter(Boolean) });
+else if (cmd === "retell-try") out = await call("POST", "retell-try", { id: a, text: await readFile(b, "utf8"), ...(process.argv[5] ? JSON.parse(process.argv[5]) : {}) });
 else if (cmd === "trener-bank-add") out = await call("POST", "trener-bank-add", JSON.parse(await readFile(a, "utf8")));
 else if (cmd === "trener-bank-get") {
   const data = await call("GET", "trener-bank");

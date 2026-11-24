@@ -6,6 +6,7 @@ import { bad, body, clientIp, env, handle, json, notFound, str, sub, tooMany } f
 import { aiSetup, chat } from "../lib/ai.mts";
 import { getSetting, listInvites, newInvite, savePlans, setSetting, switchInvite } from "../lib/pay.mts";
 import { listReports, setReport } from "../lib/reports.mts";
+import { tryRetelling } from "../lib/retell.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
 
 const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading", "challenge"];
@@ -54,6 +55,16 @@ export default handle(async (req, ctx) => {
     if (!new URL(req.url).searchParams.get("ping")) return json({ setup });
     try { return json({ setup, ping: await chat("Отговаряй с една дума.", [{ role: "user", content: "Кажи „здравей“." }], 20) }); }
     catch (e: any) { return json({ setup, error: `${e?.code || ""} ${e?.message || e}`.slice(0, 300) }); }
+  }
+  // The retelling check with the raw answer of the AI (one AI call): {id, text} → what the model returned and the result.
+  if (req.method === "POST" && parts[0] === "retell-try") {
+    const b = await body(req);
+    const cur = await one<{ data: any }>("SELECT data FROM trener_bank ORDER BY id DESC LIMIT 1");
+    const r = (cur?.data?.retell || []).find((x: any) => x.id === String(b.id || ""));
+    if (!r) throw notFound("Няма такъв текст.");
+    const opt = { model: /^claude-[a-z0-9-]{3,40}$/.test(String(b.model || "")) ? String(b.model) : undefined, effort: ["low", "medium", "high", "xhigh", "max"].includes(b.effort) ? b.effort : undefined };
+    try { return json(await tryRetelling(r, String(b.text || "").slice(0, 12000), opt)); }
+    catch (e: any) { return json({ error: `${e?.status || ""} ${e?.code || ""} ${e?.message || e}`.slice(0, 500) }); }
   }
   // Invitation links (the owner's master link): list them, make one, switch one off or on.
   if (req.method === "GET" && parts[0] === "invites") return json({ invites: await listInvites() });

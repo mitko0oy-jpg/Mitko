@@ -73,6 +73,20 @@ export async function chat(system: string, messages: { role: "user" | "assistant
   }
 }
 
+// The raw answer of a JSON call (model, stop reason, blocks, usage) – for the admin check of what the AI really returns.
+// For the check only: another model or effort can be tried (e.g. {model: "claude-opus-5-5", effort: "high"}).
+export async function jsonRaw(system: string, user: string, schema: object, strong = false, maxTokens = 1200, opt: { model?: string; effort?: string } = {}) {
+  const t0 = Date.now();
+  const msg: any = await ai().messages.create({
+    model: opt.model || (strong ? MODEL_STRONG() : MODEL_FAST()),
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: user }],
+    output_config: { effort: opt.effort || (strong ? "medium" : "low"), format: { type: "json_schema", schema } },
+  } as any);
+  return { model: msg?.model, ms: Date.now() - t0, stop_reason: msg?.stop_reason, usage: msg?.usage, blocks: (msg?.content || []).map((b: any) => b.type), text: textOf(msg) };
+}
+
 export async function jsonCall<T = any>(system: string, user: string, schema: object, strong = false, maxTokens = 1200): Promise<T> {
   try {
     const msg = await ai().messages.create({
