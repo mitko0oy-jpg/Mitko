@@ -2039,3 +2039,17 @@ test("Табло: the day as it ended – parcels taken, sent and sent back that
     await db.end();
   }
 });
+
+test("Поръчки: the free gift is packed too – counted in the number of things and named in the list", async () => {
+  const r = await api("/api/orders", {
+    shop: "bg", name: "С Подарък", phone: "0888 700 001", city: "Пловдив",
+    delivery: { courier: "speedy", type: "office", officeId: "464", officeName: "Пловдив" },
+    items: [{ name: "Пчелна отрова Пакет 3+2 бр.", qty: 1, price: 29.9 }, { name: "Подарък 12 бр. пластири", qty: 1, price: 0 }, { name: "Пластири с пчелна отрова", qty: 1, price: 4.9 }, { name: "Мостра", qty: 1, price: 0 }],
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  const o = (await api("/api/orders?tab=&q=" + encodeURIComponent("0888700001"))).data.orders.find((x) => x.id === r.data.id);
+  assert.ok(o, "found");
+  assert.equal(o.items_qty, 4, "3 paid/gift lines + the free sample");
+  assert.ok(o.items.includes("Подарък 12 бр. пластири"));
+  assert.ok(o.items.includes("Мостра (подарък)"));
+});

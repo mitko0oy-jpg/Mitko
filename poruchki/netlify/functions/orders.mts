@@ -182,10 +182,13 @@ async function list(u: URLSearchParams) {
       tracking_link: trackingUrl(r.courier, r.tracking_no),
       // Only digital products (PDFs): nothing to send.
       digital_only: (r.items || []).length > 0 && (r.items || []).every((i: any) => i.digital),
-      // Things to pack: no digital products, no free gifts.
-      items_qty: (r.items || []).filter((i: any) => !i.digital && (i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name))).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0),
+      // Things to pack: everything physical, the free gifts too (they go in the parcel); not the digital products.
+      items_qty: (r.items || []).filter((i: any) => !i.digital).reduce((n: number, i: any) => n + (Number(i.qty) || 1), 0),
       nek_reports: Array.isArray(r.nek_reports) ? r.nek_reports.slice(0, 3).map((x: any) => ({ text: String(x.text || "").slice(0, 240), date: x.date || null })) : null,
-      items: (r.items || []).filter((i: any) => i.total > 0 || !/подар|gift|ajánd|darček/i.test(i.name)).map((i: any) => `${i.qty > 1 ? i.qty + " × " : ""}${i.name}${i.digital ? " (дигитален)" : ""}`),
+      items: (r.items || []).map(
+        (i: any) =>
+          `${i.qty > 1 ? i.qty + " × " : ""}${i.name}${i.digital ? " (дигитален)" : !(Number(i.total) > 0) && !/подар|gift|ajánd|darček/i.test(i.name) ? " (подарък)" : ""}`,
+      ),
     })),
   };
 }
