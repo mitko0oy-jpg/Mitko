@@ -98,8 +98,8 @@ const courier = createServer((req, res) => {
     const d1 = u.searchParams.get("dimension1");
     const rows = (key) => [
       { metricName: "Traffic", information: key.map(([k, s]) => ({ totalSessionCount: String(s + 10), totalBotSessionCount: "10", distantUserCount: String(s), PagesPerSessionPercentage: 1.5, ...k })) },
-      { metricName: "Scroll Depth", information: key.map(([k], i) => ({ averageScrollDepth: 40 + i * 20, ...k })) },
-      { metricName: "Engagement Time", information: key.map(([k]) => ({ totalTime: 90, activeTime: 45, ...k })) },
+      { metricName: "ScrollDepth", information: key.map(([k], i) => ({ averageScrollDepth: `${40 + i * 20}%`, ...k })) },
+      { metricName: "EngagementTime", information: key.map(([k]) => ({ totalTime: "90 sec", activeTime: "45 sec", ...k })) },
       { metricName: "Rage Click Count", information: key.map(([k]) => ({ sessionsCount: "3", sessionsWithMetricPercentage: 3.5, ...k })) },
     ];
     const body =
@@ -1632,6 +1632,8 @@ test("Път на клиента: the browser's earlier visits travel with the f
     assert.equal(land.clarity.sessions, 400);
     assert.equal(land.clarity.scroll, 45, "weighted by sessions: (40×300 + 60×100) / 400");
     assert.equal(land.clarity.rage, 3.5);
+    assert.equal(land.clarity.active, 45, "\"45 sec\" read as 45");
+    assert.ok(st.shape && st.shape.ScrollDepth, "what Clarity sent is kept for checking");
     assert.ok(d.shops.some((s) => s.shop === "bg" && s.groups.organic));
     assert.equal((await api("/api/pat?from=x&to=y")).status, 400);
     assert.equal((await api("/api/pat/clarity", { shop: "bg", remove: true })).data.shops.find((x) => x.id === "bg").connected, false);

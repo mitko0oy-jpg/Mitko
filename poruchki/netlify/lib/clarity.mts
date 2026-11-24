@@ -18,7 +18,7 @@ const CALLS: [string, string[]][] = [
 ];
 const MAX_CALLS = 8; // a day per project, leaving room for Clarity's own tools
 
-type Conf = { token: string; added_at: string; last_at?: string; last_day?: string; last_error?: string; calls?: { day: string; n: number } };
+type Conf = { token: string; added_at: string; last_at?: string; last_day?: string; last_error?: string; calls?: { day: string; n: number }; shape?: Record<string, Record<string, string>> };
 
 const sofia = (d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 const sofiaHour = () => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Sofia", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
@@ -33,11 +33,15 @@ export function pathOf(url: string): string {
   }
 }
 
+// Numbers may come as text, also with a unit ("44.40%", "48 sec").
 const num = (v: unknown) => {
-  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
-  return Number.isFinite(n) ? n : null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const m = /^\s*(-?\d+(?:[.,]\d+)?)/.exec(String(v ?? ""));
+  return m ? Number(m[1].replace(",", ".")) : null;
 };
 const COUNT = /count|views|subtotal/i;
+// Metric names as the documentation writes them ("Scroll Depth") or without spaces ("ScrollDepth"): one key.
+export const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z]/g, "");
 
 /** Clarity's answer ([{metricName, information: [{…numbers, <dimension>: value}]}]) → rows per key, the metrics of
  * rows with the same key (one page with different ?query) added up: counts summed, the rest weighted by sessions. */
@@ -48,12 +52,12 @@ export function parseInsights(data: any, kind: string, dims: string[]): Map<stri
   // Sessions per raw row, for the weights.
   const weight = new Map<string, number>();
   for (const m of metrics) {
-    if (m?.metricName !== "Traffic") continue;
+    if (norm(m?.metricName) !== "traffic") continue;
     for (const info of m.information || []) weight.set(rawKey(info), Math.max(1, (num(info.totalSessionCount) || 0) - (num(info.totalBotSessionCount) || 0)));
   }
   const out = new Map<string, Record<string, any>>();
   for (const m of metrics) {
-    const name = String(m?.metricName || "");
+    const name = norm(m?.metricName);
     if (!name) continue;
     for (const info of m.information || []) {
       const key = keyOf(info);
@@ -102,10 +106,18 @@ export async function pullShop(shop: string, c?: Conf | null) {
   const token = unseal<string>(c.token);
   let n = calls;
   const got: Record<string, number> = {};
+  // What Clarity actually sent (metric → its field names, a sample value each), to check the names it uses.
+  const shape: Record<string, Record<string, string>> = {};
   try {
     for (const [kind, dims] of CALLS) {
       n++;
-      const rows = parseInsights(await call(token, dims), kind, dims);
+      const data = await call(token, dims);
+      if (kind === "url" && Array.isArray(data))
+        for (const m of data.slice(0, 20)) {
+          const first = (m?.information || [])[0] || {};
+          shape[String(m?.metricName).slice(0, 40)] = Object.fromEntries(Object.entries(first).filter(([f]) => f !== "URL").slice(0, 12).map(([f, v]) => [f.slice(0, 40), String(v).slice(0, 20)]));
+        }
+      const rows = parseInsights(data, kind, dims);
       await q(`DELETE FROM clarity_days WHERE shop = $1 AND day = $2::date AND kind = $3`, [shop, day, kind]);
       const list = [...rows.entries()].slice(0, 500);
       for (let i = 0; i < list.length; i += 100) {
@@ -120,7 +132,7 @@ export async function pullShop(shop: string, c?: Conf | null) {
       }
       got[kind] = list.length;
     }
-    await setSetting(`clarity:${shop}`, { ...c, last_at: new Date().toISOString(), last_day: day, last_error: undefined, calls: { day: today, n } });
+    await setSetting(`clarity:${shop}`, { ...c, last_at: new Date().toISOString(), last_day: day, last_error: undefined, calls: { day: today, n }, shape });
     return { day, ...got };
   } catch (e: any) {
     await setSetting(`clarity:${shop}`, { ...c, last_at: new Date().toISOString(), last_error: String(e.message || e).slice(0, 300), calls: { day: today, n } });
@@ -151,7 +163,7 @@ export async function clarityStatus() {
     shops.map(async (s) => {
       const c = await conf(s.id);
       const d = days.find((x) => x.shop === s.id);
-      return { id: s.id, label: s.label, connected: !!c?.token, added_at: c?.added_at || null, last_at: c?.last_at || null, last_day: c?.last_day || null, last_error: c?.last_error || null, days: d?.days || 0, last: d?.last || null };
+      return { id: s.id, label: s.label, connected: !!c?.token, added_at: c?.added_at || null, last_at: c?.last_at || null, last_day: c?.last_day || null, last_error: c?.last_error || null, days: d?.days || 0, last: d?.last || null, calls_today: c?.calls?.day === sofia() ? c.calls.n : 0, shape: c?.shape || null };
     }),
   );
 }
@@ -168,8 +180,8 @@ export async function disconnectClarity(shop: string) {
 
 const pick = (m: any, re: RegExp) => {
   if (!m) return null;
-  const k = Object.keys(m).find((f) => f !== "_w" && re.test(f));
-  return k ? m[k] : null;
+  const k = Object.keys(m).find((f) => f !== "_w" && re.test(f) && Number.isFinite(Number(m[f])));
+  return k ? Number(m[k]) : null;
 };
 
 /** The landing pages' Clarity numbers for the period: sessions, scroll depth %, active time (s) and the share of
@@ -187,18 +199,20 @@ export async function clarityPages(from: string, to: string, shop: string, pages
   for (const r of rows) {
     const k = `${r.shop}\u0001${r.key}`;
     if (!want.has(k)) continue;
-    const m = r.m || {};
-    const t = m.Traffic || {};
+    // Stored before the names were normalised ("Scroll Depth") or after ("scrolldepth"): one key.
+    const m: Record<string, any> = {};
+    for (const [k, v] of Object.entries(r.m || {})) m[norm(k)] = { ...(m[norm(k)] || {}), ...(v as any) };
+    const t = m.traffic || {};
     const sessions = Math.max(0, (num(t.totalSessionCount) || 0) - (num(t.totalBotSessionCount) || 0));
     const a = acc.get(k) || { sessions: 0, w: {} };
     a.sessions += sessions;
     const vals: Record<string, number | null> = {
-      scroll: pick(m["Scroll Depth"], /scroll|average|depth/i) ?? pick(m["Scroll Depth"], /./),
-      active: pick(m["Engagement Time"], /active/i) ?? pick(m["Engagement Time"], /time/i),
-      rage: pick(m["Rage Click Count"], /withMetricPercentage|percent/i),
-      dead: pick(m["Dead Click Count"], /withMetricPercentage|percent/i),
-      quickback: pick(m["Quickback Click"], /withMetricPercentage|percent/i),
-      scrolls: pick(m["Excessive Scroll"], /withMetricPercentage|percent/i),
+      scroll: pick(m.scrolldepth, /scroll|average|depth/i) ?? pick(m.scrolldepth, /./),
+      active: pick(m.engagementtime, /active/i) ?? pick(m.engagementtime, /time/i),
+      rage: pick(m.rageclickcount, /withMetricPercentage|percent/i),
+      dead: pick(m.deadclickcount, /withMetricPercentage|percent/i),
+      quickback: pick(m.quickbackclick, /withMetricPercentage|percent/i),
+      scrolls: pick(m.excessivescroll, /withMetricPercentage|percent/i),
     };
     for (const [f, v] of Object.entries(vals)) {
       if (v == null || !Number.isFinite(Number(v))) continue;
