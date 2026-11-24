@@ -149,5 +149,13 @@ export const DECKS = {
   mat: { title: "Карти по математика", short: "Математика", sub: "50 карти · 5.–7. клас", img: "kutiya-matematika.webp", plain: true, isNew: true },
 };
 
-// The most decks in one order.
+// The most decks in one package (the price steps above and the packages in the store).
 export const MAX_DECKS = 3;
+// The most decks in one order. Past the third every deck is EXTRA_DECK.price more (for a second or
+// third child): the cart checkout puts the three-deck package in the order and then each extra deck
+// as its own product in the store (EXTRA_DECK.store, "Допълнително тесте: …", 14,90 €).
+export const CART_MAX = 10;
+export const EXTRA_DECK = { price: 1490, store: { lit: 62, ezik: 63, mat: 64 } };
+// The gift with the three kinds (trio) until a moment. The trio's own checkout lists its gift products
+// by itself; in the cart checkout (trio + extra decks) they are added after the package until then.
+export const TRIO_GIFT = { until: "2026-11-29T23:59:59+02:00", store: [44, 61] };
