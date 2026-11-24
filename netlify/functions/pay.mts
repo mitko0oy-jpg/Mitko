@@ -73,7 +73,8 @@ export default handle(async (req, ctx) => {
       payments: !!stripeKey() || fakeMode(),
       test: !isLive(),
       code: info ? info.view : null,
-    });
+    // edubel.bg asks this too (no cookies, public prices): its buttons switch to paying here once card payments are live.
+    }, 200, { "access-control-allow-origin": "*" });
   }
 
   // The free trial: a new code at once, no card and no e-mail.

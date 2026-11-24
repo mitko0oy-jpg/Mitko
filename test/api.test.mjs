@@ -515,6 +515,9 @@ test("levels of access, the free trial and paying (practice payment and a signed
   await admin("plans", { plans: [{ id: `full-${run}`, title: "Пълен – 1 месец", tier: "full", months: 1, price: 9 }, { id: `std-${run}`, title: "Стандарт БЕЛ – 1 месец", tier: "std", subject: "bel", months: 1, price: 6 }] });
   r = await t(`pay/plans?k=${oldCode}`);
   assert.equal(r.code.expired, true);
+  // edubel.bg reads the plans too (its buttons switch to paying here): open to other sites, no cookies.
+  const cors = await fetch(`${BASE}/api/pay/plans`, { headers: { origin: "https://edubel.bg" } });
+  assert.equal(cors.headers.get("access-control-allow-origin"), "*");
   assert.ok(r.plans.some((p) => p.id === `full-${run}`) && r.payments);
   r = await t("pay/checkout", { plan: `full-${run}` });
   assert.equal(r.error, "agree", "the parent agrees to the terms first");
