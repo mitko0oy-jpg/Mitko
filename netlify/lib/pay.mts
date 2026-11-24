@@ -63,7 +63,8 @@ function form(obj: any, prefix = "", out: string[] = []) {
   return out.join("&");
 }
 async function stripe(method: string, path: string, params?: any) {
-  const res = await fetch(`https://api.stripe.com/v1/${path}`, {
+  // STRIPE_API: only for the local test with a stand-in Stripe (test/stripe.test.mjs); never set in Netlify.
+  const res = await fetch(`${env("STRIPE_API") || "https://api.stripe.com"}/v1/${path}`, {
     method,
     headers: { authorization: `Bearer ${stripeKey()}`, "content-type": "application/x-www-form-urlencoded", "stripe-version": "2024-06-20" },
     body: params ? form(params) : undefined,
@@ -199,6 +200,18 @@ export async function activateIfPaid(code: string) {
   if (!p) return false;
   const done = await checkWithStripe(p.session).catch(() => null);
   return !!(done && done.status === "paid");
+}
+
+// A renewal paid while the page after paying was closed (and no webhook came): when the trainer opens with the code,
+// its payments still "open" from the last two days are checked with Stripe (Checkout sessions expire after 24 hours,
+// so an abandoned one is marked expired and not asked about again).
+export async function settleRenewals(code: string) {
+  if (!stripeKey()) return;
+  const rows = await q<{ session: string }>(
+    "SELECT session FROM trener_payments WHERE for_code = $1 AND status = 'open' AND created_at > now() - interval '2 days' ORDER BY id LIMIT 3",
+    [code],
+  );
+  for (const r of rows) await checkWithStripe(r.session).catch(() => null);
 }
 
 /* ---------- the free trial ---------- */

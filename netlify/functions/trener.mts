@@ -4,7 +4,7 @@ import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { listReports, setReport } from "../lib/reports.mts";
-import { activateIfPaid } from "../lib/pay.mts";
+import { activateIfPaid, settleRenewals } from "../lib/pay.mts";
 import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, isReviewBatch, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
 
 // НВО тренажор, opened with a personal code from a PDF or a box sticker. No account and no password:
@@ -81,6 +81,7 @@ export default handle(async (req, ctx) => {
   // Opens the trainer on this browser: registers it if there is a free place, then sends the grades and the questions.
   if (parts[0] === "open") {
     if (!validDevice(b.device)) throw bad("device", "Отвори тренажора от линка отново.");
+    await settleRenewals(code);
     const dev = deviceHash(b.device);
     const res = await tx(async (t) => {
       const key = await findKey(req, ctx, code, t);
