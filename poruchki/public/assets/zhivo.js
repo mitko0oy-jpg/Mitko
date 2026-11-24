@@ -1,5 +1,6 @@
 // Сега в сайтовете: who is on the shop pages right now (from the c.js signs of life), refreshed every 10 s.
 import { api, esc, num, shell } from "./app.js";
+import { sonar, CH_COLOR } from "./sonar.js";
 
 const $ = (id) => document.getElementById(id);
 await shell("zhivo");
@@ -16,58 +17,15 @@ const DEV = {
   tablet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="таблет"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M11 18h2"/></svg>`,
   desktop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="компютър"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg>`,
 };
-const CH_COLOR = { meta: "#e8457c", google_ads: "#2fb35a", tiktok: "#18c7c1", search: "#9aa3b2", email: "#5b7cfa", sms: "#22b8d6", viber: "#8b5cf6", calls: "#f2b233", other: "#c9824f", direct: "#6b7280", unknown: "#4b5563" };
 const KIND = { came: "влезе", checkout: "стигна до формата", filling: "попълва формата", ordered: "поръча" };
-const hash = (s) => {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return ((h >>> 0) % 1000) / 1000;
-};
 const hhmm = (iso) => new Date(iso).toLocaleTimeString("bg-BG", { timeZone: "Europe/Sofia", hour: "2-digit", minute: "2-digit" });
 const place = (x) => x.city || COUNTRY[x.country] || x.country || "Някой";
 const eur2 = (n) => `${(Number(n) || 0).toFixed(2).replace(".", ",")} €`;
 
-/** The circle: one slice per channel, each person online is a dot – outer ring browsing, then the form, then typing. */
+/** The circle (drawn as a sonar in sonar.js): one slice per channel, each person online is a blip –
+ * outer ring browsing, then the form, then typing. */
 function radar(channels, sessions) {
-  const list = channels.filter((c) => c.id !== "unknown");
-  const R = 200;
-  const n = list.length;
-  const span = (Math.PI * 2) / n;
-  const pt = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
-  const arc = (a0, a1, r) => {
-    const [x0, y0] = pt(a0, r);
-    const [x1, y1] = pt(a1, r);
-    return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-  };
-  const online = sessions.filter((x) => x.online);
-  let out = `<defs><radialGradient id="rg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(${R})"><stop offset="0" style="stop-color:var(--surface-2)"/><stop offset="1" style="stop-color:var(--surface)"/></radialGradient></defs>
-    <circle r="${R}" fill="url(#rg)" style="stroke:var(--line)"/>`;
-  list.forEach((c, i) => {
-    const a0 = -Math.PI / 2 + i * span;
-    const a1 = a0 + span;
-    const col = CH_COLOR[c.id] || "#888";
-    const heat = Math.min(0.42, (c.now ? 0.1 : 0.03) + c.now * 0.05);
-    const [x0, y0] = pt(a0, R);
-    out += `<g class="slice" data-ch="${c.id}">
-      <path d="M 0 0 L ${x0.toFixed(1)} ${y0.toFixed(1)} ${arc(a0, a1, R).replace(/^M [^A]+/, "")} Z" fill="${col}" fill-opacity="${heat}" style="stroke:var(--line)" stroke-opacity=".6"/>
-      <path d="${arc(a0 + 0.04, a1 - 0.04, R + 12)}" fill="none" stroke="${col}" stroke-width="${c.now ? 7 : 4}" stroke-linecap="round" stroke-opacity="${c.now || c.orders ? 1 : 0.45}"/>`;
-    const am = a0 + span / 2;
-    const [lx, ly] = pt(am, R + 40);
-    const anchor = Math.abs(Math.cos(am)) < 0.25 ? "middle" : Math.cos(am) > 0 ? "start" : "end";
-    out += `<text x="${lx.toFixed(1)}" y="${(ly + 4).toFixed(1)}" text-anchor="${anchor}" class="rlab" fill="${col}">${esc(c.label)}${c.now ? ` · ${c.now}` : ""}</text></g>`;
-  });
-  for (const [r, cls] of [[0.8, "r1"], [0.56, "r2"], [0.34, "r3"]]) out += `<circle r="${R * r}" class="ring ${cls}" fill="none"/>`;
-  // The people online.
-  for (const x of online) {
-    const i = Math.max(0, list.findIndex((c) => c.id === x.channel));
-    const a = -Math.PI / 2 + i * span + span * (0.14 + 0.72 * hash(x.sid));
-    const base = x.stage === "filling" || x.stage === "ordered" ? 0.34 : x.stage === "checkout" ? 0.56 : 0.8;
-    const r = R * (base + (hash(x.sid + "r") - 0.5) * 0.12);
-    const [cx, cy] = pt(a, r);
-    out += `<circle class="pdot ${x.stage}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${x.stage === "browsing" ? 6 : 8}" fill="${CH_COLOR[x.channel] || "#888"}"><title>${esc(`${place(x)} · ${x.shop_label} · ${STAGE[x.stage]?.[0] || ""}`)}</title></circle>`;
-  }
-  out += `<circle r="${R * 0.25}" class="rcenter"/><text y="5" text-anchor="middle" class="rnum">${online.length}</text><text y="25" text-anchor="middle" class="rsub">на сайтовете</text>`;
-  $("radar").innerHTML = out;
+  const list = sonar($("radar"), channels, sessions, place, (st) => STAGE[st]?.[0] || "");
   // A slice under the mouse shows its numbers.
   $("radar").querySelectorAll(".slice").forEach((g) => {
     g.onmouseenter = (e) => {
