@@ -104,7 +104,7 @@ const courier = createServer((req, res) => {
     ];
     const body =
       d1 === "URL"
-        ? rows([[{ URL: "https://shop.test/gel-bf?fbclid=a" }, 300], [{ URL: "https://shop.test/gel-bf?fbclid=b" }, 100], [{ URL: "https://shop.test/" }, 50]])
+        ? rows([[{ Url: "https://shop.test/gel-bf?fbclid=a" }, 300], [{ Url: "https://shop.test/gel-bf?fbclid=b" }, 100], [{ Url: "https://shop.test/" }, 50]])
         : d1 === "Source"
           ? rows([[{ Source: "facebook", Medium: "paid", Campaign: "Гел" }, 380]])
           : rows([[{ Device: "Mobile" }, 400], [{ Device: "PC" }, 50]]);

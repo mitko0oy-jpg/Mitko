@@ -46,8 +46,14 @@ export const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z
 /** Clarity's answer ([{metricName, information: [{…numbers, <dimension>: value}]}]) → rows per key, the metrics of
  * rows with the same key (one page with different ?query) added up: counts summed, the rest weighted by sessions. */
 export function parseInsights(data: any, kind: string, dims: string[]): Map<string, Record<string, any>> {
-  const keyOf = (info: any) => (kind === "url" ? pathOf(String(info.URL ?? info.Url ?? "")) : dims.map((d) => String(info[d] ?? "")).join("|").slice(0, 300));
-  const rawKey = (info: any) => dims.map((d) => String(info[d] ?? "")).join("|");
+  // The dimension comes back in its own spelling ("Url" for URL): read it in any case.
+  const dim = (info: any, d: string) => {
+    const k = Object.keys(info || {}).find((f) => f.toLowerCase() === d.toLowerCase());
+    return k ? String(info[k] ?? "") : "";
+  };
+  const isDim = (f: string) => dims.some((d) => d.toLowerCase() === f.toLowerCase());
+  const keyOf = (info: any) => (kind === "url" ? pathOf(dim(info, "URL")) : dims.map((d) => dim(info, d)).join("|").slice(0, 300));
+  const rawKey = (info: any) => dims.map((d) => dim(info, d)).join("|");
   const metrics = Array.isArray(data) ? data : [];
   // Sessions per raw row, for the weights.
   const weight = new Map<string, number>();
@@ -65,7 +71,7 @@ export function parseInsights(data: any, kind: string, dims: string[]): Map<stri
       const row = out.get(key) || {};
       const cur = row[name] || { _w: 0 };
       for (const [f, v] of Object.entries(info)) {
-        if (dims.includes(f) || f === "URL") continue;
+        if (isDim(f)) continue;
         const n = num(v);
         if (n === null) continue;
         if (COUNT.test(f)) cur[f] = (cur[f] || 0) + n;
@@ -115,7 +121,7 @@ export async function pullShop(shop: string, c?: Conf | null) {
       if (kind === "url" && Array.isArray(data))
         for (const m of data.slice(0, 20)) {
           const first = (m?.information || [])[0] || {};
-          shape[String(m?.metricName).slice(0, 40)] = Object.fromEntries(Object.entries(first).filter(([f]) => f !== "URL").slice(0, 12).map(([f, v]) => [f.slice(0, 40), String(v).slice(0, 20)]));
+          shape[String(m?.metricName).slice(0, 40)] = Object.fromEntries(Object.entries(first).filter(([f]) => f.toLowerCase() !== "url").slice(0, 12).map(([f, v]) => [f.slice(0, 40), String(v).slice(0, 20)]));
         }
       const rows = parseInsights(data, kind, dims);
       await q(`DELETE FROM clarity_days WHERE shop = $1 AND day = $2::date AND kind = $3`, [shop, day, kind]);
