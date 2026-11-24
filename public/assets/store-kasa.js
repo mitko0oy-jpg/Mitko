@@ -15,6 +15,8 @@ const MORE_MAX = Math.max(0, (CFG.CART_MAX || 3) - (CFG.MAX_DECKS || 3));
 const giftNow = () => Boolean(CFG.TRIO_GIFT && Date.now() <= Date.parse(CFG.TRIO_GIFT.until));
 const KEY_ID = Number(SET.kasaKey || CFG.KASA_KEY) || 0;
 const withKey = (pkg) => pkg === "trio" || pkg.includes("ezik");
+const MATH_KEY_ID = Number(SET.kasaMathKey || CFG.KASA_MATH_KEY) || 0;
+const withMathKey = (pkg) => pkg === "trio" || pkg.includes("mat");
 
 const W = () => window.WebPlatform;
 const ready = () => {
@@ -69,6 +71,7 @@ async function fill(pkg, xs, more) {
   for (let i = (o.items || []).length - 1; i >= 0; i--) o = await removeAt(i);
   await addProduct(STORE[pkg]);
   if (KEY_ID && withKey(pkg)) await addProduct(KEY_ID);
+  if (MATH_KEY_ID && withMathKey(pkg)) await addProduct(MATH_KEY_ID);
   for (const [k, n] of Object.entries(more)) await addProduct(DSTORE[k], n);
   if (pkg === "trio" && giftNow()) for (const id of CFG.TRIO_GIFT.store) await addProduct(id);
   for (const x of xs) if (XSTORE[x]) await addProduct(XSTORE[x]);

@@ -118,6 +118,8 @@ export const KASA_STORE = {
   "lit2-ezik": 58, "lit2-mat": 52, "ezik2-lit": 59, "ezik2-mat": 53, "mat2-lit": 50, "mat2-ezik": 51,
 };
 export const KASA_KEY = 25;
+// the free PDF with the solutions to the math cards (product 65), with every package that has math cards
+export const KASA_MATH_KEY = 65;
 
 // The package prices on edubel.bg that differ from shop-catalog.js (euro cents); edubel.site keeps its own.
 // Two decks: 27,90 € for the first and 16,90 € for the second. Must match the products in ConvertBuilder.
