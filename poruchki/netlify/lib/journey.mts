@@ -110,7 +110,8 @@ export async function journeyReport(from: string, to: string, shop = "") {
   const speed = new Map<string, M>();
   const hours = Array.from({ length: 24 }, zero);
   const days = Array.from({ length: 7 }, zero);
-  const shops = new Map<string, { shop: string; label: string; m: M; groups: Map<string, M>; fine: Map<string, M> }>();
+  // tracked: orders with a known visit (attributed – the same days the people on the sites are counted for).
+  const shops = new Map<string, { shop: string; label: string; m: M; groups: Map<string, M>; fine: Map<string, M>; tracked: number }>();
   const dayList: number[] = [];
   const touchList: number[] = [];
   let withTrail = 0;
@@ -126,9 +127,10 @@ export async function journeyReport(from: string, to: string, shop = "") {
     bump(byLast, fine, o);
     add(hours[o.hour], o);
     add(days[(o.dow + 6) % 7], o);
-    if (!shops.has(o.shop)) shops.set(o.shop, { shop: o.shop, label: o.shop_label, m: zero(), groups: new Map(), fine: new Map() });
+    if (!shops.has(o.shop)) shops.set(o.shop, { shop: o.shop, label: o.shop_label, m: zero(), groups: new Map(), fine: new Map(), tracked: 0 });
     const sh = shops.get(o.shop)!;
     add(sh.m, o);
+    if (o.src && !["unknown", "manual", "calls"].includes(fine)) sh.tracked++;
     bump(sh.groups, group, o);
     bump(sh.fine, fine, o);
     if (o.src?.page) {
@@ -194,6 +196,7 @@ export async function journeyReport(from: string, to: string, shop = "") {
         shop: s.shop,
         label: s.label,
         ...done(s.m),
+        tracked: s.tracked,
         groups: Object.fromEntries([...s.groups.entries()].map(([g, m]) => [g, done(m)])),
         fine: Object.fromEntries([...s.fine.entries()].map(([f, m]) => [f, done(m)])),
         people: visitsOf(s.shop, "*"),

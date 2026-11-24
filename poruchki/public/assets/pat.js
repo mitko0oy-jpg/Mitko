@@ -108,7 +108,7 @@ function insights(d) {
     if (wd[0][1] >= wd[6][1] * 1.4) out.push(`Най-силен ден е <b>${DOW[wd[0][0]]}</b> (${num(wd[0][1])}), най-слаб – ${DOW[wd[6][0]]} (${num(wd[6][1])}).`);
   }
   // Shops: orders per 100 people.
-  const conv = d.shops.filter((s) => s.people && s.people.people >= 100).map((s) => [s, (s.orders / s.people.people) * 100]);
+  const conv = d.shops.filter((s) => s.people && s.people.people >= 100 && s.tracked >= 5).map((s) => [s, (s.tracked / s.people.people) * 100]);
   if (conv.length >= 2) {
     conv.sort((a, b) => b[1] - a[1]);
     const [best, worst] = [conv[0], conv[conv.length - 1]];
@@ -163,10 +163,10 @@ function render(d) {
           return `<tr data-shop="${esc(s.shop)}" class="pt-click"><td><b>${esc(s.label)}</b><div class="muted small">${top}</div></td><td class="r">${num(s.orders)}</td>
             <td>${stack(d.fine.filter((f) => s.fine[f.id]).map((f) => [f.id, s.fine[f.id].orders, COLOR[f.id] || "#999", f.label]))}</td>
             <td class="r">${num(gg("paid"))}</td><td class="r">${num(gg("organic"))}</td><td class="r">${num(other)}</td>
-            <td class="r">${s.people ? num(s.people.people) : "–"}</td><td class="r">${s.people && s.people.people ? dec((s.orders / s.people.people) * 100) : "–"}</td>
+            <td class="r">${s.people ? num(s.people.people) : "–"}</td><td class="r" title="поръчки с проследено посещение на 100 посетители">${s.people && s.people.people >= 30 ? dec((s.tracked / s.people.people) * 100) : "–"}</td>
             <td class="r"><b>${eur(s.taken, true)}</b></td></tr>`;
         })
-        .join("")}</tbody></table><p class="muted small" style="margin:6px 0 0">„Хора“ = различни посетители на сайта за периода (от 23.11.2026). Клик върху сайт показва само него.</p>`
+        .join("")}</tbody></table><p class="muted small" style="margin:6px 0 0">„Хора“ = различни посетители на сайта за периода (броят се от 23.11.2026); „На 100 души“ = поръчките с проследено посещение на 100 посетители. Клик върху сайт показва само него.</p>`
     : `<div class="muted">Няма поръчки за този период.</div>`;
   $("shops").querySelectorAll("tr[data-shop]").forEach((tr) => (tr.onclick = () => (($("shop").value = st.shop = tr.dataset.shop), load())));
 
