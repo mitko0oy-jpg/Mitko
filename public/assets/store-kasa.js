@@ -8,7 +8,7 @@ const SET = window.EB_LANDING?.store || {};
 const STORE = { ...CFG.STORE_ID, ...CFG.KASA_STORE, ...(SET.kasaStore || {}) };
 // extras that come with the package (?x=dos): their products go in after it
 const XSTORE = Object.fromEntries(Object.entries(CFG.EXTRAS || {}).map(([x, e]) => [x, e.store]));
-// decks past the third (?d=lit,lit,ezik): one product per kind, as many as asked for
+// decks past the third (?d=lit,lit,ezik), only with the trio: one product per kind, as many as asked for
 const DSTORE = { ...(CFG.EXTRA_DECK?.store || {}), ...(SET.extraDeckStore || {}) };
 const MORE_MAX = Math.max(0, (CFG.CART_MAX || 3) - (CFG.MAX_DECKS || 3));
 // the trio's gift (until its moment): with extra decks the order comes here, not to the trio's own checkout
@@ -100,7 +100,8 @@ marks();
   const pkg = q.get("p");
   const xs = (q.get("x") || "").split(",").filter((x) => XSTORE[x]);
   const more = {};
-  for (const k of (q.get("d") || "").split(",")) if (DSTORE[k] && Object.values(more).reduce((s, n) => s + n, 0) < MORE_MAX) more[k] = (more[k] || 0) + 1;
+  // extra decks only with the trio (all three kinds)
+  if (pkg === "trio") for (const k of (q.get("d") || "").split(",")) if (DSTORE[k] && Object.values(more).reduce((s, n) => s + n, 0) < MORE_MAX) more[k] = (more[k] || 0) + 1;
   if (!pkg || !STORE[pkg]) return;
   if (!ready()) {
     if (n < 100) setTimeout(() => start(n + 1), 300);

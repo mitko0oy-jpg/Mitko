@@ -3,8 +3,8 @@
 // the header is already on the page when shop.js wires the scroll effects and, inside a ConvertBuilder
 // block, moves the fixed bars under <body>.
 // The cart holds decks in any mix: up to three they are one package (the old five of shop-catalog.js
-// and the mixes of store-config.js) and "Към поръчката" opens that package's checkout; past three (up to
-// CFG.CART_MAX) the first three are the package and every other deck costs CFG.EXTRA_DECK.price more.
+// and the mixes of store-config.js) and "Към поръчката" opens that package's checkout. Past three only
+// with all three kinds (the trio): then every other deck costs CFG.EXTRA_DECK.price more (up to CFG.CART_MAX).
 import { PACKAGES, PLAIN, REGULAR, setRegular, euro } from "/assets/shop-catalog.js";
 import * as CFG from "/assets/store-config.js";
 import { ROOT } from "/assets/eb-root.js";
@@ -75,6 +75,9 @@ const LOGO = `<img class="logo" src="${esc(main?.dataset.logo || "/assets/logo.p
 const KEY = "eb-cart";
 const n0 = (v) => Math.max(0, Math.min(CART_MAX, Math.floor(Number(v) || 0)));
 const count = (c = cart) => KEYS.reduce((s, k) => s + (c[k] || 0), 0);
+// more than three decks only with all three kinds in the cart (the trio and decks added to it)
+const allKinds = (c = cart) => KEYS.every((k) => (c[k] || 0) > 0);
+const fits = (c) => count(c) <= MAX_DECKS || (allKinds(c) && count(c) <= CART_MAX);
 // extras (CFG.EXTRAS) sit in the cart next to the decks as 0 / 1 and only with at least one deck
 const XKEYS = Object.keys(CFG.EXTRAS || {});
 const blank = () => Object.fromEntries([...KEYS, ...XKEYS].map((k) => [k, 0]));
@@ -84,7 +87,7 @@ function load() {
   try {
     const c = JSON.parse(localStorage.getItem(KEY) || "null");
     const v = c && Object.fromEntries([...KEYS.map((k) => [k, n0(c[k])]), ...XKEYS.map((x) => [x, c[x] ? 1 : 0])]);
-    if (v && count(v) <= CART_MAX) return count(v) ? v : blank();
+    if (v && fits(v)) return count(v) ? v : blank();
   } catch {}
   return blank();
 }
@@ -93,8 +96,8 @@ let notice = "";
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch {}
 };
-// Past three decks: the package is three of them – one of each kind first, then the most of one kind –
-// and the rest are the extra decks ("more").
+// Past three decks (all three kinds): the package is the trio – one of each kind – and the rest are
+// the extra decks ("more").
 function split(c = cart) {
   const base = Object.fromEntries(KEYS.map((k) => [k, 0]));
   const more = Object.fromEntries(KEYS.map((k) => [k, c[k] || 0]));
@@ -122,14 +125,18 @@ const checkoutOf = (pkg, xs = [], more = []) => {
 };
 const single = (k) => PACKAGES[`${k}-1`];
 
-// A package goes into the cart; past CART_MAX decks the cart becomes just that package.
+// A package goes into the cart; when the cart would not fit (past three without all three kinds, or past
+// CART_MAX) it becomes just that package.
 function add(pkg, xs = []) {
   const p = PKG_CART[pkg];
   if (!p) return;
   const next = { ...cart, ...Object.fromEntries(KEYS.map((k) => [k, cart[k] + p[k]])) };
   notice = "";
-  if (count(next) > CART_MAX) {
-    if (count()) notice = `В една поръчка влизат до ${CART_MAX} тестета – оставихме това, което избрахте сега. За повече се обадете на ${CONTACT.phone}.`;
+  if (!fits(next)) {
+    if (count())
+      notice = count(next) > CART_MAX
+        ? `В една поръчка влизат до ${CART_MAX} тестета – оставихме това, което избрахте сега. За повече се обадете на ${CONTACT.phone}.`
+        : `Повече от 3 тестета се добавят само към комплекта с трите вида карти (литература, български език и математика) – по ${euro(EXTRA_DECK.price)} за всяко следващо. Оставихме това, което избрахте сега.`;
     cart = { ...blank(), ...p };
   } else cart = next;
   for (const x of xs) if (XKEYS.includes(x)) cart[x] = 1;
@@ -138,8 +145,9 @@ function add(pkg, xs = []) {
   openCart();
 }
 function setQty(deck, n) {
-  const others = count() - cart[deck];
-  cart = { ...cart, [deck]: Math.max(0, Math.min(CART_MAX - others, n)) };
+  const next = { ...cart, [deck]: Math.max(0, n) };
+  if (!fits(next)) return;
+  cart = next;
   if (!count()) cart = blank();
   notice = "";
   save();
@@ -327,14 +335,16 @@ function render() {
     .map((k) => {
       const d = DECKS[k];
       const one = single(k);
-      const room = n < CART_MAX;
+      const room = fits({ ...cart, [k]: cart[k] + 1 });
+      // the last deck of a kind stays while the extra decks need all three kinds
+      const less = fits({ ...cart, [k]: cart[k] - 1 });
       return `<li class="ci">
         <a class="ci-img" href="${href(k)}"><img src="${esc(MEDIA + d.img)}" alt="" loading="lazy"></a>
         <div class="ci-main">
           <a class="ci-title" href="${href(k)}">${esc(d.title)}</a>
           <small>${esc(d.sub)}</small>
           <div class="qty" role="group" aria-label="Брой">
-            <button type="button" data-qty="${k}:-1" aria-label="${cart[k] === 1 ? "Махни" : "Едно по-малко"}">${ICON.minus}</button>
+            <button type="button" data-qty="${k}:-1" aria-label="${cart[k] === 1 ? "Махни" : "Едно по-малко"}"${less ? "" : ' disabled title="Допълнителните тестета са само към комплекта с трите вида карти"'}>${ICON.minus}</button>
             <output>${cart[k]}</output>
             <button type="button" data-qty="${k}:1" aria-label="Още едно"${room ? "" : " disabled"}>${ICON.plus}</button>
           </div>
@@ -372,14 +382,26 @@ function render() {
     </div>`;
       })
       .join("");
-  } else if (n && n < CART_MAX) {
-    // three or more: every next deck (for a classmate or a friend) at the extra-deck price
+  } else if (n && allKinds() && n < CART_MAX) {
+    // the trio in the cart: every next deck (for a classmate or a friend) at the extra-deck price
     up.innerHTML = `<div class="up up-more">
       <p class="up-k">Още тестета · за съученик или приятел</p>
       <b>Всяко следващо тесте – само ${euro(EXTRA_DECK.price)}</b>
       <small>вместо ${euro(single("lit").price)} · добавете колкото ви трябват</small>
       <div class="up-more-b">${KEYS.map((k) => `<button class="btn btn-dark btn-sm" type="button" data-up="${k}">+ ${esc(DECKS[k].short)}</button>`).join("")}</div>
     </div>`;
+  } else if (n >= MAX_DECKS && n < CART_MAX) {
+    // three decks of two kinds: the missing kind makes the trio, and then every next deck is the extra-deck price
+    up.innerHTML = KEYS.filter((k) => !cart[k] && fits({ ...cart, [k]: 1 }))
+      .map((k) => {
+        const d = DECKS[k];
+        return `<div class="up">
+      <img src="${esc(MEDIA + d.img)}" alt="" loading="lazy">
+      <div><p class="up-k">Добави и ${esc(d.short.toLowerCase())}${d.isNew ? " · ново" : ""}</p><b>${esc(d.title)}</b><small>С трите вида карти всяко следващо тесте е само ${euro(EXTRA_DECK.price)}</small></div>
+      <button class="btn btn-dark btn-sm" type="button" data-up="${k}">+ ${euro(EXTRA_DECK.price)}</button>
+    </div>`;
+      })
+      .join("");
   } else up.innerHTML = "";
   // an extra that goes with a deck in the cart and is not in it yet
   up.insertAdjacentHTML("beforeend", XKEYS.filter((x) => !cart[x] && cart[CFG.EXTRAS[x].with]).map((x) => {
@@ -395,7 +417,7 @@ function render() {
   const bar = $(".meter span", cartDlg);
   const left = FREE - n;
   if (n >= FREE) {
-    const next = n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : n < CART_MAX ? ` Всяко следващо тесте – само ${euro(EXTRA_DECK.price)}.` : "";
+    const next = n < MAX_DECKS ? ` Трето тесте – само ${euro(ladder(3) - ladder(2))}.` : allKinds() && n < CART_MAX ? ` Всяко следващо тесте – само ${euro(EXTRA_DECK.price)}.` : "";
     msg.innerHTML = `${ICON.check}<span><b>Доставката е безплатна.</b> Спестявате ${euro(disc)} от редовната цена.${next}</span>`;
     bar.style.width = "100%";
   } else if (n) {
@@ -476,10 +498,10 @@ for (const pdp of $$("[data-pdp]")) {
     const flag = $(".opt-flag", box);
     if (flag && /доставка/i.test(flag.textContent) && !p.freeShip) flag.remove();
   }
-  // more than three decks go through the cart: say so under the sets
+  // more decks go only with the trio, through the cart: say so under the sets where the trio is one of them
   const fs = $(".opts", pdp);
-  if (fs && CART_MAX > MAX_DECKS && !$(".opts-more", pdp))
-    fs.insertAdjacentHTML("afterend", `<p class="opts-more">${ICON.plus}<span><b>Нужни са ви повече тестета?</b> След третото всяко следващо е само ${euro(EXTRA_DECK.price)} – добавете ги в количката.</span></p>`);
+  if (fs && CART_MAX > MAX_DECKS && opts.some((o) => o.value === "trio") && !$(".opts-more", pdp))
+    fs.insertAdjacentHTML("afterend", `<p class="opts-more">${ICON.plus}<span><b>Нужни са ви повече тестета?</b> Към комплекта с трите вида карти всяко следващо тесте е само ${euro(EXTRA_DECK.price)} – добавете ги в количката.</span></p>`);
   const picked = () => opts.find((o) => o.checked)?.value || opts[0]?.value;
   const buybar = $(".buybar");
   function update() {
