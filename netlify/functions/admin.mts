@@ -258,10 +258,12 @@ export default handle(async (req, ctx) => {
     const keepQs = (d.questions || []).filter((x: any) => !ids.has(x.m) && !qids.has(x.id));
     // New skills (for the skill map) are added or replace the ones with the same id.
     const skills = Array.isArray(b.skills) ? [...(d.skills || []).filter((x: any) => !b.skills.some((y: any) => y.id === x.id)), ...b.skills] : d.skills || null;
-    const retell = Array.isArray(b.retell) ? [...(d.retell || []).filter((x: any) => !b.retell.some((y: any) => y.id === x.id)), ...b.retell] : d.retell || null;
+    const okRetell = Array.isArray(b.retell) ? b.retell.filter((r: any) => r && /^[a-z0-9-]{3,24}$/.test(String(r.id)) && Array.isArray(r.text) && Array.isArray(r.events)) : null;
+    if (okRetell && okRetell.length !== b.retell.length) throw bad("bank", "Текст за преразказ: id (малки латински, цифри, тире, до 24), text и events като списъци.");
+    const retell = okRetell ? [...(d.retell || []).filter((x: any) => !okRetell.some((y: any) => y.id === x.id)), ...okRetell] : d.retell || null;
     const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) }, skills, retell };
     const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify(next)]);
-    return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length });
+    return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length, retell: (next.retell || []).length });
   }
 
   // НВО тренажор: drafts the teacher approved go to everybody (draft: false on these modules, a new bank version).

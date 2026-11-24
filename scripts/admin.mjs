@@ -8,7 +8,7 @@
 //   ... node scripts/admin.mjs delete-user parent@example.com
 //   ... node scripts/admin.mjs trener-bank private/nvo-trener/bank-all.json   (НВО тренажор: questions)
 //   ... node scripts/admin.mjs trener-bank-get [private/nvo-trener/bank-live.json]   (the questions served now)
-//   ... node scripts/admin.mjs trener-bank-add <file with {modules, questions}>   (add or replace whole modules)
+//   ... node scripts/admin.mjs trener-bank-add <file with {modules, questions} and/or {retell}>   (add or replace whole modules / retelling texts)
 //   ... node scripts/admin.mjs trener-bank-approve mz-chisla,mz-danni | all   (drafts the teacher approved go live)
 //   ... node scripts/admin.mjs invites | invite-new <партида> [--drafts] | invite-off <партида> | invite-on <партида>   (master links)
 //   ... node scripts/admin.mjs trener-codes '{"count":150,"batch":"pdf-2026-11"}' | trener-list pdf-2026-11
