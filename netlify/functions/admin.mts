@@ -3,6 +3,7 @@ import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
 import { hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, env, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { aiSetup, chat } from "../lib/ai.mts";
 import { getSetting, listInvites, newInvite, savePlans, setSetting, switchInvite } from "../lib/pay.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
@@ -47,6 +48,13 @@ export default handle(async (req, ctx) => {
   if (req.method === "POST" && parts[0] === "plans") return json({ plans: await savePlans((await body(req)).plans) });
   if (req.method === "GET" && parts[0] === "payments") return json({ payments: await q("SELECT * FROM trener_payments ORDER BY created_at DESC LIMIT 200") });
   if (req.method === "GET" && parts[0] === "trial") return json({ trial: await getSetting("trial") });
+  // Is AI reachable from the functions? Which gateway variables exist (names only, never values); ?ping=1 asks for one word.
+  if (req.method === "GET" && parts[0] === "ai-status") {
+    const setup = aiSetup();
+    if (!new URL(req.url).searchParams.get("ping")) return json({ setup });
+    try { return json({ setup, ping: await chat("Отговаряй с една дума.", [{ role: "user", content: "Кажи „здравей“." }], 20) }); }
+    catch (e: any) { return json({ setup, error: `${e?.code || ""} ${e?.message || e}`.slice(0, 300) }); }
+  }
   // Invitation links (the owner's master link): list them, make one, switch one off or on.
   if (req.method === "GET" && parts[0] === "invites") return json({ invites: await listInvites() });
   if (req.method === "POST" && parts[0] === "invites") {

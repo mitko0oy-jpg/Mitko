@@ -7,10 +7,20 @@ export const MODEL_FAST = () => env("AI_MODEL_FAST") || "claude-haiku-5-5";
 export const MODEL_STRONG = () => env("AI_MODEL_STRONG") || "claude-sonnet-5-5";
 
 let client: Anthropic | null = null;
+// On Netlify the AI Gateway puts ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL in process.env when a function starts
+// (unless the team switched AI features off). NETLIFY_AI_GATEWAY_KEY / _URL are always there as a second way in.
+const pe = (k: string) => (typeof process !== "undefined" ? process.env[k] : undefined) || env(k);
+export const aiSetup = () => ({
+  ANTHROPIC_API_KEY: !!pe("ANTHROPIC_API_KEY"),
+  ANTHROPIC_BASE_URL: !!pe("ANTHROPIC_BASE_URL"),
+  NETLIFY_AI_GATEWAY_KEY: !!pe("NETLIFY_AI_GATEWAY_KEY"),
+  NETLIFY_AI_GATEWAY_URL: !!pe("NETLIFY_AI_GATEWAY_URL"),
+});
 function ai(): Anthropic {
-  // On Netlify the AI Gateway injects ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL.
-  if (!env("ANTHROPIC_API_KEY")) throw new HttpError(503, "ai_unavailable", "AI частта още не е включена. Опитай по-късно.");
-  if (!client) client = new Anthropic({ maxRetries: 1, timeout: 45_000 });
+  if (client) return client;
+  if (pe("ANTHROPIC_API_KEY")) client = new Anthropic({ apiKey: pe("ANTHROPIC_API_KEY"), baseURL: pe("ANTHROPIC_BASE_URL") || undefined, maxRetries: 1, timeout: 45_000 });
+  else if (pe("NETLIFY_AI_GATEWAY_KEY") && pe("NETLIFY_AI_GATEWAY_URL")) client = new Anthropic({ apiKey: pe("NETLIFY_AI_GATEWAY_KEY"), baseURL: pe("NETLIFY_AI_GATEWAY_URL"), maxRetries: 1, timeout: 45_000 });
+  else throw new HttpError(503, "ai_unavailable", "AI частта още не е включена. Опитай по-късно.");
   return client;
 }
 
