@@ -257,15 +257,7 @@ body.wide main { max-width: none; padding-inline: 20px; }
 .tabs .n { color: var(--muted); font-size: 12px; margin-left: 4px; }
 
 .badge { display: inline-block; padding: 4px 9px; border-radius: 5px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; text-align: center; }
-/* the same colours as Middleware: waiting grey, sent yellow, done green, returned red, refused black */
-.badge.new { background: #9a9a9a; }
-.badge.prepared { background: #8ea2bd; }
-.badge.shipped { background: #efb54a; }
-.badge.at_office { background: #4a8fe0; }
-.badge.delivered { background: #6fbf5f; }
-.badge.returned { background: #df5c3e; }
-.badge.canceled { background: #0b0b0b; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18); }
-.badge.archived { background: #e397a6; }
+/* the status colours (one per status, like Middleware) are further down: search for "status: solid colours" */
 
 .otbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .otbl th { text-align: left; font-size: 12px; font-weight: 600; color: var(--text-2); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
@@ -429,7 +421,6 @@ a.badge:hover { text-decoration: none; filter: brightness(1.1); }
 .tgl .sw.go::after { display: none; }
 .tgl .badge { justify-self: start; }
 .tgl .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; background: var(--surface-2); border-radius: 999px; padding: 0 8px; min-width: 24px; text-align: center; }
-.badge.abandoned { background: #8ea2bd; }
 @media (max-width: 1299px) {
   .side.open { position: fixed; z-index: 30; top: 0; left: 0; bottom: 0; width: min(340px, 100vw); max-height: none; border-radius: 0; box-shadow: 0 0 40px rgb(0 0 0 / 0.35); }
   .side-head { display: flex; }
@@ -821,20 +812,24 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .otbl tbody tr[data-id]:hover > td { background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
 .otbl tbody tr.sel > td { background: var(--accent-soft); }
 
-/* status: soft tinted pills with a dot (same colours as before) */
-.badge { --h: #8b93a1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-weight: 600;
-  background: color-mix(in srgb, var(--h) 16%, var(--surface)); color: color-mix(in srgb, var(--h) 78%, var(--text)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--h) 22%, transparent); }
-.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--h); flex: none; }
-.badge.new { --h: #8b93a1; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.prepared, .badge.abandoned { --h: #6f86ad; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.shipped { --h: #e59a0b; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.at_office { --h: #2f7ae5; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.delivered { --h: #22a447; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.returned { --h: #e0462a; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.archived { --h: #d9577e; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.badge.canceled { --h: #9aa3b2; background: #1d2128; color: #fff; box-shadow: none; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.canceled { background: #000; box-shadow: inset 0 0 0 1px #3a414c; } }
-:root[data-theme="dark"] .badge.canceled { background: #000; box-shadow: inset 0 0 0 1px #3a414c; }
+/* status: solid colours like Middleware's status filter (Чакаща grey, Изоставена slate, Изпратена yellow, Завършена green,
+   Върната red, Отказана black, Унищожена pink, Пренасочена blue), so every status is told apart at a glance;
+   the ones Middleware has no colour for get their own hue (Дублирана violet, Изготвена teal). Set only --h. */
+.badge { --h: #a3a3a3; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-weight: 600;
+  background: var(--h); color: #fff; box-shadow: none; text-shadow: 0 1px 1px rgb(0 0 0 / 0.14); }
+.badge::before { display: none; }
+.badge.new { --h: #a3a3a3; }
+.badge.abandoned { --h: #8ea2bd; }
+.badge.duplicate { --h: #9b6dd6; }
+.badge.prepared { --h: #22a6b3; }
+.badge.shipped { --h: #efb54a; }
+.badge.at_office { --h: #4a8fe0; }
+.badge.delivered { --h: #6fbf5f; }
+.badge.returned { --h: #df5c3e; }
+.badge.archived { --h: #e397a6; }
+.badge.canceled { --h: #111418; text-shadow: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.canceled { --h: #000; box-shadow: inset 0 0 0 1px #3a414c; } }
+:root[data-theme="dark"] .badge.canceled { --h: #000; box-shadow: inset 0 0 0 1px #3a414c; }
 .bwrap .badge { width: 100px; padding: 4px 6px; }
 .flag { width: 15px; height: 15px; box-shadow: 0 0 0 2px var(--surface), 0 1px 3px rgb(0 0 0 / 0.25); }
 
@@ -1101,11 +1096,11 @@ h2.sect { font-size: 15px; margin: 4px 0 10px; }
   .sea-legend { width: min(270px, calc(100% - 24px)); bottom: 68px; }
 }
 @media (prefers-reduced-motion: reduce) { .lane.sea *, .lane.sea { animation: none !important; } }
-.badge.abandoned { --h: #8a7fc4; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-/* Дублирана: held for a look before it is shipped twice. */
-.badge.duplicate { --h: #c2410c; background: color-mix(in srgb, var(--h) 16%, var(--surface)); }
-.dupof { display: block; margin-top: 3px; font-size: 12px; color: #c2410c; white-space: nowrap; }
-.dupbox { border: 1px solid color-mix(in srgb, #c2410c 40%, transparent); background: color-mix(in srgb, #c2410c 8%, var(--surface)); border-radius: 12px; padding: 12px 14px; }
+/* Дублирана: held for a look before it is shipped twice (badge colour is set with the other statuses above). */
+.dupof { display: block; margin-top: 3px; font-size: 12px; color: #8150c4; white-space: nowrap; }
+.dupbox { border: 1px solid color-mix(in srgb, #9b6dd6 45%, transparent); background: color-mix(in srgb, #9b6dd6 9%, var(--surface)); border-radius: 12px; padding: 12px 14px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dupof { color: #b896ea; } }
+:root[data-theme="dark"] .dupof { color: #b896ea; }
 
 
 /* Склад */
