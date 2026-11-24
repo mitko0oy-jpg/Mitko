@@ -4,7 +4,7 @@
 // Stripe keys live only in Netlify's settings: STRIPE_SECRET_KEY (sk_test_… for testing, sk_live_… for real money)
 // and STRIPE_WEBHOOK_SECRET (whsec_…). Without them the page shows the plans but cannot take payments;
 // locally PAY_FAKE=1 (scripts/dev-server.mjs) replaces Stripe with a practice payment.
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { formatCode, newCode } from "./codes.mts";
 import { one, q, tx } from "./db.mts";
 import { env, HttpError } from "./http.mts";
@@ -253,6 +253,59 @@ export async function demoCode(trialAllowed: boolean) {
       [c, `демо-${new Date().toISOString().slice(0, 7)}`],
     );
     if (r.length) return { code: c, months: null, days: null, tier: "start" };
+  }
+  throw new HttpError(500, "server_error", "Нещо се обърка. Опитай пак.");
+}
+
+/* ---------- invitation links (the owner's master link for testers and friends) ---------- */
+// app.edubel.site/i/<token>: every new device that opens it gets its OWN code – everything, no term – so each
+// person has a separate gradebook (one shared code would merge everybody's grades). The link works for any number
+// of people and devices until it is switched off. Only the SHA-256 of the token is kept (setting "invites").
+const tokenHash = (t: string) => createHash("sha256").update("edubel-invite:" + t).digest("hex");
+type Invite = { hash: string; batch: string; note: string; created: string; count: number; off: boolean; drafts: boolean };
+const invites = async (): Promise<Invite[]> => (await getSetting("invites")) || [];
+
+export async function newInvite(batch: string, note = "", drafts = false) {
+  const b = String(batch || "").trim().slice(0, 40);
+  if (!/^[\p{L}\p{N}-]{3,40}$/u.test(b)) throw new HttpError(400, "invite", "Партида от букви, цифри и тире (3–40 знака).");
+  const list = await invites();
+  if (list.some((x) => x.batch === b)) throw new HttpError(400, "invite", "Такава партида вече има покана.");
+  const token = randomBytes(9).toString("base64url");
+  // A review batch („преглед…“) also sees the drafts waiting for the teacher.
+  const batchName = drafts && !/^преглед/i.test(b) ? `преглед-${b}` : b;
+  list.push({ hash: tokenHash(token), batch: batchName, note: String(note || "").slice(0, 120), created: new Date().toISOString(), count: 0, off: false, drafts });
+  await setSetting("invites", list);
+  return { token, batch: batchName };
+}
+export async function listInvites() {
+  return (await invites()).map(({ hash, ...x }) => x);
+}
+export async function switchInvite(batch: string, off: boolean) {
+  const list = await invites();
+  const inv = list.find((x) => x.batch === batch);
+  if (!inv) throw new HttpError(404, "not_found", "Няма такава покана.");
+  inv.off = off;
+  await setSetting("invites", list);
+  return { batch, off };
+}
+export async function inviteCode(token: string) {
+  const list = await invites();
+  const inv = list.find((x) => x.hash === tokenHash(String(token || "")));
+  if (!inv) throw new HttpError(404, "invite", "Този линк не е валиден. Провери го или поискай нов.");
+  if (inv.off) throw new HttpError(403, "invite_off", "Този линк за покана вече е спрян.");
+  for (let i = 0; i < 10; i++) {
+    const c = newCode();
+    const r = await q(
+      `INSERT INTO trener_keys (code, batch, max_devices, kind, tier, note) VALUES ($1, $2, 3, 'access', 'full', $3) ON CONFLICT (code) DO NOTHING RETURNING code`,
+      [c, inv.batch, `покана ${inv.batch}`],
+    );
+    if (r.length) {
+      await q(
+        `UPDATE app_settings SET value = (SELECT jsonb_agg(CASE WHEN e->>'hash' = $1 THEN jsonb_set(e, '{count}', to_jsonb(COALESCE((e->>'count')::int, 0) + 1)) ELSE e END) FROM jsonb_array_elements(value) e) WHERE key = 'invites'`,
+        [inv.hash],
+      );
+      return { code: c, batch: inv.batch };
+    }
   }
   throw new HttpError(500, "server_error", "Нещо се обърка. Опитай пак.");
 }

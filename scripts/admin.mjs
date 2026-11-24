@@ -10,6 +10,7 @@
 //   ... node scripts/admin.mjs trener-bank-get [private/nvo-trener/bank-live.json]   (the questions served now)
 //   ... node scripts/admin.mjs trener-bank-add <file with {modules, questions}>   (add or replace whole modules)
 //   ... node scripts/admin.mjs trener-bank-approve mz-chisla,mz-danni | all   (drafts the teacher approved go live)
+//   ... node scripts/admin.mjs invites | invite-new <партида> [--drafts] | invite-off <партида> | invite-on <партида>   (master links)
 //   ... node scripts/admin.mjs trener-codes '{"count":150,"batch":"pdf-2026-11"}' | trener-list pdf-2026-11
 //   ... node scripts/admin.mjs role owner@example.com admin
 //   ... node scripts/admin.mjs trener-backup [private/backups/trener-YYYY-MM-DD.json]   (codes + grades, keep it safe)
@@ -48,6 +49,9 @@ else if (cmd === "codes") out = await call("POST", "codes", JSON.parse(a || "{}"
 else if (cmd === "item") out = await call("POST", `items/${a}`, JSON.parse(b || "{}"));
 else if (cmd === "trener-bank") out = await call("POST", "trener-bank", JSON.parse(await readFile(a, "utf8")));
 else if (cmd === "trener-codes") out = await call("POST", "trener-codes", JSON.parse(a || "{}"));
+else if (cmd === "invites") out = await call("GET", "invites");
+else if (cmd === "invite-new") out = await call("POST", "invites", { batch: a, drafts: process.argv.includes("--drafts") });
+else if (cmd === "invite-off" || cmd === "invite-on") out = await call("POST", "invites", { batch: a, off: cmd === "invite-off" });
 else if (cmd === "trener-bank-approve") out = await call("POST", "trener-bank-approve", { ids: String(a || "").split(",").filter(Boolean) });
 else if (cmd === "trener-bank-add") out = await call("POST", "trener-bank-add", JSON.parse(await readFile(a, "utf8")));
 else if (cmd === "trener-bank-get") {

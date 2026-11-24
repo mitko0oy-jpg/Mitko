@@ -1405,7 +1405,7 @@ addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if 
 /* ---------- on the site: personal code, up to N devices, grades synced with the code ---------- */
 const Online = (() => {
   const K_CODE = "edubel-trener-code", K_DEV = "edubel-trener-device", K_BANK = "edubel-trener-bank";
-  const K_STATE = "edubel-trener-state:", K_DIRTY = "edubel-trener-dirty:", K_RENEW = "edubel-trener-renew";
+  const K_STATE = "edubel-trener-state:", K_DIRTY = "edubel-trener-dirty:", K_RENEW = "edubel-trener-renew", K_INV = "edubel-trener-invite";
   // Browsers built into apps keep their own storage and may forget it: every visit could take a new device place.
   const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Viber|Line\/|MicroMessenger|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Pinterest/i;
   let code = "", device = "", devices = [], maxDevices = 3, idleDays = 60, expiresAt = null, timer = 0, busy = false, stay = false;
@@ -1500,19 +1500,26 @@ const Online = (() => {
   }
   // „Разгледай безплатно“ (and app.edubel.site/demo): a code at once – the free trial while it is open, otherwise
   // the free level Старт – and the trainer opens on this device.
+  // An invitation link (app.edubel.site/i/<token>) does the same with the owner's invitation: a code of its own for
+  // this device, everything and without a term.
   let demoBusy = false;
-  async function demo() {
+  async function demo(invite) {
     if (demoBusy) return;
     demoBusy = true;
     const b = document.querySelector('[data-act="demo"]'), m = document.getElementById("demoMsg");
     if (b) { b.disabled = true; b.textContent = "Отварям…"; }
     try {
       let r, j = {};
-      try { r = await fetch("/api/pay/demo", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }); } catch (e) { throw new Error("Няма връзка с интернет."); }
+      try { r = await fetch(invite ? "/api/pay/invite" : "/api/pay/demo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(invite ? { token: invite } : {}) }); } catch (e) { throw new Error("Няма връзка с интернет."); }
       try { j = await r.json(); } catch (e) {}
       if (!r.ok) throw new Error(j.message || "Нещо се обърка. Опитай пак след малко.");
       code = norm(j.code);
       ls.set(K_CODE, code);
+      if (invite) {
+        ls.set(K_INV, invite);
+        o.flash = "Добре дошъл! Целият тренажор е отворен за теб, без срок. Бележникът и оценките са само твои.";
+        return start();
+      }
       const len = j.months ? `${j.months} ${j.months === 1 ? "месец" : "месеца"}` : j.days ? `${j.days} ${j.days === 1 ? "ден" : "дни"}` : "";
       o.flash = j.tier === "full"
         ? `Добре дошъл! Целият тренажор е отворен за теб${len ? ` за ${len}` : ""}. После остават безплатните модули и всичките ти оценки.`
@@ -1783,10 +1790,13 @@ const Online = (() => {
     const renew = norm(url.searchParams.get("r"));
     if (renew.length >= 8) ls.set(K_RENEW, renew);
     const wantDemo = url.searchParams.has("demo");
+    const invite = String(url.searchParams.get("i") || "").replace(/[^\w-]/g, "").slice(0, 40);
     try { stay = stay || sessionStorage.getItem("edubel-trener-stay") === "1"; } catch (e) {}
-    if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : wantDemo ? `${location.origin}/demo` : `${location.origin}/t/`);
-    if (url.searchParams.has("k") || url.searchParams.has("r") || url.searchParams.has("m") || wantDemo || location.hash) history.replaceState(null, "", "/t/");
+    if (IN_APP.test(navigator.userAgent) && !stay) return inAppScreen(fromUrl ? `${location.origin}/t/?k=${fmt(fromUrl)}` : invite ? `${location.origin}/i/${invite}` : wantDemo ? `${location.origin}/demo` : `${location.origin}/t/`);
+    if (url.searchParams.has("k") || url.searchParams.has("r") || url.searchParams.has("m") || url.searchParams.has("i") || wantDemo || location.hash) history.replaceState(null, "", "/t/");
     code = norm(ls.get(K_CODE)) || fromUrl;
+    // The invitation: a device that already opened it goes straight in; any other gets its own code from it.
+    if (invite && !fromUrl && !(ls.get(K_INV) === invite && code.length >= 8)) { codeScreen(); return demo(invite); }
     // app.edubel.site/demo: a device that already has a code just opens it.
     if (code.length < 8 && wantDemo && !ls.get(K_RENEW)) { codeScreen(); return demo(); }
     if (code.length < 8) return codeScreen(ls.get(K_RENEW) ? "Въведи първо своя код за достъп (от PDF-а или стикера) – удължаването ще се добави след това." : "");

@@ -662,3 +662,29 @@ test("draft modules reach only the review codes until the teacher approves them"
   r = await t("trener/open", { code: pupil, device: "cd".repeat(24) });
   assert.ok(r.bank.modules.some((m) => m.id === "mz-danni" && !m.draft), "after approval everybody sees it");
 });
+
+test("an invitation link: every device gets its own code with everything and no term, until it is switched off", async () => {
+  const t = client();
+  const inv = await admin("invites", { batch: `приятели-${run}`, note: "тест" });
+  assert.match(inv.link, /\/i\/[\w-]{10,}$/);
+  const token = inv.link.split("/i/")[1];
+  const a = await t("pay/invite", { token });
+  const b = await t("pay/invite", { token });
+  assert.equal(a.status, 200);
+  assert.notEqual(a.code, b.code, "each person gets a gradebook of their own");
+  let r = await t("trener/open", { code: a.code, device: "ba".repeat(24) });
+  assert.equal(r.access.tier, "full");
+  assert.equal(r.expiresAt, null, "no term");
+  assert.equal(r.access.trial, false);
+  const list = (await admin("invites")).invites.find((x) => x.batch === inv.batch);
+  assert.equal(list.count, 2);
+  assert.ok(!("hash" in list), "the token's hash is not shown");
+  assert.equal((await t("pay/invite", { token: "wrong-token-123" })).status, 404);
+  await admin("invites", { batch: inv.batch, off: true });
+  assert.equal((await t("pay/invite", { token })).error, "invite_off");
+  r = await t("trener/open", { code: a.code, device: "ba".repeat(24) });
+  assert.equal(r.status, 200, "codes already given keep working");
+  // With drafts: the batch is a review batch, so the teacher's drafts show too.
+  const d = await admin("invites", { batch: `тест-чернови-${run}`, drafts: true });
+  assert.match(d.batch, /^преглед-/);
+});

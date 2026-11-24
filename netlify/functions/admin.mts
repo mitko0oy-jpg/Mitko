@@ -2,8 +2,8 @@ import type { Config } from "@netlify/functions";
 import { requireAdmin } from "../lib/auth.mts";
 import { formatCode, newCode } from "../lib/codes.mts";
 import { hit, one, q, tx } from "../lib/db.mts";
-import { bad, body, clientIp, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
-import { getSetting, savePlans, setSetting } from "../lib/pay.mts";
+import { bad, body, clientIp, env, handle, json, notFound, str, sub, tooMany } from "../lib/http.mts";
+import { getSetting, listInvites, newInvite, savePlans, setSetting, switchInvite } from "../lib/pay.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { fingerprint, readMarks } from "../lib/trener.mts";
 
@@ -47,6 +47,15 @@ export default handle(async (req, ctx) => {
   if (req.method === "POST" && parts[0] === "plans") return json({ plans: await savePlans((await body(req)).plans) });
   if (req.method === "GET" && parts[0] === "payments") return json({ payments: await q("SELECT * FROM trener_payments ORDER BY created_at DESC LIMIT 200") });
   if (req.method === "GET" && parts[0] === "trial") return json({ trial: await getSetting("trial") });
+  // Invitation links (the owner's master link): list them, make one, switch one off or on.
+  if (req.method === "GET" && parts[0] === "invites") return json({ invites: await listInvites() });
+  if (req.method === "POST" && parts[0] === "invites") {
+    const b = await body(req);
+    if (b.off !== undefined) return json(await switchInvite(String(b.batch || ""), b.off === true));
+    const r = await newInvite(String(b.batch || ""), String(b.note || ""), b.drafts === true);
+    const u = new URL(req.url);
+    return json({ ...r, link: `${env("PUBLIC_URL") || `${u.protocol}//${u.host}`}/i/${r.token}` });
+  }
   // The free trial: {"open": true, "months": 1} for the launch, later {"open": true, "days": 1}; "daily" = codes a day at most.
   if (req.method === "POST" && parts[0] === "trial") {
     const t = await body(req);

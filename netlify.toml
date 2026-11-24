@@ -10,6 +10,12 @@
   to = "/t/?demo=1"
   status = 302
 
+# An invitation link from the owner (a master link for testers and friends): each new device gets its own code.
+[[redirects]]
+  from = "/i/:token"
+  to = "/t/?i=:token"
+  status = 302
+
 # The QR code on each math card ("Още задачи и видео") leads to app.edubel.site/m/N: that card in the trainer.
 [[redirects]]
   from = "/m/:n"

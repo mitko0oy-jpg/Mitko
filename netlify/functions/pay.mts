@@ -2,7 +2,7 @@ import type { Config } from "@netlify/functions";
 import { formatCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q } from "../lib/db.mts";
 import { bad, body, clientIp, env, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
-import { checkWithStripe, demoCode, fakeMode, fulfill, getSetting, isLive, plans, startCheckout, stripeKey, trialCode, verifySignature } from "../lib/pay.mts";
+import { checkWithStripe, demoCode, fakeMode, fulfill, getSetting, inviteCode, isLive, plans, startCheckout, stripeKey, trialCode, verifySignature } from "../lib/pay.mts";
 import { TIER_NAME, TIER_RANK } from "../lib/trener.mts";
 
 // /dostap/ – the parent's page: the free trial, the plans and paying with a card (see netlify/lib/pay.mts).
@@ -93,6 +93,15 @@ export default handle(async (req, ctx) => {
     const d = await demoCode(await hit(`trial:${ip}`, 3, 86400));
     await event("trener_demo", { tier: d.tier, months: d.months, days: d.days });
     return json({ code: formatCode(d.code), tier: d.tier, months: d.months, days: d.days, link: `${originOf(req)}/t/?k=${formatCode(d.code)}` });
+  }
+
+  // An invitation link (app.edubel.site/i/<token>): a new code of its own for this device – everything, no term.
+  if (req.method === "POST" && parts[0] === "invite") {
+    if (!(await hit(`invite:${clientIp(req, ctx)}`, 40, 86400))) throw tooMany("Днес от тази връзка вече са отворени много покани. Опитай утре.");
+    const b = await body(req);
+    const r = await inviteCode(str(b.token, 40));
+    await event("trener_invite", { batch: r.batch });
+    return json({ code: formatCode(r.code), link: `${originOf(req)}/t/?k=${formatCode(r.code)}` });
   }
 
   // Starts paying: the parent goes to Stripe's page and comes back to /dostap/?s=…

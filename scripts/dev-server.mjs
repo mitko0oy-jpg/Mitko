@@ -54,6 +54,8 @@ createServer(async (req, res) => {
   const card = url.pathname.match(/^\/m\/(\d{1,2})\/?$/);
   if (card) return res.writeHead(302, { location: `/t/?m=${card[1]}` }).end();
   if (url.pathname === "/demo") return res.writeHead(302, { location: "/t/?demo=1" }).end();
+  const inv = url.pathname.match(/^\/i\/([\w-]{6,40})\/?$/);
+  if (inv) return res.writeHead(302, { location: `/t/?i=${inv[1]}` }).end();
   let file = path.join(root, "public", decodeURIComponent(url.pathname));
   if (!file.startsWith(path.join(root, "public"))) return res.writeHead(403).end();
   try {
