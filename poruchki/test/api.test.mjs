@@ -86,9 +86,30 @@ const sent = [];
 const econtStatus = new Map();
 let dropDueOnUpdate = false; // the redirect test: Econt "loses" the cash on delivery
 const FAKE_PDF = "%PDF-1.4 fake label";
+const clarityCalls = [];
+const CLARITY_TOKEN = "clarity-token-clarity-token-0001";
 const courier = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (req.method === "GET" && u.pathname === "/econt/pdf/1") return res.writeHead(200, { "content-type": "application/pdf" }).end(FAKE_PDF);
+  // Microsoft Clarity's Data Export API: the last 24 h, by the dimensions asked.
+  if (req.method === "GET" && u.pathname === "/clarity/project-live-insights") {
+    clarityCalls.push(Object.fromEntries(u.searchParams));
+    if (req.headers.authorization !== `Bearer ${CLARITY_TOKEN}`) return res.writeHead(401).end();
+    const d1 = u.searchParams.get("dimension1");
+    const rows = (key) => [
+      { metricName: "Traffic", information: key.map(([k, s]) => ({ totalSessionCount: String(s + 10), totalBotSessionCount: "10", distantUserCount: String(s), PagesPerSessionPercentage: 1.5, ...k })) },
+      { metricName: "Scroll Depth", information: key.map(([k], i) => ({ averageScrollDepth: 40 + i * 20, ...k })) },
+      { metricName: "Engagement Time", information: key.map(([k]) => ({ totalTime: 90, activeTime: 45, ...k })) },
+      { metricName: "Rage Click Count", information: key.map(([k]) => ({ sessionsCount: "3", sessionsWithMetricPercentage: 3.5, ...k })) },
+    ];
+    const body =
+      d1 === "URL"
+        ? rows([[{ URL: "https://shop.test/gel-bf?fbclid=a" }, 300], [{ URL: "https://shop.test/gel-bf?fbclid=b" }, 100], [{ URL: "https://shop.test/" }, 50]])
+        : d1 === "Source"
+          ? rows([[{ Source: "facebook", Medium: "paid", Campaign: "Гел" }, 380]])
+          : rows([[{ Device: "Mobile" }, 400], [{ Device: "PC" }, 50]]);
+    return res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(body));
+  }
   let raw = "";
   req.on("data", (c) => (raw += c)).on("end", () => {
     let b = {};
@@ -211,6 +232,7 @@ test.before(async () => {
       SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
       EMAIL_API_URL: `http://127.0.0.1:${COURIER_PORT}/email`, REMINDER_HOURS: "0-24", PRINT_DB: "1",
       NEKOREKTEN_URL: `http://127.0.0.1:${COURIER_PORT}/nek`, NEKOREKTEN_KEY: "",
+      CLARITY_API_URL: `http://127.0.0.1:${COURIER_PORT}/clarity`,
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
         { id: "bg", label: "Тест BG", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key" },
@@ -1537,6 +1559,87 @@ test("where orders come from: the ad from the page (utm) is kept in the order; c
   }
 });
 
+test("Път на клиента: the browser's earlier visits travel with the form into the order; paid and not paid; the report; Clarity by page", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  const send = (body) =>
+    fetch(`${B}/api/collect`, { method: "POST", headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` }, body: JSON.stringify(body) });
+  try {
+    const now = Math.round(Date.now() / 1000);
+    // First from a Meta ad three days ago, back from Google yesterday, today typed the address and ordered.
+    const trail = [
+      { t: now - 3 * 86400, s: "Facebook / Instagram", p: "/gel-bf", u: { s: "facebook", m: "paid", c: "Гел", id: "1202", ck: "fbclid" } },
+      { t: now - 86400, s: "Google", p: "/" },
+      { t: now - 120, s: "Директно", p: "/gel-bf" },
+      { t: now - 999 * 86400, s: "стар", p: "/" }, // older than 30 days: dropped
+    ];
+    await send({ t: "ping", sid: "path000001", vid: "brwp000001", page: "/gel-bf", stage: "browsing", device: "mobile", source: "Директно" });
+    assert.equal((await send({ sid: "path000001", name: "Пътешественик", phone: "0888 500 001", cart: ["Гел · 1 · 19,90 €"], total: "24,40 €", page: "/gel-bf/checkout", trail, path: ["/gel-bf", "/gel-bf/checkout"] })).status, 204);
+    const lead = (await db.query("SELECT trail, path FROM leads WHERE sid = 'path000001'")).rows[0];
+    assert.equal(lead.trail.length, 3, "the visit older than 30 days is not kept");
+    assert.deepEqual(lead.path, ["/gel-bf", "/gel-bf/checkout"]);
+    // A visit from a Facebook post (fbclid, no ad parameters) – not an ad.
+    await send({ t: "ping", sid: "path000002", vid: "brwp000002", page: "/", stage: "browsing", device: "mobile", source: "Facebook / Instagram", utm: { ck: "fbclid" } });
+    await send({ sid: "path000002", name: "От поста", phone: "0888 500 002", page: "/", utm: { ck: "fbclid" }, trail: [{ t: now - 60, s: "Facebook / Instagram", p: "/" }] });
+
+    const mk = async (name, phone) => {
+      const r = await api("/api/orders", { shop: "bg", name, phone, city: "Бургас", delivery: { courier: "econt", type: "office", officeId: "1", officeName: "Бургас" }, items: [{ name: "Гел", qty: 1, price: 19.9 }] });
+      await db.query(`UPDATE orders SET source = 'shop', src = NULL, ordered_at = now() WHERE id = $1`, [r.data.id]);
+      return r.data.id;
+    };
+    const a = await mk("Пътешественик", "+359888500001");
+    const b = await mk("От поста", "+359888500002");
+    assert.equal((await api("/api/settings/sync", {})).status, 200);
+    const sa = (await db.query("SELECT src FROM orders WHERE id = $1", [a])).rows[0].src;
+    assert.equal(sa.fine, "direct");
+    assert.deepEqual(sa.trail, ["meta_ads", "search", "direct"]);
+    assert.equal(sa.touches, 3);
+    assert.deepEqual([sa.first.fine, sa.first.page, sa.first.campaign], ["meta_ads", "/gel-bf", "Гел"]);
+    assert.ok(sa.days > 2.9 && sa.days < 3.1, String(sa.days));
+    assert.deepEqual(sa.path, ["/gel-bf", "/gel-bf/checkout"]);
+    const sb = (await db.query("SELECT src FROM orders WHERE id = $1", [b])).rows[0].src;
+    assert.deepEqual([sb.channel, sb.fine], ["meta", "meta_org"], "fbclid alone is not an ad");
+
+    // Clarity: a wrong key is refused, a good one pulls three times (page, source, device) and keeps the pages.
+    assert.equal((await api("/api/pat/clarity", { shop: "bg", token: "x" })).status, 400);
+    const bad = await api("/api/pat/clarity", { shop: "bg", token: "wrong-token-wrong-token-wrong" });
+    assert.match(bad.data.result.error, /не приема ключа/);
+    clarityCalls.length = 0;
+    const ok = await api("/api/pat/clarity", { shop: "bg", token: CLARITY_TOKEN });
+    assert.equal(ok.status, 200, JSON.stringify(ok.data));
+    assert.deepEqual(clarityCalls.map((c) => [c.numOfDays, c.dimension1]), [["1", "URL"], ["1", "Source"], ["1", "Device"]]);
+    assert.equal(ok.data.result.url, 2, "/gel-bf with two queries is one page");
+    const st = ok.data.shops.find((x) => x.id === "bg");
+    assert.ok(st.connected && !st.last_error && st.days === 1);
+    const raw = JSON.stringify((await db.query("SELECT value FROM settings WHERE key = 'clarity:bg'")).rows[0].value);
+    assert.ok(!raw.includes(CLARITY_TOKEN), "the key is kept encrypted");
+    // The pull is dated the day before (the last 24 h pulled in the morning) – move it into today for the report.
+    await db.query("UPDATE clarity_days SET day = (now() AT TIME ZONE 'Europe/Sofia')::date WHERE shop = 'bg'");
+
+    const today = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10);
+    const rep = await api(`/api/pat?from=${today}&to=${today}`);
+    assert.equal(rep.status, 200, JSON.stringify(rep.data));
+    const d = rep.data;
+    assert.ok(d.paths.some((p) => p.path === "meta_ads>search>direct"));
+    const metaAds = d.channels.find((c) => c.id === "meta_ads");
+    assert.ok(metaAds.first.orders > metaAds.last.orders, "the ad brought her first, she ordered from another channel");
+    assert.ok(d.channels.find((c) => c.id === "meta_org").last.orders >= 1);
+    assert.ok(d.byGroup.some((g) => g.group === "organic"));
+    assert.ok(d.coverage.withTrail >= 2);
+    const land = d.landings.find((l) => l.page === "/gel-bf" && l.shop === "bg");
+    assert.ok(land?.clarity, "Clarity numbers next to the landing page");
+    assert.equal(land.clarity.sessions, 400);
+    assert.equal(land.clarity.scroll, 45, "weighted by sessions: (40×300 + 60×100) / 400");
+    assert.equal(land.clarity.rage, 3.5);
+    assert.ok(d.shops.some((s) => s.shop === "bg" && s.groups.organic));
+    assert.equal((await api("/api/pat?from=x&to=y")).status, 400);
+    assert.equal((await api("/api/pat/clarity", { shop: "bg", remove: true })).data.shops.find((x) => x.id === "bg").connected, false);
+  } finally {
+    await db.end();
+  }
+});
+
 test("Claude connection (MCP): a secret link made by the owner; tools listed and answered; a changed or wrong link is refused", async () => {
   assert.deepEqual((await api("/api/mcp")).data, { on: false, url: "", at: null });
   const made = await api("/api/mcp", { action: "new" });
@@ -1551,7 +1654,7 @@ test("Claude connection (MCP): a secret link made by the owner; tools listed and
   assert.equal((await rpc({ jsonrpc: "2.0", method: "notifications/initialized" })).status, 202);
   const list = await (await rpc({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
   const names = list.result.tools.map((t) => t.name);
-  for (const n of ["search_orders", "get_order", "get_customer", "list_customers", "sales_dashboard", "ads_report", "warehouse", "open_carts"]) assert.ok(names.includes(n), n);
+  for (const n of ["search_orders", "get_order", "get_customer", "list_customers", "sales_dashboard", "ads_report", "customer_journey", "warehouse", "open_carts"]) assert.ok(names.includes(n), n);
   assert.ok(list.result.tools.every((t) => t.annotations.readOnlyHint && t.inputSchema.type === "object"));
 
   const call = async (name, args) => {

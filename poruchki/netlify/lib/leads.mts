@@ -4,7 +4,7 @@
 import { allSites } from "./cb.mts";
 import { one, q } from "./db.mts";
 import { inCompany } from "./tenant.mts";
-import { cleanUtm, type Utm } from "./visits.mts";
+import { cleanPath, cleanTrail, cleanUtm, type Touch, type Utm } from "./visits.mts";
 
 const clean = (v: unknown, max: number) =>
   typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "";
@@ -22,7 +22,7 @@ export async function shopForOrigin(origin: string | null): Promise<string | nul
   return site ? site.id : null;
 }
 
-export type Lead = { sid: string; name: string; phone: string; email: string; city: string; address: string; cart: string[]; total: string; page: string; known: boolean; utm: Utm | null };
+export type Lead = { sid: string; name: string; phone: string; email: string; city: string; address: string; cart: string[]; total: string; page: string; known: boolean; utm: Utm | null; trail: Touch[] | null; path: string[] | null };
 
 /** What the script sent, cleaned; null when there is no usable phone yet. */
 export function cleanLead(input: any): Lead | null {
@@ -48,6 +48,9 @@ export function cleanLead(input: any): Lead | null {
     // Remembered from an earlier visit (the visitor typed nothing this time).
     known: input?.known === true,
     utm: cleanUtm(input?.utm),
+    // Път на клиента: the browser's earlier visits and the pages of this one.
+    trail: cleanTrail(input?.trail),
+    path: cleanPath(input?.path),
   };
 }
 
@@ -65,9 +68,12 @@ export async function saveLead(shop: string, l: Lead) {
     if (recent) return;
   }
   await q(
-    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page, known, email, utm) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12::jsonb)
+    `INSERT INTO leads (shop, sid, name, phone, city, address, cart, total, page, known, email, utm, trail, path)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14::jsonb)
      ON CONFLICT (shop, sid) DO UPDATE SET
        utm = coalesce(leads.utm, excluded.utm),
+       trail = coalesce(excluded.trail, leads.trail),
+       path = coalesce(excluded.path, leads.path),
        known = leads.known AND excluded.known,
        email = CASE WHEN excluded.email <> '' THEN excluded.email ELSE leads.email END,
        name = CASE WHEN excluded.name <> '' THEN excluded.name ELSE leads.name END,
@@ -78,7 +84,7 @@ export async function saveLead(shop: string, l: Lead) {
        total = CASE WHEN excluded.total <> '' THEN excluded.total ELSE leads.total END,
        page = excluded.page, hits = leads.hits + 1, last_at = now()
      WHERE leads.hits < 300`,
-    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page, l.known, l.email, l.utm ? JSON.stringify(l.utm) : null],
+    [shop, l.sid, l.name, l.phone, l.city, l.address, JSON.stringify(l.cart), l.total, l.page, l.known, l.email, l.utm ? JSON.stringify(l.utm) : null, l.trail ? JSON.stringify(l.trail) : null, l.path ? JSON.stringify(l.path) : null],
   );
 }
 

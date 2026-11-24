@@ -13,6 +13,7 @@ import { purgeVisits } from "./visits.mts";
 import { runCartReminders } from "./reminders.mts";
 import { runOfficeReminders, runReorderReminders, runShippedSms } from "./auto-sms.mts";
 import { attributeOrders, rollupVisits } from "./attribution.mts";
+import { runClarity } from "./clarity.mts";
 import { checkDuplicates } from "./duplicates.mts";
 import { syncAbandoned } from "./abandoned.mts";
 import { runMonthlyMail } from "./accmail.mts";
@@ -134,6 +135,8 @@ export async function runSync(opts: { deadline: number; job?: string; onlyShop?:
     sources[company] = await withCompany(company, async () => ({
       orders: await attributeOrders(deadline - 1200).catch((e) => ({ error: e.message })),
       pages: await rollupVisits().catch((e) => ({ error: e.message })),
+      // Microsoft Clarity: once a day per connected shop (Път на клиента).
+      clarity: Date.now() < deadline - 2500 ? await runClarity(deadline - 2000).catch((e) => ({ error: e.message })) : { skipped: "time" },
     }));
     reminders[company] = await withCompany(company, () => runCartReminders(deadline - 1000)).catch((e) => ({ error: e.message }));
     if (Date.now() > deadline - 1200) continue;

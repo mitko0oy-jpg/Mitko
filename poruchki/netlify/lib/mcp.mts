@@ -4,6 +4,7 @@
 // Streamable HTTP without streams: every JSON-RPC request gets one JSON answer; notifications get 202.
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { report as adsReport } from "./attribution.mts";
+import { journeyReport } from "./journey.mts";
 import { customerOrders, listCustomers } from "./customers.mts";
 import { daysBetween, isDay } from "./dates.mts";
 import { getSetting, one, q, setSetting } from "./db.mts";
@@ -224,6 +225,16 @@ export const TOOLS = [
     run: async (a: any) => {
       const p = period(a);
       return adsReport(p.from, p.to, str(a.shop, 40));
+    },
+  },
+  {
+    name: "customer_journey",
+    title: "Път на клиента",
+    description: "How the orders got there: paid ads vs not (Meta ad = utm campaign/ad; fbclid alone is a post or group), by shop with the people on the site, per channel the first visit / the visit of the order / helped on the way, the most common channel paths, visits and time to the order, orders by hour and weekday (Sofia), the pages before the order and the landing pages with Microsoft Clarity numbers (sessions, scroll depth %, active time s, % sessions with rage/dead clicks, quick backs) where connected. Default the last 30 days. The path is known for orders from 24.11.2026 on.",
+    inputSchema: { type: "object", properties: { from: { type: "string" }, to: { type: "string" }, shop: { type: "string" } } },
+    run: async (a: any) => {
+      const p = period(a);
+      return journeyReport(p.from, p.to, str(a.shop, 40));
     },
   },
   {

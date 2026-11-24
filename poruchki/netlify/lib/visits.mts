@@ -25,6 +25,36 @@ export function cleanUtm(input: any): Utm | null {
   return u;
 }
 
+/** One earlier visit of the same browser (c.js `pr_trail`): when (unix s), from where, the first page, the ad. */
+export type Touch = { t: number; s: string; p: string; u?: Utm };
+
+/** The browser's visits in the last 30 days (at most 8, oldest first), as c.js sends them with the order form. */
+export function cleanTrail(input: any): Touch[] | null {
+  if (!Array.isArray(input)) return null;
+  const now = Date.now() / 1000;
+  const out: Touch[] = [];
+  for (const x of input.slice(0, 8)) {
+    const t = Math.trunc(Number(x?.t));
+    if (!Number.isFinite(t) || t < now - 31 * 86400 || t > now + 86400) continue;
+    const touch: Touch = { t, s: clean(x?.s, 60), p: clean(x?.p, 80) };
+    const u = cleanUtm(x?.u);
+    if (u) {
+      delete u.later;
+      touch.u = u;
+    }
+    out.push(touch);
+  }
+  out.sort((a, b) => a.t - b.t);
+  return out.length ? out : null;
+}
+
+/** The pages of the visit with the order form, in order (at most 12). */
+export function cleanPath(input: any): string[] | null {
+  if (!Array.isArray(input)) return null;
+  const out = input.slice(0, 12).map((p: unknown) => clean(p, 80)).filter(Boolean);
+  return out.length ? out : null;
+}
+
 export function cleanPing(input: any): Ping | null {
   const sid = clean(input?.sid, 40);
   if (!/^[a-z0-9]{8,40}$/i.test(sid)) return null;

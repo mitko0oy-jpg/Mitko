@@ -14,7 +14,7 @@ export default async (req: Request, ctx: any) => {
     const shop = await shopForOrigin(req.headers.get("origin"));
     if (!shop) return done(403);
     const text = await req.text();
-    if (text.length > 4000) return done(413);
+    if (text.length > 7000) return done(413);
     let data: any;
     try {
       data = JSON.parse(text);

@@ -21,9 +21,31 @@ export function channelFrom(source: string, utm: any): string {
   return utm.s ? channelOf(utm.s) : "unknown";
 }
 
-export function srcOf(lead: any): Record<string, unknown> {
+/** An ad of its own: a campaign / ad from the utm parameters, or a paid medium. (Facebook adds fbclid to every
+ * link, the posts and the groups too, so fbclid alone does not make an ad; Google's gclid and TikTok's ttclid do.) */
+const isAd = (utm: any) => !!utm && !utm.later && (!!(utm.c || utm.id || utm.n || utm.t) || /paid|cpc|ppc|^ads?$|cpm/i.test(utm.m || ""));
+
+/** The finer channel for Път на клиента: Meta and TikTok split into ads and the rest (posts, groups, bio links). */
+export function fineChannel(source: string, utm: any): string {
+  const ch = channelFrom(source, utm);
+  if (ch === "meta") return isAd(utm) ? "meta_ads" : "meta_org";
+  if (ch === "tiktok") return isAd(utm) || utm?.ck === "ttclid" ? "tiktok_ads" : "tiktok_org";
+  return ch;
+}
+
+/** The fine channel of an order attributed before the split (src without `fine`). */
+export function fineOfSrc(src: any): string {
+  if (!src) return "before";
+  if (src.fine) return src.fine;
+  const ch = src.channel || "unknown";
+  if (ch === "meta") return src.campaign || src.ad || src.ad_id || /paid|cpc|ppc/i.test(src.medium || "") ? "meta_ads" : "meta_org";
+  if (ch === "tiktok") return src.campaign || src.ad ? "tiktok_ads" : "tiktok_org";
+  return ch;
+}
+
+export function srcOf(lead: any, orderedAt?: string | Date): Record<string, unknown> {
   const utm = lead.utm || lead.vutm || null;
-  const src: Record<string, unknown> = { channel: channelFrom(lead.vsource || "", utm) };
+  const src: Record<string, unknown> = { channel: channelFrom(lead.vsource || "", utm), fine: fineChannel(lead.vsource || "", utm) };
   if (lead.vsource) src.source = lead.vsource;
   if (utm) {
     if (utm.c) src.campaign = utm.c;
@@ -36,6 +58,22 @@ export function srcOf(lead: any): Record<string, unknown> {
   }
   const page = lead.landing || lead.page;
   if (page) src.page = String(page).slice(0, 200);
+  // Път на клиента: the browser's visits up to the order (c.js pr_trail) and the pages of the last one.
+  const trail = Array.isArray(lead.trail) ? lead.trail : [];
+  if (trail.length) {
+    const first = trail[0];
+    src.touches = trail.length;
+    src.trail = trail.map((x: any) => fineChannel(x.s || "", x.u || null));
+    src.first = {
+      fine: src.trail[0],
+      at: new Date(first.t * 1000).toISOString(),
+      ...(first.p ? { page: String(first.p).slice(0, 80) } : {}),
+      ...(first.u?.c ? { campaign: String(first.u.c).slice(0, 120) } : {}),
+    };
+    const end = orderedAt ? new Date(orderedAt).getTime() : Date.now();
+    src.days = Math.max(0, Math.round(((end - first.t * 1000) / 86400e3) * 100) / 100);
+  }
+  if (Array.isArray(lead.path) && lead.path.length) src.path = lead.path.slice(0, 12);
   return src;
 }
 
@@ -54,7 +92,7 @@ export async function attributeOrders(deadline: number) {
       done.phone++;
     } else if (o.source === "shop") {
       const [lead] = await q<any>(
-        `SELECT l.page, l.utm, v.source AS vsource, v.utm AS vutm, v.landing
+        `SELECT l.page, l.utm, l.trail, l.path, v.source AS vsource, v.utm AS vutm, v.landing
            FROM leads l LEFT JOIN visits v ON v.shop = l.shop AND v.sid = l.sid
           WHERE ${inCompany("l.shop")}
             AND ((l.phone <> '' AND $1 <> '' AND ${P9("l.phone")} = ${P9("$1")}) OR (l.email <> '' AND lower($2) = l.email))
@@ -63,7 +101,7 @@ export async function attributeOrders(deadline: number) {
         [o.phone || "", o.email || "", o.ordered_at],
       );
       if (lead) {
-        src = srcOf(lead);
+        src = srcOf(lead, o.ordered_at);
         done.tied++;
       } else if (Date.parse(o.ordered_at) < Date.now() - 2 * 3600e3) {
         // The order form never reached us (no c.js on that page, or typed too fast): not known, and not asked again.
@@ -73,11 +111,11 @@ export async function attributeOrders(deadline: number) {
     } else if (o.source === "abandoned" && o.lead_id) {
       // An abandoned cart confirmed into an order: its own cart knows where it came from.
       const [lead] = await q<any>(
-        `SELECT l.page, l.utm, v.source AS vsource, v.utm AS vutm, v.landing
+        `SELECT l.page, l.utm, l.trail, l.path, v.source AS vsource, v.utm AS vutm, v.landing
            FROM leads l LEFT JOIN visits v ON v.shop = l.shop AND v.sid = l.sid WHERE l.id = $1 AND ${inCompany("l.shop")}`,
         [o.lead_id],
       );
-      src = lead ? { ...srcOf(lead), recovered: true } : { channel: "unknown", recovered: true };
+      src = lead ? { ...srcOf(lead, o.ordered_at), recovered: true } : { channel: "unknown", recovered: true };
       if (lead) done.tied++;
     } else {
       src = { channel: "manual" };

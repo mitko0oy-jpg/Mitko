@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Път на клиента – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#151a20" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="OrderDesk">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Поръчките от всички магазини, товарителници, склад и незавършени колички на едно място.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OrderDesk">
+  <meta property="og:title" content="Път на клиента – OrderDesk">
+  <meta property="og:description" content="Поръчките от всички магазини, товарителници, склад и незавършени колички на едно място.">
+  <meta property="og:image" content="https://mitko-poruchki.netlify.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="OrderDesk – поръчки, товарителници и склад">
+  <meta property="og:locale" content="bg_BG">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body>
+  <main class="stack" id="app">
+    <div class="pagehead">
+      <div class="row"><h1>Път на клиента</h1></div>
+      <div class="head-tools">
+        <div class="seg" id="period"></div>
+        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+      </div>
+    </div>
+    <p class="muted small" id="note" style="margin:-4px 0 0"></p>
+
+    <section class="tiles" id="tiles" aria-label="Накратко" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))"></section>
+
+    <section class="card stack" id="insightsCard">
+      <h2>Какво показват данните</h2>
+      <ul class="pt-ins" id="insights"></ul>
+    </section>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Платени и без реклама</h2><span class="muted small">по посещението, в което са поръчали</span></div>
+      <div id="groups"></div>
+    </section>
+
+    <section class="card stack">
+      <div class="row spread"><h2>По сайтове</h2><span class="muted small">поръчки по вид канал · хора на сайта · поръчки на 100 души</span></div>
+      <div class="scroll" id="shops"></div>
+    </section>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Канали: откъде идват първо и откъде поръчват</h2></div>
+      <p class="muted small" style="margin:0"><b>Първо посещение</b> – откъде човекът е дошъл за пръв път. <b>Поръчал от</b> – откъде е дошъл, когато е поръчал. <b>Помогнал</b> – бил е по пътя, но не е последен.</p>
+      <div class="scroll" id="channels"></div>
+    </section>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Най-чести пътища</h2><span class="muted small">каналите от първото посещение до поръчката</span></div>
+      <div id="paths"></div>
+    </section>
+
+    <div class="pt-two">
+      <section class="card stack">
+        <h2>След колко посещения поръчват</h2>
+        <div id="touches"></div>
+      </section>
+      <section class="card stack">
+        <h2>След колко време</h2>
+        <div id="speed"></div>
+      </section>
+    </div>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Кога идват поръчките</h2><span class="muted small">по софийско време</span></div>
+      <div class="pt-two">
+        <div><div class="muted small" style="margin-bottom:6px">По часове</div><div id="hours"></div></div>
+        <div><div class="muted small" style="margin-bottom:6px">По дни</div><div id="weekdays"></div></div>
+      </div>
+    </section>
+
+    <section class="card stack">
+      <div class="row spread"><h2>Страници</h2><span class="muted small">какво разглеждат в посещението, в което поръчват</span></div>
+      <div id="pagePaths"></div>
+      <div class="scroll" id="landings"></div>
+    </section>
+
+    <section class="card stack" id="clarityCard">
+      <div class="row spread"><h2>Microsoft Clarity</h2><span class="muted small" id="clarityHint"></span></div>
+      <p class="small" style="margin:0">Свържи сайт с неговия проект в Clarity и до страниците горе ще се виждат сесиите, колко надолу превъртат, времето и ядосаните кликове. Ключът: <b>Clarity → проекта на сайта → Settings → Data Export → Generate new API token</b>. Clarity дава само последните 24 часа и до 10 заявки на ден, затова OrderDesk ги тегли веднъж на ден сутрин и пази историята.</p>
+      <div class="scroll" id="clarity"></div>
+    </section>
+  </main>
+  <script type="module" src="/assets/pat.js"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import { q } from "../netlify/lib/db.mts";
 import { upsertOrders } from "../netlify/lib/orders.mts";
 import { syncAbandoned } from "../netlify/lib/abandoned.mts";
 import { withCompany } from "../netlify/lib/tenant.mts";
+import { seal } from "../netlify/lib/secret.mts";
 
 const SHOPS = [
   { id: "bg", label: "BeeVenom BG", region: "bg", currency: "EUR", perDay: 6, products: [["BeeVenom Care Gel", 15.9], ["Bee Venom крем за стави 3+2", 29.9], ["Пластири с пчелна отрова", 4.9]] },
@@ -147,7 +148,80 @@ export async function seedDemo() {
   }
   // The carts with a phone also show in the orders list as "Изоставена".
   await withCompany(1, () => syncAbandoned(200));
+  await seedJourney();
   return `demo: ${SHOPS.length} shops, ${total} orders, login demo@local / demo-demo-demo`;
+}
+
+// Път на клиента: where the orders of the last 30 days came from (the path for the last 10 days), the people on the
+// sites and a shop connected to Clarity. All invented.
+async function seedJourney() {
+  const FINES: [string, number][] = [["meta_ads", 46], ["meta_org", 10], ["direct", 14], ["search", 8], ["google_ads", 6], ["sms", 3], ["other", 3], ["tiktok_ads", 2], ["email", 2]];
+  const FIRST: [string, number][] = [["meta_ads", 62], ["meta_org", 12], ["search", 10], ["google_ads", 8], ["tiktok_ads", 4], ["other", 4]];
+  const wpick = (list: [string, number][]) => {
+    let r = rnd() * list.reduce((a, x) => a + x[1], 0);
+    for (const [k, w] of list) if ((r -= w) <= 0) return k;
+    return list[0][0];
+  };
+  const coarse = (f: string) => (f.startsWith("meta") ? "meta" : f.startsWith("tiktok") ? "tiktok" : f);
+  const PAGES: Record<string, string[]> = { bg: ["/gel", "/krem-3-2", "/"], edubel: ["/komplekt", "/karti-balgarski-ezik", "/nvo/karti-po-literatura"], bioshop: ["/"], max4: ["/oferta"], sk: ["/"], hu: ["/"], sl: ["/"] };
+  const CAMPS = ["ABO | Гел | 17.11", "CBO | Крем 3+2 | 20.11", "ABO | Карти НВО | 04.11"];
+  const orders = await q<any>("SELECT id, shop, ordered_at, source FROM orders WHERE ordered_at > now() - interval '30 days' AND stage <> 'abandoned'");
+  const rows = orders.map((o) => {
+    const fine = o.source === "phone" ? "calls" : wpick(FINES);
+    const page = pick(PAGES[o.shop] || ["/"]);
+    const src: any = { channel: coarse(fine), fine, page };
+    if (fine === "meta_ads") Object.assign(src, { campaign: pick(CAMPS), ad: `Видео ${1 + Math.floor(rnd() * 4)}` });
+    if (fine !== "calls" && Date.parse(o.ordered_at) > Date.now() - 10 * 86400e3) {
+      const n = rnd() < 0.55 ? 1 : rnd() < 0.55 ? 2 : rnd() < 0.6 ? 3 : 4;
+      const trail = n === 1 ? [fine] : [wpick(FIRST), ...Array.from({ length: n - 2 }, () => wpick([["direct", 5], ["meta_ads", 3], ["search", 2]])), fine];
+      const days = n === 1 ? rnd() * 0.08 : 0.1 + rnd() * rnd() * 9;
+      Object.assign(src, { touches: n, trail, days: Math.round(days * 100) / 100, first: { fine: trail[0], at: new Date(Date.parse(o.ordered_at) - days * 86400e3).toISOString(), page } });
+      src.path = rnd() < 0.5 ? [page, "/checkout"] : [page, pick(PAGES[o.shop] || ["/"]), "/checkout"];
+    }
+    return { id: o.id, src };
+  });
+  await q("UPDATE orders o SET src = x.src FROM jsonb_to_recordset($1::jsonb) AS x(id bigint, src jsonb) WHERE o.id = x.id", [JSON.stringify(rows)]);
+  // People on the sites per day and channel.
+  const vd: unknown[] = [];
+  for (const sh of SHOPS) {
+    for (let d = 0; d < 30; d++) {
+      for (const [ch, k] of [["meta", 9], ["direct", 1.6], ["search", 0.8], ["google_ads", 0.5], ["other", 0.3]] as [string, number][]) {
+        const people = Math.round(sh.perDay * k * (0.6 + rnd() * 0.8) * 4);
+        if (people) vd.push({ shop: sh.id, d, ch, people, checkout: Math.round(people * 0.12), filling: Math.round(people * 0.05), ordered: Math.round(people * 0.02) });
+      }
+    }
+  }
+  await q(
+    `INSERT INTO visit_days (shop, day, landing, channel, campaign, visits, people, checkout, filling, ordered)
+     SELECT x.shop, (now() AT TIME ZONE 'Europe/Sofia')::date - x.d, '/', x.ch, '', x.people, x.people, x.checkout, x.filling, x.ordered
+       FROM jsonb_to_recordset($1::jsonb) AS x(shop text, d int, ch text, people int, checkout int, filling int, ordered int)
+     ON CONFLICT DO NOTHING`,
+    [JSON.stringify(vd)],
+  );
+  // EduBel is connected to Clarity: its pages for the last 7 days.
+  const cd: unknown[] = [];
+  for (let d = 1; d <= 7; d++) {
+    for (const [page, scroll, sessions] of [["/komplekt", 62, 340], ["/karti-balgarski-ezik", 38, 210], ["/nvo/karti-po-literatura", 55, 150], ["/", 44, 90]] as [string, number, number][]) {
+      const s = Math.round(sessions * (0.7 + rnd() * 0.6));
+      cd.push({ d, key: page, m: {
+        Traffic: { totalSessionCount: s + 12, totalBotSessionCount: 12, distantUserCount: Math.round(s * 0.9), PagesPerSessionPercentage: 1.4 },
+        "Scroll Depth": { averageScrollDepth: scroll + (rnd() - 0.5) * 8 },
+        "Engagement Time": { totalTime: 95, activeTime: 40 + Math.round(rnd() * 30) },
+        "Rage Click Count": { sessionsCount: Math.round(s * 0.03), sessionsWithMetricPercentage: 2 + rnd() * 4 },
+        "Dead Click Count": { sessionsCount: Math.round(s * 0.12), sessionsWithMetricPercentage: 8 + rnd() * 10 },
+        "Quickback Click": { sessionsCount: Math.round(s * 0.05), sessionsWithMetricPercentage: 4 + rnd() * 6 },
+      } });
+    }
+  }
+  await q(
+    `INSERT INTO clarity_days (shop, day, kind, key, m)
+     SELECT 'edubel', (now() AT TIME ZONE 'Europe/Sofia')::date - x.d, 'url', x.key, x.m FROM jsonb_to_recordset($1::jsonb) AS x(d int, key text, m jsonb)
+     ON CONFLICT DO NOTHING`,
+    [JSON.stringify(cd)],
+  );
+  await q("INSERT INTO settings (key, value) VALUES ('clarity:edubel', $1) ON CONFLICT (key) DO NOTHING", [
+    JSON.stringify({ token: seal("demo-token-demo-token-demo"), added_at: new Date().toISOString(), last_at: new Date().toISOString(), last_day: new Date().toISOString().slice(0, 10) }),
+  ]);
 }
 
 export { seedDemo as seed };

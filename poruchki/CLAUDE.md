@@ -126,9 +126,18 @@
 - `rollupVisits()`: днешните и вчерашните посещения → `visit_days` (магазин, ден, лендинг, канал, кампания: посещения, хора, до формата, писали, поръчали); по-старите дни не се пипат (посещенията се трият след 2 дни).
 - Отчетът: по канал, кампания › ад сет › реклама и по лендинг – поръчки, взети, върнати, на път, взети пари. В Meta: параметри на URL `utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}&utm_id={{ad.id}}`.
 
+## Път на клиента (`/pat/`, `functions/pat.mts`, `lib/journey.mts`, `lib/clarity.mts`, миграция `20261124200000_journey`)
+
+- `c.js` помни в браузъра (`pr_trail` в localStorage, не при GPC) посещенията за 30 дни – до 8 (първото + последните 7): `{t, s (източник като pr_src), p (първа страница), u (c/id/m/s/ck – само ако в това посещение има реклама)}`. Ново посещение = нов таб (`pr_tsid`), но не и таб, отворен от същия сайт без реклама, нито същият източник до 30 мин. Страниците на посещението – `pr_path` (sessionStorage, до 12). Праща ги само с формата (`trail`, `path`) → `leads.trail`/`leads.path` (`cleanTrail`/`cleanPath` във `visits.mts`; тялото до 7000 знака).
+- `attributeOrders` → `srcOf(lead, ordered_at)` добавя в `orders.src`: `fine` (по-фин канал), `touches`, `trail` (фините канали по ред), `first` {fine, at, page, campaign}, `days` (от първото посещение до поръчката), `path`. По-старите поръчки без `fine` се познават с `fineOfSrc`.
+- Фини канали (`fineChannel`): Meta и TikTok се делят на реклама и без реклама – реклама е само с utm кампания/реклама или платен medium (Facebook слага fbclid и на постовете). Групи (`FINE`/`GROUPS` в `journey.mts`): Платени (meta_ads, google_ads, tiktok_ads), Без реклама (meta_org, tiktok_org, search, other, direct), Наши съобщения (email, sms, viber), По телефона (calls), Неизвестно.
+- Отчетът `GET /api/pat?from&to&shop`: по групи, по сайтове (+ хората от `visit_days` и поръчки на 100 души), по канал – първо посещение / поръчал от / помогнал, най-чести пътища (еднакви поредни канали са една стъпка), брой посещения и време до поръчката, часове и дни (София), поредици от страници и лендинги с Clarity. Изводите се пишат в браузъра (`insights()` в `pat.js`) и се показват само при достатъчно данни.
+- Microsoft Clarity: ключ за всеки сайт (Clarity → Settings → Data Export → Generate new API token; собственикът го слага на страницата, криптиран в `settings` `clarity:<магазин>`). API-то дава само последните 24–72 ч обобщено (без записите), до 10 заявки на ден: синхронизацията (6c, `runClarity`) тегли веднъж на ден след 06:00 по 3 заявки (URL; Source+Medium+Campaign; Device, `numOfDays=1`) и пази в `clarity_days` под предишния ден; адресите стават пътища (`pathOf`), една страница с различни ?параметри се сбира (броевете се събират, останалото – средно по сесии). Полетата на метриките не са документирани точно – `clarityPages` ги търси по име (scroll/active/withMetricPercentage). Тестовете ползват фалшив Clarity (`CLARITY_API_URL`).
+- В политиката за поверителност на сайтовете трябва да пише и това (пазят се в браузъра посещенията за 30 дни).
+
 ## Връзка с Claude (MCP) (`functions/mcp.mts`, `lib/mcp.mts`)
 
-Отдалечен MCP сървър само за четене на `/mcp/<фирма>.<таен ключ>` (Streamable HTTP без потоци: JSON-RPC → един JSON отговор, известията → 202, GET → 405). Ключът е криптиран в `settings` `mcp@<фирма>`; Настройки → „Връзка с Claude“ (само собственикът, `/api/mcp`): „Създай линк“ / „Нов линк“ (старият спира) / „Изключи“. Инструменти: search_orders, get_order, get_customer, list_customers, sales_dashboard, ads_report, warehouse, open_carts. Лимит 600 заявки на час на фирма. В claude.ai: Настройки → Конектори → персонализиран конектор с линка.
+Отдалечен MCP сървър само за четене на `/mcp/<фирма>.<таен ключ>` (Streamable HTTP без потоци: JSON-RPC → един JSON отговор, известията → 202, GET → 405). Ключът е криптиран в `settings` `mcp@<фирма>`; Настройки → „Връзка с Claude“ (само собственикът, `/api/mcp`): „Създай линк“ / „Нов линк“ (старият спира) / „Изключи“. Инструменти: search_orders, get_order, get_customer, list_customers, sales_dashboard, ads_report, customer_journey, warehouse, open_carts. Лимит 600 заявки на час на фирма. В claude.ai: Настройки → Конектори → персонализиран конектор с линка.
 
 ## Невзета пратка – обаждания на Елена (`lib/pickup.mts`)
 
@@ -149,7 +158,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/klienti/`, `/reklami/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/klienti/`, `/reklami/`, `/pat/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `orders`, `sync`, `track`, `stats`, `jobs` |
@@ -182,7 +191,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 59 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 66 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 

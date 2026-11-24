@@ -7,6 +7,8 @@
    3) докато страницата е отворена, на ~30 s праща анонимен знак: коя страница, разглежда ли или е във
       формата, телефон или компютър, откъде е дошъл (Facebook, Google…) и от коя реклама (utm_* параметрите).
       Без име и телефон. Помни последния клик от реклама 7 дни (без „без проследяване“).
+   4) помни откъде е идвал човекът през последните 30 дни (до 8 посещения: кога, откъде, на коя страница е влязъл)
+      и кои страници е гледал в това посещение; праща ги само с формата за поръчка – „Път на клиента“.
    Не чете пароли и данни за плащане. Нищо не променя на страницата.
    Не помни нищо дълготрайно, ако браузърът иска „без проследяване“ (Global Privacy Control). */
 (function () {
@@ -193,13 +195,13 @@
       var email = val(FIELDS.email);
       var data;
       if (phone.replace(/\D/g, "").length >= 9 || EMAIL.test(email)) {
-        data = { sid: sid, name: val(FIELDS.name), phone: phone, email: EMAIL.test(email) ? email : "", city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname, utm: utmOut };
+        data = { sid: sid, name: val(FIELDS.name), phone: phone, email: EMAIL.test(email) ? email : "", city: val(FIELDS.city), address: val(FIELDS.address), cart: cart(), total: total(), page: location.pathname, utm: utmOut, trail: trail, path: path };
         remember(data);
       } else {
         // Nothing typed this time: the visitor we know, if they stayed at the form a few seconds.
         var m = remembered();
         if (!m || seen() < 4000) return;
-        data = { sid: sid, name: m.n || "", phone: m.p || "", email: m.e || "", city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true, utm: utmOut };
+        data = { sid: sid, name: m.n || "", phone: m.p || "", email: m.e || "", city: m.c || "", address: m.a || "", cart: cart(), total: total(), page: location.pathname, known: true, utm: utmOut, trail: trail, path: path };
       }
       var body = JSON.stringify(data);
       if (body === lastLead) return;
@@ -241,6 +243,53 @@
                     ? ref.slice(0, 40)
                     : "Директно";
       store("session", "pr_src", source);
+    }
+
+    // ---------- the path: this browser's visits in the last 30 days and the pages of this visit ----------
+    // Kept in the visitor's own browser (on the shop's site) and sent only with the order form, so an order shows how the
+    // person got there: first from an ad, back from Google two days later, ordered on the third visit. Without names.
+    var trail = [];
+    try {
+      trail = noTrack ? [] : JSON.parse(store("local", "pr_trail") || "[]");
+    } catch (e) {}
+    if (!Array.isArray(trail)) trail = [];
+    trail = trail.filter(function (x) {
+      return x && typeof x.t === "number" && Date.now() - x.t * 1000 < 30 * 86400000;
+    });
+    if (store("session", "pr_tsid") !== sid) {
+      store("session", "pr_tsid", sid);
+      var ownRef = false;
+      try {
+        ownRef = !!document.referrer && new URL(document.referrer).hostname.replace(/^www\./, "") === location.hostname.replace(/^www\./, "");
+      } catch (e) {}
+      var adHere = !!(utm && !utm.later && Object.keys(utm).length);
+      var prev = trail[trail.length - 1];
+      // A new tab opened from the same site is the same visit; so is the same source again within 30 minutes.
+      var same = (ownRef && !adHere) || (prev && !adHere && prev.s === source && Date.now() - prev.t * 1000 < 30 * 60000);
+      if (!same || !trail.length) {
+        var tu = {};
+        if (adHere) {
+          ["c", "id", "m", "s", "ck"].forEach(function (k) {
+            if (utm[k]) tu[k] = String(utm[k]).slice(0, 60);
+          });
+        }
+        var touch = { t: Math.round(Date.now() / 1000), s: source, p: location.pathname.slice(0, 80) };
+        if (Object.keys(tu).length) touch.u = tu;
+        trail.push(touch);
+        // The first visit and the last 7.
+        if (trail.length > 8) trail = [trail[0]].concat(trail.slice(-7));
+        if (!noTrack) store("local", "pr_trail", JSON.stringify(trail));
+      }
+    }
+    var path = [];
+    try {
+      path = JSON.parse(store("session", "pr_path") || "[]");
+    } catch (e) {}
+    if (!Array.isArray(path)) path = [];
+    if (path[path.length - 1] !== location.pathname.slice(0, 80)) {
+      path.push(location.pathname.slice(0, 80));
+      if (path.length > 12) path = [path[0]].concat(path.slice(-11));
+      store("session", "pr_path", JSON.stringify(path));
     }
     var device = (function () {
       var w = Math.min(screen.width || 0, screen.height || 0);
