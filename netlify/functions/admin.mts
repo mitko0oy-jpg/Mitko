@@ -230,7 +230,9 @@ export default handle(async (req, ctx) => {
     const math = b.math && typeof b.math === "object" && Array.isArray(b.math.cards) && Array.isArray(b.math.sections) ? b.math : null;
     // The skills of the skill map (each task names its skill in "sk"), also optional.
     const skills = Array.isArray(b.skills) ? b.skills : null;
-    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math, skills })]);
+    // The texts for the retelling (задача 26) with their checking data (events, details), also optional.
+    const retell = Array.isArray(b.retell) ? b.retell.filter((r: any) => r && /^[a-z0-9-]{3,24}$/.test(String(r.id)) && Array.isArray(r.text)) : null;
+    const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify({ passages: b.passages, questions, modules: b.modules || null, dossiers, math, skills, retell })]);
     return json({ ok: true, id: Number(row.id), questions: questions.length, dossiers: dossiers ? dossiers.dossiers.length : 0, mathCards: math ? math.cards.length : 0 });
   }
 
@@ -239,7 +241,7 @@ export default handle(async (req, ctx) => {
   if (parts[0] === "trener-bank-add") {
     const mods = Array.isArray(b.modules) ? b.modules : [];
     const add = Array.isArray(b.questions) ? b.questions : [];
-    if (!mods.length || !add.length) throw bad("bank", "Дай модули и задачи.");
+    if ((!mods.length || !add.length) && !Array.isArray(b.retell)) throw bad("bank", "Дай модули и задачи (или текстове за преразказ).");
     const ids = new Set(mods.map((m: any) => String(m.id || "")));
     if ([...ids].some((id) => !/^[a-z0-9-]{2,40}$/.test(id))) throw bad("bank", "id на модул: малки латински букви, цифри и тире.");
     const stray = add.filter((x: any) => !ids.has(String(x.m)));
@@ -256,7 +258,8 @@ export default handle(async (req, ctx) => {
     const keepQs = (d.questions || []).filter((x: any) => !ids.has(x.m) && !qids.has(x.id));
     // New skills (for the skill map) are added or replace the ones with the same id.
     const skills = Array.isArray(b.skills) ? [...(d.skills || []).filter((x: any) => !b.skills.some((y: any) => y.id === x.id)), ...b.skills] : d.skills || null;
-    const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) }, skills };
+    const retell = Array.isArray(b.retell) ? [...(d.retell || []).filter((x: any) => !b.retell.some((y: any) => y.id === x.id)), ...b.retell] : d.retell || null;
+    const next = { ...d, modules: [...keepMods, ...mods], questions: [...keepQs, ...add], passages: { ...(d.passages || {}), ...(b.passages || {}) }, skills, retell };
     const row = await one("INSERT INTO trener_bank (data) VALUES ($1) RETURNING id", [JSON.stringify(next)]);
     return json({ ok: true, id: Number(row.id), modules: next.modules.length, questions: next.questions.length, added: add.length });
   }

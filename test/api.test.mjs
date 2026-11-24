@@ -730,3 +730,38 @@ test("personal trainer: skills travel with the bank, the log of answers merges, 
   assert.equal(r.state.log.length, 0);
   assert.deepEqual(r.state.diag, {});
 });
+
+test("the retelling: texts by level, the checking data stays on the server, the check by criteria and the daily limit", async () => {
+  const t = client();
+  const cur = await admin("trener-bank");
+  const text = ["Първи абзац на разказа, в който героят тръгва на път рано сутринта.", "Втори абзац: среща стар приятел и двамата си спомнят детството."];
+  const retell = ["prz-pat", "prz-sreshta"].map((id, i) => ({ id, author: "Елин Пелин", title: `Разказ ${i + 1}`, source: "https://example.org", text, task: "Прочетете текста и напишете подробен преразказ от името на героя.", narrator: "1 лице", events: ["Героят тръгва рано сутринта.", "Среща стар приятел.", "Спомнят си детството."], characters: ["героят"], details: ["рано сутринта"] }));
+  const { id: _i, createdAt: _c, ...data } = cur;
+  await admin("trener-bank", { ...data, retell });
+  const full = (await admin("trener-codes", { count: 1, batch: `rt-${run}` })).codes[0];
+  const start = (await admin("trener-codes", { count: 1, batch: `rt-start-${run}`, tier: "start" })).codes[0];
+  const dev = "e1".repeat(24);
+  let r = await t("trener/open", { code: full, device: dev });
+  assert.equal(r.bank.retell.length, 2);
+  assert.equal(r.bank.retell[0].events, undefined, "the list of events does not reach the browser");
+  assert.equal(r.bank.retellLocked, 0);
+  const s = await t("trener/open", { code: start, device: dev });
+  assert.equal(s.bank.retell.length, 1);
+  assert.equal(s.bank.retellLocked, 1);
+
+  const long = Array.from({ length: 80 }, (_, i) => `дума${i}`).join(" ");
+  r = await t("trener/retell", { code: full, device: dev, id: "prz-pat", text: "Твърде кратко." });
+  assert.equal(r.error, "short");
+  r = await t("trener/retell", { code: full, device: dev, id: "prz-pat", text: long });
+  assert.equal(r.status, 200);
+  assert.equal(r.max, 35);
+  assert.equal(r.criteria.length, 5);
+  assert.ok(r.points >= 0 && r.points <= 35 && r.words === 80);
+  assert.deepEqual(r.events, retell[0].events, "the events come with the result, after writing");
+  r = await t("trener/retell", { code: start, device: dev, id: "prz-sreshta", text: long });
+  assert.equal(r.status, 404, "Старт has only the first text");
+  r = await t("trener/retell", { code: start, device: dev, id: "prz-pat", text: long });
+  assert.equal(r.status, 200);
+  r = await t("trener/retell", { code: start, device: dev, id: "prz-pat", text: long });
+  assert.equal(r.error, "retell_daily", "one a day with Старт");
+});

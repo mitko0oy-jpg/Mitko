@@ -176,8 +176,14 @@ export function withoutDrafts(data: any) {
   return { ...data, modules: data.modules.filter((m: any) => !drafts.has(m.id)), questions: (data.questions || []).filter((q: any) => !drafts.has(q.m)) };
 }
 
+// The retelling texts reach the browser without what the check uses (events, details, characters):
+// everything with „Пълен“ or „Стандарт“ БЕЛ, the first text with „Старт“, none with „Стандарт“ математика.
+const retellView = (list: any[] | null | undefined, n: number) =>
+  (list || []).slice(0, n).map(({ id, author, title, source, text, task, narrator }: any) => ({ id, author, title, source, text, task, narrator }));
 export function tierBank(data: any, tier: string, subject: string | null, drafts = false) {
   if (!drafts) data = withoutDrafts(data);
+  const retellN = tier === "full" || (tier === "std" && subject !== "math") ? 999 : tier === "start" ? 1 : 0;
+  data = { ...data, retell: retellView(data.retell, retellN), retellLocked: Math.max(0, (data.retell || []).length - retellN) };
   if (tier === "full") return data;
   const isMath = (m: any) => m.area === "math";
   const mathOk = (n: number) => (tier === "start" ? n <= START_MATH : subject === "math");

@@ -300,7 +300,7 @@ function fmtDur(sec) { const m = Math.floor(sec / 60), s = sec % 60; return m ? 
 const fmtClock = (sec) => `${Math.floor(sec / 60)}:${two(sec % 60)}`;
 const pl = (n, one, many) => (n === 1 ? one : many);
 const norm = (s) => String(s ?? "").toLowerCase().replace(/[„“"”«»'’`.!?;:]/g, "").replace(/\s*-\s*/g, "-").replace(/\s+/g, " ").trim();
-const modTitle = (m) => (m === "mock" ? "Пробна матура" : MOD[m] ? MOD[m].title : m);
+const modTitle = (m) => (m === "mock" ? "Пробна матура" : MOD[m] ? MOD[m].title : /^prz-/.test(m) ? `Преразказ: „${((BANK && BANK.retell) || []).find((r) => `prz-${r.id}` === m)?.title || "текст"}“` : m);
 
 const attemptsOf = (m) => S.hist.filter((h) => h.m === m);
 const lastOf = (m) => { const a = attemptsOf(m); return a.length ? a[a.length - 1] : null; };
@@ -672,11 +672,157 @@ const Skills = (() => {
   return { has, done, snapshot, heroButton, panel, changes, diagResult, startDiag, startPlan, startSkill };
 })();
 
+/* ---------- the retelling (задача 26 на НВО) ----------
+   As on the exam: the pupil reads the text (up to 15 minutes, no notes), the text hides, then a detailed retelling
+   is written as the task says (up to 75 minutes). Ерчо checks it on the server by the NVO criteria and the text's own
+   list of events (netlify/lib/retell.mts): points out of 35 by criterion, what is missing, the language mistakes
+   quoted from the pupil's text. The draft is kept in this browser until it is handed in; the result goes to the
+   gradebook as „Преразказ: …“. Only on the site. */
+const Retell = (() => {
+  const READ_MIN = 15, WRITE_MIN = 75, MIN_WORDS = 60, K = "edubel-trener-retell:";
+  let cur = null, tick = 0;
+  const list = () => (ONLINE && BANK && Array.isArray(BANK.retell) ? BANK.retell : []);
+  const byId = (id) => list().find((r) => r.id === id);
+  const words = (t) => (String(t || "").match(/[\p{L}\p{N}]+(?:[-'’][\p{L}\p{N}]+)*/gu) || []).length;
+  const draft = (id) => ls.get(K + id) || "";
+  const stop = () => { clearInterval(tick); tick = 0; };
+  const bar = (title) => `<div class="qbar"><button class="back" data-act="rtBack">← Табло</button><span class="qtitle">${esc(title)}</span><span class="pill" id="rtClock"></span></div>`;
+  const clock = (sec) => { const el = document.getElementById("rtClock"); if (el) el.textContent = fmtClock(Math.max(0, sec)); };
+
+  function section() {
+    const L = list(), locked = (BANK && BANK.retellLocked) || 0;
+    if (!L.length && !locked) return "";
+    let h = `<section class="parts" id="retell"><h2 class="sec-t">Преразказ · задача 26</h2>
+      <p class="muted small rt-lead">Като на изпита: четеш текста, той се скрива и пишеш подробен преразказ по задачата. Ерчо проверява по критериите на НВО – точки от 35, пропуснатото и грешките.</p>
+      <div class="part" style="--c:var(--lit)"><div class="mods">`;
+    for (const r of L) {
+      const last = lastOf(`prz-${r.id}`), best = bestOf(`prz-${r.id}`);
+      h += `<article class="mod ${last ? "played" : ""}"><span class="mod-art">${pic("i-lit2")}</span>
+        <div class="body"><h3>„${esc(r.title)}“</h3><p>${esc(r.author)} · ${esc(r.task)}</p>
+          <div class="meta">${last ? `<span>Последно: ${fmtDate(last.d)} · ${last.p}/${last.n} т.</span><span>Най-добро: ${best.p}/${best.n}</span>` : `<span>Още не е писан</span>`}${draft(r.id) ? `<span>Има чернова</span>` : ""}</div></div>
+        <div class="side nog"><button class="btn sm ${last ? "line" : ""}" data-act="rtOpen" data-r="${esc(r.id)}">${last ? "Пиши пак" : "Започни"}</button></div></article>`;
+    }
+    if (locked) h += `<article class="mod locked"><span class="mod-art">${pic("i-lit2")}</span><div class="body"><h3>Още ${locked} ${pl(locked, "текст", "текста")} за преразказ</h3><div class="meta"><span class="lockt">🔒 ${lockedWhere()}</span></div></div><div class="side nog"><button class="btn sm line" data-act="parentShow">Покажи на родител</button></div></article>`;
+    return h + `</div></div></section>`;
+  }
+
+  function open(id) {
+    const r = byId(id);
+    if (!r) return home();
+    stopTimer(); sess = null; Game.leave(); stop();
+    cur = { r, phase: "intro" };
+    const d = draft(id);
+    app.innerHTML = bar(`Преразказ · „${r.title}“`) + `<section class="rt">
+      <span class="eyebrow">Задача 26 · до 35 точки</span><h1>„${esc(r.title)}“</h1><p class="muted">${esc(r.author)}</p>
+      <div class="rt-task"><b>Задачата</b><p>${esc(r.task)}</p></div>
+      <ol class="rt-steps"><li>Чети внимателно – имаш до ${READ_MIN} минути. На изпита не се водят бележки.</li><li>Когато си готов, текстът се скрива.</li><li>Пиши подробен преразказ – до ${WRITE_MIN} минути. Пази реда на събитията и лицето от задачата.</li><li>Предаваш и Ерчо проверява по критериите на НВО – около минута.</li></ol>
+      ${d ? `<p class="okbox">Имаш незавършена чернова (${words(d)} думи) – тя те чака при писането.</p>` : ""}
+      <div class="row"><button class="btn gold" data-act="rtRead">▶ Започни да четеш</button>${d ? `<button class="btn line" data-act="rtWrite">Продължи черновата</button>` : ""}</div></section>`;
+    window.scrollTo(0, 0);
+  }
+  function read() {
+    if (!cur) return home();
+    const r = cur.r;
+    cur.phase = "read";
+    cur.t0 = Date.now();
+    app.innerHTML = bar(`Чети · „${r.title}“`) + `<article class="rt rt-text"><h1>„${esc(r.title)}“</h1><p class="muted">${esc(r.author)}</p>
+      ${r.text.map((t) => `<p>${esc(t)}</p>`).join("")}${r.source ? `<p class="small muted">Източник: ${esc(r.source)}</p>` : ""}</article>
+      <div class="row rt-go"><button class="btn gold" data-act="rtWrite">Готов съм – скрий текста</button></div>`;
+    window.scrollTo(0, 0);
+    stop();
+    clock(READ_MIN * 60);
+    tick = setInterval(() => { const left = READ_MIN * 60 - Math.round((Date.now() - cur.t0) / 1000); clock(left); if (left <= 0) write(); }, 1000);
+  }
+  function write(note) {
+    if (!cur) return home();
+    stop();
+    const r = cur.r;
+    cur.phase = "write";
+    cur.w0 = cur.w0 || Date.now();
+    const d = draft(r.id);
+    app.innerHTML = bar(`Пиши · „${r.title}“`) + `<section class="rt"><div class="rt-task"><b>Задачата</b><p>${esc(r.task)}</p></div>
+      <label for="rtText" class="rt-label">Твоят преразказ</label>
+      <textarea id="rtText" class="rt-area" rows="16" placeholder="Започни да пишеш тук…" spellcheck="false" autocorrect="off" autocapitalize="sentences">${esc(d)}</textarea>
+      <p class="rt-meta"><span id="rtWords">${words(d)} думи</span><span>Черновата се пази на това устройство.</span></p>
+      <p class="${note ? "err" : "small muted"}" id="rtErr" role="alert">${esc(note || "")}</p>
+      <div class="row"><button class="btn gold" data-act="rtSend">Предай за проверка</button></div></section>`;
+    const ta = document.getElementById("rtText");
+    ta.addEventListener("input", () => { ls.set(K + r.id, ta.value); document.getElementById("rtWords").textContent = `${words(ta.value)} думи`; });
+    if (!matchMedia("(pointer: coarse)").matches) ta.focus();
+    clock(WRITE_MIN * 60 - Math.round((Date.now() - cur.w0) / 1000));
+    tick = setInterval(() => {
+      const left = WRITE_MIN * 60 - Math.round((Date.now() - cur.w0) / 1000);
+      clock(left);
+      if (left === 0) { const e = document.getElementById("rtErr"); if (e) { e.className = "okbox"; e.textContent = `Времето за писане (${WRITE_MIN} минути) изтече. Довърши изречението и предай.`; } }
+    }, 1000);
+  }
+  async function send() {
+    if (!cur) return home();
+    const r = cur.r, ta = document.getElementById("rtText"), text = ta ? ta.value : draft(r.id);
+    if (ta) ls.set(K + r.id, text);
+    if (words(text) < MIN_WORDS) { const e = document.getElementById("rtErr"); if (e) { e.className = "err"; e.textContent = `Напиши поне ${MIN_WORDS} думи. Подробният преразказ обикновено е между 250 и 450 думи.`; } return; }
+    stop();
+    const writeSec = Math.round((Date.now() - (cur.w0 || Date.now())) / 1000);
+    app.innerHTML = bar(`Проверка · „${r.title}“`) + `<section class="rt rt-wait">${pic(mascot("detective"), "rt-m", "", true)}<h2>Ерчо проверява преразказа…</h2><p class="muted">Сравнява го с текста и с критериите на НВО. Отнема до минута – не затваряй страницата.</p></section>`;
+    window.scrollTo(0, 0);
+    try {
+      const g = await Online.retell(r.id, text);
+      ls.del(K + r.id);
+      S.hist.push({ m: `prz-${r.id}`, d: Date.now(), p: g.points, n: g.max, s: Math.min(writeSec, 36000), w: [] });
+      save();
+      Online.syncNow();
+      cur.last = { text, g };
+      cur.w0 = 0;
+      result();
+    } catch (e) {
+      write(e.message || "Проверката не успя. Опитай пак след малко.");
+    }
+  }
+  function result() {
+    const r = cur.r, { g } = cur.last, gr = gradeOf(g.points / g.max);
+    const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join("");
+    app.innerHTML = bar(`Преразказ · „${r.title}“`) + `<section class="res g${gr} rt-res">
+        <div class="res-art">${pic(mascot(gr >= 5 ? "yay" : gr >= 4 ? "hi" : "think"), "res-m", "", true)}<div class="medal" role="img" aria-label="${g.points} от ${g.max} точки"><b>${g.points}</b><small>от ${g.max}</small></div></div>
+        <div class="info"><span class="eyebrow">Записано в бележника · ориентировъчна оценка</span><h1>„${esc(r.title)}“</h1>
+          <p class="score">${g.points} от ${g.max} точки · ${g.words} думи</p>${g.next ? `<p><b>Най-важното за следващия път:</b> ${esc(g.next)}</p>` : ""}</div></section>
+      <section class="fc"><h2>По критериите</h2><div class="areas">${g.criteria.map((c) => `<div class="area"><span class="nm">${esc(c.t)}<small>${esc(c.comment)}</small></span><span class="v">${c.points}/${c.max}</span><div class="bar"><i style="width:${Math.round((c.points / c.max) * 100)}%;--c:var(--lit)"></i></div></div>`).join("")}</div></section>
+      ${g.strengths.length ? `<section class="rt-box good"><h3>Силно</h3><ul>${li(g.strengths)}</ul></section>` : ""}
+      ${g.missing.length ? `<section class="rt-box"><h3>Пропуснато от текста</h3><ul>${li(g.missing)}</ul></section>` : ""}
+      ${g.errors.length ? `<section class="rt-box"><h3>Грешки за поправяне</h3><ul class="rt-errs">${g.errors.map((e) => `<li><span class="rt-kind">${esc(e.kind)}</span><s>${esc(e.quote)}</s><span aria-hidden="true">→</span><b>${esc(e.fix)}</b></li>`).join("")}</ul></section>` : ""}
+      <div class="row"><button class="btn gold" data-act="rtFix">Поправи и предай пак</button><button class="btn line" data-act="rtShow">Виж текста и епизодите</button><button class="btn line" data-act="home">Към таблото</button></div>
+      <p class="small muted">Оценката е ориентировъчна: дава я AI по критериите на НВО и по списъка с епизоди на текста.</p>`;
+    window.scrollTo(0, 0);
+    if (gr >= 5) setTimeout(() => FX.win(gr === 6), 250);
+  }
+  function fix() {
+    if (!cur || !cur.last) return home();
+    ls.set(K + cur.r.id, cur.last.text);
+    cur.w0 = Date.now();
+    write();
+  }
+  function show() {
+    if (!cur) return home();
+    const r = cur.r, ev = (cur.last && cur.last.g.events) || [];
+    app.innerHTML = bar(`„${r.title}“`) + `<article class="rt rt-text"><h1>„${esc(r.title)}“</h1><p class="muted">${esc(r.author)}</p>${r.text.map((t) => `<p>${esc(t)}</p>`).join("")}</article>
+      ${ev.length ? `<section class="rt-box"><h3>Епизодите, които подробният преразказ пази</h3><ol>${ev.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></section>` : ""}
+      <div class="row">${cur.last ? `<button class="btn line" data-act="rtBackRes">← Към резултата</button>` : ""}<button class="btn line" data-act="home">Към таблото</button></div>`;
+    window.scrollTo(0, 0);
+  }
+  function back() {
+    // the draft stays in this browser; reading or writing can start again from the board
+    stop();
+    cur = null;
+    home("retell");
+  }
+  return { section, open, read, write: () => write(), send, fix, show, back, result: () => cur && cur.last && result(), stop };
+})();
+
 /* ---------- home: forecast, modules, gradebook ---------- */
 let sess = null, timer = null, histAll = false;
 
 function home(scrollTo) {
   stopTimer();
+  Retell.stop();
   Speak.stop();
   sess = null;
   Game.leave();
@@ -720,7 +866,7 @@ function home(scrollTo) {
   if (ONLINE) h += Update.banner() + Online.levelBanner();
   h += Skills.panel(M);
   if (M) h += mathBoard();
-  else h += forecastPanel(f, mist) + Game.card() + modulesSection() + soonSection();
+  else h += forecastPanel(f, mist) + Retell.section() + Game.card() + modulesSection() + soonSection();
   h += badgesSection();
   h += gradebook();
   if (ONLINE) h += Online.accessSection();
@@ -1438,6 +1584,14 @@ const ACT = {
   theme: () => { const y = scrollY; Theme.toggle(); home(); scrollTo(0, y); },
   hello: () => Hello.tap(),
   diag: () => Skills.startDiag(mathOn()),
+  rtOpen: (b) => Retell.open(b.dataset.r),
+  rtRead: () => Retell.read(),
+  rtWrite: () => Retell.write(),
+  rtSend: () => Retell.send(),
+  rtFix: () => Retell.fix(),
+  rtShow: () => Retell.show(),
+  rtBack: () => Retell.back(),
+  rtBackRes: () => Retell.result(),
   plan: () => Skills.startPlan(mathOn()),
   skill: (b) => Skills.startSkill(b.dataset.k),
   explain: async () => {
@@ -1983,8 +2137,9 @@ const Online = (() => {
   }
 
   const explain = (q, answer) => call("explain", { code, device, id: q.id, answer: String(answer || "").slice(0, 300) });
+  const retell = (id, text) => call("retell", { code, device, id, text });
   return Object.assign(o, {
-    boot, changed, accessSection, levelBanner, parentShow, explain,
+    boot, changed, accessSection, levelBanner, parentShow, explain, retell,
     syncNow: () => syncNow(),
     soon: () => soon(),
     act: (b, e) => { const f = ACTS[b.dataset.act]; if (f) f(b, e); },

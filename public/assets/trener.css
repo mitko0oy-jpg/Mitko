@@ -778,3 +778,32 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .explain[role="status"]{background:var(--band);border-radius:16px;padding:12px 14px;display:grid;gap:4px}
 .explain p{margin:0}
 .explain .err{color:var(--coral)}
+
+/* The retelling (задача 26): reading with a clock, writing, the check and the result by criteria */
+.rt{background:var(--paper);border-radius:22px;padding:18px;display:grid;gap:12px;box-shadow:0 1px 0 var(--edge)}
+.rt h1{margin:0;font-size:clamp(22px,5.4vw,30px)}
+.rt .muted{margin:0}
+.rt-task{background:var(--band);border-radius:16px;padding:12px 14px;display:grid;gap:4px}
+.rt-task p{margin:0}
+.rt-steps{margin:0;padding-left:20px;display:grid;gap:6px}
+.rt-text p{margin:0;line-height:1.65;font-size:17.5px;max-width:65ch}
+.rt-go{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));justify-content:center}
+.rt-label{font-weight:700;color:var(--ink)}
+.rt-area{width:100%;min-height:52vh;box-sizing:border-box;border:2px solid var(--edge);border-radius:16px;padding:14px;font:400 17px/1.6 var(--sans);color:var(--ink);background:var(--paper);resize:vertical}
+.rt-area:focus{outline:none;border-color:var(--violet)}
+.rt-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px;margin:0;font-size:14px;color:var(--muted)}
+.rt-meta span:first-child{font-weight:700;color:var(--ink)}
+.rt-wait{justify-items:center;text-align:center;padding:28px 18px}
+.rt-wait .rt-m{width:120px;height:120px}
+.rt-res .medal small{font-size:12px}
+.rt-box{background:var(--paper);border-radius:18px;padding:14px 16px;display:grid;gap:8px;box-shadow:0 1px 0 var(--edge)}
+.rt-box h3{margin:0}
+.rt-box ul,.rt-box ol{margin:0;padding-left:20px;display:grid;gap:6px}
+.rt-box.good{box-shadow:inset 0 0 0 2px var(--mint),0 1px 0 var(--edge)}
+.rt-errs{list-style:none;padding-left:0 !important}
+.rt-errs li{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline}
+.rt-errs s{color:var(--coral)}
+.rt-errs b{color:var(--mint)}
+.rt-kind{font:700 12px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--band);border-radius:999px;padding:4px 8px}
+.rt-lead{margin:-4px 0 4px}
+#rtClock:empty{display:none}

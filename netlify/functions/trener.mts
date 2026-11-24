@@ -4,6 +4,7 @@ import { formatCode, newCode, normalizeCode } from "../lib/codes.mts";
 import { event, hit, one, q, tx } from "../lib/db.mts";
 import { bad, body, clientIp, env, forbidden, handle, HttpError, json, notFound, str, sub, tooMany } from "../lib/http.mts";
 import { explainMistake } from "../lib/ai.mts";
+import { gradeRetelling, RETELL_MIN_WORDS, wordCount } from "../lib/retell.mts";
 import { listReports, setReport } from "../lib/reports.mts";
 import { activateIfPaid, settleRenewals } from "../lib/pay.mts";
 import { accessOf, cleanLabel, cleanState, DEVICE_IDLE_DAYS, deviceHash, isReviewBatch, latestBank, mergeState, publicId, tierBank, TIER_NAME, validDevice, watermark } from "../lib/trener.mts";
@@ -213,6 +214,31 @@ export default handle(async (req, ctx) => {
     const text = await explainMistake(task, str(b.answer, 300), ps ? (Array.isArray(ps.text) ? ps.text.join(" ") : String(ps.text || "")) : undefined);
     await event("trener_explain", { tier: acc.tier });
     return json({ text });
+  }
+
+  // The retelling (задача 26): the AI checks it by the criteria and the text's own list of events (lib/retell.mts).
+  // Only for texts this code can see; a day: 4 with „Пълен“ / „Стандарт“ БЕЛ, 1 otherwise; the global AI cap too.
+  if (parts[0] === "retell") {
+    await requireDevice(code, b.device);
+    const key = await findKey(req, ctx, code);
+    const acc = accessOf(key);
+    const bank = await latestBank();
+    if (!bank) throw new HttpError(503, "not_ready", "Тренажорът още се подготвя.");
+    const seen = tierBank(bank.data, acc.tier, acc.subject, isReviewBatch(key.batch)).retell || [];
+    const id = str(b.id, 30);
+    const r = (bank.data.retell || []).find((x: any) => x.id === id);
+    if (!r || !seen.some((x: any) => x.id === id)) throw notFound("Няма такъв текст.");
+    const text = str(b.text, 12000);
+    if (wordCount(text) < RETELL_MIN_WORDS) throw bad("short", `Преразказът е твърде кратък – напиши поне ${RETELL_MIN_WORDS} думи, после го предай.`);
+    const day = new Date().toISOString().slice(0, 10);
+    const full = acc.tier === "full" || (acc.tier === "std" && acc.subject !== "math");
+    if (!(await hit(`retell:${code}:${day}`, full ? 4 : 1, 86400)))
+      throw new HttpError(429, "retell_daily", full ? "Днес вече предаде 4 преразказа – утре Ерчо пак ще провери. Междувременно прочети бележките." : "Днес вече предаде преразказ. Утре пак!");
+    if (!(await hit(`ai:global:${day}`, Number(env("AI_GLOBAL_DAILY") || 3000), 86400)))
+      throw new HttpError(503, "ai_busy", "Проверката е натоварена днес. Опитай утре.");
+    const g = await gradeRetelling(r, text);
+    await event("trener_retell", { tier: acc.tier, points: g.points, words: g.words });
+    return json({ ...g, events: r.events || [] });
   }
 
   if (parts[0] === "forget") {
