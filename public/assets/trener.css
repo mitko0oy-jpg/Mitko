@@ -804,6 +804,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rt-errs li{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline}
 .rt-errs s{color:var(--coral)}
 .rt-errs b{color:var(--mint)}
+.rt-g{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 4px;font-size:15px}
+.rt-g:first-of-type{margin-top:4px}
+.rt-g b{font-family:var(--display);color:var(--ink)}
 .rt-kind{font:700 12px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--band);border-radius:999px;padding:4px 8px}
 .rt-lead{margin:-4px 0 4px}
 #rtClock:empty{display:none}

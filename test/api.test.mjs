@@ -755,8 +755,16 @@ test("the retelling: texts by level, the checking data stays on the server, the 
   r = await t("trener/retell", { code: full, device: dev, id: "prz-pat", text: long });
   assert.equal(r.status, 200);
   assert.equal(r.max, 35);
-  assert.equal(r.criteria.length, 5);
-  assert.ok(r.points >= 0 && r.points <= 35 && r.words === 80);
+  assert.equal(r.criteria.length, 12, "the 12 criteria of the scale");
+  assert.equal(r.criteria.reduce((s, c) => s + c.max, 0), 35);
+  assert.equal(r.words, 80);
+  // the practice check: 21 of 23 for content and task, 1 spelling and 1 grammar mistake (full points), one paragraph (0)
+  assert.equal(r.criteria.find((c) => c.id === "spell").points, 3);
+  assert.equal(r.criteria.find((c) => c.id === "form").points, 0);
+  assert.equal(r.points, 30);
+  r = await t("trener/retell", { code: full, device: dev, id: "prz-pat", text: [long, long, long].join("\n\n") });
+  assert.equal(r.criteria.find((c) => c.id === "form").points, 3, "three paragraphs – full points for the layout");
+  assert.equal(r.points, 33);
   assert.deepEqual(r.events, retell[0].events, "the events come with the result, after writing");
   r = await t("trener/retell", { code: start, device: dev, id: "prz-sreshta", text: long });
   assert.equal(r.status, 404, "Старт has only the first text");

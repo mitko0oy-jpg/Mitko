@@ -693,7 +693,7 @@ const Retell = (() => {
     const L = list(), locked = (BANK && BANK.retellLocked) || 0;
     if (!L.length && !locked) return "";
     let h = `<section class="parts" id="retell"><h2 class="sec-t">Преразказ · задача 26</h2>
-      <p class="muted small rt-lead">Като на изпита: четеш текста, той се скрива и пишеш подробен преразказ по задачата. Ерчо проверява по критериите на НВО – точки от 35, пропуснатото и грешките.</p>
+      <p class="muted small rt-lead">Като на изпита: четеш текста, той се скрива и пишеш подробен преразказ по задачата. Ерчо проверява по 12-те критерия за преразказ – точки от 35, пропуснатото и грешките.</p>
       <div class="part" style="--c:var(--lit)"><div class="mods">`;
     for (const r of L) {
       const last = lastOf(`prz-${r.id}`), best = bestOf(`prz-${r.id}`);
@@ -715,7 +715,7 @@ const Retell = (() => {
     app.innerHTML = bar(`Преразказ · „${r.title}“`) + `<section class="rt">
       <span class="eyebrow">Задача 26 · до 35 точки</span><h1>„${esc(r.title)}“</h1><p class="muted">${esc(r.author)}</p>
       <div class="rt-task"><b>Задачата</b><p>${esc(r.task)}</p></div>
-      <ol class="rt-steps"><li>Чети внимателно – имаш до ${READ_MIN} минути. На изпита не се водят бележки.</li><li>Когато си готов, текстът се скрива.</li><li>Пиши подробен преразказ – до ${WRITE_MIN} минути. Пази реда на събитията и лицето от задачата.</li><li>Предаваш и Ерчо проверява по критериите на НВО – около минута.</li></ol>
+      <ol class="rt-steps"><li>Чети внимателно – имаш до ${READ_MIN} минути, без бележки. (На изпита преди това чуваш текста веднъж от запис.)</li><li>Когато си готов, текстът се скрива.</li><li>Пиши подробен преразказ – до ${WRITE_MIN} минути. Пази реда на събитията и лицето от задачата, пряката реч предай с непряка, раздели текста на абзаци. Заглавието и задачата не се преписват.</li><li>Предаваш и Ерчо проверява по 12-те критерия за преразказ – около минута.</li></ol>
       ${d ? `<p class="okbox">Имаш незавършена чернова (${words(d)} думи) – тя те чака при писането.</p>` : ""}
       <div class="row"><button class="btn gold" data-act="rtRead">▶ Започни да четеш</button>${d ? `<button class="btn line" data-act="rtWrite">Продължи черновата</button>` : ""}</div></section>`;
     window.scrollTo(0, 0);
@@ -778,6 +778,15 @@ const Retell = (() => {
       write(e.message || "Проверката не успя. Опитай пак след малко.");
     }
   }
+  // The criteria by their groups (Съдържание, Дидактическа задача, Език и оформяне), each with its own sum.
+  function groups(cs) {
+    const gs = [];
+    for (const c of cs) { let x = gs.find((y) => y.g === (c.g || "")); if (!x) gs.push((x = { g: c.g || "", cs: [] })); x.cs.push(c); }
+    return gs.map((x) => {
+      const p = x.cs.reduce((s, c) => s + c.points, 0), n = x.cs.reduce((s, c) => s + c.max, 0);
+      return `${x.g ? `<h3 class="rt-g"><span>${esc(x.g)}</span><b>${p}/${n}</b></h3>` : ""}<div class="areas">${x.cs.map((c) => `<div class="area"><span class="nm">${esc(c.t)}<small>${esc(c.comment)}</small></span><span class="v">${c.points}/${c.max}</span><div class="bar"><i style="width:${Math.round((c.points / c.max) * 100)}%;--c:var(--lit)"></i></div></div>`).join("")}</div>`;
+    }).join("");
+  }
   function result() {
     const r = cur.r, { g } = cur.last, gr = gradeOf(g.points / g.max);
     const li = (a) => a.map((x) => `<li>${esc(x)}</li>`).join("");
@@ -785,12 +794,12 @@ const Retell = (() => {
         <div class="res-art">${pic(mascot(gr >= 5 ? "yay" : gr >= 4 ? "hi" : "think"), "res-m", "", true)}<div class="medal" role="img" aria-label="${g.points} от ${g.max} точки"><b>${g.points}</b><small>от ${g.max}</small></div></div>
         <div class="info"><span class="eyebrow">Записано в бележника · ориентировъчна оценка</span><h1>„${esc(r.title)}“</h1>
           <p class="score">${g.points} от ${g.max} точки · ${g.words} думи</p>${g.next ? `<p><b>Най-важното за следващия път:</b> ${esc(g.next)}</p>` : ""}</div></section>
-      <section class="fc"><h2>По критериите</h2><div class="areas">${g.criteria.map((c) => `<div class="area"><span class="nm">${esc(c.t)}<small>${esc(c.comment)}</small></span><span class="v">${c.points}/${c.max}</span><div class="bar"><i style="width:${Math.round((c.points / c.max) * 100)}%;--c:var(--lit)"></i></div></div>`).join("")}</div></section>
+      <section class="fc"><h2>По критериите</h2>${groups(g.criteria)}</section>
       ${g.strengths.length ? `<section class="rt-box good"><h3>Силно</h3><ul>${li(g.strengths)}</ul></section>` : ""}
       ${g.missing.length ? `<section class="rt-box"><h3>Пропуснато от текста</h3><ul>${li(g.missing)}</ul></section>` : ""}
       ${g.errors.length ? `<section class="rt-box"><h3>Грешки за поправяне</h3><ul class="rt-errs">${g.errors.map((e) => `<li><span class="rt-kind">${esc(e.kind)}</span><s>${esc(e.quote)}</s><span aria-hidden="true">→</span><b>${esc(e.fix)}</b></li>`).join("")}</ul></section>` : ""}
       <div class="row"><button class="btn gold" data-act="rtFix">Поправи и предай пак</button><button class="btn line" data-act="rtShow">Виж текста и епизодите</button><button class="btn line" data-act="home">Към таблото</button></div>
-      <p class="small muted">Оценката е ориентировъчна: дава я AI по критериите на НВО и по списъка с епизоди на текста.</p>`;
+      <p class="small muted">Оценката е ориентировъчна: МОН не публикува точните правила за преразказа. Ерчо (AI) оценява по скалата от 12 критерия, по която се подготвят учениците, и по списъка с епизоди на текста; правописът, граматиката и пунктуацията се смятат по броя на грешките.</p>`;
     window.scrollTo(0, 0);
     if (gr >= 5) setTimeout(() => FX.win(gr === 6), 250);
   }
