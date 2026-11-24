@@ -1056,9 +1056,8 @@ dialog.pv:not([open]){display:none}
 @media (max-width:560px){.xm-total{grid-template-columns:1fr;padding:22px 20px}.xm-total b{font-size:32px}}
 /* paying on delivery for the trainer: shown only once the plans go to the card payment in the app (trn-pay.js) */
 [data-trn-cod][hidden]{display:none}
-/* the limited gift with the three decks: a line on the trio option and on the offer band of /komplekt */
+/* the limited gift with the three decks: a line on the trio option of /komplekt */
 .opt-t small.opt-gift{display:inline-block;margin-top:6px;padding:4px 9px;border-radius:9px;background:#FBF1DA;color:#5a4410;font-size:13px;font-weight:600;line-height:1.35}
-.bundle p.bundle-gift{margin:16px 0 0;padding:10px 14px;border-radius:14px;background:rgba(232,203,133,.16);box-shadow:inset 0 0 0 1px rgba(232,203,133,.35);color:#F3DDA6;font-size:16.5px;font-weight:600;line-height:1.4}
 /* decks past the third: the offer in the cart and the line under the sets on a product page */
 .up-more{grid-template-columns:1fr}
 .up-more .up-more-b{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
