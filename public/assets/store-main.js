@@ -2,3 +2,4 @@
 // shop.js wires the scroll effects and the fixed bars.
 import "/assets/store.js";
 import "/assets/shop.js";
+import "/assets/real-size.js";
