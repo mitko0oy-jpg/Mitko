@@ -17,6 +17,8 @@ const SCOPE = ":is(#znl,#znf)";
 const PAGES = [
   { src: "index", out: "nachalo", url: "/" },
   { src: "cheren-petak", out: "cheren-petak", url: "/cheren-petak" },
+  // страницата на един комплект за Черния петък: блокът познава комплекта по адреса (page в BUNDLES)
+  { src: "komplekt", out: "komplekt", url: "/sprey-gel, /gel-krem" },
   { src: "produkti", out: "produkti", url: "/produkti" },
   { src: "produkt", out: "produkt", url: "/produkt" },
   { src: "dostavka", out: "dostavka", url: "/dostavka" },

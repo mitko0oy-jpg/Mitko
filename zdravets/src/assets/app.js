@@ -11,10 +11,16 @@ const $ = (s, r = ROOT) => r.querySelector(s);
 const $$ = (s, r = ROOT) => [...r.querySelectorAll(s)];
 const fmt = n => n.toFixed(2).replace('.', ',') + ' €';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const P = id => PRODUCTS.find(p => p.id === id);
+// продуктите от каталога и тези, които се продават само в комплект (BUNDLE_ONLY в data.js)
+const P = id => PRODUCTS.find(p => p.id === id) || (typeof BUNDLE_ONLY === 'object' ? BUNDLE_ONLY.find(p => p.id === id) : undefined);
 // стари адреси на продукти (?p=…) → новия номер; пластирите за стави бяха с бранд в адреса
 const PID_ALIAS = { sumifun: 'plastiri' };
 const B = id => BUNDLES.find(b => b.id === id);
+// страницата на един комплект (zdravets.eu/sprey-gel …): комплектът се познава по адреса (page в BUNDLES) или по ?k=
+const bundleFromPath = () => {
+  const path = location.pathname.replace(/\/+$/, '').slice(1), k = new URLSearchParams(location.search).get('k');
+  return BUNDLES.find(b => b.lp && (b.page === path || b.id === k)) || null;
+};
 const L = CONFIG.links;
 // всеки продукт е на своя страница (PRODUCT_PAGES в data.js); без такава – общата /produkt?p=
 const productUrl = id => PRODUCT_PAGES[id] ? `/${PRODUCT_PAGES[id]}` : `${L.product}?p=${id}`;
@@ -147,8 +153,11 @@ const IN_COMBO_STORES = Object.values(PATCH_IN_COMBO);
 const WELL_STORES = PRODUCTS.filter(p => p.wellness).map(p => p.store).concat(PATCH_COMBOS.map(c => c.store).filter(Boolean), IN_COMBO_STORES);
 // продуктите със свой подарък (GIFT_HALF – продукт с −50%) също не носят пластирите за стави
 Object.keys(typeof GIFT_HALF === 'object' ? GIFT_HALF : {}).forEach(id => { const q = P(id); if (!q) return; WELL_STORES.push(q.store); if (HALF[id]) WELL_STORES.push(HALF[id]); (q.packs && PACKS[q.packs] || []).forEach(k => WELL_STORES.push(k.store)); });
+// комплектите с подарък в BUNDLES (напр. „Спрей + гел“ – 2 продукта) носят подаръка и под 3 броя
+const GIFT_BUNDLE_STORES = BUNDLES.filter(b => b.bf !== false && b.gift && b.gift.length).map(b => b.store);
 function giftEarned(items) {
   const real = (items || []).filter(i => !isGift(i) && !WELL_STORES.includes(i.productId));
+  if (real.some(i => GIFT_BUNDLE_STORES.includes(i.productId))) return true;
   return real.reduce((n, i) => n + unitsOf(i.productId) * (i.quantity || 1), 0) >= GIFT_FROM;
 }
 // колко пакета подарък да има в количката: най-големият подарък сред комплектите в нея (5 гела → 3 пакета)
@@ -373,7 +382,11 @@ function renderMobileBar() {
   if (!ROOT.hasAttribute('data-mbar') || $('.mbar')) return;
   const mb = document.createElement('div');
   mb.className = 'mbar';
-  mb.innerHTML = `<a class="btn btn-outline" href="tel:${CONFIG.phoneHref}">📞 Обади се</a><a class="btn btn-primary" data-mbar-go href="${bfOn() ? L.bf + '#oferti' : L.products}"><span>🛒 Поръчай</span></a>`;
+  // на страницата на комплект „Поръчай“ поръчва точно него
+  const kb = page === 'bundle' && bfOn() ? (bundleFromPath() || BUNDLES.find(b => b.lp)) : null;
+  mb.innerHTML = `<a class="btn btn-outline" href="tel:${CONFIG.phoneHref}">📞 Обади се</a>` + (kb
+    ? `<button class="btn btn-primary" type="button" data-bundle="${kb.id}"><span>🛒 Поръчай за ${fmt(kb.price)}</span></button>`
+    : `<a class="btn btn-primary" data-mbar-go href="${bfOn() ? L.bf + '#oferti' : L.products}"><span>🛒 Поръчай</span></a>`);
   ROOT.appendChild(mb);
 }
 function refreshMobileBar() {
@@ -403,7 +416,8 @@ function bundleCard(b) {
     <div class="ship ${free ? 'free' : ''}">${free ? `🚚 ${shipHint()}` : `+ доставка от ${fmt(SHIP_FROM)} до офис`}</div>
     <div class="compare">Поотделно: ${(sp => [`продуктите ${fmt(sp.items)}`, sp.gift ? `пластирите ${fmt(sp.gift)}` : '', sp.ship ? `доставка ${fmt(sp.ship)}` : ''].filter(Boolean).join(' + ') + (sp.gift || sp.ship ? ` = ${fmt(sp.total)}` : ''))(separateParts(b))} · <b>спестяваш ${fmt(save)}</b></div>
     <div class="note">${esc(b.note)}</div>
-    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${b.id === 'trio' ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
+    <button class="btn ${b.featured ? 'btn-primary' : 'btn-green'} btn-block btn-lg" type="button" data-bundle="${b.id}">Избирам ${new Set(b.items.map(x => x[0])).size > 1 ? 'комплекта' : esc(b.title.replace(' за стави', ''))} →</button>
+    ${b.page ? `<a class="offer-more" href="/${b.page}">Какво има в пратката →</a>` : ''}
   </div>`;
 }
 
@@ -444,6 +458,104 @@ function renderBF() {
   const o = $('#offers'); if (o) o.innerHTML = BUNDLES.filter(b => b.bf !== false).map(bundleCard).join('');
   const rv = $('#reviews'); if (rv) rv.innerHTML = REVIEWS.map(reviewCard).join('');
   track('ViewContent', { content_ids: ['bf5'], content_type: 'product', value: B('bf5').price, currency: 'EUR' });
+}
+
+/* ---------- страница на един комплект за Черния петък (/sprey-gel, /gel-krem) ----------
+   Всичко е от BUNDLES (lp): снимките от рекламите, продуктите в пратката с цените им поотделно,
+   как се ползват заедно. Бутоните поръчват комплекта (data-bundle), подаръкът се добавя сам. */
+const SEP_NAME = { spray: 'спрей', gel: 'гел', bvcream: 'крем', hyal: 'хиалуронов крем', vein: 'крем за вени', skin: 'крем за кожа', plastiri: 'пластири' };
+function renderBundlePage() {
+  const root = $('#kp');
+  if (!root) return;
+  const b = bundleFromPath() || BUNDLES.find(x => x.lp);
+  const lp = b.lp, on = bfOn();
+  const parts = b.items.map(([id, n]) => ({ p: P(id), n }));
+  const gp = giftPacks(b), giftN = 12 * gp;
+  const sp = separateParts(b), save = sp.total - b.price;
+  const sepLine = parts.map(({ p, n }) => `${n > 1 ? `${n} × ` : ''}${SEP_NAME[p.id] || p.shortName} ${fmt(p.price * n)}`)
+    .concat(sp.gift ? [`пластири ${fmt(sp.gift)}`] : []).join(' + ');
+  const thumb = p => (p.bundleOnly ? p.img : productLook(p).img);
+  const title = `${b.title} + ${giftN} пластира подарък`;
+  document.title = `${title} за ${fmt(b.price)} – Черен петък | Здравец Натура`;
+  const buy = (cls = '') => `<button class="btn btn-primary btn-lg btn-block ${cls}" type="button" data-bundle="${b.id}">Поръчай комплекта за ${fmt(b.price)}</button>`;
+  const ship = `🚚 Доставка до офис на Еконт или Спиди – ${fmt(SHIP_FROM)} · до адрес – ${fmt(ADDR_PRICE)}`;
+  root.innerHTML = `
+  <section class="bf bf-hero kp-hero">
+    <div class="wrap">
+      <div class="bf-hero__head">
+        <span class="eyebrow">⚫ Черен петък · само до 30 ноември</span>
+        <h1>${esc(b.title)} + <span class="gold">${giftN} пластира подарък</span></h1>
+        <p class="lead kp-lead">${esc(lp.lead)}</p>
+      </div>
+      <div class="heroimg"><img src="${lp.banner}" alt="${esc(title)} за ${fmt(b.price)}" width="900" height="1125" fetchpriority="high"></div>
+      <div class="bf-buy">
+        ${on ? `<p class="bf-buy__price"><b>${fmt(b.price)}</b><span>за всичко · ${esc(parts.map(({ p }) => SEP_NAME[p.id] || p.shortName).join(' + '))} + ${giftN} пластира подарък</span></p>
+        <p class="kp-sep">Поотделно: ${sepLine} = <s>${fmt(sp.total)}</s> · <b>спестяваш ${fmt(save)}</b></p>
+        ${buy()}
+        <p class="bf-buy__ship">${ship}</p>
+        <p class="bf-buy__trust">💶 Плащаш при получаване · 🛡️ ${CONFIG.guaranteeDays} дни гаранция · 📞 <a href="tel:${CONFIG.phoneHref}">${CONFIG.phone}</a></p>`
+        : `<div class="kp-ended"><h2>Черният петък приключи</h2><p>Този комплект беше само до 30 ноември. Виж продуктите на обичайните им цени.</p><a class="btn btn-primary btn-lg btn-block" href="${L.products}?cat=stavi">Продукти за стави →</a></div>`}
+      </div>
+      ${on ? `<div class="bf-hero__more">
+        <div class="cd-label">Важи до 30 ноември, 23:59 ч. или до изчерпване на наличностите. Остават:</div>
+        <div class="countdown" data-countdown></div>
+      </div>` : ''}
+    </div>
+  </section>
+
+  <section class="section" style="background:#fff">
+    <div class="wrap split kp-box">
+      <img class="round" src="${lp.box}" alt="Какво има в пратката: ${esc(b.line)}" loading="lazy" width="900" height="1125">
+      <div>
+        <span class="eyebrow">Какво има в пратката</span>
+        <h2>${parts.length} продукта + ${giftN} пластира подарък</h2>
+        <ul class="kp-items">
+          ${parts.map(({ p, n }) => `<li><img src="${thumb(p)}" alt="" width="84" height="84" loading="lazy"><div><b>${n > 1 ? `${n} × ` : ''}${esc(p.name)}</b><small>${esc((lp.sizes || {})[p.id] || p.size)}</small><p>${esc((lp.roles || {})[p.id] || p.short)}</p></div><span class="kp-price">${fmt(p.price * n)}</span></li>`).join('')}
+          ${gp ? `<li class="kp-gift"><img src="${GIFT_IMG}" alt="" width="84" height="84" loading="lazy"><div><b>🎁 Подарък: ${esc(giftLabel(gp))}</b><small>${gp > 1 ? `${gp} плика по 12 бр.` : '12 бр. в плик с цип · 7 × 10 см'}</small><p>${esc((lp.roles || {}).plastiri || '')}</p></div><span class="kp-price"><s>${fmt(sp.gift)}</s> 0 €</span></li>` : ''}
+        </ul>
+        ${on ? `<p class="kp-total">Поотделно <s>${fmt(sp.total)}</s> · сега <b>${fmt(b.price)}</b> за всичко</p>${buy('kp-mid')}` : ''}
+      </div>
+    </div>
+  </section>
+
+  ${lp.routine ? `<section class="section">
+    <div class="wrap">
+      <div class="center"><span class="eyebrow">Как да ги ползваш заедно</span><h2>Една лесна грижа за целия ден</h2></div>
+      <div class="kp-steps">${lp.routine.map(([t, d]) => `<div class="t"><b>${esc(t)}</b><p>${esc(d)}</p></div>`).join('')}</div>
+      <p class="disclaimer">Козметични продукти за външна употреба – не са лекарство. Индивидуалното усещане може да се различава.</p>
+    </div>
+  </section>` : ''}
+
+  ${lp.life ? `<section class="section problem">
+    <div class="wrap split">
+      <div>
+        <span class="eyebrow">Познато ли ти е?</span>
+        <h2>${esc(lp.lifeTitle || 'Грижа за ставите всеки ден')}</h2>
+        <div class="list">
+          <div>Сутрин първите крачки са най-трудни.</div>
+          <div>По стълбите се хващаш за парапета.</div>
+          <div>След градината или дълъг ден на крака кръстът и раменете са схванати.</div>
+        </div>
+        <p style="margin-top:18px">Затова събрахме в една пратка ${esc(parts.map(({ p }) => SEP_NAME[p.id] || p.shortName).join(' и '))} с пчелна отрова – за редовна грижа у дома, всеки ден.</p>
+      </div>
+      <img class="round" src="${lp.life}" alt="" loading="lazy" width="900" height="1125">
+    </div>
+  </section>` : ''}
+
+  <section class="section">
+    <div class="wrap">
+      <div class="center"><span class="eyebrow">Съставки</span><h2>Какво има вътре</h2></div>
+      <div class="kp-ingr">${parts.map(({ p }) => `<div><h3>${esc(p.shortName)}</h3><ul class="checks">${(p.ingredients || []).map(([n, d]) => `<li><b>${esc(n)}</b> – ${esc(d)}</li>`).join('')}</ul></div>`).join('')}</div>
+    </div>
+  </section>`;
+  // FAQ: доставката по комплекта
+  $$('[data-kp-ship]').forEach(el => { el.textContent = `${fmt(SHIP_FROM)} до офис на Еконт или Спиди и ${fmt(ADDR_PRICE)} до адрес`; });
+  $$('[data-kp-price]').forEach(el => { el.textContent = fmt(b.price); });
+  $$('[data-kp-title]').forEach(el => { el.textContent = title; });
+  const fb = $('#kp-final-buy');
+  if (fb) fb.innerHTML = on ? `${buy('kp-final__btn')}<p class="small" style="color:#e9d9a8;margin-top:10px;font-weight:700">${ship}</p>` : '';
+  if (!on) { const f = $('.kp-final'); if (f) f.remove(); }
+  track('ViewContent', { content_ids: [b.id], content_type: 'product', value: b.price, currency: 'EUR' });
 }
 
 function renderProducts() {
@@ -855,6 +967,7 @@ renderFooter();
 renderMobileBar();
 if (page === 'home') { if (renderHomeBv) renderHomeBv(); else renderHome(); }
 if (page === 'bf') renderBF();
+if (page === 'bundle') renderBundlePage();
 if (page === 'products') renderProducts();
 if (page === 'product') renderProduct();
 if (page === 'checkout') renderCheckoutHelper();

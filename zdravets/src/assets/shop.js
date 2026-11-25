@@ -67,7 +67,8 @@ function storeInfo(id) {
     if (k) { const pp = P(key) || PRODUCTS.find(x => x.packs === key); const b = k.bundle && B(k.bundle); return { name: b ? b.title : `${pp.shortName} – ${k.label}`, img: (b && (b.img || (b.collage && b.collage[0][0]))) || productLook(pp).img, url: productUrl(pp.id), p: pp }; }
   }
   const b = BUNDLES.find(x => x.store === id);
-  if (b) return { name: b.title, img: b.img || (b.collage && b.collage[0][0]) || P('gel').img };
+  // комплект: p = първият продукт в него (за предложенията в количката), url = страницата му, ако има
+  if (b) return { name: b.title, img: b.img || (b.collage && b.collage[0][0]) || P('gel').img, p: P(b.items[0][0]), ...(b.page ? { url: `/${b.page}` } : {}) };
   const bump = BUMPS.find(x => x.store === id);
   if (bump) return { name: bump.title, img: productLook(P(bump.id)).img, url: productUrl(bump.id), p: P(bump.id) };
   if (id === UPSELL.store) return { name: P(UPSELL.product).name, img: productLook(P(UPSELL.product)).img };
@@ -250,7 +251,7 @@ function drawCart(o) {
     ${dm ? `<div class="sp-ship${dm.done ? ' is-done' : ''}"><p>${dm.done ? '<span class="sp-ship__ok" aria-hidden="true">🎉</span>' : ICON.truck}<span>${dm.text}</span></p><div class="sp-ship__bar"><i style="width:${dm.pct}%"></i></div></div>` : ''}
     ${halfNote ? `<p class="sp-half-note">${esc(halfNote)}</p>` : ''}
     <div class="sp-lines">${main.map(line).join('')}
-      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: ${giftLabel(gift.quantity || 1)}</b><small>за Черния петък – към поръчка от ${GIFT_FROM} и повече броя</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas(gift.quantity || 1)} 0,00 €</span></div></div></div>` : ''}
+      ${gift ? `<div class="sp-line sp-line--gift"><span class="sp-line__img"><img src="${storeInfo(CONFIG.giftStoreId).img}" alt="" width="84" height="84"></span><div class="sp-line__txt"><b>🎁 Подарък: ${giftLabel(gift.quantity || 1)}</b><small>${items.some(i => GIFT_BUNDLE_STORES.includes(i.productId)) ? 'за Черния петък – към комплекта' : `за Черния петък – към поръчка от ${GIFT_FROM} и повече броя`}</small><div class="sp-line__row"><span></span><span class="sp-line__price sp-free">${giftWas(gift.quantity || 1)} 0,00 €</span></div></div></div>` : ''}
     </div>
     ${offers.length
       ? `<div class="sp-recs sp-recs--half"><p class="sp-recs__lbl">Добави с <b class="zn-50">−50%</b></p>${offers.map(halfRow).join('')}</div>`
