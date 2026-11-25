@@ -85,7 +85,7 @@ test("initiation webhook: a real incoming caller gets Стела with the zdrave
   assert.ok(!prompt.includes("[["), "every placeholder is filled");
   assert.match(prompt, /Ти си Стела/);
   assert.match(prompt, /### Гел за стави с пчелна отрова \[код gel\]/);
-  assert.match(prompt, /Лепенки с берберин \[код berberin\]/);
+  assert.match(prompt, /Лепенки с берберин за апетит и метаболизъм \[код berberin\]/);
   assert.match(prompt, /Черен петък – до 30 ноември включително/);
   assert.match(prompt, /# Как говориш/, "the shared speaking style is in");
   // After Black Friday the offer is gone by itself.

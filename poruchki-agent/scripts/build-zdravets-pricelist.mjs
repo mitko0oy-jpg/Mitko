@@ -68,12 +68,37 @@ export function buildPriceList(d, source = "") {
       page: d.PRODUCT_PAGES?.[p.id] ? `zdravets.eu/${d.PRODUCT_PAGES[p.id]}` : "",
     };
   });
+  const giftProduct = products.find((p) => p.id === "plastiri");
   // Sets of different products (e.g. "Грижа за тялото"); one-product packs are already in the products.
+  // Products sold only inside a set (BUNDLE_ONLY, e.g. the bee-venom joint cream in "Гел + крем") are described with the set.
+  const only = d.BUNDLE_ONLY || [];
+  const priceOf = (id) => (d.PRODUCTS.find((p) => p.id === id) || only.find((p) => p.id === id))?.price || 0;
   const sets = bundles
     .filter((b) => new Set(b.items.map(([id]) => id)).size > 1)
-    .map((b) => ({ id: b.id, name: b.title, line: b.line || "", price: b.price, store: b.store, items: b.items, units: b.items.reduce((s, [, n]) => s + n, 0) }));
+    .map((b) => {
+      const giftPacks = (b.gift || []).reduce((s, [, n]) => s + n, 0);
+      return {
+        id: b.id,
+        name: b.title,
+        line: b.line || "",
+        price: b.price,
+        store: b.store,
+        items: b.items,
+        units: b.items.reduce((s, [, n]) => s + n, 0),
+        // the Black Friday gift comes with the set itself (also with 2 products, e.g. "Спрей + гел")
+        ...(giftPacks ? { giftPacks } : {}),
+        // Black Friday only: gone from the catalogue after the end date
+        ...(b.bfOnly ? { bfOnly: true } : {}),
+        ...(b.page ? { page: `zdravets.eu/${b.page}` } : {}),
+        // "поотделно": the products at their regular prices + the gift patches
+        separate: Math.round((b.items.reduce((s, [id, n]) => s + priceOf(id) * n, 0) + giftPacks * (giftProduct?.price || 0)) * 100) / 100,
+        about: b.items
+          .map(([id]) => only.find((p) => p.id === id))
+          .filter(Boolean)
+          .map((p) => ({ id: p.id, name: p.name, size: p.size || "", price: p.price, short: p.short || "", ingredients: (p.ingredients || []).map(([a, c]) => `${a} – ${c}`), usage: p.usage || "" })),
+      };
+    });
   const wellness = products.filter((p) => p.cat === "wellness").map((p) => p.id);
-  const giftProduct = products.find((p) => p.id === "plastiri");
   return {
     kind: "zdravets",
     note: `Генерирано от data.js на zdravets.eu${source ? ` (${source})` : ""} със scripts/build-zdravets-pricelist.mjs – не се пипа на ръка.`,

@@ -97,7 +97,8 @@ test("zdravets: the catalogue in Стела's script", () => {
   assert.match(t, /### Гел за стави с пчелна отрова \[код gel\]\n20 г · около 40 нанасяния\. Цени: 1 брой – 15 евро и 90 цента; 2 броя – 19 евро и 90 цента; 3 броя – 22 евро и 90 цента \(най-избиран\); 5 броя – 34 евро и 90 цента/);
   assert.match(t, /две кутии по избор \(еднакви или различни\) – 22 евро и 90 цента/);
   assert.match(t, /не обещаваш отслабване, сваляне на кръвна захар/);
-  assert.match(t, /Лепенки Energy \(казва се „Енерджи“\)/);
+  assert.match(t, /Лепенки NAD\+ за жизненост \(казва се „Ен Ей Ди плюс“\)/);
+  assert.doesNotMatch(t, /за енергия и тонус \(казва се/, "Bulgarian names are said as written");
   assert.match(t, /\[код trio\]/);
   assert.equal(t.match(/\[код trio\]/g).length, 1);
   assert.match(t, /0988 88 05 07, денонощно/);
@@ -175,3 +176,18 @@ test("zdravets: who is a repeat customer – an earlier phone order or an order 
   assert.match(msgs[0], /🔁 Повторна поръчка по телефона: −30% от продуктите \(−6 евро и 87 цента\)/);
 });
 
+
+test("zdravets: the Black Friday sets with their own page – the gift comes with 2 products, gone after 30.11", () => {
+  assert.equal(q([["sg"]]).total, 32.8, "Спрей + гел 27,90 + office 4,90");
+  assert.equal(q([["gk"]]).total, 28.8, "Гел + крем 23,90 + office 4,90");
+  assert.match(q([["sg"]]).gift.text, /12 лепенки за стави/, "the gift with only 2 products");
+  assert.match(q([["gk"]]).gift.cb, /№32/);
+  assert.match(q([["gk"]]).lines[0].cb, /\[№76\]/);
+  assert.equal(q([["gk"], ["gel"]]).total, 39.8, "over 34,90 €: the office delivery is free");
+  assert.match(q([["gk"]], "econt_office", AFTER).errors[0], /само за Черния петък/);
+  const t = renderZdravets(pl, BF);
+  assert.match(t, /### Спрей \+ гел за стави – само за Черен петък до 30 ноември \[код sg\]\n.*27 евро и 90 цента\. С подарък 12 лепенки за стави и мускули\. Поотделно струва 48 евро и 70 цента\./);
+  assert.match(t, /Продава се само в този комплект: Крем за стави с пчелна отрова – ултра силна формула, 30 г/);
+  assert.match(t, /zdravets\.eu\/gel-krem/);
+  assert.doesNotMatch(renderZdravets(pl, AFTER), /\[код sg\]|\[код gk\]/);
+});

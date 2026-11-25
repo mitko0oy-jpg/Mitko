@@ -20,6 +20,7 @@ export function sayBG(text) {
   // so descriptions keep the site's wording and the style rule makes the agent say „лепенки“.
   return String(text || "")
     .replace(/серията BeeVenom/g, "серията Би Веном")
+    .replace(/\bBee Venom\s+/g, "")
     .replace(/\s*BeeVenom\s+/g, " с пчелна отрова ")
     .replace(/\s*BeeVenom\b/g, " с пчелна отрова")
     .replace(/BeeHerb/g, "Би Хърб")
@@ -128,7 +129,12 @@ export function quoteZ(pl, order, now = new Date(), { suggest = true, repeat = f
       continue;
     }
     const [id, mult] = r;
-    if (pl.sets.some((s) => s.id === id)) setQty.set(id, (setQty.get(id) || 0) + qty);
+    const set = pl.sets.find((s) => s.id === id);
+    if (set?.bfOnly && !bfOn(pl, now)) {
+      errors.push(`комплектът „${set.name}“ беше само за Черния петък – вече го няма`);
+      continue;
+    }
+    if (set) setQty.set(id, (setQty.get(id) || 0) + qty);
     else if (pl.addons.some((a) => a.id === id)) addonQty.set(id, 1); // an add-on is one piece per order
     else units.set(id, (units.get(id) || 0) + qty * mult);
   }
@@ -231,7 +237,10 @@ export function quoteZ(pl, order, now = new Date(), { suggest = true, repeat = f
   // Black Friday gift.
   const pieces = [...units.entries()].reduce((s, [, n]) => s + n, 0) + [...setQty.entries()].reduce((s, [id, n]) => s + n * pl.sets.find((x) => x.id === id).units, 0) + addonQty.size;
   let gift = null;
-  if (bfOn(pl, now) && pieces >= pl.rules.bf.giftFrom) {
+  // a set with its own gift (giftPacks, e.g. "Спрей + гел" – only 2 products) brings the gift by itself
+  const setGift = [...setQty.keys()].reduce((m, id) => Math.max(m, pl.sets.find((x) => x.id === id)?.giftPacks || 0), 0);
+  if (setGift) giftPacks = Math.max(giftPacks, setGift);
+  if (bfOn(pl, now) && (pieces >= pl.rules.bf.giftFrom || setGift)) {
     const onlyWellness = wellnessBoxes === pieces;
     gift = onlyWellness
       ? { text: pl.rules.bf.wellnessGift, cb: "Подарък: 1 кутия уелнес пластири по избор (видът е в бележката)", wellness: true }
@@ -270,7 +279,7 @@ function ifAddFor(pl, order, q, units, now, repeat) {
   const inOrderWellness = [...units.keys()].find((id) => pl.wellness.ids.includes(id));
   const candidates = [
     ...pl.products.filter((p) => !pl.wellness.ids.includes(p.id)).map((p) => ({ id: p.id, name: sayName(p) })),
-    ...pl.sets.map((s) => ({ id: s.id, name: sayBG(s.name) })),
+    ...pl.sets.filter((s) => !s.bfOnly || bfOn(pl, now)).map((s) => ({ id: s.id, name: sayBG(s.name) })),
     { id: inOrderWellness || pl.wellness.ids[0], name: "още една кутия уелнес лепенки по избор", wellness: true },
   ].filter((c) => c.id);
   const out = [];
@@ -382,6 +391,12 @@ export function renderZdravets(pl, now = new Date()) {
     out.push(
       `- ${r.bf.label} – до ${bfEndText(pl)} включително: към поръчка от ${r.bf.giftFrom} и повече броя подарък ${r.bf.gift}; към пакета от 5 гела – ${giftText(3)}. Ако поръчката е само от уелнес лепенки (3 кутии), подаръкът е ${r.bf.wellnessGift}. Подаръкът го определя инструментът.`,
     );
+    const bfSets = pl.sets.filter((x) => x.bfOnly);
+    if (bfSets.length) {
+      out.push(
+        `- Комплекти само за ${r.bf.label}, всеки с ${r.bf.gift} подарък (и с два продукта): ${bfSets.map((x) => `${sayBG(x.name)} – ${money(x.price)} [код ${x.id}]`).join("; ")}. Подробно – в раздела за ставите.`,
+      );
+    }
   }
   if (r.halfFrom) {
     out.push(
@@ -410,15 +425,28 @@ export function renderZdravets(pl, now = new Date()) {
     for (const p of inCat) {
       out.push(
         "",
-        `### ${sayName(p)}${SPOKEN[p.id] ? ` (казва се „${SPOKEN[p.id]}“)` : ""} [код ${p.id}]`,
+        `### ${sayName(p)}${SPOKEN[p.id] && /[A-Za-z]/.test(p.say) ? ` (казва се „${SPOKEN[p.id]}“)` : ""} [код ${p.id}]`,
         `${sayBG(p.size)}. ${c.id === "wellness" ? "" : `Цени: ${packsText(p, bfOn(pl, now))}.`}`.trim(),
         p.short,
         p.ingredients.length ? `Съставки: ${sayBG(p.ingredients.join("; "))}.` : "",
         p.usage && !sameUsage ? `Употреба: ${p.usage}` : "",
       );
     }
-    for (const s of pl.sets.filter((x) => pl.products.find((p) => p.id === x.items[0][0])?.cat === c.id)) {
-      out.push("", `### ${sayBG(s.name)} [код ${s.id}]`, `${sayBG(s.line)} – общо ${money(s.price)}.`);
+    for (const s of pl.sets.filter((x) => pl.products.find((p) => p.id === x.items[0][0])?.cat === c.id && (!x.bfOnly || bfOn(pl, now)))) {
+      const gift = bfOn(pl, now) && s.giftPacks ? ` С подарък ${giftText(s.giftPacks)}.` : "";
+      const apart = s.separate && s.separate > s.price ? ` Поотделно струва ${money(s.separate)}.` : "";
+      out.push(
+        "",
+        `### ${sayBG(s.name)}${s.bfOnly ? ` – само за ${r.bf.label} до ${bfEndText(pl)}` : ""} [код ${s.id}]`,
+        `${sayBG(s.line)} – общо ${money(s.price)}.${gift}${apart}${s.page ? ` Страницата на комплекта: ${s.page}.` : ""}`,
+      );
+      for (const a of s.about || []) {
+        out.push(
+          `Продава се само в този комплект: ${sayBG(a.name)}, ${sayBG(a.size)}. ${a.short}`,
+          a.ingredients.length ? `Съставки: ${sayBG(a.ingredients.join("; "))}.` : "",
+          a.usage ? `Употреба: ${a.usage}` : "",
+        );
+      }
     }
   }
   // The site's checkout add-ons (4,90 €) are not offered on the phone: Стела offers the patches at 9,90 €.
