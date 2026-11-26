@@ -729,8 +729,26 @@ export async function matchOffice(courier: string, city: string, text: string): 
 }
 
 export async function clientsFor(courier: string) {
+  if (courier === "econt") return econtProfiles(await credsFor("econt"));
   if (courier !== "speedy") return [];
   return speedyClients(await credsFor("speedy"));
+}
+
+/** The Econt account's profiles and their „наложен платеж“ agreements, for Куриери → Еконт (IBANs shortened). */
+export async function econtProfiles(creds: Creds) {
+  const d = await econt("/Profile/ProfileService.getClientProfiles.json", creds, {});
+  const short = (v: unknown) => (typeof v === "string" && v.length > 6 ? `…${v.slice(-4)}` : v);
+  return (d?.profiles || []).map((p: any, i: number) => ({
+    index: i,
+    name: p.client?.name || "",
+    juridicalEntity: Boolean(p.client?.juridicalEntity),
+    clientNumber: p.client?.clientNumber || "",
+    agreements: (p.cdPayOptions || []).map((c: any) => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(c || {})) if (v !== null && v !== "" && typeof v !== "object") out[k] = /iban|bic|account/i.test(k) ? short(v) : v;
+      return out;
+    }),
+  }));
 }
 
 export async function officesFor(courier: string, query: string) {
