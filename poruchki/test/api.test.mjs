@@ -1547,6 +1547,12 @@ test("where orders come from: the ad from the page (utm) is kept in the order; c
     assert.equal(s1.channel, "meta");
     assert.deepEqual([s1.campaign, s1.adset, s1.ad, s1.ad_id, s1.page], ["Гел Черен петък", "Жени 45+", "Видео баба", "120200001", "/gel-bf"]);
     assert.equal(src.find((r) => Number(r.id) === old).src.channel, "unknown");
+    // The order page: „Откъде дойде“ with the device of the visit that filled in the form.
+    const det = (await api(`/api/orders/${her}`)).data;
+    assert.equal(det.visit.device, "mobile");
+    assert.equal(det.visit.landing, "/gel-bf");
+    assert.equal(det.visit.browser_visits, 1);
+    assert.equal((await api(`/api/orders/${old}`)).data.visit, null);
 
     const today = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10);
     const rep = await api(`/api/reklami?from=${today}&to=${today}`);

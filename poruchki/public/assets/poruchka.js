@@ -13,6 +13,30 @@ const AI = "AI агент";
 let callMsg = "";
 let callPoll = null;
 let callPolls = 0;
+// „Откъде дойде“: the channel, campaign and ad (orders.src), the pages, and the device and city of the visit.
+const CHANNEL = { meta: "Meta реклама", paid: "Платена реклама", tiktok: "TikTok", organic: "Органично", own: "Свои (имейл, SMS, директно)", calls: "Обаждане", manual: "Ръчна поръчка", unknown: "Не се знае" };
+const DEVICE = { mobile: "📱 Телефон", tablet: "📱 Таблет", desktop: "💻 Компютър" };
+function journeyCard(o) {
+  const s = o.src || {};
+  const v = o.visit;
+  if (!o.src && !v) return "";
+  const path = (s.path || []).filter((p, i, a) => p !== a[i - 1]);
+  const row = (k, val) => (val ? `<div class="kv"><span class="muted">${k}</span><span>${val}</span></div>` : "");
+  return `<section class="card"><h2>Откъде дойде</h2>
+    ${row("Канал", esc([CHANNEL[s.channel] || s.channel, s.source].filter(Boolean).join(" · ")))}
+    ${row("Позиция", esc(s.medium || ""))}
+    ${row("Кампания", esc(s.campaign || ""))}
+    ${row("Реклама", esc(s.ad || ""))}
+    ${row("Входна страница", esc(s.page || v?.landing || ""))}
+    ${row("Страници", path.length ? esc(path.join(" → ")) : "")}
+    ${row("Първо посещение", s.first?.at ? `${when(s.first.at)}${s.touches > 1 ? ` · ${s.touches} посещения` : ""}${s.days >= 1 ? ` · ${String(s.days).replace(".", ",")} дни до поръчката` : ""}` : "")}
+    ${row("Устройство", v?.device ? DEVICE[v.device] || esc(v.device) : "")}
+    ${row("Град по IP", v?.city ? esc([v.city, v.country].filter(Boolean).join(", ")) : "")}
+    ${row("Посещения от този браузър", v?.browser_visits > 1 ? String(v.browser_visits) : "")}
+    ${!v ? `<p class="muted small">Устройството и градът не се знаят: формата за поръчка не е стигнала до нас.</p>` : ""}
+  </section>`;
+}
+
 // „✕ Откажи“: an order not sent yet (no waybill); „Върни“ undoes a refusal made here.
 const canRefuse = (o) => !o.canceled_at && !o.tracking_no && !o.cb_shipped && !o.parcel_status && ["abandoned", "new", "duplicate"].includes(o.stage);
 const CALL_WAIT = { requested: "☎ чака обаждане от Александра", calling: "📞 Александра звъни…" };
@@ -139,6 +163,7 @@ function render(o) {
         ? `<section class="card"><h2>Бележки от магазина</h2><ul class="timeline">${o.shop_notes.map((n) => `<li>${esc(n.text)}${n.at ? `<div class="muted small">${when(n.at)}</div>` : ""}</li>`).join("")}</ul></section>`
         : ""
     }
+    ${journeyCard(o)}
     ${nekCard(o)}
     <section class="card" id="historyCard"></section>
   </div>`;

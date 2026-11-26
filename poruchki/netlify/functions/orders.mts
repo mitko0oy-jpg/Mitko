@@ -337,6 +337,19 @@ async function detail(id: number) {
     `SELECT e.kind, e.text, e.at, coalesce(u.name, e.who) AS who FROM order_events e LEFT JOIN users u ON u.id = e.user_id WHERE e.order_id = $1 ORDER BY e.at`,
     [id],
   );
+  // „Откъде дойде“: the visit that filled in the order form (the same lead the attribution used) – the device and
+  // the city by IP – and how many visits the same browser made before the order.
+  const visit = await one<any>(
+    `SELECT v.device, v.country, v.city, v.source, v.landing, v.page, v.pages, v.first_at, v.last_at,
+            (SELECT count(*) FROM visits b WHERE v.vid <> '' AND b.shop = v.shop AND b.vid = v.vid AND b.first_at <= $3::timestamptz + interval '10 minutes')::int AS browser_visits
+       FROM leads l JOIN visits v ON v.shop = l.shop AND v.sid = l.sid
+      WHERE l.shop IN (SELECT id FROM shops WHERE company_id = $4)
+        AND (l.id = $5
+             OR ($5::bigint IS NULL AND ((l.phone <> '' AND $1 <> '' AND ${P9("l.phone")} = ${P9("$1")}) OR (l.email <> '' AND lower($2) = l.email))
+                 AND l.first_at BETWEEN $3::timestamptz - interval '1 day' AND $3::timestamptz + interval '10 minutes'))
+      ORDER BY l.last_at DESC LIMIT 1`,
+    [o.phone || "", o.email || "", o.ordered_at, companyId(), o.lead_id ?? null],
+  ).catch(() => null);
   // Held as a duplicate: the order it repeats.
   const dup = o.dup_of
     ? await one<any>(
@@ -382,6 +395,7 @@ async function detail(id: number) {
     discount_code: raw.discountCode || null,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     nekorekten: nek,
+    visit,
     dup_of: o.dup_of == null ? null : Number(o.dup_of),
     dup: dup ? { ...dup, id: Number(dup.id), total: Number(dup.total) } : null,
     lines,
