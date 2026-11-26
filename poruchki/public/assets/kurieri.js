@@ -174,6 +174,8 @@ function setup(id) {
          <label class="chk"><input type="checkbox" name="payAfterTest" ${ec.payAfterTest ? "checked" : ""}> Плащане след преглед и тест</label>
          <label class="chk"><input type="checkbox" name="payAfterAccept" ${ec.payAfterAccept ? "checked" : ""}> Плащане след преглед</label>
          <div class="grid2">
+           <label>Клиентски номер в Еконт<input type="text" name="clientNumber" maxlength="20" value="${esc(ec.clientNumber || "")}" placeholder="напр. СФ9793"></label>
+           <label>Подателят плаща доставката<select name="payMethod"><option value="cash">в брой</option><option value="credit" ${ec.payMethod === "credit" ? "selected" : ""}>по договор (кредит)</option></select></label>
            <label>Упълномощено лице (задължително за фирма)<input type="text" name="agentName" maxlength="80" value="${esc(ec.agentName || "")}" placeholder="име и фамилия"></label>
            <label>Телефон на упълномощеното лице<input type="tel" name="agentPhone" maxlength="20" value="${esc(ec.agentPhone || "")}" placeholder="празно = телефонът на фирмата в Еконт"></label>
          </div>`;
@@ -235,7 +237,7 @@ function setup(id) {
       const body =
         id === "speedy"
           ? { speedy: { clientId: f.clientId.value, dropoffOfficeId: f.office.value, obpd: f.obpd.value, serviceId: f.serviceId.value, package: f.package.value, weight: f.weight.value, vatGroup: f.vatGroup.value, paper: f.paper.value } }
-          : { econt: { senderOfficeCode: f.office.value, weight: f.weight.value, sms: f.sms.checked, agreement: f.agreement.checked, payAfterTest: f.payAfterTest.checked, payAfterAccept: f.payAfterAccept.checked, agentName: f.agentName.value, agentPhone: f.agentPhone.value } };
+          : { econt: { senderOfficeCode: f.office.value, weight: f.weight.value, sms: f.sms.checked, agreement: f.agreement.checked, payAfterTest: f.payAfterTest.checked, payAfterAccept: f.payAfterAccept.checked, agentName: f.agentName.value, agentPhone: f.agentPhone.value, clientNumber: f.clientNumber.value, payMethod: f.payMethod.value } };
       defaults = (await api("/api/waybills/settings", { method: "POST", body })).defaults;
       await render();
       d.close();

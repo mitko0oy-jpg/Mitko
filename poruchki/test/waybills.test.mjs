@@ -70,7 +70,10 @@ test("Econt label: sender office, COD agreement, order number", () => {
   assert.equal(l.senderOfficeCode, "1152");
   assert.equal(l.receiverOfficeCode, "8501");
   assert.equal(l.orderNumber, "7846");
-  assert.equal(l.paymentSenderMethod, "credit", "the sender pays under the contract, not cash with an invoice");
+  assert.equal(l.paymentSenderMethod, "cash", "the sender pays, in cash by default (as in Middleware)");
+  const numbered = econtLabel(d, order(), { ...DEF.econt, clientNumber: "СФ9793", payMethod: "credit" }, { client: { name: "Фирма", clientNumber: "" }, agreement: null });
+  assert.equal(numbered.senderClient.clientNumber, "СФ9793", "the company's client number from Куриери → Еконт");
+  assert.equal(numbered.paymentSenderMethod, "credit");
   assert.deepEqual(l.services, { cdAmount: 44.9, cdType: "get", cdCurrency: "EUR", cdPayOptionsTemplate: "CD1", smsNotification: true });
   assert.throws(() => econtLabel(d, order(), { ...DEF.econt, senderOfficeCode: "" }, { client: {}, agreement: null }), /офис на подателя/);
 });

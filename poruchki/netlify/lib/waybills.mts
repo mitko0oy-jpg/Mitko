@@ -25,12 +25,13 @@ const fail = (message: string) => new HttpError(400, "courier", message);
 export type Defaults = {
   speedy: { clientId: number | null; dropoffOfficeId: number | null; serviceId: number; obpd: "TEST" | "OPEN" | ""; package: string; weight: number; vatGroup: string; paper: "A6" | "A4" };
   // agentName/agentPhone: „упълномощено лице“ – Econt requires one when the sender is a company (юридическо лице).
-  econt: { senderOfficeCode: string; sms: boolean; weight: number; agreement: boolean; payAfterTest: boolean; payAfterAccept: boolean; agentName: string; agentPhone: string };
+  // clientNumber (e.g. „СФ9793“) + payMethod: how the sender pays the delivery – as in Middleware: cash, with the client number.
+  econt: { senderOfficeCode: string; sms: boolean; weight: number; agreement: boolean; payAfterTest: boolean; payAfterAccept: boolean; agentName: string; agentPhone: string; clientNumber: string; payMethod: "cash" | "credit" };
 };
 
 const BUILT_IN: Defaults = {
   speedy: { clientId: null, dropoffOfficeId: null, serviceId: 505, obpd: "TEST", package: "ENVELOPE", weight: 1, vatGroup: "А", paper: "A6" },
-  econt: { senderOfficeCode: "", sms: true, weight: 0.5, agreement: true, payAfterTest: false, payAfterAccept: false, agentName: "", agentPhone: "" },
+  econt: { senderOfficeCode: "", sms: true, weight: 0.5, agreement: true, payAfterTest: false, payAfterAccept: false, agentName: "", agentPhone: "", clientNumber: "", payMethod: "cash" },
 };
 
 /** Built-in values, then SHIPPING_DEFAULTS from the Netlify env, then what was saved in Настройки. */
@@ -74,6 +75,8 @@ export async function saveDefaults(input: any): Promise<Defaults> {
       payAfterAccept: typeof ec.payAfterAccept === "boolean" ? ec.payAfterAccept : cur.econt.payAfterAccept,
       agentName: typeof ec.agentName === "string" ? ec.agentName.replace(/\s+/g, " ").trim().slice(0, 80) : cur.econt.agentName,
       agentPhone: typeof ec.agentPhone === "string" ? ec.agentPhone.replace(/[^\d+]/g, "").slice(0, 20) : cur.econt.agentPhone,
+      clientNumber: typeof ec.clientNumber === "string" ? ec.clientNumber.replace(/\s+/g, "").toUpperCase().slice(0, 20) : cur.econt.clientNumber,
+      payMethod: ec.payMethod === "credit" ? "credit" : ec.payMethod === "cash" ? "cash" : cur.econt.payMethod,
     },
   };
   await setSetting(cKey("shipping"), next);
@@ -322,11 +325,11 @@ export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profil
   if (!def.senderOfficeCode) throw fail("Еконт: липсва офис на подателя. Избери го в Куриери → Еконт.");
   const agent = econtAgent(def, profile.client);
   return {
-    senderClient: profile.client,
+    // The sender pays the delivery (cash by default, as in Middleware). A company sender is known to Econt by its
+    // client number (Куриери → Еконт, e.g. „СФ9793“) – without it Econt asks for „данни за фактура…“.
+    senderClient: def.clientNumber ? { ...profile.client, clientNumber: def.clientNumber } : profile.client,
     ...(agent ? { senderAgent: agent } : {}),
-    // The sender pays the delivery under the contract (отложено плащане), as in the redirect below.
-    // Without it Econt takes cash and asks a company for invoice data („данни за фактура…“).
-    paymentSenderMethod: "credit",
+    paymentSenderMethod: def.payMethod === "credit" ? "credit" : "cash",
     senderOfficeCode: def.senderOfficeCode,
     receiverClient: { name: d.name, phones: [d.phone] },
     ...(d.type !== "address"
@@ -347,8 +350,14 @@ export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profil
 }
 
 export async function econtPrice(creds: Creds, d: Draft, o: OrderRow, def: Defaults["econt"]) {
-  const data = await econt("/Shipments/LabelService.createLabel.json", creds, { label: econtLabel(d, o, def, await econtProfile(creds)), mode: "calculate" });
-  return { price: round2(data?.label?.totalPrice), currency: data?.label?.currency || "EUR", deadline: data?.label?.expectedDeliveryDate || null };
+  const label = econtLabel(d, o, def, await econtProfile(creds));
+  const data = await econt("/Shipments/LabelService.createLabel.json", creds, { label, mode: "calculate" });
+  // „validate“ checks the whole label as „create“ would, without making it: a problem shows before the button is pressed.
+  const warning = await econt("/Shipments/LabelService.createLabel.json", creds, { label, mode: "validate" }).then(
+    () => "",
+    (e: any) => String(e?.message || e),
+  );
+  return { price: round2(data?.label?.totalPrice), currency: data?.label?.currency || "EUR", deadline: data?.label?.expectedDeliveryDate || null, ...(warning ? { warning } : {}) };
 }
 
 export async function econtCreate(creds: Creds, d: Draft, o: OrderRow, def: Defaults["econt"]) {

@@ -121,7 +121,8 @@ export async function openWaybill(orderId) {
       try {
         const p = await api("/api/waybills/price", { method: "POST", body: { orderId: o.id, draft } });
         box.innerHTML = `Цена: <b>${eur(p.price, true)}</b> <span class="muted small">(плаща подателят)</span>`;
-        d.querySelector("#wbErr").textContent = "";
+        // The courier's own check of the whole waybill (Еконт „validate“): shown before „Създай“.
+        d.querySelector("#wbErr").textContent = p.warning || "";
       } catch (e) {
         box.innerHTML = `<span class="muted">Цена: –</span>`;
         d.querySelector("#wbErr").textContent = e.message;
