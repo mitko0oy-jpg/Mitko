@@ -327,13 +327,18 @@ export function econtAgent(def: Defaults["econt"], client: any) {
  * (departamentNum) wants an invoice or a packing list with every parcel („данни за фактура или опис за споразумение
  * по департамент“) – then, as Middleware does, the money goes to the same bank account without the agreement.
  */
-export function econtPayout(def: Defaults["econt"], profile: { agreement: string | null; cd?: any }) {
+export function econtPayout(def: Defaults["econt"], profile: { client?: any; agreement: string | null; cd?: any }) {
   if (!def.agreement || !profile.agreement) return {};
   const cd = profile.cd || {};
   if (!cd.departamentNum) return { cdPayOptionsTemplate: profile.agreement };
   const { num, departamentNum, ...rest } = cd;
-  const options = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null && v !== "" && typeof v !== "object"));
-  return options.method ? { cdPayOptions: options } : {};
+  const options: Record<string, unknown> = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null && v !== "" && typeof v !== "object"));
+  if (!options.method) return {};
+  // Who gets the money: the company with its phone (Econt: „Името на клиента…“, „Необходим е телефон на клиента“).
+  const c = profile.client || {};
+  const phones = (Array.isArray(c.phones) && c.phones.length ? c.phones : [def.agentPhone]).filter(Boolean);
+  options.client = { name: c.name || "", phones, ...(c.email ? { email: c.email } : {}) };
+  return { cdPayOptions: options };
 }
 
 export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profile: { client: any; agreement: string | null; cd?: any }) {

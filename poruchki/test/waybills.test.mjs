@@ -83,12 +83,12 @@ test("Econt „наложен платеж“: the agreement's template, but an 
   const plain = econtLabel(d, order(), DEF.econt, { client: { name: "Ф" }, agreement: "CD1", cd: { num: "CD1", method: "bank" } });
   assert.equal(plain.services.cdPayOptionsTemplate, "CD1");
   const dept = econtLabel(d, order(), DEF.econt, {
-    client: { name: "Ф" },
+    client: { name: "Ф", phones: ["0888000111"] },
     agreement: "CD257529",
     cd: { num: "CD257529", moneyTransfer: false, express: false, method: "bank", IBAN: "BG00TEST00000000000000", BIC: "TESTBGSF", bankCurrency: "EUR", departamentNum: 13107 },
   });
   assert.equal(dept.services.cdPayOptionsTemplate, undefined);
-  assert.deepEqual(dept.services.cdPayOptions, { moneyTransfer: false, express: false, method: "bank", IBAN: "BG00TEST00000000000000", BIC: "TESTBGSF", bankCurrency: "EUR" });
+  assert.deepEqual(dept.services.cdPayOptions, { moneyTransfer: false, express: false, method: "bank", IBAN: "BG00TEST00000000000000", BIC: "TESTBGSF", bankCurrency: "EUR", client: { name: "Ф", phones: ["0888000111"] } });
   assert.equal(econtLabel(d, order(), { ...DEF.econt, agreement: false }, { client: { name: "Ф" }, agreement: "CD1" }).services.cdPayOptions, undefined);
 });
 
