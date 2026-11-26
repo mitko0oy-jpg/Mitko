@@ -289,6 +289,7 @@ test("„📞 Обади се“ from OrderDesk calls the customer even with the
   assert.equal(calls[0].to, "+359888123456");
   assert.equal(calls[0].variables.test, "no");
   assert.equal(calls[0].variables.persona, "aleksandra", "a manual call is Александра's");
+  assert.equal(calls[0].variables.shop_site, "beevenombg.eu", "what she says when asked where the number is from");
   // Order 41 waits: the order calls are off and nobody pressed the button for it.
   assert.equal((await store.get("order/bg/41", { type: "json" })).state, "queued");
   assert.equal((await runDueCalls(deps, min(8))).reason, "off");

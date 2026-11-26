@@ -51,6 +51,10 @@ async function save(store, key, rec, opts) {
   return store.setJSON(key, rec, opts);
 }
 
+// The site each shop's customers ordered on (what the agent says when asked „откъде имате номера ми?“).
+const SHOP_SITES = { bg: "beevenombg.eu", zdravets: "zdravets.eu", max4: "beeevenom.eu", bioshop: "bioshop.site" };
+export const shopSite = (rec) => SHOP_SITES[rec.site] || "";
+
 // One call per 5-minute run by default: a single PBX extension may carry only one call at a time.
 const MAX_CALLS_PER_RUN = 1;
 // Never call about an order older than this (e.g. after a pause or before setup was finished).
@@ -234,6 +238,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
           order_total: rec.totalText,
           delivery_text: rec.deliveryText || "както е посочено в поръчката",
           delivery_days: config.deliveryDays,
+          shop_site: shopSite(rec),
           ...upsellVariables(rec.upsell),
           // „📞 Обади се“ is Александра's call (zdravets.eu tells customers she will call); the A/B split is for the rest.
           ...(rec.manual ? { persona: "aleksandra" } : {}),

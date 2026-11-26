@@ -42,3 +42,17 @@ test("Telegram tells what to add and the new total", () => {
   assert.match(buildMessage(rec, "✅", { upsell: "one_box", failedChecks: [] }), /1 кутия билкови пластири \(4,90 €\)<\/b> · нова сума: <b>32,30 €/);
   assert.doesNotMatch(buildMessage(rec, "✅", { upsell: "none", failedChecks: [] }), /Добави/);
 });
+
+test("any patches already in the order – paid, gift, bee-venom or wellness – mean no offer", () => {
+  // Order № 13 (Здравец Натура, 26.11.2026): the agent offered patches the customer had just ordered.
+  const boyka = [
+    { name: "5 гела за стави BeeVenom", qty: 1, price: 34.9 },
+    { name: "Подарък: 12 пластира за стави и мускули", qty: 3, price: 0 },
+    { name: "Bee Venom пластири с пчелна отрова – −50% към поръчка над 34,90 €", qty: 1, price: 4.95 },
+    { name: "Хиалуронов крем за стави – специална цена към поръчка", qty: 1, price: 7.9 },
+  ];
+  assert.equal(upsellFor({ items: boyka, total: 47.75, shipping: 0 }).kind, "none");
+  assert.equal(upsellFor({ items: [{ name: "Гел 3+1", qty: 1, price: 24.9 }, { name: "Подарък 12 пластира", qty: 1, price: 0 }], total: 24.9, shipping: 0 }).kind, "none", "a gift box of patches");
+  assert.equal(upsellFor({ items: [{ name: "Лепенки за стрес и напрежение", qty: 2, price: 19.8 }], total: 24.7, shipping: 4.9 }).kind, "none");
+  assert.equal(upsellFor({ items: [{ name: "Хиалуронов крем за стави", qty: 1, price: 14.9 }], total: 19.8, shipping: 4.9 }).kind, "one_box", "no patches yet: offer");
+});

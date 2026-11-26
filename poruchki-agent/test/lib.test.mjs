@@ -133,5 +133,10 @@ test("product names read aloud", () => {
   assert.equal(spoken("Bee Venom крем за стави 30 г"), "Bee Venom крем за стави 30 грама");
   assert.equal(spoken("Подарък 8 бр. пластири"), "Подарък 8 броя пластири");
   assert.equal(spoken("Гел 50 мл"), "Гел 50 милилитра");
+  // Shop wording after a dash is not read to the customer; a plain description after a dash stays.
+  assert.equal(spoken("Bee Venom пластири с пчелна отрова – −50% към поръчка над 34,90 €"), "Bee Venom пластири с пчелна отрова");
+  assert.equal(spoken("Хиалуронов крем за стави – специална цена към поръчка"), "Хиалуронов крем за стави");
+  assert.equal(spoken("Крем Узак – билков крем за стави"), "Крем Узак – билков крем за стави");
+  assert.equal(itemsTextBG([{ name: "Гел", qty: 1, price: 20 }, { name: "Подарък: 12 пластира за стави и мускули", qty: 3, price: 0 }]), "Гел, и подарък: 3 броя 12 пластира за стави и мускули");
   assert.equal(spoken("BeeVenom Care Gel"), "BeeVenom Care Gel");
 });

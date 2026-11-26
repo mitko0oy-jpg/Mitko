@@ -12,7 +12,7 @@
 import { requestCallback } from "./zadarma.mjs";
 import { pickPersona, renamePersona, personaNote, PERSONAS } from "./persona.mjs";
 import { lessonsSection } from "./coach.mjs";
-import { FEEDBACK_SCRIPT, INBOUND_SCRIPT, PICKUP_SCRIPT } from "./scripts.generated.mjs";
+import { FEEDBACK_SCRIPT, INBOUND_SCRIPT, PICKUP_SCRIPT, ORDER_SITUATIONS } from "./scripts.generated.mjs";
 import { fbRulesSection } from "./sales-coach.mjs";
 import { renderPriceList } from "./inbound.mjs";
 import inboundPriceList from "../agent/pricelist-zdravets.json" with { type: "json" };
@@ -117,12 +117,14 @@ export async function initiationData({ store, body, outboundScript, ownNumber = 
   await store.delete(key);
   const orderKey = pending.variables?.order_key || null;
   const bundled = BUNDLED[pending.script] || null;
-  const script = bundled
+  let script = bundled
     ? { prompt: bundled.prompt, firstMessage: bundled.firstMessage, language: bundled.language }
     : await outboundScript(pending.agentId || undefined).catch((err) => {
         console.error("outbound script unavailable", err.message);
         return null;
       });
+  // An order-confirmation call (the ElevenLabs order agent): its script plus the hard situations from git.
+  if (!bundled && !pending.agentId && script?.prompt) script = { ...script, prompt: `${script.prompt}\n\n${ORDER_SITUATIONS}` };
   // ElevenLabs refuses to start if a {{variable}} in the script has no value.
   const variables = { ...(pending.variables || {}) };
   // Which voice makes this call (an order keeps its voice on retries); it comes back with the result.

@@ -55,7 +55,7 @@ export function itemsTextBG(items) {
   const paid = [];
   const free = [];
   for (const it of items || []) {
-    const name = spoken(String(it.name || "").replace(/^Подарък\s*/i, "").trim());
+    const name = spoken(String(it.name || "").replace(/^Подарък\s*:?\s*/i, "").trim());
     if (!name) continue;
     const qty = Number(it.qty) || 1;
     const label = qty > 1 ? `${qty} броя ${name}` : name;
@@ -70,6 +70,8 @@ export function itemsTextBG(items) {
 /** Product names as they should be read aloud: "12бр." → "12 броя", "30 г" → "30 грама", "3+2" → "3 плюс 2". */
 export function spoken(name) {
   return name
+    // Shop wording after a dash is for the page, not for the customer: „… – −50% към поръчка над 34,90 €“, „… – специална цена към поръчка“.
+    .replace(/\s+[–—-]\s+[^–—]*(%|цена|поръчка|отстъпка|промо|намален)[^–—]*$/iu, "")
     .replace(/(\d)\s*\+\s*(\d)/g, "$1 плюс $2")
     .replace(/(\d)\s*бр\.?(?=\s|$|,)/gi, "$1 броя")
     .replace(/\bбр\.\s*/gi, "броя ")

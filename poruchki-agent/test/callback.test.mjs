@@ -64,6 +64,9 @@ test("initiation webhook: the connected customer gets the order data and the con
   assert.equal(response.dynamic_variables.customer_name, "госпожа Петрова");
   assert.equal(response.dynamic_variables.upsell_kind, ""); // missing variable filled, so the call can start
   assert.match(response.conversation_config_override.agent.prompt.prompt, /Ти си Елена/);
+  // The hard situations from git come after the ElevenLabs script; their variables are filled too.
+  assert.match(response.conversation_config_override.agent.prompt.prompt, /# Трудни ситуации[\s\S]*вече има лепенки или пластири/);
+  assert.equal(response.dynamic_variables.shop_site, "");
   assert.equal(response.conversation_config_override.agent.first_message, "Здравейте, {{customer_name}}?");
   // Used once; the order knows the customer answered and which conversation it is.
   assert.equal(await store.get("pending/359888123456"), null);

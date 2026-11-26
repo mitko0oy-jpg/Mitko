@@ -4,7 +4,9 @@ import priceList from "../agent/pricelist-bg.json" with { type: "json" };
 
 const round = (x) => Math.round(x * 100) / 100;
 const isMiddle = (name) => /2\s*\+\s*1/.test(String(name || ""));
-const isPlasters = (name) => /билков[а-яё]*\s+пластир/iu.test(String(name || ""));
+// Any patches already in the order – paid or a gift, herbal, bee-venom or „12 пластира за стави и мускули“:
+// then the agent offers none (offering what the customer has just ordered sounds odd).
+const isPlasters = (name) => /пластир|лепенк|patch|plaster/iu.test(String(name || ""));
 
 /**
  * What to offer for an existing order.
