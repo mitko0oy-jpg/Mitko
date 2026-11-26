@@ -271,3 +271,76 @@ test("CALLS_PAUSED in the environment stops outgoing calls", async () => {
   assert.equal(rep.reason, "paused");
   assert.equal(calls.length, 0);
 });
+
+test("„📞 Обади се“ from OrderDesk calls the customer even with the order calls off, and first", async () => {
+  const { deps, store, orders, calls, order } = setup({ mode: "off" });
+  await syncOrders(deps, T0);
+  // An old order (before /rezhim) Mitko asks for by hand, and a new order nobody asked for.
+  orders.push(order(40, { createdAt: min(-300).toISOString(), requestedAt: min(5).toISOString() }));
+  orders.push(order(41, { createdAt: min(4).toISOString() }));
+  const st = await store.get("meta/settings", { type: "json" });
+  await store.setJSON("meta/settings", { ...st, modeSince: min(3).toISOString() });
+  assert.equal(await syncOrders(deps, min(6)), 2);
+  assert.equal(await syncOrders(deps, min(7)), 0, "the same press is not added twice");
+
+  const rep = await runDueCalls(deps, min(7));
+  assert.equal(rep.started, 1);
+  assert.equal(calls[0].variables.order_number, "40");
+  assert.equal(calls[0].to, "+359888123456");
+  assert.equal(calls[0].variables.test, "no");
+  assert.equal(calls[0].variables.persona, "aleksandra", "a manual call is Александра's");
+  // Order 41 waits: the order calls are off and nobody pressed the button for it.
+  assert.equal((await store.get("order/bg/41", { type: "json" })).state, "queued");
+  assert.equal((await runDueCalls(deps, min(8))).reason, "off");
+  assert.equal(calls.length, 1);
+});
+
+test("a manual request in test mode still goes to the customer; /stop and the hours still hold", async () => {
+  const { deps, store, orders, calls, order } = setup({ mode: "test" });
+  await syncOrders(deps, T0);
+  orders.push(order(50, { requestedAt: min(2).toISOString() }));
+  await syncOrders(deps, min(3));
+  await store.setJSON("meta/settings", { ...(await store.get("meta/settings", { type: "json" })), paused: true });
+  assert.equal((await runDueCalls(deps, min(4))).reason, "paused");
+  await store.setJSON("meta/settings", { ...(await store.get("meta/settings", { type: "json" })), paused: false });
+  assert.equal((await runDueCalls(deps, new Date("2026-11-12T19:30:00Z"))).reason, "outside hours");
+  assert.equal(calls.length, 0);
+  await runDueCalls(deps, min(5));
+  assert.equal(calls[0].to, "+359888123456");
+  assert.equal(calls[0].variables.test, "no");
+});
+
+test("pressing the button for an order already in the queue moves it to the front; a new press calls again", async () => {
+  const { deps, store, orders, calls, order } = setup({ mode: "live" });
+  await syncOrders(deps, T0);
+  orders.push(order(60, { createdAt: min(1).toISOString() }));
+  orders.push(order(61, { createdAt: min(2).toISOString() }));
+  await syncOrders(deps, min(3));
+  // Order 61 is asked for by hand while both wait.
+  orders[1] = { ...orders[1], requestedAt: min(4).toISOString() };
+  assert.equal(await syncOrders(deps, min(5)), 1);
+  const rec = await store.get("order/bg/61", { type: "json" });
+  assert.equal(rec.manual, true);
+  await runDueCalls(deps, min(5));
+  assert.equal(calls[0].variables.order_number, "61", "the requested order goes first");
+
+  // Later the call is over (not answered 3 times → finished) and Mitko presses again.
+  const done = await store.get("order/bg/61", { type: "json" });
+  await store.setJSON("done/bg/61", { ...done, state: "gave_up" });
+  await store.delete("order/bg/61");
+  orders[1] = { ...orders[1], requestedAt: min(200).toISOString() };
+  assert.equal(await syncOrders(deps, min(201)), 1);
+  assert.equal((await store.get("order/bg/61", { type: "json" })).state, "queued");
+});
+
+test("orderCallInProgress: a ringing or talking order call keeps the line busy", async () => {
+  const { orderCallInProgress } = await import("../lib/engine.mjs");
+  const { store } = setup();
+  assert.equal(await orderCallInProgress(store, min(0)), false);
+  await store.setJSON("order/bg/70", { state: "calling", callingSince: min(0).toISOString(), route: "elevenlabs" });
+  assert.equal(await orderCallInProgress(store, min(3)), true);
+  assert.equal(await orderCallInProgress(store, min(40)), false, "stale after half an hour");
+  await store.setJSON("order/bg/70", { state: "calling", callingSince: min(0).toISOString(), route: "zadarma", answeredAt: null });
+  assert.equal(await orderCallInProgress(store, min(2)), true);
+  assert.equal(await orderCallInProgress(store, min(8)), false, "a Zadarma callback nobody answered is over");
+});

@@ -80,7 +80,9 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
   const orders = await cb.fetchNewOrders({ since });
   let added = 0;
   for (const o of orders) {
-    if (new Date(o.createdAt) < new Date(settings.startedAt)) continue;
+    // „📞 Обади се“ in OrderDesk: Mitko asked for this call himself (requestedAt = when he pressed it).
+    const manual = Boolean(o.requestedAt);
+    if (!manual && new Date(o.createdAt) < new Date(settings.startedAt)) continue;
     const phone = normalizePhoneBG(o.phone);
     const rec = {
       site: o.site,
@@ -105,8 +107,29 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
       nextAttemptAt: now.toISOString(),
       callingSince: null,
       conversationIds: [],
-      history: [{ at: now.toISOString(), event: "new" }],
+      history: [{ at: now.toISOString(), event: manual ? "requested from OrderDesk" : "new" }],
+      ...(manual ? { manual: true, requestedAt: o.requestedAt } : {}),
     };
+    if (manual) {
+      // Each press of the button is one request, even for an order that was already called before.
+      const { modified } = await store.setJSON(`${seenKey(o.site, o.orderNo)}/manual/${o.requestedAt}`, { at: now.toISOString() }, { onlyIfNew: true });
+      if (!modified) continue;
+      await store.setJSON(seenKey(o.site, o.orderNo), { at: now.toISOString() }, { onlyIfNew: true });
+      const key = orderKey(o.site, o.orderNo);
+      const cur = await store.getWithMetadata(key, { type: "json" });
+      if (cur !== null && cur.data && !FINISHED.has(cur.data.state)) {
+        // Already waiting in the queue: it becomes a manual call, and a queued one is called first, now.
+        const history = [...(cur.data.history || []), { at: now.toISOString(), event: "requested from OrderDesk" }];
+        const next = { ...cur.data, manual: true, requestedAt: o.requestedAt, history, ...(cur.data.state === "queued" ? { nextAttemptAt: now.toISOString() } : {}) };
+        await store.setJSON(key, next, { onlyIfMatch: cur.etag });
+        added++;
+        continue;
+      }
+      await save(store, key, rec);
+      added++;
+      if (!phone) await notify(buildMessage(rec, labelFor("bad_phone"), null, { testMode: false }));
+      continue;
+    }
     const { modified } = await store.setJSON(seenKey(o.site, o.orderNo), { at: now.toISOString() }, { onlyIfNew: true });
     if (!modified) continue;
     await save(store, orderKey(o.site, o.orderNo), rec);
@@ -116,6 +139,19 @@ export async function syncOrders(/** @type {Deps} */ deps, now = new Date()) {
   return added;
 }
 
+/** An order call that is ringing or talking right now (one phone line: never start a second one). */
+export async function orderCallInProgress(store, now = new Date()) {
+  for (const { key } of (await store.list({ prefix: "order/" })).blobs) {
+    const rec = await store.get(key, { type: "json" });
+    if (rec?.state !== "calling" || !rec.callingSince) continue;
+    const sinceMin = (now - new Date(rec.callingSince)) / 60_000;
+    // A Zadarma callback nobody answered is over (the next run counts it as "no answer").
+    const unanswered = rec.route === "zadarma" && !rec.answeredAt && sinceMin > NO_ANSWER_MIN;
+    if (!unanswered && sinceMin < STALE_CALL_MIN) return true;
+  }
+  return false;
+}
+
 /** Start calls that are due. Returns a short report. */
 export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
   const { store, cb, call, notify, config } = deps;
@@ -123,6 +159,8 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
   const report = { started: 0, skipped: 0, stale: 0, reason: "" };
   const mode = settings.mode || config.mode; // set from Telegram (/rezhim) or MODE env
   const testMode = mode === "test";
+  // A call Mitko asked for with „📞 Обади се“ always goes to the customer, whatever the mode.
+  const asTest = (rec) => testMode && !rec.manual;
 
   const { blobs } = await store.list({ prefix: "order/" });
   const due = [];
@@ -138,14 +176,15 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     if (rec.state === "calling" && rec.callingSince && (unanswered || sinceMin > STALE_CALL_MIN)) {
       const r = applyOutcome(rec, { outcome: unanswered ? "no-answer" : "no_conversation" }, now);
       await save(store, key, r.rec, { onlyIfMatch: entry.etag });
-      if (!testMode) await toPlatform(deps, "report", rec, reportBody(rec, r.rec, null, r.rec.lastOutcome));
-      if (r.notify) await notify(buildMessage(r.rec, r.label, null, { testMode }));
+      if (!asTest(rec)) await toPlatform(deps, "report", rec, reportBody(rec, r.rec, null, r.rec.lastOutcome));
+      if (r.notify) await notify(buildMessage(r.rec, r.label, null, { testMode: asTest(rec) }));
       report.stale++;
       continue;
     }
-    // Orders that came in before the current mode was switched on are never called.
-    const tooOld = now - new Date(rec.createdAt) > MAX_ORDER_AGE_H * 3_600_000;
-    const beforeMode = settings.modeSince && new Date(rec.createdAt) < new Date(settings.modeSince);
+    // Orders that came in before the current mode was switched on are never called
+    // (a manual request counts from the moment Mitko pressed the button).
+    const tooOld = now - new Date(rec.manual && rec.requestedAt ? rec.requestedAt : rec.createdAt) > MAX_ORDER_AGE_H * 3_600_000;
+    const beforeMode = !rec.manual && settings.modeSince && new Date(rec.createdAt) < new Date(settings.modeSince);
     if (rec.state === "queued" && (tooOld || beforeMode)) {
       await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: tooOld ? "too old to call" : "came before the mode was switched on" }] });
       report.skipped++;
@@ -154,15 +193,25 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     if (rec.state === "queued" && new Date(rec.nextAttemptAt) <= now) due.push({ key, rec, etag: entry.etag });
   }
 
-  if (mode === "off") return { ...report, reason: "off" };
+  // With the order calls switched off (or a test without a test number), only the calls Mitko asked for go out.
+  const manualDue = due.filter((d) => d.rec.manual);
+  let callable = due;
+  if (mode === "off") {
+    if (!manualDue.length) return { ...report, reason: "off" };
+    callable = manualDue;
+  }
   if (config.ready === false) return { ...report, reason: "ElevenLabs not configured yet" };
   if (settings.paused || config.pausedByEnv) return { ...report, reason: "paused" };
   const hours = sofiaNow(now).weekday === 0 ? config.hoursSunday || config.hours : config.hours;
   if (!inCallingHours(hours, now)) return { ...report, reason: "outside hours" };
-  if (testMode && !config.testPhone) return { ...report, reason: "test mode without TEST_PHONE" };
+  if (testMode && !config.testPhone) {
+    if (!manualDue.length) return { ...report, reason: "test mode without TEST_PHONE" };
+    callable = manualDue;
+  }
 
-  due.sort((a, b) => String(a.rec.nextAttemptAt).localeCompare(String(b.rec.nextAttemptAt)));
-  for (const { key, rec, etag } of due.slice(0, config.maxCallsPerRun || MAX_CALLS_PER_RUN)) {
+  // The calls Mitko asked for first, then the oldest due.
+  callable.sort((a, b) => Number(Boolean(b.rec.manual)) - Number(Boolean(a.rec.manual)) || String(a.rec.nextAttemptAt).localeCompare(String(b.rec.nextAttemptAt)));
+  for (const { key, rec, etag } of callable.slice(0, config.maxCallsPerRun || MAX_CALLS_PER_RUN)) {
     // If Mitko already handled the order in ConvertBuilder, do not call.
     if (cb.isStillPending && !(await cb.isStillPending(rec))) {
       await save(store, key, { ...rec, state: "skipped", finishedAt: now.toISOString(), history: [...rec.history, { at: now.toISOString(), event: "not pending in ConvertBuilder" }] });
@@ -174,10 +223,10 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
     if (!modified) continue; // another run took it
     try {
       const { conversationId, route } = await call({
-        to: testMode ? config.testPhone : rec.phone,
+        to: asTest(rec) ? config.testPhone : rec.phone,
         variables: {
           order_key: key,
-          test: testMode ? "yes" : "no",
+          test: asTest(rec) ? "yes" : "no",
           shop_name: config.shopName,
           customer_name: formalNameBG(rec.name) || rec.firstName || rec.name,
           order_number: String(rec.orderNo),
@@ -186,6 +235,8 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
           delivery_text: rec.deliveryText || "както е посочено в поръчката",
           delivery_days: config.deliveryDays,
           ...upsellVariables(rec.upsell),
+          // „📞 Обади се“ is Александра's call (zdravets.eu tells customers she will call); the A/B split is for the rest.
+          ...(rec.manual ? { persona: "aleksandra" } : {}),
         },
       });
       const updated = {
@@ -196,7 +247,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
       };
       await store.setJSON(key, updated, { onlyIfMatch: claimEtag });
       if (conversationId) await store.setJSON(`conv/${conversationId}`, { key });
-      if (!testMode) await toPlatform(deps, "calling", claimed);
+      if (!asTest(rec)) await toPlatform(deps, "calling", claimed);
       report.started++;
     } catch (err) {
       const transient = err.status === 429 || err.status >= 500;
@@ -205,7 +256,7 @@ export async function runDueCalls(/** @type {Deps} */ deps, now = new Date()) {
         : { ...claimed, state: "needs_mitko", callingSince: null, error: String(err.message).slice(0, 300), finishedAt: now.toISOString() };
       back.history = [...rec.history, { at: now.toISOString(), event: "call error", error: String(err.message).slice(0, 200) }];
       await save(store, key, back);
-      if (!transient) await notify(buildMessage(back, labelFor("call_error"), null, { testMode }));
+      if (!transient) await notify(buildMessage(back, labelFor("call_error"), null, { testMode: asTest(rec) }));
     }
   }
   return report;
