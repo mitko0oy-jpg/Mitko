@@ -239,7 +239,8 @@ p{margin:0 0 1em}
 .offer .ribbon.green{background:var(--g700);color:#fff}
 .offer .tier{font-weight:900;color:var(--g600);text-transform:uppercase;letter-spacing:.06em;font-size:.8rem;text-align:center}
 .offer h3{text-align:center;color:var(--g900);font-size:1.4rem;margin:4px 0 10px}
-.offer .oimg{height:190px;display:grid;place-items:center;margin:4px 0 10px}
+.offer .oimg{height:190px;display:grid;place-items:center;margin:4px 0 10px;position:relative}
+.offer .off-badge{position:absolute;top:0;right:0;z-index:2;width:72px;height:72px;border-radius:50%;background:var(--sp-red,var(--red));color:#fff;display:grid;place-items:center;font-weight:900;font-size:1.35rem;line-height:1;letter-spacing:-.02em;transform:rotate(-8deg);box-shadow:0 4px 12px rgba(0,0,0,.18)}
 .offer .oimg img{max-height:190px;object-fit:contain}
 .collage{display:grid;grid-template-columns:1fr 1fr;gap:6px;height:190px;width:100%}
 .collage img{width:100%;height:92px;object-fit:contain;background:#fff;border-radius:10px}

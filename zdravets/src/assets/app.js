@@ -332,6 +332,12 @@ function separateParts(b) {
   return { items, gift, ship, total: items + gift + ship };
 }
 function separateValue(b) { return separateParts(b).total; }
+// процентът намаление спрямо „Поотделно“ – закръглен надолу, за да не е повече от истинския;
+// `off` в BUNDLES го задава ръчно по време на Черния петък (5 гела: −70%, като в рекламите)
+function offPct(b, sep, save) {
+  if (bfOn() && b.off) return b.off;
+  return sep > 0 && save > 0.005 ? Math.floor(save / sep * 100 + 1e-6) : 0;
+}
 
 /* ---------- countdown ---------- */
 function tickCountdowns() {
@@ -405,11 +411,12 @@ function bundleCard(b) {
     ? `<div class="collage ${b.collage.length === 2 ? 'two' : ''}">${b.collage.map(([src, alt]) => `<img src="${src}" alt="${esc(alt)}" loading="lazy">`).join('')}</div>`
     : `<img src="${b.id === 'bf5' && bfOn() && b.gift.length ? BF5_IMG_S : b.img}" alt="${esc(b.id === 'bf5' && bfOn() ? '5 гела BeeVenom и 3 пакета пластири за стави' : b.title)}" loading="lazy">`;
   const ribbon = b.featured ? '<div class="ribbon">★ Най-избиран</div>' : (free ? '<div class="ribbon green">Безплатна доставка</div>' : '');
+  const pct = offPct(b, sep, save);
   return `<div class="offer ${b.featured ? 'featured' : ''}">
     ${ribbon}
     ${b.featured && /Най-избиран/.test(b.tier) ? '' : `<div class="tier">${esc(b.tier)}</div>`}
     <h3>${esc(b.title)}</h3>
-    <div class="oimg">${img}</div>
+    <div class="oimg">${pct ? `<div class="off-badge" aria-label="Намаление ${pct}% спрямо поотделно">−${pct}%</div>` : ''}${img}</div>
     <div class="contents">${esc(b.line)}</div>
     ${bfOn() && b.gift && b.gift.length ? `<div class="gift">🎁 Подарък: ${giftLabel(giftPacks(b))}${giftWas(giftPacks(b))}</div>` : ''}
     <div class="pricebox">${b.prev && bfOn() ? `<span class="bf-blink">Черен петък</span> <span class="xprice">${fmt(b.prev)}</span> ` : ''}<span class="now">${fmt(b.price)}</span><span class="per">${esc(b.perUnit)}</span></div>
@@ -490,7 +497,7 @@ function renderBundlePage() {
       <div class="heroimg"><img src="${lp.banner}" alt="${esc(title)} за ${fmt(b.price)}" width="900" height="1125" fetchpriority="high"></div>
       <div class="bf-buy">
         ${on ? `<p class="bf-buy__price"><b>${fmt(b.price)}</b><span>за всичко · ${esc(parts.map(({ p }) => SEP_NAME[p.id] || p.shortName).join(' + '))} + ${giftN} пластира подарък</span></p>
-        <p class="kp-sep">Поотделно: ${sepLine} = <s>${fmt(sp.total)}</s> · <b>спестяваш ${fmt(save)}</b></p>
+        <p class="kp-sep">Поотделно: ${sepLine} = <s>${fmt(sp.total)}</s> · <b>спестяваш ${fmt(save)}${(pct => pct ? ` (−${pct}%)` : '')(offPct(b, sp.total, save))}</b></p>
         ${buy()}
         <p class="bf-buy__ship">${ship}</p>
         <p class="bf-buy__trust">💶 Плащаш при получаване · 🛡️ ${CONFIG.guaranteeDays} дни гаранция · 📞 <a href="tel:${CONFIG.phoneHref}">${CONFIG.phone}</a></p>`
