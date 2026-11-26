@@ -324,6 +324,9 @@ export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profil
   return {
     senderClient: profile.client,
     ...(agent ? { senderAgent: agent } : {}),
+    // The sender pays the delivery under the contract (отложено плащане), as in the redirect below.
+    // Without it Econt takes cash and asks a company for invoice data („данни за фактура…“).
+    paymentSenderMethod: "credit",
     senderOfficeCode: def.senderOfficeCode,
     receiverClient: { name: d.name, phones: [d.phone] },
     ...(d.type !== "address"
