@@ -24,12 +24,13 @@ const fail = (message: string) => new HttpError(400, "courier", message);
 
 export type Defaults = {
   speedy: { clientId: number | null; dropoffOfficeId: number | null; serviceId: number; obpd: "TEST" | "OPEN" | ""; package: string; weight: number; vatGroup: string; paper: "A6" | "A4" };
-  econt: { senderOfficeCode: string; sms: boolean; weight: number; agreement: boolean; payAfterTest: boolean; payAfterAccept: boolean };
+  // agentName/agentPhone: „упълномощено лице“ – Econt requires one when the sender is a company (юридическо лице).
+  econt: { senderOfficeCode: string; sms: boolean; weight: number; agreement: boolean; payAfterTest: boolean; payAfterAccept: boolean; agentName: string; agentPhone: string };
 };
 
 const BUILT_IN: Defaults = {
   speedy: { clientId: null, dropoffOfficeId: null, serviceId: 505, obpd: "TEST", package: "ENVELOPE", weight: 1, vatGroup: "А", paper: "A6" },
-  econt: { senderOfficeCode: "", sms: true, weight: 0.5, agreement: true, payAfterTest: false, payAfterAccept: false },
+  econt: { senderOfficeCode: "", sms: true, weight: 0.5, agreement: true, payAfterTest: false, payAfterAccept: false, agentName: "", agentPhone: "" },
 };
 
 /** Built-in values, then SHIPPING_DEFAULTS from the Netlify env, then what was saved in Настройки. */
@@ -71,6 +72,8 @@ export async function saveDefaults(input: any): Promise<Defaults> {
       agreement: typeof ec.agreement === "boolean" ? ec.agreement : cur.econt.agreement,
       payAfterTest: typeof ec.payAfterTest === "boolean" ? ec.payAfterTest : cur.econt.payAfterTest,
       payAfterAccept: typeof ec.payAfterAccept === "boolean" ? ec.payAfterAccept : cur.econt.payAfterAccept,
+      agentName: typeof ec.agentName === "string" ? ec.agentName.replace(/\s+/g, " ").trim().slice(0, 80) : cur.econt.agentName,
+      agentPhone: typeof ec.agentPhone === "string" ? ec.agentPhone.replace(/[^\d+]/g, "").slice(0, 20) : cur.econt.agentPhone,
     },
   };
   await setSetting(cKey("shipping"), next);
@@ -304,10 +307,23 @@ async function econtProfile(creds: Creds) {
   return profile;
 }
 
+/** „Упълномощено лице“ of the sender: the one set in Куриери → Еконт, else the МОЛ from the Econt profile. */
+export function econtAgent(def: Defaults["econt"], client: any) {
+  const name = String(def.agentName || client?.mol || "").trim();
+  const phone = String(def.agentPhone || (Array.isArray(client?.phones) ? client.phones[0] : "") || "").trim();
+  if (!name) {
+    if (client?.juridicalEntity) throw fail("Еконт: за фирма трябва упълномощено лице. Попълни го в Куриери → Еконт.");
+    return null;
+  }
+  return { name, phones: phone ? [phone] : [] };
+}
+
 export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profile: { client: any; agreement: string | null }) {
   if (!def.senderOfficeCode) throw fail("Еконт: липсва офис на подателя. Избери го в Куриери → Еконт.");
+  const agent = econtAgent(def, profile.client);
   return {
     senderClient: profile.client,
+    ...(agent ? { senderAgent: agent } : {}),
     senderOfficeCode: def.senderOfficeCode,
     receiverClient: { name: d.name, phones: [d.phone] },
     ...(d.type !== "address"

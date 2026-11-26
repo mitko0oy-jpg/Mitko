@@ -172,7 +172,11 @@ function setup(id) {
          <label class="chk"><input type="checkbox" name="sms" ${ec.sms ? "checked" : ""}> SMS до получателя</label>
          <label class="chk"><input type="checkbox" name="agreement" ${ec.agreement ? "checked" : ""}> Наложен платеж по договора (по-евтино)</label>
          <label class="chk"><input type="checkbox" name="payAfterTest" ${ec.payAfterTest ? "checked" : ""}> Плащане след преглед и тест</label>
-         <label class="chk"><input type="checkbox" name="payAfterAccept" ${ec.payAfterAccept ? "checked" : ""}> Плащане след преглед</label>`;
+         <label class="chk"><input type="checkbox" name="payAfterAccept" ${ec.payAfterAccept ? "checked" : ""}> Плащане след преглед</label>
+         <div class="grid2">
+           <label>Упълномощено лице (задължително за фирма)<input type="text" name="agentName" maxlength="80" value="${esc(ec.agentName || "")}" placeholder="име и фамилия"></label>
+           <label>Телефон на упълномощеното лице<input type="tel" name="agentPhone" maxlength="20" value="${esc(ec.agentPhone || "")}" placeholder="празно = телефонът на фирмата в Еконт"></label>
+         </div>`;
   d.innerHTML = `<form method="dialog" class="mh"><h2><span class="courierlogo">${mark(id)}</span> ${esc(meta.name)}</h2><button class="iconbtn" value="close" aria-label="Затвори">✕</button></form>
     <form class="mb" id="cForm" autocomplete="off">
       <div class="steps"><span class="${connected ? "done" : "on"}">1. Достъп</span><span class="${connected ? "on" : ""}">2. Изпращане</span></div>
@@ -231,7 +235,7 @@ function setup(id) {
       const body =
         id === "speedy"
           ? { speedy: { clientId: f.clientId.value, dropoffOfficeId: f.office.value, obpd: f.obpd.value, serviceId: f.serviceId.value, package: f.package.value, weight: f.weight.value, vatGroup: f.vatGroup.value, paper: f.paper.value } }
-          : { econt: { senderOfficeCode: f.office.value, weight: f.weight.value, sms: f.sms.checked, agreement: f.agreement.checked, payAfterTest: f.payAfterTest.checked, payAfterAccept: f.payAfterAccept.checked } };
+          : { econt: { senderOfficeCode: f.office.value, weight: f.weight.value, sms: f.sms.checked, agreement: f.agreement.checked, payAfterTest: f.payAfterTest.checked, payAfterAccept: f.payAfterAccept.checked, agentName: f.agentName.value, agentPhone: f.agentPhone.value } };
       defaults = (await api("/api/waybills/settings", { method: "POST", body })).defaults;
       await render();
       d.close();

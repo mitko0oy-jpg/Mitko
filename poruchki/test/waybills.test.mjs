@@ -74,6 +74,18 @@ test("Econt label: sender office, COD agreement, order number", () => {
   assert.throws(() => econtLabel(d, order(), { ...DEF.econt, senderOfficeCode: "" }, { client: {}, agreement: null }), /офис на подателя/);
 });
 
+test("Econt label: a company sender needs „упълномощено лице“ – from Куриери → Еконт, else the МОЛ", () => {
+  const d = draftFor(order({ delivery: { type: "office", courier: "econt", officeId: "8501" } }), DEF);
+  const firm = { name: "Фирма ЕООД", juridicalEntity: true, phones: ["+359888000111"], mol: "Иван Иванов" };
+  const set = econtLabel(d, order(), { ...DEF.econt, agentName: "Мария Петрова", agentPhone: "" }, { client: firm, agreement: null });
+  assert.deepEqual(set.senderAgent, { name: "Мария Петрова", phones: ["+359888000111"] }, "the company's phone when none is set");
+  const own = econtLabel(d, order(), { ...DEF.econt, agentName: "Мария Петрова", agentPhone: "0877123456" }, { client: firm, agreement: null });
+  assert.deepEqual(own.senderAgent.phones, ["0877123456"]);
+  assert.equal(econtLabel(d, order(), DEF.econt, { client: firm, agreement: null }).senderAgent.name, "Иван Иванов", "МОЛ from the profile");
+  assert.throws(() => econtLabel(d, order(), DEF.econt, { client: { ...firm, mol: "" }, agreement: null }), /упълномощено лице/);
+  assert.equal(econtLabel(d, order(), DEF.econt, { client: { name: "Физическо лице" }, agreement: null }).senderAgent, undefined, "a person sends without one");
+});
+
 test("Speedy: Middleware's waybill found by order number, only with the same phone", async () => {
   setLookupFetch(async (url, init) => {
     const b = JSON.parse(init.body);
