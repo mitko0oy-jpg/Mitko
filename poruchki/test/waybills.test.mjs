@@ -32,16 +32,18 @@ const order = (extra = {}) => ({
 
 test("parcel contents like Middleware: every product x quantity, gifts marked, no offer words", async () => {
   const { parcelContents } = await import("../netlify/lib/waybills.mts");
-  assert.equal(
-    parcelContents([
-      { name: "5 гела за стави BeeVenom", qty: 1, total: 34.9 },
-      { name: "Подарък: 12 пластира за стави и мускули", qty: 3, total: 0 },
-      { name: "Bee Venom пластири с пчелна отрова – −50% към поръчка над 34,90 €", qty: 1, total: 4.95 },
-      { name: "Хиалуронов крем за стави – специална цена към поръчка", qty: 1, total: 7.9 },
-      { name: "Упътване PDF", qty: 1, total: 0, digital: true },
-    ]),
-    "5 гела за стави BeeVenom x 1, 12 пластира за стави и мускули x 3 (подарък), Bee Venom пластири с пчелна отрова x 1, Хиалуронов крем за стави x 1",
-  );
+  const boyka = [
+    { name: "5 гела за стави BeeVenom", qty: 1, total: 34.9 },
+    { name: "Подарък: 12 пластира за стави и мускули", qty: 3, total: 0 },
+    { name: "Bee Venom пластири с пчелна отрова – −50% към поръчка над 34,90 €", qty: 1, total: 4.95 },
+    { name: "Хиалуронов крем за стави – специална цена към поръчка", qty: 1, total: 7.9 },
+    { name: "Упътване PDF", qty: 1, total: 0, digital: true },
+  ];
+  assert.equal(parcelContents(boyka), "5 гела стави, 12 пласт. стави x3 подар., пласт. пч.отрова, Хиалур. крем стави");
+  // Still too long: whole products, then how many more.
+  assert.equal(parcelContents(boyka, 50), "5 гела стави, 12 пласт. стави x3 подар. и още 2");
+  assert.equal(parcelContents([{ name: "Пчелна отрова Пакет 3+2 бр.", qty: 1, total: 29.9 }]), "Пчелна отрова Пакет 3+2 бр.");
+  assert.equal(parcelContents([{ name: "Български език и Литература", qty: 2, total: 44.9 }]), "Български език и Литература x2", "„за“ only as a word");
 });
 
 test("draft from an order: office, COD = total, contents = products", () => {
@@ -50,7 +52,7 @@ test("draft from an order: office, COD = total, contents = products", () => {
   assert.equal(d.type, "office");
   assert.equal(d.officeId, "414");
   assert.equal(d.cod, 44.9);
-  assert.equal(d.contents, "Български език и Литература x 1");
+  assert.equal(d.contents, "Български език и Литература");
   assert.equal(d.address, ""); // the office line is not an address
   assert.equal(d.obpd, "TEST");
   assert.equal(draftFor(order({ paid: true }), DEF).cod, 0);

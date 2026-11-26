@@ -111,7 +111,6 @@ export function draftFor(o: OrderRow, def: Defaults): Draft {
   const type: Draft["type"] = d.type === "office" || d.type === "automat" ? d.type : "address";
   const isOfficeText = (s: string) => /^\s*До офис/i.test(s || "");
   const address = [o.address, o.address2].filter((s) => s && !isOfficeText(s)).join(", ");
-  const contents = parcelContents(o.items || []);
   return {
     courier,
     type,
@@ -124,7 +123,7 @@ export function draftFor(o: OrderRow, def: Defaults): Draft {
     phone: o.phone || "",
     cod: o.paid ? 0 : round2(Number(o.total)),
     weight: def[courier].weight,
-    contents: (contents || `Поръчка ${o.order_no}`).slice(0, contentsMax(courier)),
+    contents: parcelContents(o.items || [], contentsMax(courier)) || `Поръчка ${o.order_no}`,
     obpd: def.speedy.obpd,
   };
 }
@@ -132,24 +131,49 @@ export function draftFor(o: OrderRow, def: Defaults): Draft {
 /** Speedy takes up to 100 characters for the contents; Econt's description is longer. */
 const contentsMax = (courier: string) => (courier === "econt" ? 200 : 100);
 
+// Short names for the waybill, so every product fits (Speedy: 100 characters). Cyrillic needs its own word edges.
+const W = (s: string) => new RegExp(`(?<![\\p{L}\\d])${s}(?![\\p{L}])`, "giu");
+const SHORT: [RegExp, string][] = [
+  [/\s*bee\s?venom\s*/giu, " "],
+  [W("за стави и мускули"), "стави"],
+  [W("с пчелна отрова"), "пч.отрова"],
+  [W("пластир(?:а|и)?"), "пласт."],
+  [W("лепенк(?:и|а)"), "леп."],
+  [W("хиалуронов(?:а|о)?"), "Хиалур."],
+  [W("за"), ""],
+];
+export function shortName(name: string) {
+  let s = String(name || "");
+  for (const [re, to] of SHORT) s = s.replace(re, to);
+  return s.replace(/\s+/g, " ").trim();
+}
+
 /**
- * What is in the parcel, as Middleware writes it („Всички продукти от поръчката“): „Продукт x 2“ for every product,
- * gifts too, without digital products (PDFs are not sent) and without the shop's offer words after a dash
- * („… – −50% към поръчка над 34,90 €“, „… – специална цена към поръчка“).
+ * What is in the parcel, as Middleware writes it („Всички продукти от поръчката“), but short so it fits:
+ * every product with „x2“ when more than one, gifts marked „подар.“, no digital products (PDFs are not sent),
+ * no shop offer words after a dash („… – −50% към поръчка над 34,90 €“), short words („пласт.“, „пч.отрова“).
+ * Too long: whole products only, then „и още N“.
  */
-export function parcelContents(items: any[]) {
+export function parcelContents(items: any[], max = 100) {
   const all = (items || []).filter((i: any) => String(i?.name || "").trim());
   const physical = all.some((i: any) => !i.digital) ? all.filter((i: any) => !i.digital) : all;
-  return physical
+  const parts = physical
     .map((i: any) => {
       let name = String(i.name).replace(/\s+[–—-]\s+[^–—]*(%|цена|поръчка|отстъпка|промо|намален)[^–—]*$/iu, "").trim();
-      const gift = /^Подарък\b/i.test(name) || !(Number(i.total) > 0);
-      name = name.replace(/^Подарък\s*:?\s*/i, "").trim();
+      const gift = /^Подарък(?![\p{L}])/iu.test(name) || !(Number(i.total) > 0);
+      name = shortName(name.replace(/^Подарък\s*:?\s*/i, ""));
+      const qty = Number(i.qty) || 1;
       // A line called only „Подарък“ says nothing about what is in the box.
-      return name ? `${name} x ${Number(i.qty) || 1}${gift ? " (подарък)" : ""}` : "";
+      return name ? `${name}${qty > 1 ? ` x${qty}` : ""}${gift ? " подар." : ""}` : "";
     })
-    .filter(Boolean)
-    .join(", ");
+    .filter(Boolean);
+  let text = parts.join(", ");
+  if (text.length <= max) return text;
+  for (let n = parts.length - 1; n > 0; n--) {
+    text = `${parts.slice(0, n).join(", ")} и още ${parts.length - n}`;
+    if (text.length <= max) return text;
+  }
+  return parts[0].slice(0, max);
 }
 
 /** What came from the browser, checked and cleaned. */
