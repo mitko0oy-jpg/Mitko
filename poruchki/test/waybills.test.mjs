@@ -30,13 +30,27 @@ const order = (extra = {}) => ({
   ...extra,
 });
 
+test("parcel contents like Middleware: every product x quantity, gifts marked, no offer words", async () => {
+  const { parcelContents } = await import("../netlify/lib/waybills.mts");
+  assert.equal(
+    parcelContents([
+      { name: "5 гела за стави BeeVenom", qty: 1, total: 34.9 },
+      { name: "Подарък: 12 пластира за стави и мускули", qty: 3, total: 0 },
+      { name: "Bee Venom пластири с пчелна отрова – −50% към поръчка над 34,90 €", qty: 1, total: 4.95 },
+      { name: "Хиалуронов крем за стави – специална цена към поръчка", qty: 1, total: 7.9 },
+      { name: "Упътване PDF", qty: 1, total: 0, digital: true },
+    ]),
+    "5 гела за стави BeeVenom x 1, 12 пластира за стави и мускули x 3 (подарък), Bee Venom пластири с пчелна отрова x 1, Хиалуронов крем за стави x 1",
+  );
+});
+
 test("draft from an order: office, COD = total, contents = products", () => {
   const d = draftFor(order(), DEF);
   assert.equal(d.courier, "speedy");
   assert.equal(d.type, "office");
   assert.equal(d.officeId, "414");
   assert.equal(d.cod, 44.9);
-  assert.equal(d.contents, "Български език и Литература");
+  assert.equal(d.contents, "Български език и Литература x 1");
   assert.equal(d.address, ""); // the office line is not an address
   assert.equal(d.obpd, "TEST");
   assert.equal(draftFor(order({ paid: true }), DEF).cod, 0);
