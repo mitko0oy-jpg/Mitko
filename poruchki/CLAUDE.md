@@ -149,6 +149,7 @@
 - `GET /api/agent/orders?shops=&since=` – кого да набере (нови поръчки на магазините с пчелна отрова + „AI потвърждение“); `GET /api/agent/orders/:id` – още ли чака; `GET /api/agent/by-phone`; `POST /api/agent/orders` – поръчка по телефона.
 - `POST /api/agent/orders/:id/calling` и `/result` – всеки опит се записва в хронологията и като бележка; „потвърди“ = `confirmed_by = 'AI агент'`, корекцията (`edit`) минава през `editOrder`, после товарителница, ако `automation.autoWaybill` и клиентът не иска промяна на доставката.
 - Изходите „без разговор“ (`voicemail`, `no_conversation`, `busy`, `no-answer`, `unknown`) трябва да съвпадат със `RETRY_OUTCOMES` в `poruchki-agent/lib/policy.mjs`.
+- „📞 Обади се“ (бутон в поръчката и в ⋮ на списъка, `POST /api/orders/:id/ai-call`): пише `call.state = 'requested'` и веднага вика агента – `askAgentToCall()` в `lib/agent.mts` → `POST <AGENT_URL>/api/call-now` (по подразбиране `https://mitko-obazhdania.netlify.app`, същият `AGENT_TOKEN`). Отговорът `call_now.message` се показва (звъни сега / извън часовете / спрени с /stop / линията е заета). Агентът звъни на ръчна заявка винаги на клиента и с гласа на Александра – и при `/rezhim off`; ако не може веднага, я взема до 5 минути. Страницата на поръчката се обновява на 15 секунди, докато чака или звъни.
 
 ## Важно: кодът е в публично хранилище
 

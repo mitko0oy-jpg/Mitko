@@ -13,6 +13,7 @@ import { STAGES, upsertOrders } from "../lib/orders.mts";
 import { runTracking } from "../lib/track.mts";
 import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
 import { releaseDuplicate } from "../lib/duplicates.mts";
+import { askAgentToCall } from "../lib/agent.mts";
 import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editContact, unconfirmOrder } from "../lib/manage.mts";
 
 const ACTIVE = "o.stage IN ('abandoned', 'new', 'duplicate', 'prepared', 'shipped', 'at_office')";
@@ -450,11 +451,14 @@ export default handle(async (req) => {
     if (action === "duplicate") return json(await duplicateOrder(id, user.id, by));
     // Held as a duplicate, but it is a real second order: it goes on as new.
     if (action === "not-duplicate" && !(await releaseDuplicate(id, user.id))) throw bad("not_held", "Поръчката не е задържана като дублирана.");
-    // Ask the phone agent to call this order (it picks requests up within 5 minutes, in calling hours).
+    // „📞 Обади се“: the phone agent (Александра) calls this order now – or, if it cannot right now,
+    // at its next run (every 5 minutes, in calling hours). See askAgentToCall in lib/agent.mts.
     if (action === "ai-call") {
       const r = await q("UPDATE orders SET call = jsonb_build_object('state', 'requested', 'at', now(), 'by', $2::text) WHERE id = $1 AND confirmed_at IS NULL RETURNING id", [id, by]);
       if (!r.length) throw bad("confirmed", "Поръчката вече е потвърдена.");
-      await addEvent(id, "call", "Изпратена за AI потвърждение по телефона", {}, user.id);
+      await addEvent(id, "call", "„Обади се“ – Александра да звънне за потвърждение", {}, user.id);
+      const callNow = await askAgentToCall();
+      return json({ ...(await detail(id)), call_now: callNow });
     }
     return json(await detail(id));
   }

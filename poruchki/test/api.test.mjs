@@ -121,6 +121,10 @@ const courier = createServer((req, res) => {
     sent.push({ path: u.pathname, body: b });
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
+      // The phone agent (mitko-obazhdania): „📞 Обади се“ starts the call at once.
+      case "/agent/api/call-now":
+        if (req.headers.authorization !== "Bearer agent-token-agent-token-agent-token-0000") return res.writeHead(404).end("not found");
+        return json({ ok: true, added: 1, started: 1, skipped: 0, stale: 0, reason: "" });
       case "/email/account":
         return req.headers["api-key"] === "brevo-key-123" ? json({ email: "owner@example.com" }) : res.writeHead(401, { "content-type": "application/json" }).end('{"message":"Key not found"}');
       case "/email/smtp/email":
@@ -229,6 +233,7 @@ test.before(async () => {
       SPEEDY_API_URL: `http://127.0.0.1:${COURIER_PORT}/speedy`,
       ECONT_API_URL: `http://127.0.0.1:${COURIER_PORT}/econt`,
       AGENT_TOKEN: "agent-token-agent-token-agent-token-0000",
+      AGENT_URL: `http://127.0.0.1:${COURIER_PORT}/agent`,
       SMSAPI_TOKEN: "sms-token", SMSAPI_URL: `http://127.0.0.1:${COURIER_PORT}/sms`,
       EMAIL_API_URL: `http://127.0.0.1:${COURIER_PORT}/email`, REMINDER_HOURS: "0-24", PRINT_DB: "1",
       NEKOREKTEN_URL: `http://127.0.0.1:${COURIER_PORT}/nek`, NEKOREKTEN_KEY: "",
@@ -486,6 +491,9 @@ test("confirm by hand, notes, AI call request, archive", async () => {
   assert.equal(o.confirmed_at, null);
   const ai = await api(`/api/orders/${o.id}/ai-call`, {});
   assert.equal(ai.data.call.state, "requested");
+  assert.equal(ai.data.call_now.started, true, "the phone agent was asked to call now");
+  assert.match(ai.data.call_now.message, /Александра звъни/);
+  assert.ok(sent.some((x) => x.path === "/agent/api/call-now"));
   const n = await api(`/api/orders/${o.id}/note`, { text: "Да се провери адресът" });
   assert.equal(n.data.note, "Да се провери адресът");
   const c = await api(`/api/orders/${o.id}/confirm`, {});

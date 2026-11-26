@@ -62,7 +62,7 @@ function params() {
 }
 
 const AI = "AI агент";
-const CALL = { requested: "чака AI обаждане", calling: "AI звъни…", no_conversation: "не вдига", voicemail: "не вдига", gave_up: "не вдига (3 опита)", canceled: "отказа по телефона", change_requested: "иска промяна", needs_human: "иска човек", callback_later: "да се обадим пак", wrong_person: "друг човек", wrong_number: "грешен номер" };
+const CALL = { requested: "чака обаждане от Александра", calling: "Александра звъни…", no_conversation: "не вдига", voicemail: "не вдига", gave_up: "не вдига (3 опита)", canceled: "отказа по телефона", change_requested: "иска промяна", needs_human: "иска човек", callback_later: "да се обадим пак", wrong_person: "друг човек", wrong_number: "грешен номер" };
 /** One small sign right of the status: who confirmed, or what the AI call did. */
 function confirmCell(o) {
   if (o.confirmed_at)
@@ -195,7 +195,7 @@ function moreMenu(o) {
   const items = [];
   if (!o.confirmed_at) items.push(["confirm", "✓ Потвърди"]);
   else items.push(["unconfirm", "Махни потвърждението"]);
-  if (!o.confirmed_at && o.phone && !["requested", "calling"].includes(o.call?.state)) items.push(["ai", "🤖 AI потвърждение"]);
+  if (!o.confirmed_at && o.phone && !["requested", "calling"].includes(o.call?.state)) items.push(["ai", "📞 Обади се (Александра)"]);
   items.push(["note", "Бележка"]);
   if (canShip(o)) items.push(["ship", "Създай товарителница"]);
   if (o.tracking_no && (c === "speedy" || c === "econt")) items.push(["print", "Печат на етикета"]);
@@ -463,8 +463,9 @@ async function act(what, id, btn) {
       await api(`/api/orders/${id}/confirm`, { method: "POST", body: {} });
       load(true);
     } else if (what === "ai") {
-      await api(`/api/orders/${id}/ai-call`, { method: "POST", body: {} });
+      const r = await api(`/api/orders/${id}/ai-call`, { method: "POST", body: {} });
       load(true);
+      if (r.call_now?.message) alert(r.call_now.message);
     } else if (what === "note") {
       const text = prompt("Бележка към поръчката:", o?.note || "");
       if (text && text.trim()) {

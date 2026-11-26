@@ -76,6 +76,37 @@ export async function ordersToCall(shops: string[], since: string) {
   return rows.map(forAgent);
 }
 
+/**
+ * „📞 Обади се“: ask the phone agent (mitko-obazhdania) to call now, instead of at its next 5-minute run.
+ * It calls a manual request whatever its mode is; /stop and the calling hours still hold. Best effort:
+ * if it does not answer, it still picks the request up within 5 minutes. Returns a line for the user.
+ */
+export async function askAgentToCall(): Promise<{ started: boolean; reason: string; message: string }> {
+  const later = { started: false, reason: "later", message: "Заявката е приета – Александра ще звънне до 5 минути." };
+  const token = env("AGENT_TOKEN") || "";
+  // The agent works only for the company whose Netlify settings it uses.
+  if (token.length < 32 || companyId() !== ENV_COMPANY) return later;
+  const base = (env("AGENT_URL") || "https://mitko-obazhdania.netlify.app").replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}/api/call-now`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(25000) });
+    const r: any = await res.json().catch(() => null);
+    if (!res.ok || !r) return later;
+    if (Number(r.started) > 0) return { started: true, reason: "", message: "📞 Александра звъни на клиента сега." };
+    const reason = String(r.reason || "");
+    const message =
+      reason === "outside hours"
+        ? "Извън часовете за обаждане – Александра ще звънне сутринта, в началото им."
+        : reason === "paused"
+          ? "Обажданията са спрени (/stop в Telegram или CALLS_PAUSED в Netlify) – Александра ще звънне, когато ги пуснеш с /pusni."
+          : reason === "busy"
+            ? "Линията е заета с друг разговор – Александра ще звънне до 5 минути."
+            : later.message;
+    return { started: false, reason: reason || "later", message };
+  } catch {
+    return later;
+  }
+}
+
 export async function orderForAgent(id: number) {
   const o = await one<any>(`${SELECT()} AND o.id = $1`, [id]);
   return o ? forAgent(o) : null;

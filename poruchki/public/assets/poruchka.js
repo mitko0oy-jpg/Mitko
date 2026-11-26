@@ -9,6 +9,11 @@ const id = Number(qs().get("id"));
 const SINGULAR = ONE;
 const SOURCE = { cb: "от магазина", middleware: "от Middleware", own: "създадена от платформата", econt_match: "от Middleware (намерена в Еконт по телефона)", speedy_ref: "от Middleware (намерена в Спиди по номера на поръчката)" };
 const AI = "AI агент";
+// „📞 Обади се“: what happened when it was pressed (shown until the call is over), and the page refreshes itself meanwhile.
+let callMsg = "";
+let callPoll = null;
+let callPolls = 0;
+const CALL_WAIT = { requested: "☎ чака обаждане от Александра", calling: "📞 Александра звъни…" };
 const STEPS = [
   ["new", "Създадена"],
   ["confirmed", "Потвърдена"],
@@ -79,7 +84,7 @@ function render(o) {
         ${
           o.confirmed_at
             ? `<span class="conf ${o.confirmed_by === AI ? "ai" : "us"}" style="margin:0" title="${when(o.confirmed_at)}">${o.confirmed_by === AI ? "🤖 AI потвърдена" : `✓ Потвърдена (${esc(o.confirmed_by || "")})`}</span>`
-            : `<button class="btn primary" id="confirmBtn">✓ Потвърди</button>${o.phone && !["requested", "calling"].includes(o.call?.state) ? `<button class="btn" id="aiBtn">🤖 AI потвърждение</button>` : o.call?.state ? `<span class="conf no">☎ ${o.call.state === "calling" ? "AI звъни…" : "чака AI обаждане"}</span>` : ""}`
+            : `<button class="btn primary" id="confirmBtn">✓ Потвърди</button>${o.phone && !CALL_WAIT[o.call?.state] ? `<button class="btn" id="aiBtn" title="Александра звъни на клиента за потвърждение на поръчката">📞 Обади се</button>` : CALL_WAIT[o.call?.state] ? `<span class="conf no">${CALL_WAIT[o.call.state]}</span>` : ""}`
         }
         <button class="btn" id="smsBtn">SMS</button>
         <button class="btn" id="noteBtn">Бележка</button>
@@ -89,6 +94,7 @@ function render(o) {
     </div>
     ${progress(o)}
     ${dupBox(o)}
+    ${callMsg ? `<div class="note">${esc(callMsg)}</div>` : ""}
     ${o.note ? `<div class="note">📝 ${esc(o.note)}</div>` : ""}
     <div class="grid2">
       <section class="card">
@@ -169,7 +175,32 @@ function render(o) {
     }
   };
   if ($("confirmBtn")) $("confirmBtn").onclick = () => post("confirm");
-  if ($("aiBtn")) $("aiBtn").onclick = () => post("ai-call");
+  if ($("aiBtn"))
+    $("aiBtn").onclick = async () => {
+      const b = $("aiBtn");
+      b.disabled = true;
+      b.textContent = "Свързвам…";
+      try {
+        const r = await api(`/api/orders/${id}/ai-call`, { method: "POST", body: {} });
+        callMsg = r.call_now?.message || "";
+        callPolls = 0;
+        render(r);
+      } catch (e) {
+        alert(e.message);
+        b.disabled = false;
+        b.textContent = "📞 Обади се";
+      }
+    };
+  // While Александра is to call or calling, look again every 15 seconds (up to 15 minutes) to show the result.
+  clearTimeout(callPoll);
+  if (CALL_WAIT[o.call?.state] && callPolls < 60) {
+    callPoll = setTimeout(async () => {
+      callPolls++;
+      try {
+        render(await api(`/api/orders/${id}`));
+      } catch {}
+    }, 15000);
+  } else if (!CALL_WAIT[o.call?.state]) callMsg = "";
   $("noteBtn").onclick = () => {
     const text = prompt("Бележка към поръчката:", o.note || "");
     if (text && text.trim()) post("note", { text });
