@@ -78,6 +78,20 @@ test("Econt label: sender office, COD agreement, order number", () => {
   assert.throws(() => econtLabel(d, order(), { ...DEF.econt, senderOfficeCode: "" }, { client: {}, agreement: null }), /офис на подателя/);
 });
 
+test("Econt „наложен платеж“: the agreement's template, but an agreement „по департамент“ pays to its bank account directly", () => {
+  const d = draftFor(order({ delivery: { type: "office", courier: "econt", officeId: "8501" } }), DEF);
+  const plain = econtLabel(d, order(), DEF.econt, { client: { name: "Ф" }, agreement: "CD1", cd: { num: "CD1", method: "bank" } });
+  assert.equal(plain.services.cdPayOptionsTemplate, "CD1");
+  const dept = econtLabel(d, order(), DEF.econt, {
+    client: { name: "Ф" },
+    agreement: "CD257529",
+    cd: { num: "CD257529", moneyTransfer: false, express: false, method: "bank", IBAN: "BG00TEST00000000000000", BIC: "TESTBGSF", bankCurrency: "EUR", departamentNum: 13107 },
+  });
+  assert.equal(dept.services.cdPayOptionsTemplate, undefined);
+  assert.deepEqual(dept.services.cdPayOptions, { moneyTransfer: false, express: false, method: "bank", IBAN: "BG00TEST00000000000000", BIC: "TESTBGSF", bankCurrency: "EUR" });
+  assert.equal(econtLabel(d, order(), { ...DEF.econt, agreement: false }, { client: { name: "Ф" }, agreement: "CD1" }).services.cdPayOptions, undefined);
+});
+
 test("Econt label: a company sender needs „упълномощено лице“ – from Куриери → Еконт, else the МОЛ", () => {
   const d = draftFor(order({ delivery: { type: "office", courier: "econt", officeId: "8501" } }), DEF);
   const firm = { name: "Фирма ЕООД", juridicalEntity: true, phones: ["+359888000111"], mol: "Иван Иванов" };

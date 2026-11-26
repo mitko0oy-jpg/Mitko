@@ -905,7 +905,8 @@ test("couriers page: Speedy sender objects for the dropdown, sender settings sav
   const r = await api("/api/waybills/clients?courier=speedy");
   assert.equal(r.status, 200, JSON.stringify(r.data));
   assert.deepEqual(r.data.clients, [{ id: "100000000001", name: "БИ ВЕНОМ ЕООД – Склад", address: "Пловдив, ул. Тест 1" }]);
-  assert.deepEqual((await api("/api/waybills/clients?courier=econt")).data.clients, []);
+  // Econt: the account's profiles and „наложен платеж“ agreements (read-only, for Куриери → Еконт).
+  assert.equal((await api("/api/waybills/clients?courier=econt")).data.clients[0].agreements[0].num, "CD123");
   const saved = await api("/api/waybills/settings", { econt: { senderOfficeCode: "1152", weight: "0.7", sms: false } });
   assert.equal(saved.data.defaults.econt.senderOfficeCode, "1152");
   assert.equal(saved.data.defaults.econt.weight, 0.7);

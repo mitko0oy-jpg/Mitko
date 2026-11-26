@@ -301,11 +301,12 @@ async function econt(path: string, creds: Creds, body: Record<string, unknown>) 
 
 async function econtProfile(creds: Creds) {
   const cached = await getSetting<{ at: number; user: string; profile: any }>(cKey("econt_profile"));
-  if (cached && cached.user === creds.user && Date.now() - cached.at < 12 * 3600000) return cached.profile;
+  if (cached && cached.user === creds.user && Date.now() - cached.at < 12 * 3600000 && cached.profile && "cd" in cached.profile) return cached.profile;
   const d = await econt("/Profile/ProfileService.getClientProfiles.json", creds, {});
   const p = d?.profiles?.[0];
   if (!p?.client) throw fail("Еконт: не намерихме профила на подателя.");
-  const profile = { client: p.client, agreement: p.cdPayOptions?.[0]?.num || null };
+  const cd = p.cdPayOptions?.[0] || null;
+  const profile = { client: p.client, agreement: cd?.num || null, cd };
   await setSetting(cKey("econt_profile"), { at: Date.now(), user: creds.user, profile });
   return profile;
 }
@@ -321,7 +322,21 @@ export function econtAgent(def: Defaults["econt"], client: any) {
   return { name, phones: phone ? [phone] : [] };
 }
 
-export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profile: { client: any; agreement: string | null }) {
+/**
+ * Where the „наложен платеж“ money goes. A plain agreement: its template (cheaper). An agreement „по департамент“
+ * (departamentNum) wants an invoice or a packing list with every parcel („данни за фактура или опис за споразумение
+ * по департамент“) – then, as Middleware does, the money goes to the same bank account without the agreement.
+ */
+export function econtPayout(def: Defaults["econt"], profile: { agreement: string | null; cd?: any }) {
+  if (!def.agreement || !profile.agreement) return {};
+  const cd = profile.cd || {};
+  if (!cd.departamentNum) return { cdPayOptionsTemplate: profile.agreement };
+  const { num, departamentNum, ...rest } = cd;
+  const options = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null && v !== "" && typeof v !== "object"));
+  return options.method ? { cdPayOptions: options } : {};
+}
+
+export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profile: { client: any; agreement: string | null; cd?: any }) {
   if (!def.senderOfficeCode) throw fail("Еконт: липсва офис на подателя. Избери го в Куриери → Еконт.");
   const agent = econtAgent(def, profile.client);
   return {
@@ -341,7 +356,7 @@ export function econtLabel(d: Draft, o: OrderRow, def: Defaults["econt"], profil
     shipmentDescription: d.contents,
     orderNumber: String(o.order_no),
     services: {
-      ...(d.cod > 0 ? { cdAmount: d.cod, cdType: "get", cdCurrency: "EUR", ...(def.agreement && profile.agreement ? { cdPayOptionsTemplate: profile.agreement } : {}) } : {}),
+      ...(d.cod > 0 ? { cdAmount: d.cod, cdType: "get", cdCurrency: "EUR", ...econtPayout(def, profile) } : {}),
       smsNotification: def.sms,
     },
     ...(def.payAfterTest ? { payAfterTest: true } : {}),
@@ -735,7 +750,7 @@ export async function clientsFor(courier: string) {
 }
 
 /** The Econt account's profiles and their „наложен платеж“ agreements, for Куриери → Еконт (IBANs shortened). */
-export async function econtProfiles(creds: Creds) {
+export async function econtProfiles(creds: Creds): Promise<any[]> {
   const d = await econt("/Profile/ProfileService.getClientProfiles.json", creds, {});
   const short = (v: unknown) => (typeof v === "string" && v.length > 6 ? `…${v.slice(-4)}` : v);
   return (d?.profiles || []).map((p: any, i: number) => ({
