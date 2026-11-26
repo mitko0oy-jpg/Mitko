@@ -118,7 +118,7 @@ Zadarma позволява на българския номер да звъни 
 
 ## Telegram
 
-Командите са `/stop`, `/pusni`, `/status`, `/test` и `/rezhim test|live|off`. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
+Командите са `/stop`, `/pusni`, `/status`, `/test` и `/rezhim test|live|off`. `CALLS_PAUSED=1` в Netlify (след ново качване) спира изходящите обаждания за поръчки независимо от Telegram – `/pusni` не ги пуска; махаш го и качваш наново. Ботът слуша само чата, който се е регистрирал с `/start <TELEGRAM_SETUP_CODE>`.
 
 ## Променливи в Netlify (отделен проект)
 
