@@ -92,6 +92,8 @@ export async function saveLead(shop: string, l: Lead) {
 export const MATCH = `LEFT JOIN LATERAL (
     SELECT o.id, o.order_no, o.ordered_at, o.total_eur FROM orders o
     WHERE o.shop IN (SELECT id FROM shops WHERE company_id = (SELECT company_id FROM shops WHERE id = l.shop)) AND o.stage <> 'abandoned'
+      -- the lead's own abandoned row, refused with „✕ Откажи“, is not an order of the customer
+      AND (o.lead_id IS DISTINCT FROM l.id OR o.canceled_at IS NULL)
       AND ((l.phone <> '' AND right(regexp_replace(o.phone, '\\D', '', 'g'), 9) = right(regexp_replace(l.phone, '\\D', '', 'g'), 9))
            OR (l.email <> '' AND lower(o.email) = l.email))
       AND o.ordered_at >= l.first_at - interval '30 minutes'

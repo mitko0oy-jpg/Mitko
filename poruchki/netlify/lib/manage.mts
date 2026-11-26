@@ -38,6 +38,28 @@ export async function unconfirmOrder(id: number, userId: number | null) {
   await addEvent(id, "confirm", "Потвърждението е махнато", {}, userId);
 }
 
+/**
+ * „✕ Откажи“: the customer does not want the order (stage „canceled“, kept here – the shop sync does not undo it).
+ * Only before it is sent: a waybill is cancelled first. An abandoned cart leaves „Незавършени“ too.
+ */
+export async function cancelOrder(id: number, reason: string, userId: number | null) {
+  const why = s(reason, 300);
+  const r = await one<any>(
+    "UPDATE orders SET canceled_at = now(), cancel_reason = $2 WHERE id = $1 AND tracking_no IS NULL AND NOT cb_shipped AND parcel_status IS NULL RETURNING lead_id, cb_status",
+    [id, why || null],
+  );
+  if (!r) throw fail("Поръчката вече е изпратена или има товарителница – първо анулирай товарителницата.");
+  if (r.lead_id && r.cb_status === "abandoned") await q("UPDATE leads SET status = 'dismissed' WHERE id = $1", [r.lead_id]);
+  await addEvent(id, "status", `Отказана${why ? ` – ${why}` : ""}`, {}, userId);
+}
+
+export async function uncancelOrder(id: number, userId: number | null) {
+  const r = await one<any>("UPDATE orders SET canceled_at = NULL, cancel_reason = NULL WHERE id = $1 AND canceled_at IS NOT NULL RETURNING lead_id, cb_status", [id]);
+  if (!r) return;
+  if (r.lead_id && r.cb_status === "abandoned") await q("UPDATE leads SET status = 'open' WHERE id = $1", [r.lead_id]);
+  await addEvent(id, "status", "Отказът е махнат", {}, userId);
+}
+
 export async function archiveOrder(id: number, archived: boolean, userId: number | null) {
   await q(`UPDATE orders SET archived_at = ${archived ? "now()" : "NULL"} WHERE id = $1`, [id]);
   await addEvent(id, "archive", archived ? "Поръчката е архивирана" : "Поръчката е върната от архива", {}, userId);

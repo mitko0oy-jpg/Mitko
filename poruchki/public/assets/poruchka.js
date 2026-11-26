@@ -13,6 +13,8 @@ const AI = "AI агент";
 let callMsg = "";
 let callPoll = null;
 let callPolls = 0;
+// „✕ Откажи“: an order not sent yet (no waybill); „Върни“ undoes a refusal made here.
+const canRefuse = (o) => !o.canceled_at && !o.tracking_no && !o.cb_shipped && !o.parcel_status && ["abandoned", "new", "duplicate"].includes(o.stage);
 const CALL_WAIT = { requested: "☎ чака обаждане от Александра", calling: "📞 Александра звъни…" };
 const STEPS = [
   ["new", "Създадена"],
@@ -89,12 +91,14 @@ function render(o) {
         <button class="btn" id="smsBtn">SMS</button>
         <button class="btn" id="noteBtn">Бележка</button>
         <button class="btn" id="dupBtn">Дублирай</button>
+        ${o.canceled_at ? `<button class="btn" id="uncancelBtn" title="Поръчката не е отказана">Махни отказа</button>` : canRefuse(o) ? `<button class="btn danger" id="cancelOrderBtn" title="Клиентът не иска поръчката">✕ Откажи</button>` : ""}
         <button class="btn" id="archBtn">${o.archived_at ? "Върни от архива" : "Архивирай"}</button>
         <button class="btn" id="refresh">Провери пак</button></div>
     </div>
     ${progress(o)}
     ${dupBox(o)}
     ${callMsg ? `<div class="note">${esc(callMsg)}</div>` : ""}
+    ${o.canceled_at ? `<div class="note">✕ Отказана ${when(o.canceled_at)}${o.cancel_reason ? ` – ${esc(o.cancel_reason)}` : ""}</div>` : ""}
     ${o.note ? `<div class="note">📝 ${esc(o.note)}</div>` : ""}
     <div class="grid2">
       <section class="card">
@@ -206,6 +210,12 @@ function render(o) {
     if (text && text.trim()) post("note", { text });
   };
   $("archBtn").onclick = () => post(o.archived_at ? "unarchive" : "archive");
+  if ($("cancelOrderBtn"))
+    $("cancelOrderBtn").onclick = () => {
+      const reason = prompt("Защо е отказана? (може и празно)", "");
+      if (reason !== null) post("cancel-order", { reason });
+    };
+  if ($("uncancelBtn")) $("uncancelBtn").onclick = () => post("uncancel-order");
   $("dupBtn").onclick = async () => {
     if (!confirm("Да направя ли нова поръчка със същия клиент, доставка и продукти?")) return;
     try {

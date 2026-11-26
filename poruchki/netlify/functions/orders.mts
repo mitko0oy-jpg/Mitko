@@ -14,7 +14,7 @@ import { runTracking } from "../lib/track.mts";
 import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
 import { releaseDuplicate } from "../lib/duplicates.mts";
 import { askAgentToCall } from "../lib/agent.mts";
-import { addNote, archiveOrder, confirmOrder, createOrder, duplicateOrder, editContact, unconfirmOrder } from "../lib/manage.mts";
+import { addNote, archiveOrder, cancelOrder, confirmOrder, createOrder, duplicateOrder, editContact, uncancelOrder, unconfirmOrder } from "../lib/manage.mts";
 
 const ACTIVE = "o.stage IN ('abandoned', 'new', 'duplicate', 'prepared', 'shipped', 'at_office')";
 const DONE = "o.stage IN ('delivered', 'returned', 'canceled', 'archived')";
@@ -122,6 +122,7 @@ async function list(u: URLSearchParams) {
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
               o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.office_since, o.courier, o.tracking_no, o.tracking_source,
+              o.canceled_at, o.cancel_reason, o.cb_shipped,
               o.dup_of, o.dup_state, (SELECT d.order_no FROM orders d WHERE d.id = o.dup_of) AS dup_no,
               o.delivery, o.shipping_name, o.items, o.waybill, o.edit IS NOT NULL AS edit,
               o.confirmed_at, o.confirmed_by, o.note, o.call, o.source, o.archived_at, h.n AS other_orders, h.ret AS returned_before,
@@ -439,7 +440,7 @@ export default handle(async (req) => {
     return json({ ...r, order: await detail(id) });
   }
 
-  if (req.method === "POST" && ["confirm", "unconfirm", "note", "contact", "archive", "unarchive", "duplicate", "not-duplicate", "ai-call"].includes(action)) {
+  if (req.method === "POST" && ["confirm", "unconfirm", "note", "contact", "archive", "unarchive", "duplicate", "not-duplicate", "ai-call", "cancel-order", "uncancel-order"].includes(action)) {
     const user = await requireUser(req);
     const b = await body(req);
     const by = user.name || user.email;
@@ -448,6 +449,9 @@ export default handle(async (req) => {
     if (action === "note") await addNote(id, str(b.text, 1000), user.id);
     if (action === "contact") await editContact(id, b, user.id);
     if (action === "archive" || action === "unarchive") await archiveOrder(id, action === "archive", user.id);
+    // „✕ Откажи“ / „Върни“ (like Middleware's status „Отказана“).
+    if (action === "cancel-order") await cancelOrder(id, str(b.reason, 300), user.id);
+    if (action === "uncancel-order") await uncancelOrder(id, user.id);
     if (action === "duplicate") return json(await duplicateOrder(id, user.id, by));
     // Held as a duplicate, but it is a real second order: it goes on as new.
     if (action === "not-duplicate" && !(await releaseDuplicate(id, user.id))) throw bad("not_held", "Поръчката не е задържана като дублирана.");

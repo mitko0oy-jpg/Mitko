@@ -201,6 +201,8 @@ function moreMenu(o) {
   if (o.tracking_no && (c === "speedy" || c === "econt")) items.push(["print", "Печат на етикета"]);
   if (canCancel(o)) items.push(["cancel", "Анулирай товарителницата"]);
   if (canRedirect(o)) items.push(["redirect", officeDay(o) >= 5 ? "↪ Пренасочи (скоро се връща)" : "↪ Пренасочи пратката"]);
+  if (o.canceled_at) items.push(["uncancel-order", "Махни отказа"]);
+  else if (!o.tracking_no && !o.cb_shipped && !o.parcel_status && ["abandoned", "new", "duplicate"].includes(o.stage)) items.push(["cancel-order", "✕ Откажи поръчката"]);
   items.push(["duplicate", "Дублирай"]);
   if (o.stage === "duplicate") items.unshift(["not-duplicate", "✓ Не е дубликат"]);
   items.push(o.archived_at ? ["unarchive", "Върни от архива"] : ["archive", "Архивирай"]);
@@ -466,6 +468,15 @@ async function act(what, id, btn) {
       const r = await api(`/api/orders/${id}/ai-call`, { method: "POST", body: {} });
       load(true);
       if (r.call_now?.message) alert(r.call_now.message);
+    } else if (what === "cancel-order") {
+      const reason = prompt("Защо е отказана? (може и празно)", "");
+      if (reason !== null) {
+        await api(`/api/orders/${id}/cancel-order`, { method: "POST", body: { reason } });
+        load(true);
+      }
+    } else if (what === "uncancel-order") {
+      await api(`/api/orders/${id}/uncancel-order`, { method: "POST", body: {} });
+      load(true);
     } else if (what === "note") {
       const text = prompt("Бележка към поръчката:", o?.note || "");
       if (text && text.trim()) {

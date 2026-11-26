@@ -2048,3 +2048,42 @@ test("Табло: the day as it ended – parcels taken, sent and sent back that
     await db.end();
   }
 });
+
+test("✕ Откажи: an abandoned cart and a shop order become „Отказана“, the sync keeps it; „Махни отказа“ undoes it", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    await fetch(`${B}/api/collect`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` },
+      body: JSON.stringify({ sid: "aband00020", name: "Христо Цветков", phone: "0887 222 333", cart: ["Гел · 1 · 23,90 €"], total: "28,80 €" }),
+    });
+    await db.query("UPDATE leads SET last_at = now() - interval '25 minutes', first_at = now() - interval '30 minutes' WHERE sid = 'aband00020'");
+    await api("/api/settings/sync", {});
+    const cart = (await api("/api/orders?tab=&stage=abandoned")).data.orders.find((o) => o.phone === "0887 222 333");
+    assert.ok(cart);
+    const c = await api(`/api/orders/${cart.id}/cancel-order`, { reason: "не иска" });
+    assert.equal(c.status, 200, JSON.stringify(c.data));
+    assert.equal(c.data.stage, "canceled");
+    assert.equal(c.data.cancel_reason, "не иска");
+    assert.ok(c.data.events.some((e) => /Отказана – не иска/.test(e.text)));
+    assert.ok((await api("/api/leads?tab=hidden")).data.leads.some((l) => l.phone === "0887 222 333"), "out of „Незавършени“");
+    await api("/api/settings/sync", {});
+    assert.equal((await api(`/api/orders/${cart.id}`)).data.stage, "canceled", "the sync keeps it");
+
+    // A shop order: the shop still says „pending“, OrderDesk keeps „Отказана“.
+    const shop = (await api("/api/orders?tab=&stage=new")).data.orders.find((o) => !o.tracking_no && o.shop === "bg" && o.order_no !== cart.order_no);
+    assert.ok(shop);
+    assert.equal((await api(`/api/orders/${shop.id}/cancel-order`, {})).data.stage, "canceled");
+    await api("/api/settings/sync", {});
+    assert.equal((await api(`/api/orders/${shop.id}`)).data.stage, "canceled");
+    assert.equal((await api(`/api/orders/${shop.id}/uncancel-order`, {})).data.stage, "new");
+
+    // Sent already: first the waybill is cancelled.
+    const sentOne = (await api("/api/orders?tab=&stage=shipped")).data.orders[0];
+    if (sentOne) assert.equal((await api(`/api/orders/${sentOne.id}/cancel-order`, {})).status, 400);
+  } finally {
+    await db.end();
+  }
+});
