@@ -14,6 +14,7 @@ import { runTracking } from "../lib/track.mts";
 import { addEvent, editOrder, resetOrder } from "../lib/edit.mts";
 import { releaseDuplicate } from "../lib/duplicates.mts";
 import { askAgentToCall } from "../lib/agent.mts";
+import { importMwPage } from "../lib/mw-import.mts";
 import { addNote, archiveOrder, cancelOrder, confirmOrder, createOrder, duplicateOrder, editContact, uncancelOrder, unconfirmOrder } from "../lib/manage.mts";
 
 const ACTIVE = "o.stage IN ('abandoned', 'new', 'duplicate', 'prepared', 'shipped', 'at_office')";
@@ -429,6 +430,19 @@ export default handle(async (req) => {
       await setSetting(key, saved);
     }
     return json({ saved });
+  }
+  // One-time import of the orders that are only in Middleware (owner only; one page of 100 per call).
+  if (req.method === "POST" && idStr === "import-mw") {
+    const user = await requireUser(req, ["admin"]);
+    const b = await body(req);
+    const stores: Record<string, string> = {};
+    for (const [k, v] of Object.entries(b?.stores && typeof b.stores === "object" ? b.stores : {})) stores[str(k, 60)] = str(v, 20);
+    const page = Math.max(1, Math.min(1000, Number(b?.page) || 1));
+    try {
+      return json(await importMwPage({ page, per: Number(b?.per) || 100, tenant: str(b?.tenant, 60), stores, dry: b?.dry !== false, by: user.name || user.email, userId: user.id }));
+    } catch (e: any) {
+      throw bad("import", e.message);
+    }
   }
   // A new order made by hand.
   if (req.method === "POST" && !idStr) {

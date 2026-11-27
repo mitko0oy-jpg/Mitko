@@ -18,6 +18,8 @@ const DAY_SQL = `((now() AT TIME ZONE 'Europe/Sofia')::date - (o.office_since AT
 /** Not when someone already wrote to the client in the last 20 hours (by hand or another reminder). */
 const NOT_TODAY = `NOT EXISTS (SELECT 1 FROM order_events e WHERE e.order_id = o.id AND e.kind = 'sms' AND e.at > now() - interval '20 hours')`;
 const OUR_COURIERS = `o.courier IN ('speedy', 'econt')`;
+// Orders brought over from Middleware: their customers were already handled there – no automatic SMS.
+const NOT_IMPORTED = `o.source <> 'middleware'`;
 
 export function quietNow() {
   const [from, to] = (env("REMINDER_HOURS") || "9-21").split("-").map(Number);
@@ -64,7 +66,7 @@ export async function runOfficeReminders(deadline: number) {
     const rows = await q<any>(
       `SELECT o.*, s.label AS shop_label, ${DAY_SQL} AS office_day, floor(extract(epoch FROM o.office_since))::bigint AS since
          FROM orders o JOIN shops s ON s.id = o.shop
-        WHERE ${inCompany("o.shop")} AND o.stage = 'at_office' AND o.parcel_status = 'at_office' AND o.office_since IS NOT NULL
+        WHERE ${inCompany("o.shop")} AND ${NOT_IMPORTED} AND o.stage = 'at_office' AND o.parcel_status = 'at_office' AND o.office_since IS NOT NULL
           AND coalesce(o.phone, '') <> '' AND ${DAY_SQL} BETWEEN $1 AND $2
           AND NOT EXISTS (SELECT 1 FROM order_events e WHERE e.order_id = o.id AND e.kind = 'sms' AND e.info->>'auto' = $3
                              AND e.info->>'since' = floor(extract(epoch FROM o.office_since))::bigint::text)
@@ -95,7 +97,7 @@ export async function runShippedSms(deadline: number) {
   const rows = await q<any>(
     `SELECT o.*, s.label AS shop_label
        FROM orders o JOIN shops s ON s.id = o.shop
-      WHERE ${inCompany("o.shop")} AND o.stage = 'shipped' AND o.parcel_status = 'in_transit' AND ${OUR_COURIERS}
+      WHERE ${inCompany("o.shop")} AND ${NOT_IMPORTED} AND o.stage = 'shipped' AND o.parcel_status = 'in_transit' AND ${OUR_COURIERS}
         AND o.tracking_no IS NOT NULL AND coalesce(o.phone, '') <> '' AND o.archived_at IS NULL
         AND coalesce(o.sent_at, o.ordered_at) > now() - interval '3 days'
         AND NOT EXISTS (SELECT 1 FROM order_events e WHERE e.order_id = o.id AND e.kind = 'sms'
@@ -141,7 +143,7 @@ export async function runReorderReminders(deadline: number) {
     `SELECT o.*, s.label AS shop_label, s.domain AS shop_domain,
             floor(extract(epoch FROM now() - ${DELIVERED_AT}) / 86400)::int AS days_since
        FROM orders o JOIN shops s ON s.id = o.shop
-      WHERE ${inCompany("o.shop")} AND o.stage = 'delivered' AND ${OUR_COURIERS} AND coalesce(o.phone, '') <> ''
+      WHERE ${inCompany("o.shop")} AND ${NOT_IMPORTED} AND o.stage = 'delivered' AND ${OUR_COURIERS} AND coalesce(o.phone, '') <> ''
         AND ${DELIVERED_AT} < now() - make_interval(days => $1) AND ${DELIVERED_AT} > now() - make_interval(days => $2)
         AND NOT EXISTS (SELECT 1 FROM orders n WHERE n.id <> o.id AND right(regexp_replace(n.phone, '\\D', '', 'g'), 9) = right(regexp_replace(o.phone, '\\D', '', 'g'), 9)
                          AND n.ordered_at > o.ordered_at AND n.stage NOT IN ('abandoned', 'duplicate') AND n.shop IN (SELECT id FROM shops WHERE company_id = s.company_id))

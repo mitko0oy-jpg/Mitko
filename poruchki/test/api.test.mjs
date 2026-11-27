@@ -15,6 +15,24 @@ const COURIER_PORT = PORT + 1200;
 const B = `http://localhost:${PORT}`;
 const now = Math.floor(Date.now() / 1000);
 
+// ---- fake Middleware (the one-time import) ----
+const mwAddress = (phone) => [{ type: "shipping", for: "office", for_id: "247", courier: "dpd-courier", name: "Анелия Христова", city: "Плевен", postal_code: "5800", country_iso2: "BG",
+  address1: "До офис dpd[247]: Плевен - ПЛЕВЕН - ХАДЖИ ДИМИТЪР (УЛ.) - ул. Хаджи Димитър No 52", phone }];
+const mwOrder = (extra) => ({
+  id: "mw-" + extra.sn, store_id: "store-bg", external_id: null, label: "0", is_confirmed: "yes", is_archived: false, status_key: "completed", paid: "no", payment_name: "cod", currency: "EUR",
+  tracking_number: null, ordered_at: new Date(Date.now() - 20 * 86400000).toISOString(), updated_at: new Date(Date.now() - 15 * 86400000).toISOString(), meta: {},
+  addresses: mwAddress("+359886552047"), items: [{ name: "BeeVenom Care Gel", quantity: 2, price: 1450 }],
+  totals: [{ key: "subtotal", value: "2900" }, { key: "shipping", value: "490" }, { key: "total", value: "3390" }],
+  status_history: [], fulfillment: { carrier: "dpd-courier" }, store: { name: "BeeVenom" }, ...extra,
+});
+const mwOrders = [
+  mwOrder({ sn: 9001, tracking_number: "63800000001", fulfillment: { carrier: "dpd-courier", waybill_number: "63800000001" } }), // made in Middleware, delivered
+  mwOrder({ sn: 9002, external_id: "1", label: "5001" }), // the shop's order 1 – already here
+  mwOrder({ sn: 9003, external_id: "777", label: "9777", status_key: "cancelled" }), // a shop order the shop no longer gives
+  mwOrder({ sn: 9004, status_key: "abounded", addresses: mwAddress("+359886000111") }), // an old abandoned cart
+  mwOrder({ sn: 9005, store_id: "store-other" }), // a store we did not ask for
+];
+
 // ---- fake shop ----
 const orders = [];
 const hooks = [];
@@ -122,6 +140,12 @@ const courier = createServer((req, res) => {
     const json = (x) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(x));
     switch (u.pathname) {
       // The phone agent (mitko-obazhdania): „📞 Обади се“ starts the call at once.
+      // Middleware (only for the one-time import of the orders that are only there).
+      case "/mw/orders": {
+        if (req.headers.authorization !== "Bearer mw-token" || req.headers["x-tenant-id"] !== "tenant-1") return res.writeHead(401).end("{}");
+        const page = Number(u.searchParams.get("page")) || 1;
+        return json({ data: page === 1 ? mwOrders : [], meta: { total: mwOrders.length, last_page: 1, per_page: 100 } });
+      }
       case "/agent/api/call-now":
         if (req.headers.authorization !== "Bearer agent-token-agent-token-agent-token-0000") return res.writeHead(404).end("not found");
         return json({ ok: true, added: 1, started: 1, skipped: 0, stale: 0, reason: "" });
@@ -238,6 +262,7 @@ test.before(async () => {
       EMAIL_API_URL: `http://127.0.0.1:${COURIER_PORT}/email`, REMINDER_HOURS: "0-24", PRINT_DB: "1",
       NEKOREKTEN_URL: `http://127.0.0.1:${COURIER_PORT}/nek`, NEKOREKTEN_KEY: "",
       CLARITY_API_URL: `http://127.0.0.1:${COURIER_PORT}/clarity`,
+      MW_TOKEN: "mw-token", MW_API_URL: `http://127.0.0.1:${COURIER_PORT}/mw`,
       SHIPPING_DEFAULTS: JSON.stringify({ speedy: { clientId: 100000000001, dropoffOfficeId: 301 }, econt: { senderOfficeCode: "1152" } }),
       CB_SITES: JSON.stringify([
         { id: "bg", label: "Тест BG", domain: `127.0.0.1:${SHOP_PORT}`, key: "test-key" },
@@ -2092,4 +2117,41 @@ test("✕ Откажи: an abandoned cart and a shop order become „Отказ�
   } finally {
     await db.end();
   }
+});
+
+test("Middleware: the one-time import adds only what is missing, once", async () => {
+  const stores = { "store-bg": "bg" };
+  const dry = await api("/api/orders/import-mw", { page: 1, tenant: "tenant-1", stores, dry: true });
+  assert.equal(dry.status, 200, JSON.stringify(dry.data));
+  assert.equal(dry.data.seen, 5);
+  assert.equal(dry.data.added, 3);
+  assert.equal(dry.data.skipped["вече е в OrderDesk"], 1);
+  assert.equal(dry.data.skipped["друг магазин"], 1);
+  assert.equal((await api("/api/orders?tab=&q=MW9001")).data.orders.length, 0, "the dry run writes nothing");
+
+  const run = await api("/api/orders/import-mw", { page: 1, tenant: "tenant-1", stores, dry: false });
+  assert.equal(run.status, 200, JSON.stringify(run.data));
+  assert.equal(run.data.added, 3);
+  const again = await api("/api/orders/import-mw", { page: 1, tenant: "tenant-1", stores, dry: false });
+  assert.equal(again.data.added, 0, "a second run adds nothing");
+
+  const made = (await api("/api/orders?tab=&q=MW9001")).data.orders[0];
+  assert.ok(made, "the order made in Middleware is here");
+  assert.equal(made.stage, "delivered");
+  assert.equal(made.total, 33.9);
+  assert.equal(made.tracking_no, "63800000001");
+  const d = (await api(`/api/orders/${made.id}`)).data;
+  assert.equal(d.source, "middleware");
+  assert.equal(d.delivery.officeId, "247");
+  assert.ok(d.events.some((e) => /Внесена от Middleware \(№ 9001/.test(e.text)));
+
+  const fromShop = (await api("/api/orders?tab=&q=9777")).data.orders.find((o) => o.order_no === "9777");
+  assert.equal(fromShop?.stage, "canceled");
+  const cart = (await api("/api/orders?tab=&archived=1&stage=abandoned")).data.orders.find((o) => o.order_no === "MW9004");
+  assert.ok(cart, "the old cart is put away");
+
+  // Not for staff, and a wrong key is said plainly.
+  const bad = await api("/api/orders/import-mw", { page: 1, tenant: "nope", stores, dry: true });
+  assert.equal(bad.status, 400);
+  assert.match(bad.data.error?.message || bad.data.message || JSON.stringify(bad.data), /401/);
 });

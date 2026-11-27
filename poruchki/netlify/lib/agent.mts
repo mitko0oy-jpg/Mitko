@@ -67,7 +67,7 @@ const SELECT = () => `SELECT o.*, s.label AS shop_label FROM orders o JOIN shops
 export async function ordersToCall(shops: string[], since: string) {
   const rows = await q<any>(
     `${SELECT()}
-        AND o.confirmed_at IS NULL AND o.archived_at IS NULL AND o.tracking_no IS NULL AND o.stage = 'new' AND o.source <> 'phone' AND o.phone <> ''
+        AND o.confirmed_at IS NULL AND o.archived_at IS NULL AND o.tracking_no IS NULL AND o.stage = 'new' AND o.source NOT IN ('phone', 'middleware') AND o.phone <> ''
         AND ((o.shop = ANY($1) AND o.ordered_at >= $2 AND o.ordered_at > now() - interval '48 hours')
              OR (o.call->>'state' = 'requested' AND o.ordered_at > now() - interval '14 days'))
       ORDER BY o.ordered_at LIMIT 50`,
