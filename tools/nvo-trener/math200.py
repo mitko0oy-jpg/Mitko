@@ -3,6 +3,7 @@
     python3 -I tools/nvo-trener/math200.py <out-folder> private/mat/g5.json private/mat/g6.json private/mat/g7.json
     python3 -I tools/nvo-trener/math_nvo.py <out-folder> --out add.json --review преглед.html
     node scripts/admin.mjs trener-bank-add add.json      (the modules go in as drafts: only „преглед…“ codes see them)
+    python3 -I tools/nvo-trener/math200.py --pdf pdf-content.json private/mat/g5.json …   (input for scripts/quiz-pdf)
 
 Source (paid content, outside git): {"parts": [{"id": "5a", "grade": 5, "title": "…", "tasks": [task…]}]},
 task = {n, lv (0 Знам, 1 Разбирам, 2 Мисля), q, o: [right, wrong×3], h (hint), s: [{do, why}], a, trap, card, t}.
@@ -39,6 +40,50 @@ def sol(t):
             f'<p><small>Преговори: карта {t["card"]:02d} – {m(t["t"])}</small></p>')
 
 
+def _seeded(seed):
+    h = 2166136261
+    for ch in str(seed):
+        h = ((h ^ ord(ch)) * 16777619) & 0xFFFFFFFF
+    def nxt():
+        nonlocal h
+        h = ((h ^ (h >> 15)) * 2246822507) & 0xFFFFFFFF
+        return h
+    return nxt
+
+
+def _shuffled(items, seed):
+    nxt, a = _seeded(seed), list(items)
+    for i in range(len(a) - 1, 0, -1):
+        j = nxt() % (i + 1)
+        a[i], a[j] = a[j], a[i]
+    return a
+
+
+def option_order(n):
+    """Fixed order of the 4 options of task n in the PDF (index 0 = the right one). Every 4 consecutive tasks put the
+    right answer once on each of А, Б, В, Г. Never change it: printed and sent copies must keep their letters."""
+    right = _shuffled([0, 1, 2, 3], f"b{(n - 1) // 4}")[(n - 1) % 4]
+    wrong = _shuffled([1, 2, 3], f"w{n}")
+    wrong.insert(right, 0)
+    return wrong
+
+
+def pdf_content(out, files):
+    parts, questions = [], []
+    for f in files:
+        for part in json.load(open(f, encoding="utf8"))["parts"]:
+            pid = f"mat-{part['id']}"
+            parts.append({"id": pid, "grade": part["grade"], "title": part["title"]})
+            for t in part["tasks"]:
+                order = option_order(t["n"])
+                questions.append({"n": t["n"], "part": pid, "grade": part["grade"], "subject": "Математика", "level": t["lv"] + 1,
+                                  "q": t["q"], "options": [t["o"][i] for i in order], "correct": order.index(0), "hint": t["h"],
+                                  "steps": t["s"], "answer": t["a"], "trap": t["trap"], "card": t["card"],
+                                  "review": f"Карта {t['card']:02d} · {t['t']}"})
+    json.dump({"parts": parts, "questions": questions}, open(out, "w", encoding="utf8"), ensure_ascii=False, indent=1)
+    print(f"{len(questions)} задачи → {out}")
+
+
 def main(out, files):
     os.makedirs(out, exist_ok=True)
     modules, k = [], 0
@@ -68,4 +113,7 @@ def main(out, files):
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         sys.exit(__doc__)
-    main(sys.argv[1], sys.argv[2:])
+    if sys.argv[1] == "--pdf":
+        pdf_content(sys.argv[2], sys.argv[3:])
+    else:
+        main(sys.argv[1], sys.argv[2:])

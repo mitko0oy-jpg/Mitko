@@ -9,3 +9,6 @@ private/
 content/
 *.pdf
 *.docx
+# Fonts downloaded by scripts/quiz-pdf (OFL, fetched on demand).
+scripts/quiz-pdf/.fonts/
+__pycache__/
