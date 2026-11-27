@@ -1071,10 +1071,24 @@ def layout_question(d, q, color=None):
     return None
 
 
-def q_top(d, p, q, wd):
+def q_top(d, p, q, wd, second=False):
     q_header(d, p, q)
     name, pts, col = LEVELS[q['level']]
     title = f"{wd['Item']} {q['num']:03d}"
+    if second:  # втори опит: ясен чип „Втори опит“ вместо чипа с точките
+        x = 336
+        chips = [('Втори опит', C['navy'], C['card'], None, 9.3)]
+        if q.get('adv'):
+            chips.append(('За напреднали', C['card'], C['trap_ink'], C['gold'], 8.6))
+        for label_, fill, ink, stroke, size in chips:
+            w = pdfmetrics.stringWidth(label_, SANS_SB, size) + 24
+            x -= w
+            d.rrect(x, 512, w, 22, 11, fill=fill, stroke=stroke, lw=.8)
+            d.text(x + w / 2, 520.37 + (9.3 - size) * .25, label_, SANS_SB, size, ink, align='center')
+            x -= 6
+        size = min(25, (x - 4 - 24) / pdfmetrics.stringWidth(title, SERIF_B, 1))
+        d.text(24, 517.5, title, SERIF_B, size, C['ink'])
+        return
     if q.get('adv'):  # „За напреднали“ – дискретен чип до чипа за нивото
         lt = f'{name} · {pts}'
         lw = pdfmetrics.stringWidth(lt, SANS_SB, 9.3) + 22
@@ -1100,14 +1114,17 @@ def passage_box(d, pp, top, pad=10):
     pp.drawOn(d.c, 41, top - pad - pp.height_)
 
 
-def option_target(q, k):
-    """Верният отговор води към „Вярно!“; грешните – към подсказката (h) или към старата страница (w)."""
+def option_target(q, k, second=False):
+    """Първи опит: верният -> „Вярно!“ (c), грешните -> подсказката (h) или старата страница (w).
+    Втори опит: верният -> „Вярно от втория опит!“ (v), грешните -> решението/обяснението (s)."""
+    if second:
+        return f"v{q['num']}" if k == q['correct'] else f"s{q['num']}"
     if k == q['correct']:
         return f"c{q['num']}"
     return f"h{q['num']}" if q.get('_flow') else f"w{q['num']}"
 
 
-def draw_options(d, q, plan):
+def draw_options(d, q, plan, second=False):
     gap = plan['gap']
     if plan.get('grid'):
         rh = plan['rows'][0]
@@ -1121,7 +1138,7 @@ def draw_options(d, q, plan):
             d.rrect(bx + 10, cy - 13.5, 27, 27, 8, fill=C['navy'])
             d.text(bx + 23.5, cy - 3.16, 'АБВГ'[k], SANS_SB, 13, C['card'], align='center')
             op.drawOn(d.c, bx + 46, cy - op.height_ / 2)
-            d.link(option_target(q, k), bx, by, cw, rh)
+            d.link(option_target(q, k, second), bx, by, cw, rh)
         return
     y = 97 + sum(h for _, h in plan['ops']) + gap * (len(plan['ops']) - 1)
     for k, (op, h) in enumerate(plan['ops']):
@@ -1131,18 +1148,19 @@ def draw_options(d, q, plan):
         d.rrect(36, cy - 13.5, 27, 27, 8, fill=C['navy'])
         d.text(49.5, cy - 3.16, 'АБВГ'[k], SANS_SB, 13, C['card'], align='center')
         op.drawOn(d.c, 72, cy - op.height_ / 2)
-        d.link(option_target(q, k), 24, by, 312, h)
+        d.link(option_target(q, k, second), 24, by, 312, h)
         y = by - gap
 
 
-def page_question(d, p, q, next_key, wd):
+def page_question(d, p, q, next_key, wd, second=False):
+    """Страницата с въпроса; second – вторият опит (ключ r…, без точки, верният -> v, грешните -> s)."""
     plan = layout_question(d, q, p['color'])
     if plan is None:
         if not q.get('passage') or q.get('passage_style') == 'formula':
             raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
-        return page_question_split(d, p, q, next_key, wd)
-    d.start(f"q{q['num']}")
-    q_top(d, p, q, wd)
+        return page_question_split(d, p, q, next_key, wd, second)
+    d.start(f"{'r' if second else 'q'}{q['num']}")
+    q_top(d, p, q, wd, second)
     q['_scale'] = plan['scale']
     qp, qy = plan['qp']
     qp.drawOn(d.c, 24, qy)
@@ -1152,13 +1170,13 @@ def page_question(d, p, q, next_key, wd):
     if 'fig' in plan:
         draw, top = plan['fig']
         draw(top)
-    draw_options(d, q, plan)
+    draw_options(d, q, plan, second)
     d.button(24, 37, 110, 41, 'Части', 'light', link=p.get('menu', 'menu'), size=12, center=True)
     d.button(146, 37, 190, 41, 'Пропусни', 'dark', link=next_key)
     d.finish()
 
 
-def page_question_split(d, p, q, next_key, wd):
+def page_question_split(d, p, q, next_key, wd, second=False):
     """Дълъг откъс: въпросът и откъсът на една или няколко страници, отговорите – на следващата."""
     qp = d.rich(q['q'], 15, 15 * 1.32, 312, SANS_SB)
     pp = passage_rich(d, q, 12.4)
@@ -1169,10 +1187,11 @@ def page_question_split(d, p, q, next_key, wd):
     if opt_plan is None:
         raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
     q['_scale'] = ('split', len(chunks))
-    keys = [f"q{q['num']}"] + [f"q{q['num']}_{k}" for k in range(2, len(chunks) + 2)]
+    pre = 'r' if second else 'q'
+    keys = [f"{pre}{q['num']}"] + [f"{pre}{q['num']}_{k}" for k in range(2, len(chunks) + 2)]
     for ci, ch in enumerate(chunks):
         d.start(keys[ci])
-        q_top(d, p, q, wd)
+        q_top(d, p, q, wd, second)
         if ci == 0:
             qp.drawOn(d.c, 24, 495 - qp.height_)
             passage_box(d, ch, first_top)
@@ -1185,13 +1204,13 @@ def page_question_split(d, p, q, next_key, wd):
                  link=keys[ci + 1], size=12.5)
         d.finish()
     d.start(keys[-1])
-    q_top(d, p, q, wd)
+    q_top(d, p, q, wd, second)
     qp2, qy = opt_plan['qp']
     qp2.drawOn(d.c, 24, qy)
     if 'fig' in opt_plan:
         draw, top = opt_plan['fig']
         draw(top)
-    draw_options(d, q, opt_plan)
+    draw_options(d, q, opt_plan, second)
     d.button(24, 37, 96, 41, 'Откъсът', 'light', link=keys[0], size=12, center=True)
     d.button(128, 37, 86, 41, 'Части', 'light', link=p.get('menu', 'menu'), size=12, center=True)
     d.button(222, 37, 114, 41, 'Пропусни', 'dark', link=next_key, size=12.5)
@@ -1261,8 +1280,10 @@ def page_correct(d, p, q, next_key, is_last, wd):
 
 
 def page_wrong(d, p, q, next_key, is_last, wd):
-    if q.get('_flow'):  # подсказка (h) и неутрално решение (s)
+    if q.get('_flow'):  # подсказка (h) -> втори опит (r) -> „Вярно от втория опит!“ (v) или решение (s)
         page_hint(d, p, q, wd)
+        page_question(d, p, q, next_key, wd, second=True)
+        page_second_right(d, p, q, next_key, is_last, wd)
         return solution_pages(d, p, q, next_key, is_last, wd, 's')
     if q.get('steps'):
         return solution_pages(d, p, q, next_key, is_last, wd, 'w')
@@ -1489,16 +1510,36 @@ def page_hint(d, p, q, wd):
     hh = hp.height_ + 30
     d.card(24, P1_TOP - hh, 312, hh, fill=C['hint_box'])
     hp.drawOn(d.c, CX, P1_TOP - 15 - hp.height_)
-    note = ('Реши задачата отново на лист, като използваш подсказката. Ако пак не се получи, '
-            'виж решението стъпка по стъпка.' if math_mode else
-            'Прочети въпроса отново, като използваш подсказката. Ако пак не се получи, виж обяснението.')
+    note = ('Реши задачата отново на лист, като използваш подсказката. Имаш още един опит.' if math_mode else
+            'Прочети въпроса отново, като използваш подсказката. Имаш още един опит.')
     np_ = d.rich(note, 11.5, 16, 312, SANS, C['muted'])
     np_.drawOn(d.c, 24, P1_TOP - hh - 20 - np_.height_)
-    if P1_TOP - hh - 20 - np_.height_ < 160:
+    if P1_TOP - hh - 20 - np_.height_ < 100:
         d.overflow.add(f"подсказката на {q['num']} не се побира")
-    d.button(24, 98, 312, 46, 'Опитай пак', 'gold', link=f"q{q['num']}", size=13.5)
-    d.button(24, 38, 312, 46, 'Покажи решението' if math_mode else 'Покажи обяснението', 'dark',
+    d.button(24, 38, 312, 46, 'Опитай пак', 'gold', link=f"r{q['num']}", size=13.5)
+    d.finish()
+
+
+def page_second_right(d, p, q, next_key, is_last, wd):
+    """Вярно от втория опит: без точки; „Виж решението“ и следващата задача."""
+    math_mode = bool(q.get('steps'))
+    d.start(f"v{q['num']}")
+    q_header(d, p, q)
+    d.circle(180, 462, 34, fill=C['green_halo'])
+    d.circle(180, 466, 34, fill=C['green'])
+    d.line(165, 466, 176, 455, C['card'], 3)
+    d.line(176, 455, 196, 477, C['card'], 3)
+    title = 'Вярно от втория опит!'
+    size = min(27, 300 / pdfmetrics.stringWidth(title, SERIF_B, 1))
+    d.text(180, 384, title, SERIF_B, size, C['green'], align='center')
+    d.text(180, 356, 'Точки се дават само при първия опит.', SANS_SB, 12.5, C['muted'], align='center')
+    msg = ('Браво, че опита пак! Виж решението, за да провериш пътя си.' if math_mode else
+           'Браво, че опита пак! Виж обяснението, за да провериш защо.')
+    mp = d.rich(msg, 11.5, 16, 280, SANS, C['muted'])
+    mp.drawOn(d.c, 40, 330 - mp.height_)
+    d.button(24, 98, 312, 46, 'Виж решението' if math_mode else 'Виж обяснението', 'light',
              link=f"s{q['num']}", size=13.5)
+    d.button(24, 38, 312, 46, 'Към края на частта' if is_last else wd['next'], 'dark', link=next_key, size=13.5)
     d.finish()
 
 
@@ -1671,13 +1712,13 @@ def texts(content, parts, total):
                 (1, 'Запазете файла', 'Изпратете го на телефона или таблета на детето и го запазете. След това може да се използва и без интернет.', 12.4),
                 (2, 'Отворете като PDF', 'Ако бутоните не реагират в чата, отворете файла с PDF четец, например Adobe Acrobat Reader.', 12.4),
                 (3, 'Изберете подходящия клас', f'{grade_txt}. Точките и титлата се броят отделно за всяка част. Задачите са полезни и за НВО.', 12.0),
-                (4, 'Дайте лист и молив', 'Детето решава задачата на лист и после избира отговор. При грешка вижда подсказка и може да опита пак или да види решението.', 12.4),
+                (4, 'Дайте лист и молив', 'Детето решава на лист и после избира отговор. При грешка вижда подсказка и опитва пак; след втора грешка вижда решението.', 12.4),
             ],
             howto=[
                 (1, 'Избери част', 'Намери своя клас и натисни „Започни“. „Части“ връща менюто.', 12.0),
                 (2, 'Реши на лист', 'Първо реши задачата на лист. После докосни отговора, който получи.', 12.0),
                 ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. Точките и титлата се броят отделно за всяка част.', 11.6),
-                (3, 'Сгреши ли – виж подсказката', 'После избери „Опитай пак“, за да решиш отново, или „Покажи решението“ – стъпка по стъпка.', 12.0),
+                (3, 'Сгреши ли – имаш втори опит', 'Прочети подсказката и натисни „Опитай пак“. След втора грешка ще видиш решението стъпка по стъпка.', 12.0),
                 (4, 'Преговори с картите', 'Всяка задача сочи карта от кутията „Еду БЕЛ – Математика“. В края на частта виж титлата си.', 12.0),
             ],
             howto_gap=27,
@@ -1759,11 +1800,11 @@ def texts_bel_parts(content, parts, total, subjects, by_grade, grade_txt):
     else:
         eyebrow = f'ИНТЕРАКТИВЕН ПРЕГОВОР · {sub_word.upper()}'
     if by_grade:
-        step3 = ('Изберете подходящия клас', f'{grade_txt}. Въпросите са за преговор по {sub_word}.')
+        step3 = ('Изберете подходящия клас', f'{grade_txt}. Точките и титлата се броят отделно за всяка част.')
         pick = 'Намери своя клас и натисни „Започни“. „Части“ връща менюто.'
     else:
         step3 = ('Изберете част', f'Материалът има {len(parts)} части – всяка е отделна тема. Започнете с темата, '
-                                  'която детето учи сега, или вървете поред.')
+                                  'която детето учи сега. Точките и титлата се броят отделно за всяка част.')
         pick = 'Избери тема и натисни „Започни“. „Части“ връща менюто.'
     return dict(
         wd=wd, title=f'{title} – интерактивен PDF | Еду БЕЛ', label=f'{total} ВЪПРОСА',
@@ -1772,13 +1813,13 @@ def texts_bel_parts(content, parts, total, subjects, by_grade, grade_txt):
             (1, 'Запазете файла', 'Изпратете го на телефона или таблета на детето и го запазете. След това може да се използва и без интернет.', 12.4),
             (2, 'Отворете като PDF', 'Ако бутоните не реагират в чата, отворете файла с PDF четец, например Adobe Acrobat Reader.', 12.4),
             (3, step3[0], step3[1], 12.0),
-            (4, 'Отделяйте по 10 минути', 'Около 10 въпроса на ден са достатъчни. Обсъдете грешките и прочетете обясненията заедно.', 12.4),
+            (4, 'Отделяйте по 10 минути', 'Около 10 въпроса на ден са достатъчни. При грешка детето вижда подсказка и опитва пак; след втора грешка – обяснението.', 12.4),
         ],
         howto=[
             (1, 'Избери част', pick, 12.0),
             (2, 'Прочети и отговори', 'Прочети въпроса и откъса, ако има такъв. Докосни отговора, който смяташ за верен.', 12.0),
             ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. Точките и титлата се броят отделно за всяка част.', 11.6),
-            (3, 'Сгреши ли – виж подсказката', 'После избери „Опитай пак“ или „Покажи обяснението“ – там е обяснението „Защо“.', 12.0),
+            (3, 'Сгреши ли – имаш втори опит', 'Прочети подсказката и натисни „Опитай пак“. След втора грешка ще видиш обяснението „Защо“.', 12.0),
             (4, 'Преговори с картите', f'Под всяко обяснение пише коя от {cards} да прегледаш. В края събери точките и виж титлата си.', 12.0),
         ],
         howto_gap=27,
@@ -1800,7 +1841,6 @@ def texts_combined(content, parts, total, by_grade):
     cover_word = m.group(1) if m else 'въпроса и задачи'
     names = {'Математика': 'математика', 'Литература': 'литература', 'Български език': 'български език'}
     subj_txt = ', '.join(names.get(x, x.lower()) for x in subjects[:-1]) + ' и ' + names.get(subjects[-1], subjects[-1].lower())
-    has_math = 'Математика' in subjects
     math_parts = [p for p in parts if p['subject'] == 'Математика']
     grade_line = ''
     if math_parts and by_grade:
@@ -1813,7 +1853,6 @@ def texts_combined(content, parts, total, by_grade):
     other_txt = ''
     if others:
         other_txt = (' и '.join(names.get(x, x) for x in others)).capitalize() + ' – части по теми. '
-    show = '„Покажи решението“ / „Покажи обяснението“' if has_math else '„Покажи обяснението“'
     counts = []
     for x in subjects:
         n = sum(len(p['qs']) for p in parts if p['subject'] == x)
@@ -1830,13 +1869,13 @@ def texts_combined(content, parts, total, by_grade):
             (1, 'Запазете файла', 'Изпратете го на телефона или таблета на детето и го запазете. След това може да се използва и без интернет.', 12.4),
             (2, 'Отворете като PDF', 'Ако бутоните не реагират в чата, отворете файла с PDF четец, например Adobe Acrobat Reader.', 12.4),
             (3, 'Изберете предмет и част', f'{grade_line}{other_txt}Точките и титлата се броят отделно за всяка част.', 12.0),
-            (4, 'Отделяйте по 10 минути', 'По 5–10 задачи или въпроса на ден са достатъчни. По математика детето решава на лист и после избира отговор.', 12.0),
+            (4, 'Отделяйте по 10 минути', 'По 5–10 задачи или въпроса на ден са достатъчни. При грешка детето опитва пак; след втора грешка вижда решението или обяснението.', 12.0),
         ],
         howto=[
             (1, 'Избери предмет и част', 'Натисни „Започни“. „Части“ връща менюто на предмета.', 12.0),
             (2, 'Реши или отговори', 'По математика първо реши задачата на лист. После докосни своя отговор.', 12.0),
             ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. Точките и титлата се броят отделно за всяка част.', 11.6),
-            (3, 'Сгреши ли – виж подсказката', f'После избери „Опитай пак“ или {show}.', 12.0),
+            (3, 'Сгреши ли – имаш втори опит', 'Прочети подсказката и натисни „Опитай пак“. След втора грешка ще видиш решението или обяснението.', 12.0),
             (4, 'Преговори с картите', 'Под всяко решение и обяснение пише коя карта да прегледаш. В края на частта виж титлата си.', 12.0),
         ],
         howto_gap=27,
