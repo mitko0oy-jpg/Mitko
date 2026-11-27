@@ -1,4 +1,10 @@
-"""Check the new retry flow: q -> c (right) / h (wrong) -> q (Опитай пак) / s (Покажи решението)."""
+"""Check the new retry flow: q -> c (right) / h (wrong) -> q (Опитай пак) / s (Покажи решението).
+
+    python3 -I scripts/quiz-pdf/verify_flow.py <pdf> <keys.json> <content.json>
+
+Works for one book (math, literature, language) and for a book with several subjects (e.g. „600 въпроса и
+задачи“): there the main menu leads to a menu for each subject, „Части“ leads to the subject's menu and the end
+of a subject's last part leads to the next subject (or the parent page) and to the main menu."""
 import json, re, sys, random
 from pypdf import PdfReader
 
@@ -8,8 +14,8 @@ if r.is_encrypted:
     r.decrypt('')
 keys = json.load(open(keys_path))
 content = json.load(open(content_path))
-MATH = all(q.get('subject', 'Математика') == 'Математика' for q in content['questions'])
-QWORD, SWORD = ('Задача', 'Решение') if MATH else ('Въпрос', 'Обяснение')
+def words(q):  # math: „Задача“ / „Решение“; literature and language: „Въпрос“ / „Обяснение“
+    return ('Задача', 'Решение') if q.get('subject', 'Математика') == 'Математика' else ('Въпрос', 'Обяснение')
 N = len(r.pages)
 assert N == len(keys), (N, len(keys))
 idx = {k: i for i, k in enumerate(keys)}
@@ -32,6 +38,9 @@ def text(i):
     return texts[i]
 
 qs, parts = content['questions'], content['parts']
+MULTI = 'menu1' in keys  # several subjects: a menu for each subject
+subjects = list(dict.fromkeys(p.get('subject') for p in parts))
+menu_of = {i: (f'menu{subjects.index(p.get("subject")) + 1}' if MULTI else 'menu') for i, p in enumerate(parts, 1)}
 errors, counts = [], dict(option_links=0, right=0, wrong_to_hint=0)
 nxt, part_of = {}, {}
 n = 0
@@ -66,7 +75,7 @@ for q in qs:
         else:
             counts['wrong_to_hint'] += 1
     others = sorted(t for _, t in L if t not in (f'c{num}', f'h{num}'))
-    exp_o = sorted(['menu', nxt[num]] + ([qc[0]] if len(qc) > 1 else []))
+    exp_o = sorted([menu_of[part_of[num]], nxt[num]] + ([qc[0]] if len(qc) > 1 else []))
     if others != exp_o:
         errors.append((num, 'q-nav', others, exp_o))
     # hint page: exactly „Опитай пак“ -> q, „Покажи решението“ -> s
@@ -79,12 +88,13 @@ for q in qs:
             errors.append((num, 'missing', kind))
         for k, pk in enumerate(pages):
             tg = sorted(t for _, t in links(idx[pk]))
-            exp = [pages[k + 1]] if k < len(pages) - 1 else sorted(['menu', nxt[num]])
+            exp = [pages[k + 1]] if k < len(pages) - 1 else sorted([menu_of[part_of[num]], nxt[num]])
             if tg != exp:
                 errors.append((num, pk, tg, exp))
             if idx[pk] != idx[pages[0]] + k:
                 errors.append((num, pk, 'not consecutive'))
     # page texts (math: „Задача“ / „Решение“; literature and language: „Въпрос“ / „Обяснение“)
+    QWORD, SWORD = words(q)
     if f'{QWORD} {num:03d}' not in text(idx[qc[0]]):
         errors.append((num, 'q title'))
     if 'Вярно!' not in text(idx[f'c{num}']) or SWORD not in text(idx[f's{num}']):
@@ -124,14 +134,25 @@ for q in qs:
 # static pages and part transitions
 exp_static = {'cover': ['parent'], 'parent': ['howto'], 'howto': ['menu'],
               'menu': sorted([f'part{i}' for i in range(1, len(parts) + 1)] + ['parent']), 'final': ['menu']}
+if MULTI:  # main menu -> subject menus; each subject menu -> its parts, „Всички предмети“, „Инструкции“
+    exp_static['menu'] = sorted([f'menu{k}' for k in range(1, len(subjects) + 1)] + ['parent'])
+    for k in range(1, len(subjects) + 1):
+        exp_static[f'menu{k}'] = sorted([f'part{i}' for i in menu_of if menu_of[i] == f'menu{k}'] + ['menu', 'parent'])
 for k, e in exp_static.items():
     if sorted(t for _, t in links(idx[k])) != sorted(e):
         errors.append((k, links(idx[k])))
 for i in range(1, len(parts) + 1):
     first = min(q['n'] for q in qs if q['part'] == parts[i - 1]['id'])
-    if sorted(t for _, t in links(idx[f'part{i}'])) != sorted([f'q{first}', 'menu']):
+    if sorted(t for _, t in links(idx[f'part{i}'])) != sorted([f'q{first}', menu_of[i]]):
         errors.append((f'part{i}', links(idx[f'part{i}'])))
     e = sorted([f'part{i + 1}' if i < len(parts) else 'final', 'menu'])
+    if MULTI:
+        if i < len(parts) and menu_of[i + 1] == menu_of[i]:
+            e = sorted([f'part{i + 1}', menu_of[i]])       # next part of the same subject, „Части“
+        elif i < len(parts):
+            e = sorted([menu_of[i + 1], 'menu'])            # next subject's menu, „Всички предмети“
+        else:
+            e = sorted(['final', 'menu'])
     if sorted(t for _, t in links(idx[f'end{i}'])) != e:
         errors.append((f'end{i}', links(idx[f'end{i}'])))
 # footer page numbers on every page
@@ -143,6 +164,9 @@ for i in range(1, len(parts) + 1):
     m = re.search(r'до (\d+) точки', text(idx[f'part{i}']))
     pts_pages.append(int(m.group(1)) if m else None)
 pts_menu = [int(x) for x in re.findall(r'до (\d+) точки', text(idx['menu']))]
+if MULTI:  # parts are listed in the subject menus; the main menu has one total per subject
+    pts_main = [int(x) for x in re.findall(r'до (\d+) точки', text(idx['menu']))]
+    pts_menu = [int(x) for k in range(1, len(subjects) + 1) for x in re.findall(r'до (\d+) точки', text(idx[f'menu{k}']))]
 pts_end = [int(re.search(r'Събра до (\d+) точки', text(idx[f'end{i}'])).group(1)) for i in range(1, len(parts) + 1)]
 print(f'pages: {N} | tasks: {len(qs)} | option links: {counts["option_links"]} '
       f'(right→„Вярно!“: {counts["right"]}, wrong→hint: {counts["wrong_to_hint"]})')
@@ -154,6 +178,14 @@ for h_ in hint_issues[:15]:
     print('  ', h_)
 print('footer number problems:', foot_bad[:10])
 print('max points – content:', pts_content, sum(pts_content), '| part pages:', pts_pages, '| menu:', pts_menu, '| end pages:', pts_end)
+if MULTI:
+    per = {}
+    for p, v in zip(parts, pts_content):
+        per[p.get('subject')] = per.get(p.get('subject'), 0) + v
+    print('subjects:', per, '| main menu:', pts_main,
+          '| per-subject OK:', [per[x] for x in subjects] == pts_main)
+    if pts_content != pts_pages or pts_content != pts_menu or pts_content != pts_end:
+        print('  POINTS MISMATCH')
 random.seed(11)
 for num in sorted(random.sample(range(1, len(qs) + 1), 5)):
     q = qs[num - 1]
