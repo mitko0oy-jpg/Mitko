@@ -11,6 +11,11 @@
   "questions": [{"n", "part", "grade", "subject": "Математика", "level", "q", "options", "correct",
   "hint", "steps": [{"do", "why"}], "answer", "trap", "card", "review"}, ...]}
   Частите идват от "parts" (по реда им), задачите – от полето "part", без пренареждане.
+Литература / български език в същия вид (части без клас): {"title": "200 въпроса по литература",
+  "cards": "по желание – име на кутията с карти", "parts": [{"id", "title"}, ...],
+  "questions": [{"n", "part", "subject": "Литература" | "Български език", "level", "q",
+  "passage": null | ["ред", ...], "options", "correct", "hint", "why", "review"}, ...]}
+  Отговорът е „Защо“ (why); дълъг откъс или обяснение продължава на следваща страница.
   В текста {a/b} е дроб (рисува се като двуетажна дроб); {2; 3} без „/“ е множество и остава както е.
   Решението е на страниците „Вярно!“ / „Не е вярно“ и продължава на следваща страница, ако не се побира.
 
@@ -67,6 +72,8 @@ GRAD = (HexColor('#0e2033'), HexColor('#28465a'))
 SUBJECT_COLOR = {'Литература': HexColor('#a77e47'), 'Български език': HexColor('#3d777a'),
                  'Математика': HexColor('#6b5e98')}
 PART_COLORS = [HexColor('#6b5e98'), HexColor('#3d777a')]  # математика: части „а“ и „б“ на всеки клас
+BEL_PART_COLORS = [HexColor('#a77e47'), HexColor('#3d777a')]  # литература / език: редуват се по части
+SUBJECT_WORD = {'Литература': 'литература', 'Български език': 'български език'}
 LEVELS = {1: ('Знам', '1 т.', HexColor('#e6ece5')), 2: ('Разбирам', '2 т.', HexColor('#e1ebe9')),
           3: ('Мисля', '3 т.', HexColor('#eae3d8'))}
 TITLES = {
@@ -271,6 +278,33 @@ class Rich:
             lines.append(dict(words=ws, asc=max(w['asc'] for w in ws), desc=max(w['desc'] for w in ws)))
             i = j
         return lines
+
+    # splitting -------------------------------------------------------------
+    def line_h(self, ln):
+        return ln['asc'] + ln['desc'] + (self.L - self.s)
+
+    def sub(self, lines):
+        """Same text object with only these lines (for continuing on the next page)."""
+        r = object.__new__(Rich)
+        r.__dict__.update(self.__dict__)
+        r.lines = lines
+        r.height_ = sum(self.line_h(ln) for ln in lines)
+        r.first_base = (self.L - self.s) / 2 + lines[0]['asc'] if lines else 0
+        return r
+
+    def chunks(self, first_avail, rest_avail):
+        """Split into pieces of whole lines: the first fits first_avail, the others rest_avail."""
+        out, cur, h, avail = [], [], 0, first_avail
+        for ln in self.lines:
+            lh = self.line_h(ln)
+            if cur and h + lh > avail:
+                out.append(self.sub(cur))
+                cur, h, avail = [], 0, rest_avail
+            cur.append(ln)
+            h += lh
+        if cur:
+            out.append(self.sub(cur))
+        return out
 
     # drawing --------------------------------------------------------------
     def _draw_glyphs(self, c, glyphs, x, y):
@@ -488,7 +522,7 @@ class Doc:
         dark = self.dark
         self.line(24, 26, 336, 26, C['dark_footer_line'] if dark else C['line'], .5)
         col = C['dark_footer'] if dark else C['muted']
-        self.text(24, 11.42, '© Еду Бел · edubel.site', SANS, 6.8, col)
+        self.text(24, 11.42, '© Еду Бел · edubel.bg', SANS, 6.8, col)
         self.text(336, 11.42, f'{self.page_no:03d} / {self.total_pages:03d}', SANS, 6.8, col, align='right')
         self.c.showPage()
 
@@ -510,11 +544,19 @@ def build_parts(content):
                 n += 1
                 q['num'] = n
                 q['pos'] = j + 1
-            k = per_grade.get(pd['grade'], 0)
-            per_grade[pd['grade']] = k + 1
+            grade = pd.get('grade')
+            k = per_grade.get(grade, 0)
+            per_grade[grade] = k + 1
             subject = qs[0].get('subject', 'Математика')
-            parts.append({'i': i, 'grade': pd['grade'], 'subject': subject, 'title': pd['title'], 'qs': qs,
-                          'color': PART_COLORS[k % len(PART_COLORS)],
+            if subject == 'Математика':
+                color = PART_COLORS[k % len(PART_COLORS)]
+            else:  # частите се редуват – злато и синьо-зелено, като се започва с цвета на предмета
+                pal = BEL_PART_COLORS if subject != 'Български език' else BEL_PART_COLORS[::-1]
+                color = pal[(i - 1) % len(pal)]
+            for q in qs:
+                q['_flow'] = True  # отговорът – по новия начин (с подсказка и продължение)
+            parts.append({'i': i, 'grade': grade, 'subject': subject, 'title': pd['title'], 'qs': qs,
+                          'color': color,
                           'max': sum(q['level'] for q in qs), 'first': qs[0]['num'], 'last': qs[-1]['num']})
         if by_id:
             raise SystemExit(f'задачи без част: {sorted(by_id)}')
@@ -545,9 +587,10 @@ def title_bands(mx):
 
 
 # ---------------------------------------------------------------- pages
-def page_cover(d, total_q, cover_word, subtitle_lines, book_lines, tagline):
+def page_cover(d, total_q, cover_word, subtitle_lines, book_lines, tagline,
+               eyebrow='ИНТЕРАКТИВЕН ПРЕГОВОР · 5.–7. КЛАС', book_grades=True):
     d.start('cover', dark=True)
-    d.text(24, 547.62, 'ИНТЕРАКТИВЕН ПРЕГОВОР · 5.–7. КЛАС', SANS_SB, 9, C['gold_light'])
+    d.text(24, 547.62, eyebrow, SANS_SB, 9, C['gold_light'])
     d.text(24, 437.98, str(total_q), SERIF_B, 111, C['shadow_text'])
     d.text(21, 441.98, str(total_q), SERIF_B, 111, C['gold_light'])
     d.text(25, 384.02, cover_word, SERIF, 39, C['card'])
@@ -589,7 +632,7 @@ def page_cover(d, total_q, cover_word, subtitle_lines, book_lines, tagline):
         poly([(-98 + dx, 556 + dy), (15 + dx, 580 + dy), (104 + dx, 543 + dy), (-10 + dx, 517 + dy)], HexColor(cover))
         poly([(-94 + dx, 554 + dy), (15 + dx, 577 + dy), (99 + dx, 543 + dy), (-10 + dx, 521 + dy)], HexColor(cover),
              stroke=C['gold_light'])
-        if label != '7':
+        if label != '7' and book_grades:
             d.text(lpos[0], lpos[1], label, SANS_SB, 9, lc)
     c.saveState()
     c.transform(1, .215, -.88, .37, -69, 612)
@@ -599,7 +642,8 @@ def page_cover(d, total_q, cover_word, subtitle_lines, book_lines, tagline):
         d.text(6, yy, ln, SANS, 9, C['gold_light'])
         yy -= 14
     c.restoreState()
-    d.text(-75, 597.62, '7', SANS_SB, 9, C['card'])
+    if book_grades:
+        d.text(-75, 597.62, '7', SANS_SB, 9, C['card'])
     c.restoreState()
     d.text(180, 138.16, tagline, SANS, 12, C['cover_text'], align='center')
     d.button(24, 60, 312, 48, 'Започни', 'gold', link='parent')
@@ -658,34 +702,51 @@ def page_menu(d, parts, wd):
     d.start('menu')
     d.text(24, 550.78, f'{NUM_WORDS.get(len(parts), str(len(parts)))} ЧАСТИ · ЕДНА СТЪПКА НАПРЕД', SANS_SB, 8.8, C['gold'])
     d.text(24, 511.04, 'Избери част', SERIF_B, 28, C['ink'])
-    d.text(24, 479, 'Започни със своя клас. Учи в собствено темпо.', SANS, 12, C['muted'])
+    graded = any(p['grade'] is not None for p in parts)
+    d.text(24, 479, 'Започни със своя клас. Учи в собствено темпо.' if graded else
+           'Започни с темата, която учиш. Учи в собствено темпо.', SANS, 12, C['muted'])
     many = len(parts) > 6
     titled = any(p['title'] != p['subject'] for p in parts)  # части с име (математика)
     h, gap, ggap = (35, 5, 13) if many else (47, 9, 9)
     if titled and not many:
         h, gap, ggap = 46, 7, 13
     y = 462 if many else 450
-    # общ размер за заглавията на частите, така че и най-дългото да се побере на един ред
+    # общ размер за заглавията на частите, така че и най-дългото да се побере на един ред;
+    # ако и при 10,6 pt не се побира, това заглавие минава на два реда
     t_size = 12.2
+    t_lines = {}
     if titled:
         longest = max(pdfmetrics.stringWidth(p['title'], SANS_SB, 1) for p in parts)
-        t_size = min(12.2, 226 / longest)
+        t_size = min(11.6 if many else 12.2, max(10.6, 226 / longest))
+        for p in parts:
+            t_lines[p['i']] = wrap_words(p['title'], SANS_SB, t_size, 226)
     prev_grade = None
     for p in parts:
         if prev_grade is not None and p['grade'] != prev_grade:
             y -= ggap - gap
         prev_grade = p['grade']
         top = y
-        by = top - h
+        extra = (len(t_lines.get(p['i'], [''])) - 1) * (t_size + 2)
+        by = top - h - extra
         col = p['color']
-        d.card(24, by, 312, h)
-        d.rrect(24, by, 4, h, 2, fill=col)
-        cy = by + h / 2
+        d.card(24, by, 312, h + extra)
+        d.rrect(24, by, 4, h + extra, 2, fill=col)
+        cy = by + (h + extra) / 2
         if titled:
-            d.text(43, cy - 5.08, f"{p['i']:02d}", SERIF_B, 19, col)
-            d.text(76, cy + 3.6, p['title'], SANS_SB, t_size, C['ink'])
-            d.text(76, cy - 12.4, f"{p['grade']}. клас · {items_word(len(p['qs']))} · до {p['max']} точки",
-                   SANS, 9, C['muted'])
+            meta = f"{items_word(len(p['qs']))} · до {p['max']} точки"
+            if p['grade'] is not None:
+                meta = f"{p['grade']}. клас · {meta}"
+            tl = t_lines[p['i']]
+            if many:
+                d.text(43, cy - 5.6, f"{p['i']:02d}", SERIF_B, 16, col)
+                y1, y2 = cy + 1.6, cy - 10.6
+            else:
+                d.text(43, cy - 5.08, f"{p['i']:02d}", SERIF_B, 19, col)
+                y1, y2 = cy + 3.6, cy - 12.4
+            off = extra / 2
+            for li, ln in enumerate(tl):
+                d.text(76, y1 + off - li * (t_size + 2), ln, SANS_SB, t_size, C['ink'])
+            d.text(76, y2 - off, meta, SANS, 9 if not many else 8.4, C['muted'])
         elif many:
             d.text(43, cy - 5.6, f"{p['i']:02d}", SERIF_B, 16, col)
             d.text(80, cy + 1.6, f"{p['grade']}. клас · {p['subject']}", SANS_SB, 11.6, C['ink'])
@@ -695,7 +756,7 @@ def page_menu(d, parts, wd):
             d.text(83, cy + 4.5, f"{p['grade']}. клас · {p['subject']}", SANS_SB, 12.2, C['ink'])
             d.text(83, cy - 12.88, f"{items_word(len(p['qs']))} · до {p['max']} точки", SANS, 9, C['muted'])
         d.arrow(320, cy, C['ink'])
-        d.link(f"part{p['i']}", 24, by, 312, h)
+        d.link(f"part{p['i']}", 24, by, 312, h + extra)
         y = by - gap
     if not many:
         for x, w, lv in ((24, 90, 1), (122, 112, 2), (242, 94, 3)):
@@ -703,6 +764,8 @@ def page_menu(d, parts, wd):
             d.text(x + w / 2, 91.19, f'{LEVELS[lv][0]} · {LEVELS[lv][1]}', SANS_SB, 8.3, C['ink'], align='center')
         if y + gap < 112:
             d.overflow.add(f'менюто не се побира ({y + gap:.0f})')
+    elif y + gap < 76:
+        d.overflow.add(f'менюто не се побира ({y + gap:.0f})')
     d.button(24, 37, 312, 30, 'Инструкции', 'light', link='parent', center=True)
     d.finish()
 
@@ -713,8 +776,13 @@ def page_part_intro(d, p, nparts, wd):
     d.text(247.21, 407.88, str(p['i']), SERIF_B, 166, C['card'], alpha=.075)
     n = len(p['qs'])
     items = f"{n} {wd['one'] if n == 1 else wd['many']}"
-    minutes = round(n * wd['min_per_item'] / 5) * 5
-    if p['title'] == p['subject']:
+    minutes = max(5, round(n * wd['min_per_item'] / 5) * 5)
+    if p['grade'] is not None:
+        big, big_size = f"{p['grade']}. клас", 48
+    else:  # части без клас – големият ред е предметът
+        big = p['subject']
+        big_size = min(48, 300 / pdfmetrics.stringWidth(big, SERIF, 1))
+    if p['title'] == p['subject'] and p['grade'] is not None:
         d.text(24, 460.64, f"{p['grade']}. клас", SERIF, 48, C['card'])
         size = 28 if pdfmetrics.stringWidth(p['subject'], SERIF_B, 28) < 200 else 26
         d.text(26, 410.04 if size == 28 else 411.7, p['subject'], SERIF_B, size, C['card'])
@@ -726,7 +794,7 @@ def page_part_intro(d, p, nparts, wd):
                 break
         two = len(tp.lines) > 1
         y_grade = 478 if two else 460.64
-        d.text(24, y_grade, f"{p['grade']}. клас", SERIF, 48, C['card'])
+        d.text(24, y_grade, big, SERIF, big_size, C['card'])
         tp.drawOn(d.c, 26, y_grade - 22 - tp.height_)
         y_line = y_grade - 22 - tp.height_ - 22
     d.line(26, y_line, 73, y_line, C['gold_light'], 2)
@@ -750,17 +818,34 @@ def page_part_intro(d, p, nparts, wd):
 
 
 def q_header(d, p, q):
-    d.text(24, 577.21, f"{p['grade']}. клас · {p['title']}", SANS_SB, 9.5, C['muted'])
+    if p['grade'] is not None:
+        d.text(24, 577.21, f"{p['grade']}. клас · {p['title']}", SANS_SB, 9.5, C['muted'])
+    else:  # „Част 3 · заглавие“; при дълго заглавие – само заглавието, при нужда съкратено
+        t = f"Част {p['i']} · {p['title']}"
+        if pdfmetrics.stringWidth(t, SANS_SB, 9.5) > 262:
+            t = p['title']
+        size = max(8.5, min(9.5, 262 / pdfmetrics.stringWidth(t, SANS_SB, 1)))
+        while pdfmetrics.stringWidth(t, SANS_SB, size) > 262 and ' ' in t:
+            t = t.rstrip('…').rsplit(' ', 1)[0].rstrip(' ,–') + '…'
+        d.text(24, 577.21, t, SANS_SB, size, C['muted'])
     n = len(p['qs'])
     d.text(336, 577.21, f"{q['pos']:02d} / {n:02d}", SANS_SB, 9.5, C['muted'], align='right')
     d.rrect(24, 563.5, 312, 2.5, 1, fill=C['line'])
     d.rrect(24, 563.5, 312 * q['pos'] / n, 2.5, 1, fill=p['color'])
 
 
-def layout_question(d, q):
-    """Choose scale so that question, passage and options fit. Returns drawing plan."""
+PASSAGE_MIN = 10.2  # откъсът не се смалява под този размер
+
+
+def passage_rich(d, q, size):
     style = q.get('passage_style', 'italic')
-    pfont = {'italic': SERIF_I, 'plain': SANS, 'formula': SANS}[style]
+    font = {'italic': SERIF_I, 'plain': SANS}.get(style, SANS)
+    return d.rich('\n'.join(q['passage']), size, size * 1.4, 280, font)
+
+
+def layout_question(d, q):
+    """Choose scale so that question, passage and options fit. Returns drawing plan or None."""
+    style = q.get('passage_style', 'italic')
     scales = (1, .95, .9, .85, .8, .75, .7, .66)
     for s in scales:
         for min_h in ((52, 48, 43) if s == 1 else (43,) if s >= .8 else (36,)):
@@ -771,11 +856,10 @@ def layout_question(d, q):
             if q.get('passage'):
                 if style == 'formula':
                     ps = 19 * s
-                    pp = d.para('\n'.join(q['passage']), pfont, ps, ps * 1.35, 280, C['ink'], align=1)
+                    pp = d.para('\n'.join(q['passage']), SANS, ps, ps * 1.35, 280, C['ink'], align=1)
                     pp.pad_ = 16
                 else:
-                    ps = 13.5 * s
-                    pp = d.para('\n'.join(q['passage']), pfont, ps, ps * 1.4, 280, C['ink'])
+                    pp = passage_rich(d, q, max(PASSAGE_MIN, 13.5 * s))
                     pp.pad_ = 10
                 box_top = y - 12
                 box_h = pp.height_ + 2 * pp.pad_
@@ -796,25 +880,25 @@ def layout_question(d, q):
                 plan['gap'] = ogap
                 plan['scale'] = s
                 return plan
-    raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
+    return None
 
 
-def page_question(d, p, q, next_key, wd):
-    d.start(f"q{q['num']}")
+def q_top(d, p, q, wd):
     q_header(d, p, q)
     name, pts, col = LEVELS[q['level']]
     d.rrect(224, 512, 112, 22, 11, fill=col)
     d.text(280, 520.37, f'{name} · {pts}', SANS_SB, 9.3, C['ink'], align='center')
     d.text(24, 517.5, f"{wd['Item']} {q['num']:03d}", SERIF_B, 25, C['ink'])
-    plan = layout_question(d, q)
-    q['_scale'] = plan['scale']
-    qp, qy = plan['qp']
-    qp.drawOn(d.c, 24, qy)
-    if 'passage' in plan:
-        pp, top, bh = plan['passage']
-        d.rrect(24, top - bh, 312, bh, 9, fill=C['passage'])
-        d.rrect(24, top - bh + 10, 2, bh - 20, 1, fill=C['gold'])
-        pp.drawOn(d.c, 41, top - pp.pad_ - pp.height_)
+
+
+def passage_box(d, pp, top, pad=10):
+    bh = pp.height_ + 2 * pad
+    d.rrect(24, top - bh, 312, bh, 9, fill=C['passage'])
+    d.rrect(24, top - bh + 10, 2, bh - 20, 1, fill=C['gold'])
+    pp.drawOn(d.c, 41, top - pad - pp.height_)
+
+
+def draw_options(d, q, plan):
     gap = plan['gap']
     y = 97 + sum(h for _, h in plan['ops']) + gap * (len(plan['ops']) - 1)
     for k, (op, h) in enumerate(plan['ops']):
@@ -826,8 +910,62 @@ def page_question(d, p, q, next_key, wd):
         op.drawOn(d.c, 72, cy - op.height_ / 2)
         d.link(f"c{q['num']}" if k == q['correct'] else f"w{q['num']}", 24, by, 312, h)
         y = by - gap
+
+
+def page_question(d, p, q, next_key, wd):
+    plan = layout_question(d, q)
+    if plan is None:
+        if not q.get('passage') or q.get('passage_style') == 'formula':
+            raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
+        return page_question_split(d, p, q, next_key, wd)
+    d.start(f"q{q['num']}")
+    q_top(d, p, q, wd)
+    q['_scale'] = plan['scale']
+    qp, qy = plan['qp']
+    qp.drawOn(d.c, 24, qy)
+    if 'passage' in plan:
+        pp, top, bh = plan['passage']
+        passage_box(d, pp, top, pp.pad_)
+    draw_options(d, q, plan)
     d.button(24, 37, 110, 41, 'Части', 'light', link='menu', size=12, center=True)
     d.button(146, 37, 190, 41, 'Пропусни', 'dark', link=next_key)
+    d.finish()
+
+
+def page_question_split(d, p, q, next_key, wd):
+    """Дълъг откъс: въпросът и откъсът на една или няколко страници, отговорите – на следващата."""
+    qp = d.rich(q['q'], 15, 15 * 1.32, 312, SANS_SB)
+    pp = passage_rich(d, q, 12.4)
+    first_top = 495 - qp.height_ - 12
+    bottom = 92  # над бутоните отдолу
+    chunks = pp.chunks(first_top - 20 - bottom, 470 - 20 - bottom)
+    opt_plan = layout_question(d, dict(q, passage=None))
+    if opt_plan is None:
+        raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
+    q['_scale'] = ('split', len(chunks))
+    keys = [f"q{q['num']}"] + [f"q{q['num']}_{k}" for k in range(2, len(chunks) + 2)]
+    for ci, ch in enumerate(chunks):
+        d.start(keys[ci])
+        q_top(d, p, q, wd)
+        if ci == 0:
+            qp.drawOn(d.c, 24, 495 - qp.height_)
+            passage_box(d, ch, first_top)
+        else:
+            d.text(24, 488, 'Откъсът продължава', SANS_SB, 10.5, C['muted'])
+            passage_box(d, ch, 470)
+        d.button(24, 37, 110, 41, 'Части', 'light', link='menu', size=12, center=True)
+        last_chunk = ci == len(chunks) - 1
+        d.button(146, 37, 190, 41, 'Към отговорите' if last_chunk else 'Откъсът продължава', 'dark',
+                 link=keys[ci + 1], size=12.5)
+        d.finish()
+    d.start(keys[-1])
+    q_top(d, p, q, wd)
+    qp2, qy = opt_plan['qp']
+    qp2.drawOn(d.c, 24, qy)
+    draw_options(d, q, opt_plan)
+    d.button(24, 37, 96, 41, 'Откъсът', 'light', link=keys[0], size=12, center=True)
+    d.button(128, 37, 86, 41, 'Части', 'light', link='menu', size=12, center=True)
+    d.button(222, 37, 114, 41, 'Пропусни', 'dark', link=next_key, size=12.5)
     d.finish()
 
 
@@ -881,7 +1019,7 @@ def status_wrong(d, sub):
 
 
 def page_correct(d, p, q, next_key, is_last, wd):
-    if q.get('steps'):
+    if q.get('steps') or q.get('_flow'):
         return solution_pages(d, p, q, next_key, is_last, wd, 'c')
     d.start(f"c{q['num']}")
     q_header(d, p, q)
@@ -894,7 +1032,7 @@ def page_correct(d, p, q, next_key, is_last, wd):
 
 
 def page_wrong(d, p, q, next_key, is_last, wd):
-    if q.get('steps'):
+    if q.get('steps') or q.get('_flow'):
         return solution_pages(d, p, q, next_key, is_last, wd, 'w')
     d.start(f"w{q['num']}")
     q_header(d, p, q)
@@ -926,8 +1064,63 @@ def block(h, draw, gap=0, h_first=None):
     return dict(h=h, draw=draw, gap=gap, h_first=h if h_first is None else h_first)
 
 
+def answer_block(d, q, s, color, size):
+    """„ВЕРНИЯТ ОТГОВОР  Б) …“ – на един ред с етикета, ако се побира."""
+    letter = 'АБВГ'[q['correct']]
+    runs = [(f'{letter}) ', SANS_B, C['ink']), (q['options'][q['correct']], SANS_SB, C['ink'])]
+    lw = pdfmetrics.stringWidth('ВЕРНИЯТ ОТГОВОР', SANS_B, 9) + 10
+    ap = d.rich(runs, size * s, size * s * 1.3, CW - lw)
+    inline = len(ap.lines) == 1
+    if not inline:
+        ap = d.rich(runs, size * s, size * s * 1.3, CW)
+
+    def draw_answer(top, first):
+        if inline:
+            label(d, CX, top - ap.first_base, 'ВЕРНИЯТ ОТГОВОР', color)
+            ap.drawOn(d.c, CX + lw, top - ap.height_)
+        else:
+            label(d, CX, top - 6.6, 'ВЕРНИЯТ ОТГОВОР', color)
+            ap.drawOn(d.c, CX, top - 11 - ap.height_)
+    return block(ap.height_ if inline else 11 + ap.height_, draw_answer)
+
+
+def why_groups(d, q, s, color):
+    """Литература / език: верният отговор, „Защо“ (може да се раздели по редове) и „Преговори“."""
+    groups = [[answer_block(d, q, s, color, 14.4)]]
+
+    def draw_label(top, first):
+        if not first:
+            d.line(CX, top, CX + CW, top, C['line'], .6)
+            top -= 14
+        label(d, CX, top - 6.6, 'ЗАЩО', C['gold'])
+    why_label = block(14 + 9, draw_label, gap=12, h_first=9)
+    wp = d.rich(q['why'], 13.4 * s, 13.4 * s * 1.4, CW, SANS)
+    lines = [wp.sub([ln]) for ln in wp.lines]
+
+    def line_block(r, gap):
+        return block(r.height_, lambda top, first, r=r: r.drawOn(d.c, CX, top - r.height_), gap=gap)
+    blocks = [line_block(r, 0) for r in lines]
+    blocks[0]['gap'] = 7
+    # заглавието остава с първите два реда, последните два реда не се разделят
+    head = [why_label] + blocks[:2]
+    rest = blocks[2:]
+    tail = []
+    if q.get('review'):
+        vp = d.rich([('Преговори: ', SANS_B, C['muted']), (q['review'], SANS_SB, C['muted'])], 11, 15, CW)
+        tail = [block(vp.height_, lambda top, first: vp.drawOn(d.c, CX, top - vp.height_), gap=14)]
+    if len(rest) >= 2:
+        groups.append(head)
+        groups.extend([b] for b in rest[:-2])
+        groups.append(rest[-2:] + tail)
+    else:
+        groups.append(head + rest + tail)
+    return groups
+
+
 def solution_groups(d, q, s, color):
     """Блоковете в картата с решението, групирани така, че група не се разделя между страници."""
+    if not q.get('steps'):
+        return why_groups(d, q, s, color)
     letter = 'АБВГ'[q['correct']]
     groups = []
 
@@ -1048,7 +1241,8 @@ def solution_pages(d, p, q, next_key, is_last, wd, kind):
     color = C['green'] if kind == 'c' else C['red']
     has_hint = kind == 'w' and q.get('hint')
     best = None
-    for s in (1, .955, .91):
+    math_mode = bool(q.get('steps'))
+    for s in ((1, .955, .91) if math_mode else (1, .95, .9, .85, .8)):
         groups = solution_groups(d, q, s, color)
         top = P1_TOP
         if has_hint:
@@ -1081,7 +1275,7 @@ def solution_pages(d, p, q, next_key, is_last, wd, kind):
                              link=f"q{q['num']}", size=12.5)
             card_top = top
         else:
-            d.text(24, 516, 'Решение – продължение', SERIF_B, 22, C['ink'])
+            d.text(24, 516, 'Решение – продължение' if math_mode else 'Обяснение – продължение', SERIF_B, 22, C['ink'])
             d.text(24, 497.5, f"{wd['Item']} {q['num']:03d} · {'Вярно!' if kind == 'c' else 'Не е вярно'}",
                    SANS_SB, 10.2, C['muted'])
             card_top = CONT_TOP
@@ -1100,7 +1294,8 @@ def solution_pages(d, p, q, next_key, is_last, wd, kind):
                     y -= b['h_first'] if first else b['h']
         nxt_label = 'Към края на частта' if is_last else wd['next']
         if not last:
-            d.button(24, 36, 312, 38, 'Решението продължава', 'dark', link=keys[pi + 1], size=12.5)
+            d.button(24, 36, 312, 38, 'Решението продължава' if math_mode else 'Обяснението продължава', 'dark',
+                     link=keys[pi + 1], size=12.5)
         else:
             if kind == 'w' and len(pages) > 1:
                 d.button(24, 80, 312, 36, 'Опитай пак', 'light', link=f"q{q['num']}", size=12.5)
@@ -1125,8 +1320,10 @@ def page_part_end(d, p, next_part, wd):
     d.circle(180, 525, 27, fill=C['medal_inner'], stroke=C['card'], lw=.5)
     d.book_icon(166, 535, 1, C['navy'])
     d.text(180, 434.12, 'Браво!', SERIF_B, 34, C['ink'], align='center')
-    d.text(180, 401.16, f"Завърши част {p['i']} · {p['grade']}. клас", SANS_SB, 12, C['muted'], align='center')
-    d.text(180, 380.16, p['title'], SANS, 12, C['muted'], align='center')
+    done = f"Завърши част {p['i']}" + (f" · {p['grade']}. клас" if p['grade'] is not None else '')
+    d.text(180, 401.16, done, SANS_SB, 12, C['muted'], align='center')
+    for k, ln in enumerate(wrap_words(p['title'], SANS, 12, 300)[:2]):
+        d.text(180, 380.16 - 15 * k, ln, SANS, 12, C['muted'], align='center')
     d.text(180, 342.16, f"Събра до {p['max']} точки. Открий своята титла.", SANS_SB, 12, C['ink'], align='center')
     d.card(24, 127, 312, 192)
     d.rrect(33, 278, 294, 33, 7, fill=C['title_row'])
@@ -1168,12 +1365,23 @@ def page_final(d, sections, note, body_size=13):
 
 
 # ---------------------------------------------------------------- texts
-def texts(parts, total):
+def wrap_words(text, font, size, width):
+    lines = []
+    for w in text.split():
+        if lines and pdfmetrics.stringWidth(lines[-1] + ' ' + w, font, size) <= width:
+            lines[-1] += ' ' + w
+        else:
+            lines.append(w)
+    return lines
+
+
+def texts(content, parts, total):
     """Всички текстове на началните и крайната страница според предмета."""
     subjects = {p['subject'] for p in parts}
     by_grade = {}
     for p in parts:
-        by_grade.setdefault(p['grade'], []).append(p['i'])
+        if p['grade'] is not None:
+            by_grade.setdefault(p['grade'], []).append(p['i'])
     rng = lambda xs: f'{xs[0]}–{xs[-1]}' if len(xs) > 1 else str(xs[0])
     gl = [f'{g}. клас: части {rng(v)}' for g, v in sorted(by_grade.items())]
     grade_txt = ' · '.join(gl[:2]) + ('\n' + ' · '.join(gl[2:]) if len(gl) > 2 else '')
@@ -1199,11 +1407,13 @@ def texts(parts, total):
             final=[
                 ('Навик, който помага', 'По 5–10 задачи на ден са достатъчни. Нека детето решава на лист, а след грешка прочетете заедно решението и уловката.'),
                 ('Какво включва материалът', f'{total} задачи по математика за 5., 6. и 7. клас, от лесни към трудни. Всяка има подсказка, решение стъпка по стъпка и уловка. Полезни са и за подготовката за НВО.'),
-                ('Картите на Еду Бел', 'Под всяко решение пише коя карта от кутията „Еду БЕЛ – Математика“ да прегледате. Още материали ще намерите на edubel.site.'),
+                ('Картите на Еду Бел', 'Под всяко решение пише коя карта от кутията „Еду БЕЛ – Математика“ да прегледате. Още материали ще намерите на edubel.bg.'),
             ],
             final_size=12.4,
             note='Подарък за лична употреба в семейството. Копирането на задачите в други материали, сайтове и приложения и препродажбата са забранени.',
         )
+    if content.get('parts') and subjects <= set(SUBJECT_WORD):
+        return texts_bel_parts(content, parts, total, subjects, by_grade, grade_txt)
     wd = WORDS['bel']
     has_math = 'Математика' in subjects
     if has_math:
@@ -1241,9 +1451,64 @@ def texts(parts, total):
         final=[
             ('Навик, който помага', 'По 10 въпроса на ден са достатъчни. След грешен отговор обсъдете обяснението и се върнете към посочената тема.'),
             ('Какво включва материалът', includes),
-            ('Еду Бел', 'Материали по български език и литература за 5.–7. клас. Още възможности за преговор ще намерите на edubel.site.'),
+            ('Еду Бел', 'Материали по български език и литература за 5.–7. клас. Още възможности за преговор ще намерите на edubel.bg.'),
         ],
         final_size=13,
+        note='Подарък за лична употреба в семейството. Копирането на въпросите в други материали, сайтове и приложения и препродажбата са забранени.',
+    )
+
+
+def texts_bel_parts(content, parts, total, subjects, by_grade, grade_txt):
+    """„200 въпроса по литература“ / „… по български език“ – части по теми, обяснение „Защо“."""
+    wd = WORDS['bel']
+    if len(subjects) == 1:
+        subj = next(iter(subjects))
+        sub_word = SUBJECT_WORD[subj]
+        book = [subj.upper()]
+    else:
+        sub_word = 'български език и литература'
+        book = ['БЪЛГАРСКИ ЕЗИК', 'И ЛИТЕРАТУРА']
+    title = content.get('title') or f'{total} въпроса по {sub_word}'
+    m = re.match(rf'\s*{total}\s+въпроса\s+(.+)$', title)
+    cover_sub = wrap_words(m.group(1) if m else f'по {sub_word}', SANS, 17, 300)
+    cards = f"картите „{content['cards']}“" if content.get('cards') else f'картите на Еду БЕЛ по {sub_word}'
+    grades = sorted(by_grade) or sorted({q['grade'] for q in content['questions'] if q.get('grade')})
+    if content.get('eyebrow'):
+        eyebrow = content['eyebrow']
+    elif grades:
+        eyebrow = 'ИНТЕРАКТИВЕН ПРЕГОВОР · ' + (f'{grades[0]}.–{grades[-1]}. КЛАС' if len(grades) > 1 else f'{grades[0]}. КЛАС')
+    else:
+        eyebrow = f'ИНТЕРАКТИВЕН ПРЕГОВОР · {sub_word.upper()}'
+    if by_grade:
+        step3 = ('Изберете подходящия клас', f'{grade_txt}. Въпросите са за преговор по {sub_word}.')
+        pick = 'Намери своя клас и натисни „Започни“. „Части“ връща менюто.'
+    else:
+        step3 = ('Изберете част', f'Материалът има {len(parts)} части – всяка е отделна тема. Започнете с темата, '
+                                  'която детето учи сега, или вървете поред.')
+        pick = 'Избери тема и натисни „Започни“. „Части“ връща менюто.'
+    return dict(
+        wd=wd, title=f'{title} – интерактивен PDF | Еду БЕЛ', label=f'{total} ВЪПРОСА',
+        cover_sub=cover_sub, book=book, eyebrow=eyebrow, book_grades=bool(grades),
+        parent=[
+            (1, 'Запазете файла', 'Изпратете го на телефона или таблета на детето и го запазете. След това може да се използва и без интернет.', 12.4),
+            (2, 'Отворете като PDF', 'Ако бутоните не реагират в чата, отворете файла с PDF четец, например Adobe Acrobat Reader.', 12.4),
+            (3, step3[0], step3[1], 12.0),
+            (4, 'Отделяйте по 10 минути', 'Около 10 въпроса на ден са достатъчни. Обсъдете грешките и прочетете обясненията заедно.', 12.4),
+        ],
+        howto=[
+            (1, 'Избери част', pick, 12.0),
+            (2, 'Прочети и отговори', 'Прочети въпроса и откъса, ако има такъв. Докосни отговора, който смяташ за верен.', 12.0),
+            ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. При „Опитай пак“ точки не се пишат. PDF файлът не ги брои сам.', 11.6),
+            (3, 'Сгреши ли – опитай пак', 'Прочети подсказката и опитай пак. После прочети обяснението „Защо“.', 12.0),
+            (4, 'Преговори с картите', f'Под всяко обяснение пише коя от {cards} да прегледаш. В края събери точките и виж титлата си.', 12.0),
+        ],
+        howto_gap=27,
+        final=[
+            ('Навик, който помага', 'По 10 въпроса на ден са достатъчни. След грешка прочетете заедно подсказката и обяснението „Защо“.'),
+            ('Какво включва материалът', f'{total} въпроса по {sub_word} в {len(parts)} части, от лесни към трудни. Всеки въпрос има подсказка, обяснение „Защо“ и тема за преговор.'),
+            ('Картите на Еду Бел', f'Под всяко обяснение пише коя от {cards} да прегледате. Още материали ще намерите на edubel.bg.'),
+        ],
+        final_size=12.4,
         note='Подарък за лична употреба в семейството. Копирането на въпросите в други материали, сайтове и приложения и препродажбата са забранени.',
     )
 
@@ -1251,11 +1516,12 @@ def texts(parts, total):
 # ---------------------------------------------------------------- main
 def render(path, content, parts, cmaps, total_pages):
     total = len(content['questions'])
-    t = texts(parts, total)
+    t = texts(content, parts, total)
     wd = t['wd']
     d = Doc(path, t['title'], t['label'], cmaps)
     d.total_pages = total_pages
-    page_cover(d, total, wd['cover'], t['cover_sub'], t['book'], wd['tagline'])
+    page_cover(d, total, wd['cover'], t['cover_sub'], t['book'], wd['tagline'],
+               **{k: t[k] for k in ('eyebrow', 'book_grades') if k in t})
     page_parent(d, t['parent'])
     page_howto(d, t['howto'], t['howto_gap'])
     page_menu(d, parts, wd)
