@@ -10,17 +10,27 @@ function ago(iso) {
 }
 const date = (iso) => new Date(iso).toLocaleDateString("bg-BG", { day: "numeric", month: "long", year: "numeric" });
 
+// Paid products by name, for the access notice.
+const PRODUCTS = { "bel-all": "Български език и литература, 5.–7. клас", mat: "„200 задачи по математика“" };
+const productName = (p) => PRODUCTS[p] || (/^bel\d+$/.test(p) ? `Български език и литература, ${p.slice(3)}. клас` : p);
+
 function kidCard(c, d) {
-  const titles = Object.fromEntries(c.modules.map((m) => [m.slug, m.title]));
   const pending = c.unlockRequests.filter((u) => !u.seen);
+  // Each subject has its own access: a BEL pass does not open the math tasks and the other way round.
+  const belPending = pending.filter((u) => u.subject !== "mat");
+  const matPending = pending.filter((u) => u.subject === "mat");
+  const partName = (u) => (u.subject === "mat" ? `Математика: ${u.title}` : u.title);
   let h = `<article class="kid" id="kid-${c.id}">
     <header><div><h3>${esc(c.name)}</h3><div class="sub">${c.grade}. клас · потребителско име: <b>${esc(c.username)}</b></div></div>
     <span class="pill ${c.full ? "ok" : ""}">${c.full ? "Пълен достъп" : "Безплатна част"}</span></header>`;
 
-  if (pending.length && !c.full) {
+  const offers = [];
+  if (belPending.length && !c.full) offers.push({ list: belPending, body: offerBody(d) });
+  if (matPending.length && !c.math.full) offers.push({ list: matPending, body: offerMath(d) });
+  for (const o of offers) {
     h += `<div class="offer"><h3>${esc(c.name)} мина безплатната част</h3>
-      <p>Стигна края на безплатното в ${pending.map((u) => `„${esc(titles[u.module] || u.module)}“`).join(", ")} и иска да продължи.</p>
-      ${offerBody(d)}
+      <p>Стигна края на безплатното в ${o.list.map((u) => `„${esc(partName(u))}“`).join(", ")} и иска да продължи.</p>
+      ${o.body}
       <button class="linkbtn" data-seen="${c.id}">Видях го</button></div>`;
   }
 
@@ -43,6 +53,8 @@ function kidCard(c, d) {
   } else {
     h += `<p class="notice info">Материалите за ${c.grade}. клас се подготвят. Ще ти пишем, когато са готови.</p>`;
   }
+
+  if (c.math.total) h += mathBlock(c.math);
 
   if (c.weak.length || c.strong.length) {
     h += `<h3 style="margin-top:18px">Слаби места</h3>`;
@@ -69,6 +81,19 @@ function kidCard(c, d) {
   return h;
 }
 
+// „200 задачи по математика“: points per part; only first-attempt answers count.
+function mathBlock(m) {
+  let h = `<h3 style="margin-top:18px">Математика · 200 задачи</h3>`;
+  if (!m.answered) return h + `<p class="small muted" style="margin:0">Още не е решавало задачи. Те са в профила на детето, бутон „Математика“.</p>`;
+  h += `<p class="small" style="margin:0 0 6px"><b>${m.points}</b> от ${m.max} точки · решени ${m.answered} от ${m.total}</p><div>`;
+  for (const p of m.parts) {
+    if (!p.answered) continue;
+    h += `<div class="mrow"><span class="nm">${p.grade}. клас · ${esc(p.title)}</span><span class="pc">${p.points} / ${p.max} т.${p.wrong ? ` · грешки: ${p.wrong}` : ""}</span>
+      <div class="bar" aria-hidden="true"><i style="width:${pct(p.answered, p.total)}%"></i><i class="lock" style="width:${pct(p.total - p.accessible, p.total)}%;margin-left:auto"></i></div></div>`;
+  }
+  return h + `</div>`;
+}
+
 function examStat(e) {
   if (!e) return "";
   const pts = e.sections.reduce((s, x) => s + x.points, 0);
@@ -86,6 +111,15 @@ function offerBody(d) {
     <form class="row" data-codeform style="margin-top:8px"><input type="text" placeholder="ABCDE-23456" aria-label="Код за достъп" autocapitalize="characters" spellcheck="false" style="flex:1;min-width:160px"><button class="btn gold" type="submit">Отключи</button></form>`;
 }
 
+function offerMath(d) {
+  const codeHint = d.testMode
+    ? "В тестовата версия задачите се отключват с код за тестери."
+    : "Имаш кутия с картите „Еду БЕЛ – Математика“? Кодът в нея отключва задачите. Въведи го тук.";
+  return `<p class="small">Пълният достъп отключва всички 200 задачи по математика за 5., 6. и 7. клас – в три нива, с подробно решение на всяка задача и препратка към картата за преговор. Важи за всички деца в профила ти.</p>
+    <p class="small muted">${codeHint}</p>
+    <form class="row" data-codeform style="margin-top:8px"><input type="text" placeholder="ABCDE-23456" aria-label="Код за достъп" autocapitalize="characters" spellcheck="false" style="flex:1;min-width:160px"><button class="btn gold" type="submit">Отключи</button></form>`;
+}
+
 function render(d) {
   const p = params();
   let h = `<h1>Здравей, ${esc(d.parent.name)}</h1>`;
@@ -93,9 +127,11 @@ function render(d) {
   if (["reviewer", "admin"].includes(d.parent.role)) {
     h += `<div class="panel"><h3>Преглед на съдържанието</h3><p>Профилът ти е за проверка на уроците, картите и задачите.</p><a class="btn gold" href="/pregled/">Към прегледа</a></div>`;
   }
-  if (d.access.length) {
-    const a = d.access[0];
-    h += `<p class="notice ok">Пълен достъп до ${date(a.ends_at)}${a.product !== "bel-all" ? ` (${esc(a.product.replace("bel", ""))}. клас)` : ""}.</p>`;
+  const seen = new Set();
+  for (const a of d.access) {
+    if (seen.has(a.product)) continue;
+    seen.add(a.product);
+    h += `<p class="notice ok">Пълен достъп до ${date(a.ends_at)}: ${esc(productName(a.product))}.</p>`;
   }
   if (!d.children.length) {
     h += `<div class="panel"><h3>Първа стъпка: добави детето си</h3><p class="muted">Измисли му потребителско име и парола. С тях то влиза от своя телефон или компютър. Не са нужни имейл или телефон на детето.</p></div>`;
@@ -114,7 +150,9 @@ function render(d) {
       <button class="btn" type="submit">Добави</button>
     </form></details>`;
 
-  if (!d.access.length && d.children.length) h += `<div class="panel"><h3>Пълен достъп</h3>${offerBody(d)}</div>`;
+  const belAccess = d.access.some((a) => a.product.startsWith("bel"));
+  if (!belAccess && d.children.length) h += `<div class="panel"><h3>Пълен достъп</h3>${offerBody(d)}</div>`;
+  if (!d.mathFull && d.children.some((c) => c.math.total)) h += `<div class="panel"><h3>200 задачи по математика</h3>${offerMath(d)}</div>`;
   h += `<footer class="site"><a href="/programa/">Програмата по класове</a><a href="/usloviya/">Условия и поверителност</a></footer>`;
   $("main").innerHTML = h;
   bind(d);
@@ -190,7 +228,7 @@ function bind(d) {
       e.preventDefault();
       try {
         const r = await api("family/redeem", { code: f.querySelector("input").value });
-        toast(r.result.kind === "reviewer" ? "Профилът е за преглед на съдържанието" : "Пълният достъп е отключен!");
+        toast(r.result.kind === "reviewer" ? "Профилът е за преглед на съдържанието" : r.result.product === "mat" ? "„200 задачи по математика“ са отключени!" : "Пълният достъп е отключен!");
         load();
       } catch (err) {
         toast(err.message, 4000);

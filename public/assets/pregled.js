@@ -1,8 +1,9 @@
 // Teacher review: each item as the child sees it, plus "approve" and "comment".
 import { $, api, esc, guard, toast, topbar } from "./app.js";
 import { lessonHtml, readingHtml } from "./lesson-view.js";
+import { level, mathHtml, solutionHtml } from "./math-view.js";
 
-const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене" };
+const KIND = { cards: "Карти", diagnostic: "Входен тест", t25: "Задача 25", chars: "Герои (AI)", pesho: "Научи Пешо", lesson: "Кратки уроци", reading: "Текстове за четене", quiz: "200 задачи" };
 let filter = "review";
 let current = null;
 
@@ -12,6 +13,14 @@ function itemBody(kind, d) {
       <ol class="ropts">${d.o.map((o, i) => `<li class="${i === 0 ? "right" : ""}">${esc(o)}${i === 0 ? ' <span class="pill ok">верен</span>' : ""}</li>`).join("")}</ol>
       <p class="rlbl">Защо</p><p>${esc(d.e)}</p>
       <p class="small muted">Творби: ${(d.ws || []).map(esc).join(", ")} · преговор: ${esc(d.w)}</p>`;
+  }
+  // Math task: the question, the options (the first is the right one), the hint and the full solution as the child sees it.
+  if (kind === "quiz") {
+    const lv = level(d.lv);
+    return `<p class="small muted">Задача ${esc(d.n)} · ${lv.name} (${lv.pts} т.)</p><p class="rq">${mathHtml(d.q)}</p>
+      <ol class="ropts">${d.o.map((o, i) => `<li class="${i === 0 ? "right" : ""}">${mathHtml(o)}${i === 0 ? ' <span class="pill ok">верен</span>' : ""}</li>`).join("")}</ol>
+      ${d.h ? `<p class="rlbl">Подсказка след грешен отговор</p><p>${mathHtml(d.h)}</p>` : ""}
+      ${solutionHtml(d)}`;
   }
   if (kind === "t25") {
     return `<p class="small muted">${esc(d.w)} · ${esc(d.a)}</p><p class="rq">${esc(d.task)}</p>${d.q ? `<blockquote class="rquote">${esc(d.q)}</blockquote>` : '<p class="small muted">Без цитат</p>'}

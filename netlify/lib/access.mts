@@ -13,15 +13,23 @@ export async function activeEntitlements(parentId: number) {
 }
 
 export async function hasFullAccess(parentId: number, grade: number): Promise<boolean> {
+  return hasProduct(parentId, ["bel-all", `bel${grade}`]);
+}
+
+// Paid products per subject. BEL: 'bel-all' or 'bel<grade>'. Mathematics („200 задачи“): 'mat'.
+export const MATH_PRODUCTS = ["mat"];
+
+export async function hasProduct(parentId: number, products: string[]): Promise<boolean> {
   const row = await one(
-    "SELECT 1 FROM entitlements WHERE user_id = $1 AND product IN ('bel-all', $2) AND starts_at <= now() AND ends_at > now() LIMIT 1",
-    [parentId, `bel${grade}`],
+    "SELECT 1 FROM entitlements WHERE user_id = $1 AND product = ANY($2) AND starts_at <= now() AND ends_at > now() LIMIT 1",
+    [parentId, products],
   );
   return !!row;
 }
 
 export type ModuleRow = {
   slug: string;
+  subject: string;
   grade: number;
   kind: string;
   title: string;
@@ -46,8 +54,9 @@ export async function moduleItems(slug: string) {
   );
 }
 
+// The BEL course of one grade. Other subjects have their own pages (mathematics: /matematika/).
 export async function gradeModules(grade: number) {
-  return q<ModuleRow>("SELECT * FROM modules WHERE grade = $1 AND active ORDER BY position, slug", [grade]);
+  return q<ModuleRow>("SELECT * FROM modules WHERE grade = $1 AND active AND subject = 'bel' ORDER BY position, slug", [grade]);
 }
 
 // Summary of every module of a grade for one child: totals, free limit, progress.
@@ -55,7 +64,7 @@ export async function moduleSummaries(childId: number, grade: number, full: bool
   const mods = await gradeModules(grade);
   const items = await q<{ id: number; module_slug: string }>(
     `SELECT i.id, i.module_slug FROM items i JOIN modules m ON m.slug = i.module_slug
-      WHERE m.grade = $1 AND m.active AND i.status = ANY($2) ORDER BY i.module_slug, i.position, i.id`,
+      WHERE m.grade = $1 AND m.active AND m.subject = 'bel' AND i.status = ANY($2) ORDER BY i.module_slug, i.position, i.id`,
     [grade, visibleStatuses()],
   );
   const prog = await q<{ item_id: number; last_ok: boolean | null; correct: number; attempts: number; due_at: string | null }>(

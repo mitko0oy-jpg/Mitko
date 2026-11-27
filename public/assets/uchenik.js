@@ -51,11 +51,15 @@ function modulesHtml(mods) {
 async function load() {
   const m = await guard("child");
   topbar(m);
-  const [d, s] = await Promise.all([api("learn/home"), api("learn/units")]);
+  const [d, s, mat] = await Promise.all([api("learn/home"), api("learn/units"), api("quiz/mat/home").catch(() => null)]);
   showEmpty = !!s.testMode;
   let h = `<h1>Здравей, ${esc(d.child.name)}!</h1>`;
+  // „200 задачи по математика“ – a separate subject with its own page.
+  const matTile = mat?.parts?.length
+    ? `<a class="today math" href="/matematika/"><b>Математика</b><span>${mat.answered ? `${mat.points} т. · решени ${mat.answered} от ${mat.total}` : `${mat.total} задачи · 5.–7. клас`}</span></a>`
+    : "";
   if (!d.modules.length && !s.units.length) {
-    $("main").innerHTML = h + `<p class="lead">Материалите за ${d.child.grade}. клас се подготвят. Скоро ще са тук!</p>`;
+    $("main").innerHTML = h + `<p class="lead">Материалите за ${d.child.grade}. клас се подготвят. Скоро ще са тук!</p>${matTile ? `<div class="todays">${matTile}</div>` : ""}`;
     return;
   }
   // Today: the next useful step first.
@@ -66,6 +70,7 @@ async function load() {
   if (diag && !diag.done) today.push(`<a class="today gold" href="/karti/?m=${encodeURIComponent(diag.slug)}"><b>Входен тест</b><span>15 въпроса – виж кое знаеш</span></a>`);
   if (cards && d.due > 0) today.push(`<a class="today" href="/karti/?m=${encodeURIComponent(cards.slug)}&rezhim=pregovor"><b>Преговор за днес</b><span>${d.due} ${d.due === 1 ? "карта" : "карти"}</span></a>`);
   if (exam) today.push(`<a class="today" href="/izpit/?m=${encodeURIComponent(exam.slug)}"><b>Пробна матура</b><span>Като на НВО</span></a>`);
+  if (matTile) today.push(matTile);
   h += `<p class="lead">${today.length ? "По малко всеки ден е по-добре от много наведнъж." : "Избери творба или тема."}</p>`;
   if (today.length) h += `<div class="todays">${today.join("")}</div>`;
   const tabs = [

@@ -115,12 +115,13 @@ export const params = () => new URLSearchParams(location.search);
 
 // Shown when the child has used the free part of a module.
 // The offer goes to the parent: the child is never asked to buy anything.
-export function renderUnlock(container, { module, title, done, total, locked = false }) {
+// send: how the request reaches the parent (default: a BEL module; the math quiz passes its own).
+export function renderUnlock(container, { module, title, done, total, locked = false, unit = "", send = () => api("learn/unlock", { module }) }) {
   const head = locked
     ? `<div class="medal" aria-hidden="true">🔒</div><h2>Това е в пълния достъп</h2>
        <p>Първо реши безплатната част на „${esc(title)}“. Ако ти харесва, покажи на мама или татко – те ще решат дали да отключат останалото.</p>`
     : `<div class="medal" aria-hidden="true">✓</div><h2>Браво! Мина безплатната част</h2>
-       <p>Решил си ${done} от общо ${total} в „${esc(title)}“. Останалите са в пълния достъп.</p>
+       <p>Решил си ${done} от общо ${total}${unit ? ` ${esc(unit)}` : ""} в „${esc(title)}“. Останалите са в пълния достъп.</p>
        <p>Покажи на мама или татко какво си научил. Те ще решат дали да отключат останалото.</p>`;
   container.innerHTML = `<div class="unlock">
     ${head}
@@ -129,7 +130,7 @@ export function renderUnlock(container, { module, title, done, total, locked = f
   </div>`;
   $("unlockAsk").addEventListener("click", async () => {
     try {
-      await api("learn/unlock", { module });
+      await send();
       $("unlockMsg").textContent = "Готово! Родителят ти ще види отчета, когато влезе в своя профил.";
       $("unlockAsk").disabled = true;
     } catch (e) {

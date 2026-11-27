@@ -4,7 +4,8 @@ import { formatCode, newCode } from "../lib/codes.mts";
 import { one, q, tx } from "../lib/db.mts";
 import { bad, body, handle, json, notFound, str, sub } from "../lib/http.mts";
 
-const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading"];
+const KINDS = ["cards", "t25", "chars", "pesho", "diagnostic", "exam", "lesson", "reading", "quiz"];
+const SUBJECTS = ["bel", "mat"];
 
 // JSONB does not keep key order, so compare content with sorted keys.
 function stable(v: any): string {
@@ -73,12 +74,14 @@ export default handle(async (req) => {
     await tx(async (t) => {
       for (const m of modules) {
         if (!KINDS.includes(m.kind)) throw bad("kind", `Непознат вид: ${m.kind}`);
+        const subject = m.subject || "bel";
+        if (!SUBJECTS.includes(subject)) throw bad("subject", `Непознат предмет: ${subject}`);
         await t(
-          `INSERT INTO modules (slug, grade, kind, title, subtitle, position, free_ratio, free_count, meta, active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          `INSERT INTO modules (slug, grade, kind, title, subtitle, position, free_ratio, free_count, meta, active, subject)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            ON CONFLICT (slug) DO UPDATE SET grade = $2, kind = $3, title = $4, subtitle = $5, position = $6,
-             free_ratio = $7, free_count = $8, meta = $9, active = $10`,
-          [m.slug, m.grade, m.kind, m.title, m.subtitle || "", m.position || 0, m.free_ratio ?? 0.3, m.free_count ?? null, JSON.stringify(m.meta || {}), m.active !== false],
+             free_ratio = $7, free_count = $8, meta = $9, active = $10, subject = $11`,
+          [m.slug, m.grade, m.kind, m.title, m.subtitle || "", m.position || 0, m.free_ratio ?? 0.3, m.free_count ?? null, JSON.stringify(m.meta || {}), m.active !== false, subject],
         );
       }
       for (const u of units) {

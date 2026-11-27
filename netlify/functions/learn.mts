@@ -22,7 +22,8 @@ function clientData(kind: string, data: any) {
 }
 
 async function loadModule(slug: string, grade: number): Promise<ModuleRow> {
-  const m = await one<ModuleRow>("SELECT * FROM modules WHERE slug = $1 AND active", [slug]);
+  // Only BEL modules: the mathematics quiz has its own API with its own access (/api/quiz).
+  const m = await one<ModuleRow>("SELECT * FROM modules WHERE slug = $1 AND active AND subject = 'bel'", [slug]);
   if (!m) throw notFound("Няма такъв модул.");
   if (Number(m.grade) !== grade) throw forbidden("Този модул е за друг клас.");
   return m;
@@ -117,7 +118,7 @@ export default handle(async (req) => {
 
   // Cards that are due again today across all card modules of the grade.
   if (req.method === "GET" && parts[0] === "review") {
-    const mods = await q<ModuleRow>("SELECT * FROM modules WHERE grade = $1 AND active AND kind = 'cards'", [child.grade]);
+    const mods = await q<ModuleRow>("SELECT * FROM modules WHERE grade = $1 AND active AND kind = 'cards' AND subject = 'bel'", [child.grade]);
     const due: any[] = [];
     for (const m of mods) {
       const { open } = await accessibleItems(m, child.parent_id, child.grade);

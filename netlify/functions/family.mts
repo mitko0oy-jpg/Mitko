@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { activeEntitlements, hasFullAccess, moduleSummaries, testMode } from "../lib/access.mts";
+import { quizAccess, quizSummary } from "../lib/quiz.mts";
 import { hashPassword, normalizeUsername, requireUser, validUsername } from "../lib/auth.mts";
 import { redeemCode } from "../lib/codes.mts";
 import { event, hit, one, q } from "../lib/db.mts";
@@ -31,14 +32,16 @@ async function workStats(childId: number) {
   };
 }
 
-async function childOverview(c: any, full: boolean) {
+async function childOverview(c: any, full: boolean, mathFull: boolean) {
   const modules = await moduleSummaries(Number(c.id), Number(c.grade), full);
   const works = await workStats(Number(c.id));
   const diag = modules.find((m) => m.kind === "diagnostic");
-  const unlock = await q<{ module_slug: string; created_at: string; seen_at: string | null }>(
-    "SELECT module_slug, created_at, seen_at FROM unlock_requests WHERE child_id = $1 ORDER BY created_at DESC",
+  const unlock = await q<{ module_slug: string; title: string; subject: string; created_at: string; seen_at: string | null }>(
+    `SELECT u.module_slug, m.title, m.subject, u.created_at, u.seen_at FROM unlock_requests u JOIN modules m ON m.slug = u.module_slug
+      WHERE u.child_id = $1 ORDER BY u.created_at DESC`,
     [c.id],
   );
+  const math = await quizSummary("mat", Number(c.id), mathFull);
   const exam = await q<{ title: string; points: number; max: number }>(
     `SELECT i.data->>'title' AS title, (p.answer::json->>'points')::float AS points, (p.answer::json->>'max')::float AS max
        FROM progress p JOIN items i ON i.id = p.item_id JOIN modules m ON m.slug = i.module_slug
@@ -62,7 +65,16 @@ async function childOverview(c: any, full: boolean) {
     strong: works.strong,
     diagnostic: diag && diag.done ? { done: diag.done, ok: diag.ok, total: diag.total } : null,
     exam: exam.length ? { sections: exam, done: exam.length, total: examMod?.total || exam.length } : null,
-    unlockRequests: unlock.map((u) => ({ module: u.module_slug, at: u.created_at, seen: !!u.seen_at })),
+    unlockRequests: unlock.map((u) => ({ module: u.module_slug, title: u.title, subject: u.subject, at: u.created_at, seen: !!u.seen_at })),
+    // „200 задачи по математика“: points per part (only first-attempt answers count).
+    math: {
+      full: mathFull,
+      points: math.points,
+      max: math.max,
+      answered: math.answered,
+      total: math.total,
+      parts: math.parts.map((p) => ({ slug: p.slug, grade: p.grade, title: p.title, answered: p.answered, accessible: p.accessible, total: p.total, points: p.points, max: p.max, wrong: p.wrong })),
+    },
     lastActive: last?.at || null,
     weekItems: week?.n || 0,
   };
@@ -75,10 +87,12 @@ export default handle(async (req) => {
   if (req.method === "GET" && parts.length === 0) {
     const kids = await q("SELECT * FROM children WHERE parent_id = $1 ORDER BY created_at", [user.id]);
     const children = [];
-    for (const c of kids) children.push(await childOverview(c, await hasFullAccess(user.id, Number(c.grade))));
+    const mathFull = await quizAccess("mat", user.id);
+    for (const c of kids) children.push(await childOverview(c, await hasFullAccess(user.id, Number(c.grade)), mathFull));
     return json({
       parent: { name: user.name, email: user.email, role: user.role },
       access: await activeEntitlements(user.id),
+      mathFull,
       children,
       testMode: testMode(),
     });
