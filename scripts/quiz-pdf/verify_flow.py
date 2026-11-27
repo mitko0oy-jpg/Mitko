@@ -8,6 +8,8 @@ if r.is_encrypted:
     r.decrypt('')
 keys = json.load(open(keys_path))
 content = json.load(open(content_path))
+MATH = all(q.get('subject', 'Математика') == 'Математика' for q in content['questions'])
+QWORD, SWORD = ('Задача', 'Решение') if MATH else ('Въпрос', 'Обяснение')
 N = len(r.pages)
 assert N == len(keys), (N, len(keys))
 idx = {k: i for i, k in enumerate(keys)}
@@ -82,10 +84,10 @@ for q in qs:
                 errors.append((num, pk, tg, exp))
             if idx[pk] != idx[pages[0]] + k:
                 errors.append((num, pk, 'not consecutive'))
-    # page texts
-    if f'Задача {num:03d}' not in text(idx[qc[0]]):
+    # page texts (math: „Задача“ / „Решение“; literature and language: „Въпрос“ / „Обяснение“)
+    if f'{QWORD} {num:03d}' not in text(idx[qc[0]]):
         errors.append((num, 'q title'))
-    if 'Вярно!' not in text(idx[f'c{num}']) or 'Решение' not in text(idx[f's{num}']):
+    if 'Вярно!' not in text(idx[f'c{num}']) or SWORD not in text(idx[f's{num}']):
         errors.append((num, 'c/s title'))
     if 'Вярно!' in text(idx[f's{num}']) or 'точки при първи опит' in text(idx[f's{num}']):
         errors.append((num, 's page shows result'))
@@ -105,14 +107,14 @@ for q in qs:
     bad = []
     if re.search(r'(^|[\s(])[АБВГ]\)', body):
         bad.append('letter)')
-    for w in ('ВЕРНИЯТ', 'Верният', 'РЕШЕНИЕ СТЪПКА', 'Отговор:', 'Уловката', 'Преговори', 'Вярно е', 'Грешката е'):
+    for w in ('ВЕРНИЯТ', 'Верният', 'РЕШЕНИЕ СТЪПКА', 'Отговор:', 'Уловката', 'Преговори', 'Вярно е', 'Грешката е', 'ЗАЩО', 'Защо:'):
         if w in body:
             bad.append(w)
     right = q['options'][q['correct']]
     flat = ' '.join(body.split())
     if len(right) >= 4 and right in flat:
         bad.append(f'correct option text „{right}“')
-    if any(st['do'][:25] in flat for st in q['steps'] if len(st['do']) >= 12):
+    if any(st['do'][:25] in flat for st in q.get('steps') or [] if len(st['do']) >= 12):
         bad.append('step text')
     if 'Не е вярно' not in body or 'Подсказка' not in body:
         bad.append('missing status/hint')
