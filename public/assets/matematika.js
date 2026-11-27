@@ -150,7 +150,7 @@ function renderTask(d, k, fix) {
   const it = d.items[k];
   const t = it.data;
   const lv = level(t.lv);
-  const order = optionOrder(t.o.length, it.ext);
+  const order = optionOrder(t.o.length, Number(t.n));
   const prev = d.progress[it.id];
   view = { d, k, fix, it, order, tries: 0, done: false };
   const status = prev

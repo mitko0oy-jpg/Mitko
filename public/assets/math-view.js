@@ -19,17 +19,31 @@ export function mathHtml(s) {
     .replace(/\n/g, "<br>");
 }
 
-// A stable order of the options for each task, so "отговор Б" means the same thing every time.
-export function optionOrder(n, seed) {
+function seeded(seed) {
   let h = 2166136261;
   for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-  const idx = Array.from({ length: n }, (_, i) => i);
-  for (let i = n - 1; i > 0; i--) {
-    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
-    const j = h % (i + 1);
-    [idx[i], idx[j]] = [idx[j], idx[i]];
+  return () => (h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0);
+}
+function shuffled(list, seed) {
+  const next = seeded(seed);
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = next() % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return idx;
+  return a;
+}
+
+// A stable order of the options of task number n (index 0 = the right answer), so "отговор Б"
+// means the same thing every time. Every 4 consecutive tasks put the right answer once on each
+// of А, Б, В, Г, in a mixed order: the letters are spread evenly over the whole collection.
+export function optionOrder(count, n) {
+  const idx = Array.from({ length: count }, (_, i) => i);
+  if (count !== 4 || !Number.isInteger(n) || n < 1) return shuffled(idx, `o${n}`);
+  const right = shuffled([0, 1, 2, 3], `b${Math.floor((n - 1) / 4)}`)[(n - 1) % 4];
+  const wrong = shuffled([1, 2, 3], `w${n}`);
+  wrong.splice(right, 0, 0);
+  return wrong;
 }
 
 // The full solution: right answer, numbered steps (what we do + why), answer, the trap, the card to revise.
