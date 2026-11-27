@@ -40,7 +40,9 @@ def main(subject, out, files, old_file=None):
                     if not str(t.get(k) or "").strip():
                         errors.append(f"{w}: липсва {k}")
                 o = t.get("o") or []
-                if len(o) != 4 or len({norm(x) for x in o}) != 4:
+                # For language the punctuation is the point (options may differ only in a comma), so compare it too.
+                same = (lambda x: re.sub(r"\s+", " ", x.lower()).strip()) if subject != "Литература" else norm
+                if len(o) != 4 or len({same(x) for x in o}) != 4:
                     errors.append(f"{w}: 4 различни отговора")
                 text = " ".join([t.get("q", ""), t.get("h", ""), t.get("why", ""), *o, *(t.get("passage") or [])])
                 if BANNED.search(" ".join(o)) or re.search(r"\bтеза\b", text, re.I):
