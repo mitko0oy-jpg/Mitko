@@ -1350,12 +1350,13 @@ function passageBlock(pid) {
   const p = BANK.passages[pid];
   return `<details class="passage" open><summary>${esc(p.title)}</summary><div class="ptext">${p.text.map((t) => `<p>${rich(t)}</p>`).join("")}${p.src ? `<p class="src">${esc(p.src)}</p>` : ""}</div></details>`;
 }
-function body(q, v, a, locked, showKey) {
+function body(q, v, a, locked, showKey, tried) {
   if (q.t === "mc") {
     return `<div class="opts" role="radiogroup" aria-label="Отговори">${v.ord.map((oi, k) => {
       let c = a === oi ? "sel" : "";
-      if (showKey) c = oi === q.a ? "right" : a === oi ? "wrong" : "";
-      return `<button class="opt ${c}" role="radio" aria-checked="${a === oi}" data-act="pick" data-v="${oi}" ${locked ? "disabled" : ""}><span class="key">${LET[k]}</span><span>${R(q, q.o[oi])}</span></button>`;
+      if (showKey) c = oi === q.a ? "right" : a === oi || tried === oi ? "wrong" : "";
+      else if (tried === oi) c = "wrong";
+      return `<button class="opt ${c}" role="radio" aria-checked="${a === oi}" data-act="pick" data-v="${oi}" ${locked || tried === oi ? "disabled" : ""}><span class="key">${LET[k]}</span><span>${R(q, q.o[oi])}</span></button>`;
     }).join("")}</div>`;
   }
   if (q.t === "input") {
@@ -1400,13 +1401,18 @@ function renderQ() {
   if (q.p && BANK.passages[q.p]) h += passageBlock(q.p);
   if (q.text) h += `<blockquote class="qtext ${q.h ? "mtext" : ""}">${R(q, q.text)}</blockquote>`;
   h += `<h2 class="qq ${q.h ? "mq" : ""}">${R(q, q.q)}</h2>`;
-  h += body(q, v, a, done || false, done && !mock);
+  const tried = s.tried?.[s.i];
+  h += body(q, v, a, done || false, done && !mock, tried);
+  // A first wrong answer on a math task: only „Не е вярно“ and the hint – no right answer, no solution – and a second try.
+  if (!done && !mock && tried !== undefined) {
+    h += `<div class="fb no ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot("oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">Не е вярно. Опитай пак!</b>${q.tip ? `<span class="why"><b>Подсказка:</b> ${R(q, q.tip)}</span>` : `<span class="why">Прочети условието отново и реши на лист.</span>`}</div></div>`;
+  }
   if (done && !mock) {
-    const ok = s.ok[s.i];
-    const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
-    h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
-    // The worked solution right after the answer (math tasks with sol): open after a mistake, folded after a right answer.
-    if (q.sol && q.t !== "self") h += `<details class="msol-d now" ${ok ? "" : "open"}><summary>Виж решението стъпка по стъпка</summary><div class="msol">${mh(q.sol)}</div></details>`;
+    const ok = s.ok[s.i], ok2 = !ok && s.second?.[s.i] === true; // ok2: right only at the second try (no XP, the grade keeps the first)
+    const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : ok2 ? "Вярно от втория опит!" : tried !== undefined ? "Пак не е вярно. Ето решението:" : CALM[s.i % CALM.length];
+    h += `<div class="fb ${ok || ok2 ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok || ok2 ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok2 ? `<span>Точки и оценка има само за първия опит.</span>` : ""}${ok || ok2 || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
+    // The worked solution after the answer (math tasks with sol): open after a mistake, folded after a right answer.
+    if (q.sol && q.t !== "self") h += `<details class="msol-d now" ${ok || ok2 ? "" : "open"}><summary>Виж решението стъпка по стъпка</summary><div class="msol">${mh(q.sol)}</div></details>`;
     if (ONLINE && !ok && q.t !== "self") h += s.expl?.[s.i] ? `<div class="explain" role="status"><b>Ерчо обяснява</b><p>${esc(s.expl[s.i])}</p></div>` : `<div class="explain ask" id="expl"><button class="btn sm line" data-act="explain">Обясни ми тази грешка</button></div>`;
     if (ONLINE) h += s.reported?.[s.i] ? `<p class="repdone" role="status">Благодарим! Ще проверим задачата.</p>` : `<div class="rep" id="rep"><button class="replink" data-act="repOpen">Мисля, че тук има грешка</button></div>`;
   }
@@ -1464,12 +1470,39 @@ function updateNav() {
     b.classList.toggle("done", answered(s.qs[i], s.ans[i]) && (s.qs[i].t !== "order" || !!s.touchedIdx?.[i]));
   });
 }
+// Math multiple choice gets a second try after a first mistake (a hint first, the solution only after the second
+// mistake); the grade, XP and the skill map count only the first answer. Not in the entry test or the mock exam.
+const secondTry = (s, q) => q.h && q.t === "mc" && s.kind !== "mock" && s.kind !== "diag";
 function check() {
   const s = sess, q = s.qs[s.i];
   if (!answered(q, s.ans[s.i]) || s.checked[s.i]) return;
-  s.checked[s.i] = true;
-  s.ok[s.i] = isRight(q, s.ans[s.i]);
+  const right = isRight(q, s.ans[s.i]);
   s.touched = true;
+  if (s.tried?.[s.i] !== undefined) {
+    // the second try: shown as right or wrong, but s.ok (the grade) keeps the first answer
+    s.checked[s.i] = true;
+    (s.second ||= {})[s.i] = right;
+    s.fresh = true;
+    renderQ();
+    s.fresh = false;
+    if (right) FX.right(); else FX.wrong();
+    document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+    return;
+  }
+  if (!right && secondTry(s, q)) {
+    s.ok[s.i] = false;
+    track(q.id, false);
+    (s.tried ||= {})[s.i] = s.ans[s.i];
+    s.ans[s.i] = undefined;
+    s.fresh = true;
+    renderQ();
+    s.fresh = false;
+    FX.wrong();
+    document.getElementById("fb")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+    return;
+  }
+  s.checked[s.i] = true;
+  s.ok[s.i] = right;
   track(q.id, s.ok[s.i]);
   s.fresh = true;
   renderQ();

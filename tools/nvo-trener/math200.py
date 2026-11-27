@@ -8,7 +8,8 @@
 Source (paid content, outside git): {"parts": [{"id": "5a", "grade": 5, "title": "…", "tasks": [task…]}]},
 task = {n, lv (0 Знам, 1 Разбирам, 2 Мисля), q, o: [right, wrong×3], h (hint), s: [{do, why}], a, trap, card, t}.
 Every part becomes three modules (one per level) „mz-<part>-<level>“ in the section „Задачи като на НВО“;
-the worked solution (`sol`) is the trainer's step list, `why` is the common trap, `sk` the skill of the card.
+the worked solution (`sol`) is the trainer's step list, `why` is the common trap, `tip` the hint after a first
+mistake (the trainer then gives a second try; the solution comes after the second mistake), `sk` the skill of the card.
 In the text {a/b} is a fraction and braces without „/“ a set, e.g. {2; 3}."""
 import html, json, os, re, sys
 
@@ -150,7 +151,7 @@ def main(out, files):
                     o = [m(x) for x in t["o"][1:]]
                     o.insert(right, m(t["o"][0]))
                     qs.append({"id": f"{mid}-{i + 1:02d}", "m": mid, "t": "mc", "h": 1, "q": ("<small>За напреднали</small><br>" if t.get("adv") else "") + m(t["q"]) + (fig_html(t["fig"]) if t.get("fig") else ""), "o": o, "a": right,
-                               "why": m(t["trap"]), "sol": sol(t), "sk": SKILL[t["card"]], "n200": t["n"]})
+                               "why": m(t["trap"]), "sol": sol(t), "tip": m(t["h"]), "sk": SKILL[t["card"]], "n200": t["n"]})
                 json.dump(qs, open(os.path.join(out, f"{mid}.json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)
     json.dump(modules, open(os.path.join(out, "modules.json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)
     print(f"{len(modules)} модула → {out}")
