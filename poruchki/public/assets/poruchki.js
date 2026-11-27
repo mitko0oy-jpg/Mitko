@@ -215,7 +215,10 @@ function renderSide(f) {
   $("nActive").textContent = num(active);
   $("nDone").textContent = num(total - active);
   $("nAll").textContent = num(total);
-  for (const b of $("tabs").querySelectorAll("button")) b.classList.toggle("on", !state.stages.size && b.dataset.tab === state.tab);
+  // A search looks in every tab (the server ignores the tab), so no tab is lit while searching.
+  const searching = !!$("q").value.trim();
+  for (const b of $("tabs").querySelectorAll("button")) b.classList.toggle("on", !searching && !state.stages.size && b.dataset.tab === state.tab);
+  $("searchAll").hidden = !searching;
   $("stages").innerHTML =
     STAGE_ORDER.filter((k) => k !== "archived" || f.stages[k])
       .map(
@@ -319,7 +322,13 @@ function renderTable(d) {
   rows = d.orders;
   $("table").className = `otbl ${[...hidden].map((k) => `off-${k}`).join(" ")}`;
   if (!rows.length) {
-    $("table").innerHTML = `<tbody><tr><td class="empty">Няма поръчки по тези условия.</td></tr></tbody>`;
+    // Searching, but a filter (shop, dates, status…) may hide the order: one click searches without them.
+    const p = params();
+    const narrowed = p.q && (FIELDS.some((f) => f !== "q" && f !== "sort" && p[f]) || p.stage || p.nowaybill || p.sent || p.soon || p.nek);
+    $("table").innerHTML = `<tbody><tr><td class="empty">Няма поръчки по тези условия.${
+      narrowed ? `<div class="emptyhelp">Има включени филтри. <button class="btn sm" id="searchBare">Търси „${esc(p.q)}“ без филтрите</button></div>` : ""
+    }</td></tr></tbody>`;
+    if (narrowed) $("searchBare").onclick = () => clearFilters(true);
     return;
   }
   const allOn = rows.every((o) => selected.has(o.id));
@@ -332,7 +341,7 @@ function renderTable(d) {
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
         <td class="c-no"><div class="nocell"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a>${icons4(o)}</div></td>
-        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div>${o.stage === "duplicate" && o.dup_no ? `<a class="dupof" href="/poruchka/?id=${o.dup_of}" title="Същият клиент вече поръча № ${esc(o.dup_no)}">на № ${esc(o.dup_no)}</a>` : ""}</td>
+        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div>${o.archived_at ? `<span class="arch" title="Поръчката е в архива – върни я от ⋮">в архива</span>` : ""}${o.stage === "duplicate" && o.dup_no ? `<a class="dupof" href="/poruchka/?id=${o.dup_of}" title="Същият клиент вече поръча № ${esc(o.dup_no)}">на № ${esc(o.dup_no)}</a>` : ""}</td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
         <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
@@ -523,6 +532,8 @@ async function load(keepScroll = false) {
 $("tabs").onclick = (e) => {
   const b = e.target.closest("button");
   if (!b) return;
+  // A search covers every tab, so choosing a tab means "show me this tab": the search goes away.
+  $("q").value = "";
   state.tab = b.dataset.tab;
   state.stages.clear();
   state.page = 1;
@@ -555,8 +566,9 @@ $("soon").onchange = () => {
   state.page = 1;
   load();
 };
-$("clear").onclick = () => {
-  for (const f of FIELDS) $(f).value = "";
+/** Clears the filters; keepSearch leaves the search box as it is. */
+function clearFilters(keepSearch = false) {
+  for (const f of FIELDS) if (!(keepSearch && f === "q")) $(f).value = "";
   $("nowaybill").checked = false;
   $("sentToday").checked = false;
   $("soon").checked = false;
@@ -565,7 +577,8 @@ $("clear").onclick = () => {
   state.tab = "active";
   state.page = 1;
   load();
-};
+}
+$("clear").onclick = () => clearFilters();
 $("filtersBtn").onclick = () => $("side").classList.toggle("open");
 
 // The filter column folds into a thin "Филтри" tab on big screens (remembered on this device).

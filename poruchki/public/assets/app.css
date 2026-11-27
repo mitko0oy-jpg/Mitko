@@ -1359,3 +1359,20 @@ th.got, td.got { color: #1a8f3c; }
 .happened { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, #22a447 7%, var(--surface)); font-size: 14px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tile .sub.got, :root:not([data-theme="light"]) .tile .sub.got b, :root:not([data-theme="light"]) .happened .got, :root:not([data-theme="light"]) .happened .got b, :root:not([data-theme="light"]) th.got, :root:not([data-theme="light"]) td.got { color: #5bd27f; } }
 :root[data-theme="dark"] .tile .sub.got, :root[data-theme="dark"] .tile .sub.got b, :root[data-theme="dark"] .happened .got, :root[data-theme="dark"] .happened .got b, :root[data-theme="dark"] th.got, :root[data-theme="dark"] td.got { color: #5bd27f; }
+
+/* Търсене: covers every tab, archived included – a note in place of the lit tab, and a mark on archived rows. */
+.tabs .searchall { align-self: center; margin-left: 6px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.tabs .searchall[hidden] { display: none; }
+.arch { display: inline-block; margin-top: 3px; padding: 0 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: 11px; white-space: nowrap; }
+.emptyhelp { margin-top: 10px; display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; font-size: 13px; }
+
+/* After a waybill is made the window closes; this note stays a few seconds with the number and „Печат“. */
+.wbtoast { position: fixed; z-index: 60; right: 16px; bottom: 16px; display: flex; gap: 10px; align-items: center; max-width: min(460px, calc(100vw - 32px));
+  padding: 10px 10px 10px 14px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1px solid color-mix(in srgb, var(--good) 40%, var(--line));
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.18); font-size: 14px; animation: wbtoast-in .18s ease-out; }
+.wbtoast .ok { font-weight: 600; }
+.wbtoast .msg { flex: 1; min-width: 0; }
+.wbtoast .iconbtn { flex: none; }
+@keyframes wbtoast-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .wbtoast { animation: none; } }
+@media (max-width: 760px) { .wbtoast { left: 12px; right: 12px; max-width: none; bottom: calc(78px + env(safe-area-inset-bottom)); } }

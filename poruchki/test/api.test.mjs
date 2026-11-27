@@ -527,8 +527,16 @@ test("confirm by hand, notes, AI call request, archive", async () => {
   assert.equal((await api("/api/orders?confirmed=ai&q=5060")).data.total, 0);
   await api(`/api/orders/${o.id}/unconfirm`, {});
   await api(`/api/orders/${o.id}/archive`, {});
-  assert.equal((await api("/api/orders?q=5060")).data.total, 0);
-  assert.equal((await api("/api/orders?q=5060&archived=1")).data.total, 1);
+  // The archive tab without a search shows it, the other tabs do not.
+  assert.ok(!(await api("/api/orders?tab=active")).data.orders.some((x) => x.id === o.id));
+  assert.ok((await api("/api/orders?archived=1")).data.orders.some((x) => x.id === o.id));
+  // A search looks in every tab, the archive included, whatever tab is open.
+  for (const tab of ["active", "done", "", "archived"]) {
+    const found = (await api(`/api/orders?tab=${tab}&archived=${tab === "archived" ? 1 : ""}&q=5060`)).data.orders;
+    assert.equal(found.length, 1, `tab ${tab || "all"}`);
+    assert.ok(found[0].archived_at, "marked as archived");
+  }
+  assert.equal((await api("/api/orders?tab=done&q=" + encodeURIComponent("№ 5060"))).data.total, 1, "№ in front of the number");
   await api(`/api/orders/${o.id}/unarchive`, {});
   await api(`/api/waybills/settings`, { automation: { autoWaybill: true } });
 });

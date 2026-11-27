@@ -15,6 +15,38 @@ function dialog() {
   return d;
 }
 
+/**
+ * A small note in the corner after a waybill is made (the window is already closed): the text, buttons and ✕.
+ * Goes away by itself after 12 s – not while the mouse is on it – and the next note replaces it.
+ */
+function toast(html, buttons = []) {
+  document.getElementById("wbToast")?.remove();
+  const t = document.createElement("div");
+  t.id = "wbToast";
+  t.className = "wbtoast";
+  t.setAttribute("role", "status");
+  t.innerHTML = `<span class="msg">${html}</span>`;
+  for (const b of buttons) {
+    const el = document.createElement("button");
+    el.className = `btn sm${b.primary ? " primary" : ""}`;
+    el.textContent = b.label;
+    el.onclick = b.onclick;
+    t.append(el);
+  }
+  const x = document.createElement("button");
+  x.className = "iconbtn";
+  x.setAttribute("aria-label", "Затвори");
+  x.textContent = "✕";
+  x.onclick = () => t.remove();
+  t.append(x);
+  document.body.append(t);
+  let timer;
+  const later = () => (timer = setTimeout(() => t.remove(), 12000));
+  t.onmouseenter = () => clearTimeout(timer);
+  t.onmouseleave = later;
+  later();
+}
+
 /** Opens the label PDF of one or more orders in a new tab. */
 export function openLabels(ids) {
   window.open(`/api/waybills/label?ids=${ids.join(",")}`, "_blank", "noopener");
@@ -217,12 +249,12 @@ export async function openWaybill(orderId) {
       try {
         const r = await api("/api/waybills/create", { method: "POST", body: { orderId: o.id, draft } });
         result = r;
-        d.innerHTML = `
-          <div class="mh"><h2>Готово</h2><button class="iconbtn" data-close aria-label="Затвори">✕</button></div>
-          <div class="mb"><p>Товарителница <b>№ ${esc(r.number)}</b> (${COURIER_NAME[r.courier]}) за поръчка № ${esc(o.order_no)}${r.price ? ` · цена ${eur(r.price, true)}` : ""}.</p></div>
-          <div class="mf"><button class="btn" data-close>Затвори</button><button class="btn primary" id="wbPrint">Печат на етикета</button></div>`;
-        d.querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => d.close()));
-        d.querySelector("#wbPrint").onclick = () => openLabels([o.id]);
+        // Done: the window goes away; a short note keeps the number and „Печат“ for a few seconds.
+        d.close();
+        toast(
+          `<span class="ok">✓</span> Товарителница <b>№ ${esc(r.number)}</b> (${COURIER_NAME[r.courier] || esc(r.courier)}) за № ${esc(o.order_no)}${r.price ? ` · ${eur(r.price, true)}` : ""}`,
+          [{ label: "Печат", primary: true, onclick: () => openLabels([o.id]) }],
+        );
       } catch (e) {
         d.querySelector("#wbErr").textContent = e.message;
         btn.disabled = false;
@@ -272,6 +304,15 @@ export async function bulkCreate(orders, onDone) {
         line.innerHTML = `№ ${esc(o.order_no)} – <span class="err">${esc(err.message)}</span>`;
       }
     }
+    onDone?.();
+    // All made: the window goes away like for one order. With an error it stays open, so the error can be read.
+    if (made.length && made.length === todo.length) {
+      d.close();
+      toast(`<span class="ok">✓</span> Създадени ${made.length} ${made.length === 1 ? "товарителница" : "товарителници"}`, [
+        { label: `Печат на етикетите (${made.length})`, primary: true, onclick: () => openLabelsFor(made) },
+      ]);
+      return;
+    }
     e.target.textContent = "Готово";
     if (made.length) {
       const p = document.createElement("button");
@@ -280,7 +321,6 @@ export async function bulkCreate(orders, onDone) {
       p.onclick = () => openLabelsFor(made);
       d.querySelector(".mf").prepend(p);
     }
-    onDone?.();
   };
 }
 

@@ -64,8 +64,11 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   const to = u.get("to");
   if (isDay(from)) add("o.day >= ?", from);
   if (isDay(to)) add("o.day <= ?", to);
+  // A search looks in every tab – active, finished and archived – so an order is never hidden by the tab you are in.
+  // The status switches and the other filters still apply: those are chosen on purpose.
+  const search = str(u.get("q"), 80);
   if (withStage) {
-    const tab = u.get("tab");
+    const tab = search ? "" : u.get("tab");
     if (tab === "active") parts.push(ACTIVE);
     if (tab === "done") parts.push(DONE);
     const stages = String(u.get("stage") || "").split(",").filter((x) => x === "abandoned" || (STAGES as readonly string[]).includes(x));
@@ -90,13 +93,13 @@ function filters(u: URLSearchParams, withStage: boolean, skip: { product?: boole
   if (conf === "no") parts.push("o.confirmed_at IS NULL");
   if (conf === "ai") parts.push("o.confirmed_by = 'AI агент'");
   if (conf === "us") parts.push("o.confirmed_at IS NOT NULL AND o.confirmed_by IS DISTINCT FROM 'AI агент'");
-  parts.push(u.get("archived") === "1" ? "o.archived_at IS NOT NULL" : "o.archived_at IS NULL");
-  const search = str(u.get("q"), 80);
+  if (!search) parts.push(u.get("archived") === "1" ? "o.archived_at IS NOT NULL" : "o.archived_at IS NULL");
   if (search) {
     const digits = search.replace(/\D/g, "");
     params.push(`%${search.toLowerCase()}%`);
     const p = `$${params.length}`;
-    params.push(search);
+    // "#5060" or "№ 5060" is the number 5060.
+    params.push(search.replace(/^[#№\s]+/, ""));
     const exact = `$${params.length}`;
     const or = [`lower(o.customer_name) LIKE ${p}`, `o.order_no = ${exact}`, `o.tracking_no = ${exact}`, `lower(o.city) LIKE ${p}`];
     if (digits.length >= 6) {
