@@ -815,7 +815,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 /* status: solid colours like Middleware's status filter (Чакаща grey, Изоставена slate, Изпратена yellow, Завършена green,
    Върната red, Отказана black, Унищожена pink, Пренасочена blue), so every status is told apart at a glance;
    the ones Middleware has no colour for get their own hue (Дублирана violet, Изготвена teal). Set only --h. */
-.badge { --h: #a3a3a3; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-weight: 600;
+.badge { --h: #a3a3a3; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 7px; padding: 4px 10px; font-weight: 600;
   background: var(--h); color: #fff; box-shadow: none; text-shadow: 0 1px 1px rgb(0 0 0 / 0.14); }
 .badge::before { display: none; }
 .badge.new { --h: #a3a3a3; }
@@ -1248,7 +1248,7 @@ a.tile { display: block; }
   .otbl td.c-badge { align-self: start; }
   .otbl td.c-badge .st { justify-content: flex-end; gap: 4px; }
   .otbl td.c-badge .bwrap { padding: 4px 0 0 5px; }
-  .otbl td.c-badge .bwrap .badge { width: auto; min-width: 74px; padding: 4px 9px; font-size: 12px; border-radius: 6px; }
+  .otbl td.c-badge .bwrap .badge { width: auto; min-width: 74px; padding: 4px 9px; font-size: 12px; border-radius: 7px; }
   .otbl td.c-badge .flag { width: 14px; height: 14px; }
 
   /* shop and time, small and grey */
