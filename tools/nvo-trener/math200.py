@@ -34,9 +34,53 @@ def m(s):
     return s.replace("\n", "<br>")
 
 
+def fig_html(f):
+    """A table, bar chart or pie chart for the trainer (HTML table / inline SVG; the trainer keeps these tags)."""
+    if f["type"] == "table":
+        head = "".join(f"<th>{m(x)}</th>" for x in f["head"])
+        rows = "".join("<tr>" + "".join(f"<td>{m(x)}</td>" for x in r) + "</tr>" for r in f["rows"])
+        return f'<table class="mtable"><thead><tr>{head}</tr></thead><tbody>{rows}</tbody></table>'
+    if f["type"] == "bar":
+        W, H, L, B, T = 320, 220, 34, 30, 22  # width, height, left axis, bottom labels, top
+        top, step, vals = f["max"], f["step"], f["values"]
+        y = lambda v: T + (H - T - B) * (1 - v / top)
+        g = []
+        for v in range(0, top + 1, step):
+            g.append(f'<line x1="{L}" y1="{y(v):.1f}" x2="{W - 6}" y2="{y(v):.1f}" stroke="currentColor" stroke-opacity="{0.35 if v == 0 else 0.12}" stroke-width="1"></line>')
+            if v % (step * 2) == 0 or step >= 10:
+                g.append(f'<text x="{L - 6}" y="{y(v) + 4:.1f}" font-size="11" text-anchor="end" fill="currentColor">{v}</text>')
+        bw = (W - L - 16) / len(vals)
+        for i, (lab, v) in enumerate(zip(f["labels"], vals)):
+            x = L + 8 + i * bw + bw * 0.18
+            g.append(f'<rect x="{x:.1f}" y="{y(v):.1f}" width="{bw * 0.64:.1f}" height="{y(0) - y(v):.1f}" rx="3" fill="#6b5e98"></rect>')
+            g.append(f'<text x="{x + bw * 0.32:.1f}" y="{H - 10}" font-size="12" text-anchor="middle" fill="currentColor">{html.escape(lab)}</text>')
+        g.append(f'<text x="{L}" y="13" font-size="12" font-weight="700" fill="currentColor">{html.escape(f.get("title", ""))}</text>')
+        return f'<svg viewBox="0 0 {W} {H}" width="100%" class="mfig">{"".join(g)}</svg>'
+    if f["type"] == "pie":
+        import math
+        cx, cy, r, a0, g = 110, 112, 88, -90.0, []
+        colors = ["#6b5e98", "#3d777a", "#b98d4f", "#a6534f"]
+        legend = []
+        for i, sct in enumerate(f["sectors"]):
+            a1 = a0 + sct["deg"]
+            p = lambda a: (cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a)))
+            (x0, y0), (x1, y1) = p(a0), p(a1)
+            large = 1 if sct["deg"] > 180 else 0
+            g.append(f'<path d="M{cx},{cy} L{x0:.1f},{y0:.1f} A{r},{r} 0 {large} 1 {x1:.1f},{y1:.1f} Z" fill="{colors[i % 4]}" stroke="#fff" stroke-width="2"></path>')
+            mx, my = cx + r * 0.62 * math.cos(math.radians((a0 + a1) / 2)), cy + r * 0.62 * math.sin(math.radians((a0 + a1) / 2))
+            g.append(f'<text x="{mx:.1f}" y="{my + 4:.1f}" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">{sct["deg"]}°</text>')
+            legend.append(f'<rect x="222" y="{70 + i * 26}" width="14" height="14" rx="3" fill="{colors[i % 4]}"></rect><text x="242" y="{82 + i * 26}" font-size="13" fill="currentColor">{html.escape(sct["label"])} – {sct["deg"]}°</text>')
+            a0 = a1
+        title = f'<text x="0" y="13" font-size="12" font-weight="700" fill="currentColor">{html.escape(f.get("title", ""))}</text>'
+        return f'<svg viewBox="0 0 360 214" width="100%" class="mfig">{title}{"".join(g)}{"".join(legend)}</svg>'
+    return ""
+
+
 def sol(t):
     steps = "".join(f'<li><span class="do">{m(x["do"])}</span><span class="why">{m(x["why"])}</span></li>' for x in t["s"])
-    return (f'<ol class="steps sol">{steps}</ol><p><br><b>Отговор:</b> {m(t["a"])}</p>'
+    # „Find the wrong line“: the letters are shuffled in the trainer, so name the wrong statement itself.
+    err = f'<p><b>Грешката е в:</b> {m(t["o"][0])}<br><b>Вярно е:</b> {m(t["err"]["fix"])}</p><p><br></p>' if t.get("err") else ""
+    return (err + f'<ol class="steps sol">{steps}</ol><p><br><b>Отговор:</b> {m(t["a"])}</p>'
             f'<p><small>Преговори: карта {t["card"]:02d} – {m(t["t"])}</small></p>')
 
 
@@ -79,7 +123,9 @@ def pdf_content(out, files):
                 questions.append({"n": t["n"], "part": pid, "grade": part["grade"], "subject": "Математика", "level": t["lv"] + 1,
                                   "q": t["q"], "options": [t["o"][i] for i in order], "correct": order.index(0), "hint": t["h"],
                                   "steps": t["s"], "answer": t["a"], "trap": t["trap"], "card": t["card"],
-                                  "review": f"Карта {t['card']:02d} · {t['t']}"})
+                                  "review": f"Карта {t['card']:02d} · {t['t']}",
+                                  # optional: a table / bar / pie chart, „За напреднали“, „Грешката е в ред …“ + what is right
+                                  **{k: t[k] for k in ("fig", "adv", "err") if t.get(k)}})
     json.dump({"parts": parts, "questions": questions}, open(out, "w", encoding="utf8"), ensure_ascii=False, indent=1)
     print(f"{len(questions)} задачи → {out}")
 
@@ -103,7 +149,7 @@ def main(out, files):
                     right = (t["n"] - 1) % 4  # the trainer shuffles on screen; this only spreads the stored index
                     o = [m(x) for x in t["o"][1:]]
                     o.insert(right, m(t["o"][0]))
-                    qs.append({"id": f"{mid}-{i + 1:02d}", "m": mid, "t": "mc", "h": 1, "q": m(t["q"]), "o": o, "a": right,
+                    qs.append({"id": f"{mid}-{i + 1:02d}", "m": mid, "t": "mc", "h": 1, "q": ("<small>За напреднали</small><br>" if t.get("adv") else "") + m(t["q"]) + (fig_html(t["fig"]) if t.get("fig") else ""), "o": o, "a": right,
                                "why": m(t["trap"]), "sol": sol(t), "sk": SKILL[t["card"]], "n200": t["n"]})
                 json.dump(qs, open(os.path.join(out, f"{mid}.json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)
     json.dump(modules, open(os.path.join(out, "modules.json"), "w", encoding="utf8"), ensure_ascii=False, indent=1)

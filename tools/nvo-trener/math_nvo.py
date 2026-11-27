@@ -13,8 +13,13 @@ if not args:
 folder = args[0]
 opt = lambda k: args[args.index(k) + 1] if k in args else None
 
-# The tags the trainer lets through in math tasks (mh() in trener.js), minus the drawing ones we do not need here.
-OK_TAGS = {"i", "b", "em", "strong", "small", "sup", "sub", "span", "br", "p", "ol", "ul", "li", "div", "table", "tr", "td", "th", "tbody", "thead"}
+# Exactly the tags and attributes the trainer lets through in math tasks (MH_TAGS / MH_ATTR of mh() in trener.js):
+# tables, and SVG drawings for diagrams (`style` only on <svg>).
+OK_TAGS = set("span b i em strong small sup sub p ol ul li div section br h5 figure figcaption details summary table thead tbody tr th td "
+              "svg g path circle line rect ellipse polyline polygon text tspan".split())
+OK_ATTR = re.compile(r"^(class|width|height|viewbox|d|stroke|stroke-width|fill|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|points|transform|text-anchor|"
+                     r"font-size|font-style|font-family|font-weight|stroke-dasharray|stroke-linecap|stroke-linejoin|opacity|"
+                     r"dominant-baseline|fill-opacity|stroke-opacity|style)$", re.I)
 errors, warns = [], []
 
 
@@ -22,9 +27,9 @@ def check_html(where, s):
     for t in re.findall(r"</?([a-zA-Z][a-zA-Z0-9]*)", s or ""):
         if t.lower() not in OK_TAGS:
             errors.append(f"{where}: таг <{t}> не се показва в тренажора")
-    for a in re.findall(r"<[a-zA-Z]+\s+([^>]*)>", s or ""):
+    for tag, a in re.findall(r"<([a-zA-Z]+)\s+([^>]*)>", s or ""):
         for name in re.findall(r"([a-zA-Z-]+)\s*=", a):
-            if name.lower() != "class":
+            if not OK_ATTR.match(name) or (name.lower() == "style" and tag.lower() != "svg"):
                 errors.append(f"{where}: атрибут {name} отпада в тренажора")
     if re.search(r"\d\.\d", re.sub(r"<[^>]+>", "", s or "")):
         warns.append(f"{where}: десетична точка? (у нас е запетая: 2,5)")
