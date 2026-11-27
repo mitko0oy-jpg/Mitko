@@ -809,7 +809,7 @@ def page_part_intro(d, p, nparts, wd):
             d.circle(43 + 11 * j, cy, 2.7, fill=C['gold_light'] if j < lv else C['dot_off'])
         d.text(87, cy - 3.66, LEVELS[lv][0], SANS_SB, 13, C['card'])
         d.text(316, cy - 4.02, points_word(lv), SANS, 11, C['gold_light'], align='right')
-    pp = d.para('Записвай точки само за верен отговор от първия опит. В края ще откриеш своята титла.',
+    pp = d.para('Записвай точки само за верен отговор от първия опит. В края на частта ще откриеш своята титла.',
                 SANS, 11, 15.4, 310, C['dark_text'])
     pp.drawOn(d.c, 26, 135 - pp.height_)
     d.button(24, 40, 196, 43, 'Започни', 'gold', link=f"q{p['first']}")
@@ -843,9 +843,119 @@ def passage_rich(d, q, size):
     return d.rich('\n'.join(q['passage']), size, size * 1.4, 280, font)
 
 
-def layout_question(d, q):
-    """Choose scale so that question, passage and options fit. Returns drawing plan or None."""
+# ---- фигури на страницата с въпроса: таблица, стълбчеста и кръгова диаграма
+FIG_COLORS = [HexColor('#6b5e98'), HexColor('#b98d4f'), HexColor('#3d777a'), HexColor('#a6534f'),
+              HexColor('#647581'), HexColor('#8aa37b')]
+GRID = HexColor('#d9d2c4')
+
+
+def fig_block(d, fig, color, extra=0):
+    """-> (height, draw(top)) за фигурата; ширина 312 от x=24. extra – допълнителна височина (стълбчета)."""
+    kind = fig.get('type')
+    if kind == 'table':
+        head, rows = fig['head'], fig['rows']
+        ncol = len(head)
+        tw = min(312, max(200, 120 * ncol))
+        x0 = 24 + (312 - tw) / 2
+        rh, hh = 23, 25
+        h = hh + rh * len(rows)
+
+        def draw(top):
+            cw = tw / ncol
+            d.rrect(x0, top - hh, tw, hh, 0, fill=C['navy'])
+            for k, t in enumerate(head):
+                d.text(x0 + cw * (k + .5), top - hh + 8.3, str(t), SANS_SB, 11.5, C['card'], align='center')
+            for r, row in enumerate(rows):
+                y = top - hh - rh * (r + 1)
+                d.rrect(x0, y, tw, rh, 0, fill=C['card'] if r % 2 == 0 else HexColor('#f8f4ec'))
+                for k, t in enumerate(row):
+                    d.text(x0 + cw * (k + .5), y + 7.4, str(t), SANS, 12.5, C['ink'], align='center')
+            c = d.c
+            c.saveState()
+            c.setStrokeColor(HexColor('#b9b1a2'))
+            c.setLineWidth(.7)
+            c.rect(x0, top - h, tw, h, stroke=1, fill=0)
+            for r in range(len(rows)):
+                y = top - hh - rh * r
+                c.line(x0, y, x0 + tw, y)
+            for k in range(1, ncol):
+                c.line(x0 + cw * k, top - h, x0 + cw * k, top)
+            c.restoreState()
+        return h, draw
+    if kind == 'bar':
+        labels, values = fig['labels'], fig['values']
+        step, mx = fig.get('step', 10), fig.get('max', max(values))
+        h = 178 + extra
+
+        def draw(top):
+            d.card(24, top - h, 312, h)
+            if fig.get('title'):
+                d.text(36, top - 17, fig['title'], SANS_SB, 10.5, C['ink'])
+            px0, px1 = 24 + 34, 336 - 12
+            py0, py1 = top - h + 24, top - 30
+            n_int = int(round(mx / step))
+            gap_y = (py1 - py0) / n_int
+            fs = 8.4 if gap_y >= 12.5 else 8 if gap_y >= 10.5 else 7.6
+            for k in range(n_int + 1):
+                v = k * step
+                y = py0 + (py1 - py0) * v / mx
+                d.line(px0, y, px1, y, GRID if k else C['ink'], .5 if k else .9)
+                d.line(px0 - 3, y, px0, y, C['ink'], .7)
+                lab = f'{v:g}'.replace('.', ',')
+                d.text(px0 - 5, y - fs * .36, lab, SANS, fs, C['muted'], align='right')
+            d.line(px0, py0, px0, py1, C['ink'], .9)
+            slot = (px1 - px0) / len(values)
+            bw = slot * .56
+            for k, (lab, v) in enumerate(zip(labels, values)):
+                bx = px0 + slot * k + (slot - bw) / 2
+                bh = (py1 - py0) * v / mx
+                d.rrect(bx, py0, bw, bh, 1.5, fill=color)
+                d.text(bx + bw / 2, py0 - 12.5, str(lab), SANS_SB, 9.5, C['ink'], align='center')
+        return h, draw
+    if kind == 'pie':
+        sectors = fig['sectors']
+        total = sum(s_['deg'] for s_ in sectors) or 360
+        h = max(150, 52 + 22 * len(sectors))
+
+        def draw(top):
+            d.card(24, top - h, 312, h)
+            if fig.get('title'):
+                d.text(36, top - 17, fig['title'], SANS_SB, 10.5, C['ink'])
+            r = 50
+            cx, cy = 24 + 16 + r + 6, top - 28 - (h - 28) / 2
+            c = d.c
+            ang = 90.0
+            for k, sec in enumerate(sectors):
+                ext = 360 * sec['deg'] / total
+                c.saveState()
+                c.setFillColor(FIG_COLORS[k % len(FIG_COLORS)])
+                c.setStrokeColor(C['card'])
+                c.setLineWidth(1.4)
+                c.wedge(cx - r, cy - r, cx + r, cy + r, ang - ext, ext, stroke=1, fill=1)
+                c.restoreState()
+                mid = math.radians(ang - ext / 2)
+                if ext >= 40:
+                    d.text(cx + .62 * r * math.cos(mid), cy + .62 * r * math.sin(mid) - 3.3,
+                           f"{sec['deg']}°", SANS_B, 9.5, C['card'], align='center')
+                ang -= ext
+            lx = cx + r + 22
+            ly = cy + (len(sectors) - 1) * 11
+            for k, sec in enumerate(sectors):
+                y = ly - 22 * k
+                d.rrect(lx, y - 4.5, 11, 11, 2.5, fill=FIG_COLORS[k % len(FIG_COLORS)])
+                d.text(lx + 17, y - 2.6, sec['label'], SANS_SB, 11, C['ink'])
+                d.text(336 - 14, y - 2.6, f"{sec['deg']}°", SANS, 11, C['muted'], align='right')
+        return h, draw
+    raise SystemExit(f'непознат вид фигура: {kind}')
+
+
+def layout_question(d, q, color=None):
+    """Choose scale so that question, passage, figure and options fit. Returns drawing plan or None."""
     style = q.get('passage_style', 'italic')
+    fig = fig_block(d, q['fig'], color or C['navy']) if q.get('fig') else None
+    # с фигура и кратки отговори – отговорите са в две колони (2 × 2)
+    grid = bool(fig) and len(q['options']) == 4 and all(
+        len(d.rich(o, 13, 13 * 1.3, 106, SANS).lines) == 1 for o in q['options'])
     scales = (1, .95, .9, .85, .8, .75, .7, .66)
     for s in scales:
         for min_h in ((52, 48, 43) if s == 1 else (43,) if s >= .8 else (36,)):
@@ -865,18 +975,33 @@ def layout_question(d, q):
                 box_h = pp.height_ + 2 * pp.pad_
                 plan['passage'] = (pp, box_top, box_h)
                 y = box_top - box_h
-            os_ = max(10.6, 14.1 * s)
-            opad = 22 if s >= .8 else 15
-            ops, hs = [], []
-            for o in q['options']:
-                op = d.rich(o, os_, os_ * 1.34, 252, SANS)
-                ops.append(op)
-                hs.append(max(min_h, op.height_ + opad))
-            ogap = 8 if s >= .8 else 6
+            if fig:
+                plan['fig'] = (fig[1], y - 14)
+                y = y - 14 - fig[0]
+            if grid:
+                os_ = max(10.6, 13.6 * s)
+                ops = [d.rich(o, os_, os_ * 1.3, 106, SANS) for o in q['options']]
+                hs = [max(44 if s >= .8 else 38, max(op.height_ for op in ops) + 20)] * 2
+                ogap = 8
+            else:
+                os_ = max(10.6, 14.1 * s)
+                opad = 22 if s >= .8 else 15
+                ops, hs = [], []
+                for o in q['options']:
+                    op = d.rich(o, os_, os_ * 1.34, 252, SANS)
+                    ops.append(op)
+                    hs.append(max(min_h, op.height_ + opad))
+                ogap = 8 if s >= .8 else 6
             total = sum(hs) + ogap * (len(hs) - 1)
             top = 97 + total
             if y - top >= (18 if s >= .8 else 12):
-                plan['ops'] = list(zip(ops, hs))
+                if fig and q['fig'].get('type') == 'bar':  # свободното място – за по-висока диаграма
+                    extra = max(0, min(60, y - top - 22))
+                    fb = fig_block(d, q['fig'], color or C['navy'], extra)
+                    plan['fig'] = (fb[1], plan['fig'][1])
+                plan['ops'] = list(zip(ops, hs)) if not grid else ops
+                plan['rows'] = hs
+                plan['grid'] = grid
                 plan['gap'] = ogap
                 plan['scale'] = s
                 return plan
@@ -886,9 +1011,23 @@ def layout_question(d, q):
 def q_top(d, p, q, wd):
     q_header(d, p, q)
     name, pts, col = LEVELS[q['level']]
+    title = f"{wd['Item']} {q['num']:03d}"
+    if q.get('adv'):  # „За напреднали“ – дискретен чип до чипа за нивото
+        lt = f'{name} · {pts}'
+        lw = pdfmetrics.stringWidth(lt, SANS_SB, 9.3) + 22
+        aw = pdfmetrics.stringWidth('За напреднали', SANS_SB, 8.6) + 18
+        lx = 336 - lw
+        ax = lx - 6 - aw
+        d.rrect(lx, 512, lw, 22, 11, fill=col)
+        d.text(lx + lw / 2, 520.37, lt, SANS_SB, 9.3, C['ink'], align='center')
+        d.rrect(ax, 512, aw, 22, 11, fill=C['card'], stroke=C['gold'], lw=.8)
+        d.text(ax + aw / 2, 520.6, 'За напреднали', SANS_SB, 8.6, C['trap_ink'], align='center')
+        size = min(25, (ax - 10 - 24) / pdfmetrics.stringWidth(title, SERIF_B, 1))
+        d.text(24, 517.5, title, SERIF_B, size, C['ink'])
+        return
     d.rrect(224, 512, 112, 22, 11, fill=col)
     d.text(280, 520.37, f'{name} · {pts}', SANS_SB, 9.3, C['ink'], align='center')
-    d.text(24, 517.5, f"{wd['Item']} {q['num']:03d}", SERIF_B, 25, C['ink'])
+    d.text(24, 517.5, title, SERIF_B, 25, C['ink'])
 
 
 def passage_box(d, pp, top, pad=10):
@@ -898,8 +1037,29 @@ def passage_box(d, pp, top, pad=10):
     pp.drawOn(d.c, 41, top - pad - pp.height_)
 
 
+def option_target(q, k):
+    """Верният отговор води към „Вярно!“; грешните – към подсказката (h) или към старата страница (w)."""
+    if k == q['correct']:
+        return f"c{q['num']}"
+    return f"h{q['num']}" if q.get('_flow') else f"w{q['num']}"
+
+
 def draw_options(d, q, plan):
     gap = plan['gap']
+    if plan.get('grid'):
+        rh = plan['rows'][0]
+        cw = (312 - gap) / 2
+        for k, op in enumerate(plan['ops']):
+            row, col = divmod(k, 2)
+            bx = 24 + col * (cw + gap)
+            by = 97 + (1 - row) * (rh + gap)
+            d.card(bx, by, cw, rh)
+            cy = by + rh / 2
+            d.rrect(bx + 10, cy - 13.5, 27, 27, 8, fill=C['navy'])
+            d.text(bx + 23.5, cy - 3.16, 'АБВГ'[k], SANS_SB, 13, C['card'], align='center')
+            op.drawOn(d.c, bx + 46, cy - op.height_ / 2)
+            d.link(option_target(q, k), bx, by, cw, rh)
+        return
     y = 97 + sum(h for _, h in plan['ops']) + gap * (len(plan['ops']) - 1)
     for k, (op, h) in enumerate(plan['ops']):
         by = y - h
@@ -908,12 +1068,12 @@ def draw_options(d, q, plan):
         d.rrect(36, cy - 13.5, 27, 27, 8, fill=C['navy'])
         d.text(49.5, cy - 3.16, 'АБВГ'[k], SANS_SB, 13, C['card'], align='center')
         op.drawOn(d.c, 72, cy - op.height_ / 2)
-        d.link(f"c{q['num']}" if k == q['correct'] else f"w{q['num']}", 24, by, 312, h)
+        d.link(option_target(q, k), 24, by, 312, h)
         y = by - gap
 
 
 def page_question(d, p, q, next_key, wd):
-    plan = layout_question(d, q)
+    plan = layout_question(d, q, p['color'])
     if plan is None:
         if not q.get('passage') or q.get('passage_style') == 'formula':
             raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
@@ -926,6 +1086,9 @@ def page_question(d, p, q, next_key, wd):
     if 'passage' in plan:
         pp, top, bh = plan['passage']
         passage_box(d, pp, top, pp.pad_)
+    if 'fig' in plan:
+        draw, top = plan['fig']
+        draw(top)
     draw_options(d, q, plan)
     d.button(24, 37, 110, 41, 'Части', 'light', link='menu', size=12, center=True)
     d.button(146, 37, 190, 41, 'Пропусни', 'dark', link=next_key)
@@ -939,7 +1102,7 @@ def page_question_split(d, p, q, next_key, wd):
     first_top = 495 - qp.height_ - 12
     bottom = 92  # над бутоните отдолу
     chunks = pp.chunks(first_top - 20 - bottom, 470 - 20 - bottom)
-    opt_plan = layout_question(d, dict(q, passage=None))
+    opt_plan = layout_question(d, dict(q, passage=None), p['color'])
     if opt_plan is None:
         raise SystemExit(f"{q['num']} не се побира: {q['q'][:60]}")
     q['_scale'] = ('split', len(chunks))
@@ -962,6 +1125,9 @@ def page_question_split(d, p, q, next_key, wd):
     q_top(d, p, q, wd)
     qp2, qy = opt_plan['qp']
     qp2.drawOn(d.c, 24, qy)
+    if 'fig' in opt_plan:
+        draw, top = opt_plan['fig']
+        draw(top)
     draw_options(d, q, opt_plan)
     d.button(24, 37, 96, 41, 'Откъсът', 'light', link=keys[0], size=12, center=True)
     d.button(128, 37, 86, 41, 'Части', 'light', link='menu', size=12, center=True)
@@ -1032,7 +1198,10 @@ def page_correct(d, p, q, next_key, is_last, wd):
 
 
 def page_wrong(d, p, q, next_key, is_last, wd):
-    if q.get('steps') or q.get('_flow'):
+    if q.get('_flow'):  # подсказка (h) и неутрално решение (s)
+        page_hint(d, p, q, wd)
+        return solution_pages(d, p, q, next_key, is_last, wd, 's')
+    if q.get('steps'):
         return solution_pages(d, p, q, next_key, is_last, wd, 'w')
     d.start(f"w{q['num']}")
     q_header(d, p, q)
@@ -1139,7 +1308,17 @@ def solution_groups(d, q, s, color):
         else:
             label(d, CX, top - 6.6, 'ВЕРНИЯТ ОТГОВОР', color)
             ap.drawOn(d.c, CX, top - 11 - ap.height_)
-    groups.append([block(ap.height_ if inline else 11 + ap.height_, draw_answer)])
+    if q.get('err'):  # „Намери грешния ред“: най-горе – кой ред е грешен и как е вярно
+        ep = d.rich(f'Грешката е в ред {letter}', 14 * s, 14 * s * 1.3, CW, SANS_B, C['red'])
+        fp = d.rich([('Вярно е: ', SANS_B, C['green']), (q['err']['fix'], SANS_SB, C['ink'])],
+                    13 * s, 13 * s * 1.32, CW)
+
+        def draw_err(top, first):
+            ep.drawOn(d.c, CX, top - ep.height_)
+            fp.drawOn(d.c, CX, top - ep.height_ - 3 - fp.height_)
+        groups.append([block(ep.height_ + 3 + fp.height_, draw_err)])
+    else:
+        groups.append([block(ap.height_ if inline else 11 + ap.height_, draw_answer)])
 
     def draw_sol_label(top, first):
         if not first:
@@ -1215,7 +1394,7 @@ def paginate(groups, first_top, kind):
         avail_top = top - CARD_PAD_T
         rest = groups[i:]
         need = sum(group_h(g, k == 0) for k, g in enumerate(rest))
-        last_bottom = BOTTOM['c'] if kind == 'c' else (BOTTOM['w'] if not pages else BOTTOM['w_multi'])
+        last_bottom = BOTTOM['c'] if kind in 'cs' else (BOTTOM['w'] if not pages else BOTTOM['w_multi'])
         if avail_top - need >= last_bottom + CARD_PAD_B:
             pages.append(rest)
             return pages
@@ -1237,13 +1416,37 @@ def hint_zone(d, q, s):
     return hp, hp.height_ + 24
 
 
+def page_hint(d, p, q, wd):
+    """Една страница за трите грешни отговора: само „Не е вярно“, подсказката и два бутона."""
+    math_mode = bool(q.get('steps'))
+    d.start(f"h{q['num']}")
+    q_header(d, p, q)
+    status_wrong(d, 'Прочети подсказката.')
+    hp = d.rich([('Подсказка: ', SANS_B, C['ink']), (q['hint'], SANS, C['ink'])], 13.2, 13.2 * 1.4, CW)
+    hh = hp.height_ + 30
+    d.card(24, P1_TOP - hh, 312, hh, fill=C['hint_box'])
+    hp.drawOn(d.c, CX, P1_TOP - 15 - hp.height_)
+    note = ('Реши задачата отново на лист, като използваш подсказката. Ако пак не се получи, '
+            'виж решението стъпка по стъпка.' if math_mode else
+            'Прочети въпроса отново, като използваш подсказката. Ако пак не се получи, виж обяснението.')
+    np_ = d.rich(note, 11.5, 16, 312, SANS, C['muted'])
+    np_.drawOn(d.c, 24, P1_TOP - hh - 20 - np_.height_)
+    if P1_TOP - hh - 20 - np_.height_ < 160:
+        d.overflow.add(f"подсказката на {q['num']} не се побира")
+    d.button(24, 98, 312, 46, 'Опитай пак', 'gold', link=f"q{q['num']}", size=13.5)
+    d.button(24, 38, 312, 46, 'Покажи решението' if math_mode else 'Покажи обяснението', 'dark',
+             link=f"s{q['num']}", size=13.5)
+    d.finish()
+
+
 def solution_pages(d, p, q, next_key, is_last, wd, kind):
-    color = C['green'] if kind == 'c' else C['red']
+    """kind: c – „Вярно!“, s – неутрално „Решение“ (след подсказката), w – старата страница „Не е вярно“."""
+    color = {'c': C['green'], 's': C['gold'], 'w': C['red']}[kind]
     has_hint = kind == 'w' and q.get('hint')
     best = None
     math_mode = bool(q.get('steps'))
     for s in ((1, .955, .91) if math_mode else (1, .95, .9, .85, .8)):
-        groups = solution_groups(d, q, s, color)
+        groups = solution_groups(d, q, s, C['green'] if kind == 's' else color)
         top = P1_TOP
         if has_hint:
             hp, hh = hint_zone(d, q, s)
@@ -1266,6 +1469,9 @@ def solution_pages(d, p, q, next_key, is_last, wd, kind):
         if pi == 0:
             if kind == 'c':
                 status_correct(d, q)
+            elif kind == 's':
+                d.text(24, 516, 'Решение' if math_mode else 'Обяснение', SERIF_B, 28, C['ink'])
+                d.text(24, 497.5, f"{wd['Item']} {q['num']:03d}", SANS_SB, 10.2, C['muted'])
             else:
                 status_wrong(d, 'Прочети подсказката и опитай пак.' if has_hint else 'Прочети решението и опитай пак.')
                 if has_hint:
@@ -1276,8 +1482,8 @@ def solution_pages(d, p, q, next_key, is_last, wd, kind):
             card_top = top
         else:
             d.text(24, 516, 'Решение – продължение' if math_mode else 'Обяснение – продължение', SERIF_B, 22, C['ink'])
-            d.text(24, 497.5, f"{wd['Item']} {q['num']:03d} · {'Вярно!' if kind == 'c' else 'Не е вярно'}",
-                   SANS_SB, 10.2, C['muted'])
+            sub = {'c': ' · Вярно!', 's': '', 'w': ' · Не е вярно'}[kind]
+            d.text(24, 497.5, f"{wd['Item']} {q['num']:03d}{sub}", SANS_SB, 10.2, C['muted'])
             card_top = CONT_TOP
         if pg:
             h_content = sum(group_h(g, gi == 0) for gi, g in enumerate(pg))
@@ -1393,15 +1599,15 @@ def texts(content, parts, total):
             parent=[
                 (1, 'Запазете файла', 'Изпратете го на телефона или таблета на детето и го запазете. След това може да се използва и без интернет.', 12.4),
                 (2, 'Отворете като PDF', 'Ако бутоните не реагират в чата, отворете файла с PDF четец, например Adobe Acrobat Reader.', 12.4),
-                (3, 'Изберете подходящия клас', f'{grade_txt}. Задачите са за преговор по математика в 5.–7. клас и са полезни за подготовката за НВО.', 12.0),
-                (4, 'Дайте лист и молив', 'Детето първо решава задачата на лист и чак тогава избира отговор. Около 5–10 задачи на ден са достатъчни.', 12.4),
+                (3, 'Изберете подходящия клас', f'{grade_txt}. Точките и титлата се броят отделно за всяка част. Задачите са полезни и за НВО.', 12.0),
+                (4, 'Дайте лист и молив', 'Детето решава задачата на лист и после избира отговор. При грешка вижда подсказка и може да опита пак или да види решението.', 12.4),
             ],
             howto=[
                 (1, 'Избери част', 'Намери своя клас и натисни „Започни“. „Части“ връща менюто.', 12.0),
                 (2, 'Реши на лист', 'Първо реши задачата на лист. После докосни отговора, който получи.', 12.0),
-                ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. При „Опитай пак“ точки не се пишат. PDF файлът не ги брои сам.', 11.6),
-                (3, 'Сгреши ли – опитай пак', 'Прочети подсказката и опитай пак. После прочети решението стъпка по стъпка.', 12.0),
-                (4, 'Преговори с картите', 'Всяка задача сочи карта от кутията „Еду БЕЛ – Математика“. В края събери точките и виж титлата си.', 12.0),
+                ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. Точките и титлата се броят отделно за всяка част.', 11.6),
+                (3, 'Сгреши ли – виж подсказката', 'После избери „Опитай пак“, за да решиш отново, или „Покажи решението“ – стъпка по стъпка.', 12.0),
+                (4, 'Преговори с картите', 'Всяка задача сочи карта от кутията „Еду БЕЛ – Математика“. В края на частта виж титлата си.', 12.0),
             ],
             howto_gap=27,
             final=[
@@ -1498,8 +1704,8 @@ def texts_bel_parts(content, parts, total, subjects, by_grade, grade_txt):
         howto=[
             (1, 'Избери част', pick, 12.0),
             (2, 'Прочети и отговори', 'Прочети въпроса и откъса, ако има такъв. Докосни отговора, който смяташ за верен.', 12.0),
-            ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. При „Опитай пак“ точки не се пишат. PDF файлът не ги брои сам.', 11.6),
-            (3, 'Сгреши ли – опитай пак', 'Прочети подсказката и опитай пак. После прочети обяснението „Защо“.', 12.0),
+            ('callout', 'ТОЧКИ САМО ПРИ ПЪРВИ ОПИТ', 'Запиши си 1, 2 или 3 точки само ако отговориш вярно от първия път. Точките и титлата се броят отделно за всяка част.', 11.6),
+            (3, 'Сгреши ли – виж подсказката', 'После избери „Опитай пак“ или „Покажи обяснението“ – там е обяснението „Защо“.', 12.0),
             (4, 'Преговори с картите', f'Под всяко обяснение пише коя от {cards} да прегледаш. В края събери точките и виж титлата си.', 12.0),
         ],
         howto_gap=27,
