@@ -1405,6 +1405,8 @@ function renderQ() {
     const ok = s.ok[s.i];
     const say = ok ? CHEER[(s.i + s.qs.length) % CHEER.length] : CALM[s.i % CALM.length];
     h += `<div class="fb ${ok ? "ok" : "no"} ${s.fresh ? "fresh" : ""}" id="fb" tabindex="-1">${pic(mascot(ok ? "yay" : "oops"), "fb-m", "", true)}<div class="fb-t"><b class="t">${say}${ok ? ` <span class="xp-plus">+10 XP</span>` : ""}</b>${ok || q.t === "self" ? "" : `<span>Верният отговор: <b>${rightHtml(q)}</b></span>`}${q.why ? `<span class="why">${R(q, q.why)}${Speak.ok() ? ` <button class="readbtn sm" data-act="read" data-part="why" aria-label="Чуй обяснението" title="Чуй обяснението">🔈</button>` : ""}</span>` : ""}</div></div>`;
+    // The worked solution right after the answer (math tasks with sol): open after a mistake, folded after a right answer.
+    if (q.sol && q.t !== "self") h += `<details class="msol-d now" ${ok ? "" : "open"}><summary>Виж решението стъпка по стъпка</summary><div class="msol">${mh(q.sol)}</div></details>`;
     if (ONLINE && !ok && q.t !== "self") h += s.expl?.[s.i] ? `<div class="explain" role="status"><b>Ерчо обяснява</b><p>${esc(s.expl[s.i])}</p></div>` : `<div class="explain ask" id="expl"><button class="btn sm line" data-act="explain">Обясни ми тази грешка</button></div>`;
     if (ONLINE) h += s.reported?.[s.i] ? `<p class="repdone" role="status">Благодарим! Ще проверим задачата.</p>` : `<div class="rep" id="rep"><button class="replink" data-act="repOpen">Мисля, че тук има грешка</button></div>`;
   }
