@@ -50,7 +50,8 @@ function notation(where, s) {
     if (depth < 0 || depth > 1) return err(where, `скобите { } не са наред: ${s}`);
   }
   if (depth) return err(where, `незатворена { : ${s}`);
-  for (const m of s.matchAll(/\{([^{}]*)\}/g)) if (!/^[^/]+\/[^/]+$/.test(m[1])) err(where, `{…} трябва да е дроб {числител/знаменател}: {${m[1]}}`);
+  // {a/b} is a fraction; braces without "/" are a set, e.g. {2; 3} – shown as written.
+  for (const m of s.matchAll(/\{([^{}]*)\}/g)) if (m[1].includes("/") && !/^[^/]+\/[^/]+$/.test(m[1])) err(where, `{…} трябва да е дроб {числител/знаменател} или множество {2; 3}: {${m[1]}}`);
   if (/\d\.\d/.test(s)) warn(where, `десетична точка вместо запетая: ${s}`);
   if (/(^|[\s(=])-\s?[\dx(]/.test(s)) warn(where, `тире вместо знак минус „−“: ${s}`);
   if (/теза/i.test(s)) err(where, "думата „теза“");
