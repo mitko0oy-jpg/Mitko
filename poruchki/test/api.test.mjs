@@ -2127,6 +2127,80 @@ test("✕ Откажи: an abandoned cart and a shop order become „Отказ�
   }
 });
 
+test("status by hand (a click on the status): kept over the shop, „Автоматичен статус“ undoes it, the courier's next status wins", async () => {
+  const pg = (await import("pg")).default;
+  const db = new pg.Client({ connectionString: dbUrl });
+  await db.connect();
+  try {
+    const made = await api("/api/orders", { shop: "bg", name: "Ръчен Статус", phone: "0888 100 888", city: "София", delivery: { courier: "econt", type: "office", officeId: "1234", officeName: "София Осогово" }, items: [{ name: "BeeVenom Care Gel", qty: 1, price: 20 }] });
+    assert.equal(made.status, 200, JSON.stringify(made.data));
+    const id = made.data.id;
+    assert.equal((await api(`/api/orders/${id}/stage`, { stage: "nonsense" })).status, 400);
+
+    // „Взета“ by hand: counted as taken today, kept by the sync, shown with „ръчно“ in the list.
+    const got = await api(`/api/orders/${id}/stage`, { stage: "delivered" });
+    assert.equal(got.status, 200, JSON.stringify(got.data));
+    assert.equal(got.data.stage, "delivered");
+    assert.equal(got.data.manual_stage, "delivered");
+    assert.ok(got.data.events.some((e) => /Статус „Взета“ – сменен ръчно/.test(e.text)));
+    await api("/api/settings/sync", {});
+    const row = (await api("/api/orders?tab=&q=0888100888")).data.orders.find((o) => o.id === id);
+    assert.equal(row.stage, "delivered");
+    assert.equal(row.manual_stage, "delivered");
+    const today = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Sofia" }).slice(0, 10);
+    const day = (await api(`/api/stats?from=${today}&to=${today}`)).data;
+    assert.ok(day.happened.got.n >= 1);
+
+    // „Автоматичен статус“: back to what it really is.
+    const auto = await api(`/api/orders/${id}/stage`, { stage: "auto" });
+    assert.equal(auto.data.stage, "new");
+    assert.equal(auto.data.manual_stage, null);
+
+    // „Отказана“ on an order not sent: the usual „✕ Откажи“; „Нова“ takes the refusal off.
+    const off = await api(`/api/orders/${id}/stage`, { stage: "canceled" });
+    assert.equal(off.data.stage, "canceled");
+    assert.ok(off.data.canceled_at);
+    assert.equal(off.data.manual_stage, null);
+    const back = await api(`/api/orders/${id}/stage`, { stage: "new" });
+    assert.equal(back.data.stage, "new");
+    assert.equal(back.data.canceled_at, null);
+
+    // A parcel on its way, „Върната“ by hand – until the courier says something new.
+    await db.query("UPDATE orders SET tracking_no = '1051600008888', courier = 'econt', tracking_source = 'cb' WHERE id = $1", [id]);
+    econtStatus.set("1051600008888", { shipmentNumber: "1051600008888", shortDeliveryStatus: "Пътува", shortDeliveryStatusEn: "On the way", trackingEvents: [{ time: new Date().toISOString(), destinationType: "courier", destinationDetails: "Пловдив" }], totalPrice: 3.24, currency: "EUR" });
+    assert.equal((await api(`/api/orders/${id}/refresh`, {})).data.stage, "shipped");
+    const ret = await api(`/api/orders/${id}/stage`, { stage: "returned" });
+    assert.equal(ret.data.stage, "returned");
+    assert.equal((await api(`/api/orders/${id}/refresh`, {})).data.stage, "returned", "the same courier status: still by hand");
+    econtStatus.set("1051600008888", { shipmentNumber: "1051600008888", shortDeliveryStatus: "Доставена", shortDeliveryStatusEn: "Delivered", trackingEvents: [], totalPrice: 3.24, currency: "EUR" });
+    const now = await api(`/api/orders/${id}/refresh`, {});
+    assert.equal(now.data.stage, "delivered", "the courier's new status wins");
+    assert.equal(now.data.manual_stage, null);
+
+    // A new waybill: the parcel's own status counts again.
+    await api(`/api/orders/${id}/stage`, { stage: "at_office" });
+    await db.query("UPDATE orders SET tracking_no = '1051600008889' WHERE id = $1", [id]);
+    assert.equal((await api(`/api/orders/${id}`)).data.manual_stage, null);
+
+    // An abandoned cart chosen as „Нова“ becomes an order.
+    await fetch(`${B}/api/collect`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain", Origin: `http://127.0.0.1:${SHOP_PORT}` },
+      body: JSON.stringify({ sid: "aband00030", name: "Пламен Ръчев", phone: "0887 333 444", cart: ["Гел · 1 · 23,90 €"], total: "28,80 €" }),
+    });
+    await db.query("UPDATE leads SET last_at = now() - interval '25 minutes', first_at = now() - interval '30 minutes' WHERE sid = 'aband00030'");
+    await api("/api/settings/sync", {});
+    const cart = (await api("/api/orders?tab=&stage=abandoned")).data.orders.find((o) => o.phone === "0887 333 444");
+    assert.ok(cart);
+    const revived = await api(`/api/orders/${cart.id}/stage`, { stage: "new" });
+    assert.equal(revived.data.stage, "new");
+    assert.equal(revived.data.cb_status, "pending");
+    assert.equal(revived.data.manual_stage, null);
+  } finally {
+    await db.end();
+  }
+});
+
 test("Middleware: the one-time import adds only what is missing, once", async () => {
   const stores = { "store-bg": "bg" };
   const dry = await api("/api/orders/import-mw", { page: 1, tenant: "tenant-1", stores, dry: true });

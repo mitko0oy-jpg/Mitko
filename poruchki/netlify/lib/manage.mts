@@ -60,6 +60,46 @@ export async function uncancelOrder(id: number, userId: number | null) {
   await addEvent(id, "status", "Отказът е махнат", {}, userId);
 }
 
+/** The statuses that can be chosen by hand (a click on the status in Поръчки, like Middleware's status menu). */
+export const MANUAL_STAGES = ["new", "shipped", "at_office", "delivered", "returned", "canceled"] as const;
+const STAGE_NAME: Record<string, string> = { new: "Нова", shipped: "Изпратена", at_office: "В офис", delivered: "Взета", returned: "Върната", canceled: "Отказана" };
+
+/**
+ * A status chosen by hand. It wins over the shop and Middleware until the courier reports something new about the
+ * parcel or the order gets another waybill. „auto“ goes back to the status from the courier / shop.
+ * The natural steps come first: an abandoned cart becomes an order, a held duplicate goes on, „✕ Откажи“ is used for
+ * an order that is not sent – so the rest of OrderDesk (Незавършени, the sync) sees the same thing.
+ */
+export async function setStage(id: number, target: string, userId: number | null) {
+  if (target !== "auto" && !(MANUAL_STAGES as readonly string[]).includes(target)) throw fail("Непознат статус.");
+  const o = await one<any>("SELECT stage, manual_stage, canceled_at, tracking_no, cb_shipped, parcel_status, cb_status, dup_state FROM orders WHERE id = $1", [id]);
+  if (!o) throw new HttpError(404, "not_found", "Няма такава поръчка.");
+  if (target === "auto") {
+    if (!o.manual_stage) return;
+    await q("UPDATE orders SET manual_stage = NULL, manual_stage_at = NULL WHERE id = $1", [id]);
+    await addEvent(id, "status", "Ръчният статус е махнат – статусът е пак от куриера / магазина", {}, userId);
+    return;
+  }
+  if (o.stage === target && !o.manual_stage) return;
+  const unsent = !o.tracking_no && !o.cb_shipped && !o.parcel_status;
+  if (target === "canceled" && unsent) {
+    await q("UPDATE orders SET manual_stage = NULL, manual_stage_at = NULL WHERE id = $1", [id]);
+    if (!o.canceled_at) await cancelOrder(id, "", userId);
+    else await addEvent(id, "status", "Статус „Отказана“ – сменен ръчно", {}, userId);
+    return;
+  }
+  if (target !== "canceled") {
+    if (o.canceled_at) await uncancelOrder(id, userId);
+    if (o.cb_status === "abandoned" && (await reviveAbandoned(id))) await addEvent(id, "create", "Изоставената количка стана поръчка", {}, userId);
+    if (o.dup_state === "held") await releaseDuplicate(id, userId, null, `Статус „${STAGE_NAME[target]}“`);
+  }
+  // Without the hand-chosen one, is it already there? Then nothing is kept by hand.
+  await q("UPDATE orders SET manual_stage = NULL, manual_stage_at = NULL WHERE id = $1", [id]);
+  const now = await one<any>("SELECT stage FROM orders WHERE id = $1", [id]);
+  if (now?.stage !== target) await q("UPDATE orders SET manual_stage = $2, manual_stage_at = now() WHERE id = $1", [id, target]);
+  await addEvent(id, "status", `Статус „${STAGE_NAME[target]}“ – сменен ръчно`, {}, userId);
+}
+
 export async function archiveOrder(id: number, archived: boolean, userId: number | null) {
   await q(`UPDATE orders SET archived_at = ${archived ? "now()" : "NULL"} WHERE id = $1`, [id]);
   await addEvent(id, "archive", archived ? "Поръчката е архивирана" : "Поръчката е върната от архива", {}, userId);

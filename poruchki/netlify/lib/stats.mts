@@ -43,7 +43,7 @@ function totalsOf(stages: Record<string, Cell>) {
 
 // What happened on the days themselves (not to the orders made on them): parcels the customers took – by the day
 // they took them (DELIVERED_AT, as in Счетоводство), sent back – by the courier's last status, and sent – by sent_at.
-const RETURNED_AT = "coalesce(o.parcel_at, o.ordered_at)";
+const RETURNED_AT = "coalesce(CASE WHEN o.manual_stage = 'returned' THEN o.manual_stage_at END, o.parcel_at, o.ordered_at)";
 const sofiaDate = (col: string) => `(${col} AT TIME ZONE 'Europe/Sofia')::date`;
 
 async function happened(from: string, to: string, extra: { region?: string; shop?: string }, byDay = false) {

@@ -68,6 +68,9 @@ async function apply(id: number, trackingNo: string, st: ParcelState | { error: 
   const r = await q(
     `UPDATE orders SET parcel_status = $3, parcel_text = $4, parcel_at = $5, parcel_final = $6 OR ordered_at < now() - interval '75 days',
             parcel_events = $7, delivered_at = $8, tracked_at = now(), track_error = NULL,
+            -- A status chosen by hand lasts until the courier reports a new one for the parcel.
+            manual_stage = CASE WHEN parcel_status IS DISTINCT FROM $3 THEN NULL ELSE manual_stage END,
+            manual_stage_at = CASE WHEN parcel_status IS DISTINCT FROM $3 THEN NULL ELSE manual_stage_at END,
             -- When it reached the office: kept while it waits there, forgotten when it leaves (or is redirected).
             office_since = CASE WHEN $3 <> 'at_office' THEN NULL
                                 WHEN parcel_status = 'at_office' AND office_since IS NOT NULL THEN office_since

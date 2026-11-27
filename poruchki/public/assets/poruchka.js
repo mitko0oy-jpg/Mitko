@@ -3,6 +3,7 @@ import { cancelWaybill, openLabels, openRedirect, openWaybill } from "./waybill.
 import { mountProducts, renderHistory } from "./order-edit.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
+import { openStageMenu } from "./stage-menu.js";
 
 const $ = (id) => document.getElementById(id);
 const id = Number(qs().get("id"));
@@ -101,12 +102,12 @@ function render(o) {
   ]
     .filter(Boolean)
     .join(" ");
-  const stage = o.parcel_status === "refused" ? "Отказана на място" : SINGULAR[o.stage] || o.stage;
+  const stage = o.parcel_status === "refused" && o.stage === "returned" ? "Отказана на място" : SINGULAR[o.stage] || o.stage;
   $("order").innerHTML = `
   <div class="stack">
     <div class="row spread">
       <div><h1>Поръчка № ${esc(o.order_no)}</h1><div class="muted small">${esc(o.shop_label)} · ${when(o.ordered_at)}</div></div>
-      <div class="row"><span class="badge ${o.stage}" style="font-size:14px">${stage}</span>
+      <div class="row"><button type="button" class="badge ${o.stage} stbtn" id="stageBtn" data-act="stage" aria-haspopup="menu" aria-expanded="false" title="Смени статуса" style="font-size:14px">${stage}</button>${o.manual_stage ? `<span class="arch manual" title="Сменен ръчно ${when(o.manual_stage_at)} – важи, докато куриерът не съобщи нов статус">ръчно</span>` : ""}
         ${
           o.confirmed_at
             ? `<span class="conf ${o.confirmed_by === AI ? "ai" : "us"}" style="margin:0" title="${when(o.confirmed_at)}">${o.confirmed_by === AI ? "🤖 AI потвърдена" : `✓ Потвърдена (${esc(o.confirmed_by || "")})`}</span>`
@@ -235,6 +236,7 @@ function render(o) {
     if (text && text.trim()) post("note", { text });
   };
   $("archBtn").onclick = () => post(o.archived_at ? "unarchive" : "archive");
+  $("stageBtn").onclick = () => openStageMenu(o, $("stageBtn"), render);
   if ($("cancelOrderBtn"))
     $("cancelOrderBtn").onclick = () => {
       const reason = prompt("Защо е отказана? (може и празно)", "");

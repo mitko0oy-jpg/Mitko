@@ -264,7 +264,7 @@ export const prevMonth = (day: string) => {
 };
 
 /** When the money was taken: the courier's delivery, else the last parcel status, else the order day. */
-export const DELIVERED_AT = "coalesce(o.delivered_at, CASE WHEN o.parcel_status = 'delivered' THEN o.parcel_at END, o.ordered_at)";
+export const DELIVERED_AT = "coalesce(o.delivered_at, CASE WHEN o.parcel_status = 'delivered' THEN o.parcel_at END, CASE WHEN o.manual_stage = 'delivered' THEN o.manual_stage_at END, o.ordered_at)";
 
 /** Every order of the company delivered in [from, to) (days in Sofia), split into lines. */
 export async function deliveredBetween(from: string, to: string, opts: { shop?: string } = {}) {

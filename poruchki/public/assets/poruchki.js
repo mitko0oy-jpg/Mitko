@@ -3,6 +3,7 @@ import { bulkCreate, cancelWaybill, openLabels, openLabelsFor, openRedirect, ope
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
 import { panelHtml } from "./order-panel.js";
+import { openStageMenu } from "./stage-menu.js";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = ["q", "shop", "region", "courier", "from", "to", "confirmed", "sort", "product"];
@@ -114,6 +115,12 @@ function riskPop(o) {
     all ? `<span class="rl">Общо взети пратки: <b>${got} от ${all} (${Math.round((got / all) * 100)}%)</b></span>` : "",
     o.nek_count ? `<span class="rl">${o.nek_count} ${o.nek_count === 1 ? "сигнал" : "сигнала"} в nekorekten.com</span>` : "",
   ].join("");
+}
+
+/** The status: a click opens the statuses to choose from (stage-menu.js). */
+function stageBtn(o) {
+  const refused = o.parcel_status === "refused" && o.stage === "returned";
+  return `<button type="button" class="badge ${o.stage} stbtn" data-act="stage" data-id="${o.id}" aria-haspopup="menu" aria-expanded="false" title="Смени статуса">${refused ? "Отказана" : ONE[o.stage] || o.stage}</button>`;
 }
 
 function clientCell(o) {
@@ -341,7 +348,7 @@ function renderTable(d) {
         (o) => `<tr class="${selected.has(o.id) ? "sel" : ""}" data-id="${o.id}">
         <td class="c-check"><input type="checkbox" data-sel="${o.id}" aria-label="Избери № ${esc(o.order_no)}" ${selected.has(o.id) ? "checked" : ""}></td>
         <td class="c-no"><div class="nocell"><a class="ono" href="/poruchka/?id=${o.id}">${esc(o.order_no)}</a>${icons4(o)}</div></td>
-        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}<span class="badge ${o.parcel_status === "refused" ? "returned" : o.stage}">${o.parcel_status === "refused" ? "Отказана" : ONE[o.stage] || o.stage}</span></span>${confirmCell(o)}</div>${o.archived_at ? `<span class="arch" title="Поръчката е в архива – върни я от ⋮">в архива</span>` : ""}${o.stage === "duplicate" && o.dup_no ? `<a class="dupof" href="/poruchka/?id=${o.dup_of}" title="Същият клиент вече поръча № ${esc(o.dup_no)}">на № ${esc(o.dup_no)}</a>` : ""}</td>
+        <td class="c-badge"><div class="st"><span class="bwrap">${flag(o)}${stageBtn(o)}</span>${confirmCell(o)}</div>${o.manual_stage ? `<span class="arch manual" title="Статусът е сменен ръчно – важи, докато куриерът не съобщи нов. Върни го от статуса → „Автоматичен статус“.">ръчно</span>` : ""}${o.archived_at ? `<span class="arch" title="Поръчката е в архива – върни я от ⋮">в архива</span>` : ""}${o.stage === "duplicate" && o.dup_no ? `<a class="dupof" href="/poruchka/?id=${o.dup_of}" title="Същият клиент вече поръча № ${esc(o.dup_no)}">на № ${esc(o.dup_no)}</a>` : ""}</td>
         <td class="c-shop"><span class="shopname">${esc(o.shop_label)}</span></td>
         <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
@@ -455,6 +462,7 @@ async function act(what, id, btn) {
   const o = rows.find((x) => x.id === id);
   try {
     if (what === "more") return openMore(o, btn);
+    if (what === "stage") return openStageMenu(o, btn, () => load(true));
     if (["unconfirm", "archive", "unarchive", "not-duplicate"].includes(what)) {
       if (what === "archive" && !confirm(`Да архивирам ли поръчка № ${o?.order_no}?`)) return;
       await api(`/api/orders/${id}/${what}`, { method: "POST", body: {} });
