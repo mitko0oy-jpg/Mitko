@@ -561,7 +561,7 @@ body.focus main { padding-top: 8px; }
   .cg .cmain { max-width: 200px; }
 }
 @media (min-width: 761px) {
-  .otbl td, .otbl th { padding-left: 5px; padding-right: 5px; }
+  .otbl td, .otbl th { padding-left: 4px; padding-right: 4px; }
   .otbl td.c-client { min-width: 196px; }
   .cg .cmain { max-width: 168px; }
   .otbl .cname2 { max-width: 168px; }
@@ -573,9 +573,10 @@ body.focus main { padding-top: 8px; }
   .otbl td.acts { width: 146px; }
 }
 @media (min-width: 761px) {
-  .actsin { gap: 4px; }
-  .actsin .iconbtn { width: 30px; height: 30px; }
-  .otbl td.acts { width: 170px; }
+  /* five buttons like Middleware: ⓘ ✎ SMS товарителница ⋮ */
+  .actsin { gap: 3px; }
+  .actsin .iconbtn { width: 28px; height: 28px; }
+  .otbl td.acts { width: 152px; }
 
 }
 @media (min-width: 761px) {
