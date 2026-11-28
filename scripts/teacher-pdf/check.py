@@ -18,8 +18,9 @@ from difflib import SequenceMatcher
 
 LV = (0, 1, 2)
 BANNED_OPT = re.compile(r"\bвсички\b|\bнито един|\b[АБВГ] и [АБВГ]\b", re.I)
-TESA = re.compile(r"\bтез[аи]\b", re.I)
+TESA = re.compile(r"\bтеза(та)?\b", re.I)  # „тези“ is also „these“ – allowed
 norm = lambda s: re.sub(r"[^\w ]+", "", str(s).lower()).strip()
+same = lambda s: re.sub(r"\s+", " ", str(s).lower()).strip()  # options: punctuation counts („Ох, …“ ≠ „Ох …“)
 
 
 class Check:
@@ -65,7 +66,7 @@ class Check:
         ty = t.get("type")
         if ty == "mc":
             o = t.get("o") or []
-            if len(o) != 4 or len({norm(x) for x in o}) != 4 or not all(str(x).strip() for x in o):
+            if len(o) != 4 or len({same(x) for x in o}) != 4 or not all(str(x).strip() for x in o):
                 self.err(w, "mc: 4 различни отговора")
             if BANNED_OPT.search(" ".join(map(str, o))):
                 self.err(w, "mc: „всички“, „нито един“ или „А и Б“ в отговорите")
