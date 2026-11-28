@@ -174,7 +174,7 @@ export async function summary(region?: string) {
 
 /** The bell in the top bar: orders and leads waiting for someone, and labels waiting for the printer. */
 export async function alerts() {
-  const [o, leads, print, soon, dup] = await Promise.all([
+  const [o, leads, print, soon, dup, chats] = await Promise.all([
     one<any>(
       `SELECT count(*) FILTER (WHERE o.confirmed_at IS NULL AND coalesce(o.call->>'state', '') NOT IN ('requested', 'calling'))::int AS unconfirmed,
               count(*) FILTER (WHERE o.confirmed_at IS NULL AND o.call->>'state' IN ('needs_human', 'change_requested', 'callback_later', 'wrong_person', 'wrong_number', 'canceled', 'gave_up'))::int AS ai,
@@ -192,6 +192,8 @@ export async function alerts() {
     ),
     // Held as duplicates, waiting for someone to look.
     one<any>(`SELECT count(*)::int AS n FROM orders o JOIN shops s ON s.id = o.shop WHERE s.active AND s.company_id = ${companyId()} AND o.archived_at IS NULL AND o.stage = 'duplicate'`),
+    // Разговори в чата на сайта, които асистентът е предал на човек.
+    one<any>(`SELECT count(*)::int AS n FROM chats c JOIN shops s ON s.id = c.shop WHERE s.company_id = ${companyId()} AND c.status = 'human'`).catch(() => null),
   ]);
-  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print, soon: soon?.n || 0, duplicates: dup?.n || 0 };
+  return { unconfirmed: o?.unconfirmed || 0, ai: o?.ai || 0, toShip: o?.to_ship || 0, leads, toPrint: print, soon: soon?.n || 0, duplicates: dup?.n || 0, chats: chats?.n || 0 };
 }

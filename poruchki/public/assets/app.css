@@ -1407,3 +1407,15 @@ button.stbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2
 .psteps { padding: 12px 12px 0; }
 .psteps .steps { margin: 0; font-size: 12px; }
 .psteps .steps li { min-width: 70px; }
+
+/* ---------- Чат на сайта (/chat/) ---------- */
+.chatrow { cursor: pointer; }
+.chatrow:hover { background: var(--surface-2); }
+.cthread { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; padding: 4px 2px; }
+.cmsg { max-width: 85%; }
+.cmsg .ctext { padding: 8px 11px; border-radius: 12px; font-size: 14px; line-height: 1.4; background: var(--surface-2); word-wrap: break-word; }
+.cmsg .cwho { font-size: 11px; color: var(--muted); margin: 0 4px 2px; }
+.cmsg.u { align-self: flex-end; }
+.cmsg.u .ctext { background: var(--accent); color: var(--surface); }
+.cmsg.u .cwho { text-align: right; }
+.cmsg.h .ctext { background: var(--accent-soft); }

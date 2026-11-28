@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Чат на сайта – OrderDesk</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#151a20" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="OrderDesk">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Поръчките от всички магазини, товарителници, склад и незавършени колички на едно място.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OrderDesk">
+  <meta property="og:title" content="Чат на сайта – OrderDesk">
+  <meta property="og:description" content="Поръчките от всички магазини, товарителници, склад и незавършени колички на едно място.">
+  <meta property="og:image" content="https://mitko-poruchki.netlify.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="OrderDesk – поръчки, товарителници и склад">
+  <meta property="og:locale" content="bg_BG">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/theme.js"></script>
+</head>
+<body class="wide">
+  <main class="stack" id="app">
+    <div class="row spread">
+      <h1>Чат на сайта</h1>
+      <div class="row">
+        <select id="shop" aria-label="Магазин"><option value="">Всички магазини</option></select>
+        <button class="btn" id="reload">Обнови</button>
+      </div>
+    </div>
+    <p class="muted small" style="margin:0">Автоматичният асистент отговаря на клиентите в балончето на сайта. В него пише, че е автоматичен асистент. Каквото не може да реши (оплакване, промяна или отказ, връщане на пари, проблем с пратката), предава тук – и звънчето светва.</p>
+    <section class="card">
+      <div class="tabs" role="tablist" id="tabs">
+        <button data-tab="human" class="on">Чакат човек <span class="n"></span></button>
+        <button data-tab="all">Всички <span class="n"></span></button>
+        <button data-tab="done">Приключени <span class="n"></span></button>
+      </div>
+      <div id="list"></div>
+    </section>
+    <section class="card">
+      <h2>Магазини</h2>
+      <div id="shops"></div>
+      <p class="muted small" style="margin:10px 0 0">Отвори „Настройки“ на магазина: включи чата, провери информацията, от която отговаря асистентът (цени, доставка, гаранция), и сложи реда за сайта в ConvertBuilder. С „Пробвай тук“ можеш да пишеш на асистента и преди да го включиш.</p>
+    </section>
+  </main>
+  <dialog class="modal" id="dlg"></dialog>
+  <script type="module" src="/assets/chat-page.js"></script>
+</body>
+</html>

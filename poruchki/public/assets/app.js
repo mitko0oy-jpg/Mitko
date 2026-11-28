@@ -166,6 +166,7 @@ export const ICONS = {
   store: I('<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0V9M5 13v8h14v-8"/>'),
   truck: I('<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'),
   chat: I('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.7A8 8 0 1 1 21 12z"/>'),
+  bubble: I('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>'),
   chart: I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
   route: I('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>'),
   users: I('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
@@ -218,6 +219,7 @@ export async function shell(active) {
     ["/pat/", "Път на клиента", "pat", ICONS.route],
     ["/zhivo/", "На живо", "zhivo", ICONS.live],
     ["/nezavarsheni/", "Незавършени", "nezavarsheni", ICONS.hourglass],
+    ["/chat/", "Чат", "chat", ICONS.bubble],
     ["/pechat/", "Печат", "pechat", ICONS.print],
     ["/sklad/", "Склад", "sklad", ICONS.box],
     ["/magazini/", "Магазини", "magazini", ICONS.store],
@@ -380,11 +382,12 @@ async function bell(top) {
     [a.unconfirmed, "непотвърдени нови поръчки", "/poruchki/?tab=active&stage=new&confirmed=no"],
     [a.toShip, "потвърдени без товарителница", "/poruchki/?tab=active&stage=new&nowaybill=1"],
     [a.duplicates, "дублирани поръчки чакат преглед", "/poruchki/?tab=&stage=duplicate"],
+    [a.chats, "разговора в чата чакат човек", "/chat/"],
     [a.soon, "пратки чакат в офиса 5+ дни – скоро се връщат", "/poruchki/?tab=&soon=1"],
     [a.toPrint, "етикета чакат печат", "/pechat/"],
     [a.leads, "незавършени поръчки", "/nezavarsheni/"],
   ];
-  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0) + (a.soon || 0) + (a.duplicates || 0);
+  const n = (a.ai || 0) + (a.unconfirmed || 0) + (a.toPrint || 0) + (a.leads || 0) + (a.soon || 0) + (a.duplicates || 0) + (a.chats || 0);
   const dot = top.querySelector("#bellN");
   dot.hidden = !n;
   dot.textContent = n > 99 ? "99+" : String(n);
@@ -397,6 +400,7 @@ async function bell(top) {
   };
   tabDot("poruchki", (a.ai || 0) + (a.unconfirmed || 0));
   tabDot("nezavarsheni", a.leads || 0);
+  tabDot("chat", a.chats || 0);
   top.querySelector("#bellMenu").innerHTML =
     lines.filter(([k]) => k).map(([k, t, h]) => `<a href="${h}"><b>${num(k)}</b> ${t}</a>`).join("") || `<div class="muted small">Няма нищо, което да чака.</div>`;
 }

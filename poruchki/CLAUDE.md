@@ -157,6 +157,13 @@
 - Microsoft Clarity: ключ за всеки сайт (Clarity → Settings → Data Export → Generate new API token; собственикът го слага на страницата, криптиран в `settings` `clarity:<магазин>`). API-то дава само последните 24–72 ч обобщено (без записите), до 10 заявки на ден: синхронизацията (6c, `runClarity`) тегли веднъж на ден след 06:00 по 3 заявки (URL; Source+Medium+Campaign; Device, `numOfDays=1`) и пази в `clarity_days` под предишния ден; адресите стават пътища (`pathOf`), една страница с различни ?параметри се сбира (броевете се събират, останалото – средно по сесии). Какво реално праща Clarity (24.11.2026, пазим го в `settings` `clarity:<магазин>` → `shape`): метриките са без интервали (`Traffic`, `ScrollDepth`, `EngagementTime`, `DeadClickCount`, `RageClickCount`, `QuickbackClick`, `ErrorClickCount`…), страницата е в поле `Url`, числата са текст („61.43“); Traffic: `totalSessionCount`, `totalBotSessionCount`, `distinctUserCount`; ScrollDepth: `averageScrollDepth`; EngagementTime: `totalTime`, `activeTime` (s); кликовете: `sessionsWithMetricPercentage`. Имената се сравняват без интервали и главни букви (`norm`), полетата на измеренията – без значение от главните букви. Тестовете ползват фалшив Clarity (`CLARITY_API_URL`).
 - В политиката за поверителност на сайтовете трябва да пише и това (пазят се в браузъра посещенията за 30 дни).
 
+## Чат на сайта (`/chat/`, `public/chat.js`, `functions/chat.mts`, `lib/chat.mts`, миграция `20261128170000_chat`)
+
+- Ред за сайта: `<script src="https://mitko-poruchki.netlify.app/chat.js" data-shop="<магазин>" defer></script>` (vcelijed.eu от 28.11.2026). `chat.js` пита `GET /api/chat/s/:shop` и показва балонче (Shadow DOM, затворено по подразбиране; на телефон над долната лента на страницата) само ако чатът е включен. В заглавието и в първия ред пише, че е **автоматичен асистент (AI)** – изискване на AI регламента на ЕС; не го махай.
+- Съобщение: `POST /api/chat/s/:shop` (text/plain, без preflight; само от домейна на магазина по Origin; лимит 40/час на IP, 30 съобщения на разговор, `CHAT_DAILY_AI` (300) отговора на ден на фирма) → `chatTurn()`: Claude (`CHAT_MODEL`, по подразбиране claude-haiku-5-5) през Netlify AI Gateway с два инструмента: `find_order` (телефон + име трябва да съвпаднат; връща № , дата, продукти, сума, статус и товарителница – без адрес) и `hand_over` (резюме на български → `chats.status = 'human'`, звънчето `alerts.chats`). Асистентът не създава и не променя поръчки. Без Claude или при грешка – учтив отговор с имейла и случаят чака човек.
+- `chats`: един ред на разговор (`sid` от localStorage `pr_chat_sid`), `messages` [{r: u/a/h, t, at}], статус bot / human / done, контакт и случай. Пазят се 90 дни. Отговор от екипа (`POST /api/chat/c/:id/reply`) стига до балончето чрез `GET /api/chat/s/:shop/m?sid=&after=N` (на 12 s, докато е отворено).
+- Настройки по магазин в `settings` `chat:<магазин>`: включен, език (sk/hu/sl/bg), заглавие, първо съобщение, имейл, цвят и „Информация за магазина“ – асистентът отговаря само от нея (за vcelijed е попълнена от сайта на 28.11.2026 с цените от Black Friday – сменя се при нова оферта). „Пробвай тук“ в OrderDesk пуска същото балонче за влязъл човек от фирмата и при изключен чат.
+
 ## Връзка с Claude (MCP) (`functions/mcp.mts`, `lib/mcp.mts`)
 
 Отдалечен MCP сървър само за четене на `/mcp/<фирма>.<таен ключ>` (Streamable HTTP без потоци: JSON-RPC → един JSON отговор, известията → 202, GET → 405). Ключът е криптиран в `settings` `mcp@<фирма>`; Настройки → „Връзка с Claude“ (само собственикът, `/api/mcp`): „Създай линк“ / „Нов линк“ (старият спира) / „Изключи“. Инструменти: search_orders, get_order, get_customer, list_customers, sales_dashboard, ads_report, customer_journey, warehouse, open_carts. Лимит 600 заявки на час на фирма. В claude.ai: Настройки → Конектори → персонализиран конектор с линка.
@@ -181,7 +188,7 @@
 
 | Част | Къде |
 |---|---|
-| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/klienti/`, `/reklami/`, `/pat/`, `/poruchka/?id=`, `/nezavarsheni/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
+| Страници (HTML + JS модули) | `public/` – `/` табло, `/zhivo/`, `/poruchki/`, `/klienti/`, `/reklami/`, `/pat/`, `/poruchka/?id=`, `/nezavarsheni/`, `/chat/`, `/pechat/`, `/sklad/`, `/schetovodstvo/`, `/magazini/`, `/kurieri/`, `/potrebiteli/`, `/nastroiki/`, `/firmi/`, `/vhod/`; тема светла/тъмна: `assets/theme.js` + бутон в `shell()` |
 | API | `netlify/functions/*.mts` – auth, stats, orders, settings, waybills, hook (webhook от ConvertBuilder) |
 | Фонови задачи | `sync-cron.mts` (*/30 мин) и `track-cron.mts` (всеки час) само пускат `jobs.mts` – background функция до 15 мин (ключ `x-job-key` от SECRET_KEY) |
 | Логика | `netlify/lib/` – `cb` (ConvertBuilder), `couriers` (проследяване), `waybills` (товарителници), `lookup` (Speedy по ref), `match` (Еконт по телефон), `mw` (Middleware API, не е включен), `mw-import` (еднократният внос), `orders`, `sync`, `track`, `stats`, `jobs` |
@@ -215,7 +222,7 @@
 
 ```
 cd poruchki && npm install
-npm test                                  # 80 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
+npm test                                  # 81 теста (c.js се пробва отделно в браузър с Playwright), сами пускат локален сървър с фалшив магазин, куриери и SMSAPI
 DEMO=1 node scripts/dev-server.mjs 8898   # измислени данни, вход demo@local / demo-demo-demo
 ```
 
