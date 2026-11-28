@@ -124,7 +124,7 @@ async function list(u: URLSearchParams) {
   const [rows, count, facets, products, sent, abandoned, soon] = await Promise.all([
     q<any>(
       `SELECT o.id, o.shop, s.label AS shop_label, s.region, o.order_no, o.ordered_at, o.customer_name, o.phone, o.city,
-              o.total, o.sub_total, o.shipping, o.currency, o.total_eur::float AS total_eur, o.paid,
+              o.total, o.sub_total, o.shipping, o.discount, o.raw->>'discountCode' AS discount_code, o.currency, o.total_eur::float AS total_eur, o.paid,
               o.stage, o.cb_status, o.parcel_status, o.parcel_text, o.parcel_at, o.office_since, o.courier, o.tracking_no, o.tracking_source,
               o.canceled_at, o.cancel_reason, o.cb_shipped, o.manual_stage, o.manual_stage_at,
               o.dup_of, o.dup_state, (SELECT d.order_no FROM orders d WHERE d.id = o.dup_of) AS dup_no,
@@ -184,6 +184,7 @@ async function list(u: URLSearchParams) {
       total: Number(r.total),
       sub_total: Number(r.sub_total),
       shipping: Number(r.shipping),
+      discount: Number(r.discount) || 0,
       waybill: r.waybill && r.waybill.number === r.tracking_no ? { price: r.waybill.price, at: r.waybill.at } : null,
       tracking_link: trackingUrl(r.courier, r.tracking_no),
       // Only digital products (PDFs): nothing to send.

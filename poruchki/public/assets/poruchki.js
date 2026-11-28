@@ -44,7 +44,17 @@ const ICON = {
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
   note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>`,
   cancel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>`,
+  tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5z"/><path d="M14 5v2M14 11v2M14 17v2"/></svg>`,
 };
+
+// A small blue mark next to the price when the order has a discount (like in Middleware).
+function discountMark(o) {
+  if (!(o.discount > 0)) return "";
+  const p = o.sub_total > 0 ? (o.discount / o.sub_total) * 100 : 0;
+  const pctText = p > 0 && Math.abs(p - Math.round(p)) < 0.1 ? `, −${Math.round(p)}%` : "";
+  const text = `Отстъпка${o.discount_code ? ` с код ${o.discount_code}` : ""}: −${money(o.discount, o.currency)}${pctText}`;
+  return `<span class="dmark" title="${esc(text)}" aria-label="${esc(text)}" role="img">${ICON.tag}</span>`;
+}
 
 function params() {
   const p = {};
@@ -187,7 +197,9 @@ function parcelCell(o) {
 }
 
 function actions(o) {
-  const out = [`<a class="iconbtn" title="Подробности" aria-label="Подробности" href="/poruchka/?id=${o.id}">${ICON.info}</a>`];
+  // ⓘ opens the details under the row (like in Middleware), so there is no going to another page and back.
+  const open = opened.has(o.id);
+  const out = [`<button class="iconbtn info${open ? " on" : ""}" title="${open ? "Скрий подробностите" : "Подробности (под реда)"}" aria-label="Подробности" aria-expanded="${open}" data-act="info" data-id="${o.id}">${ICON.info}</button>`];
   out.push(o.phone ? `<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>` : `<span class="iconbtn off" aria-hidden="true">${ICON.sms}</span>`);
   if (canShip(o)) out.push(`<button class="iconbtn primary" title="Създай товарителница" aria-label="Създай товарителница" data-act="ship" data-id="${o.id}">${ICON.ship}</button>`);
   else if (canCancel(o)) out.push(`<button class="iconbtn danger" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
@@ -290,17 +302,26 @@ const details = new Map();
 const xrow = (id) =>
   `<tr class="xrow" data-x="${id}"><td colspan="${COLS.length + 2}">${details.has(id) ? panelHtml(details.get(id)) : `<div class="muted small" style="padding:12px">Зареждам…</div>`}</td></tr>`;
 
+function markInfo(tr, open) {
+  const b = tr.querySelector('[data-act="info"]');
+  if (!b) return;
+  b.classList.toggle("on", open);
+  b.setAttribute("aria-expanded", String(open));
+  b.title = open ? "Скрий подробностите" : "Подробности (под реда)";
+}
 async function toggleRow(tr) {
   const id = Number(tr.dataset.id);
   const next = tr.nextElementSibling;
   if (opened.has(id)) {
     opened.delete(id);
     tr.classList.remove("open");
+    markInfo(tr, false);
     if (next?.classList.contains("xrow")) next.remove();
     return;
   }
   opened.add(id);
   tr.classList.add("open");
+  markInfo(tr, true);
   tr.insertAdjacentHTML("afterend", xrow(id));
   if (details.has(id)) bindPanel(id);
   else await refreshPanel(id);
@@ -353,7 +374,7 @@ function renderTable(d) {
         <td class="c-client">${clientCell(o)}</td>
         <td class="c-cour">${courierCell(o)}</td>
         <td class="c-cstat">${parcelCell(o)}</td>
-        <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}<div class="sub">${o.currency !== "EUR" ? eur(o.total_eur) : money(o.sub_total, o.currency)}</div></td>
+        <td class="money">${o.edit ? `<span title="Коригирана в платформата">✎ </span>` : ""}${money(o.total, o.currency)}${discountMark(o)}<div class="sub">${o.currency !== "EUR" ? eur(o.total_eur) : money(o.sub_total, o.currency)}</div></td>
         <td class="c-when">${since(o.ordered_at)}<div class="sub">${fullDate(o.ordered_at)}</div></td>
         <td class="c-note"><button class="notebtn${o.note ? " clamp" : ""}" data-act="note" data-id="${o.id}" title="${o.note ? esc(o.note) : "Бележка"}">${o.note ? esc(o.note) : `<span class="muted">${ICON.note}</span>`}</button></td>
         <td class="acts"><div class="actsin">${actions(o)}</div></td>
@@ -462,6 +483,10 @@ async function act(what, id, btn) {
   const o = rows.find((x) => x.id === id);
   try {
     if (what === "more") return openMore(o, btn);
+    if (what === "info") {
+      const tr = $("table").querySelector(`tr[data-id="${id}"]`);
+      return tr && toggleRow(tr);
+    }
     if (what === "stage") return openStageMenu(o, btn, () => load(true));
     if (["unconfirm", "archive", "unarchive", "not-duplicate"].includes(what)) {
       if (what === "archive" && !confirm(`Да архивирам ли поръчка № ${o?.order_no}?`)) return;

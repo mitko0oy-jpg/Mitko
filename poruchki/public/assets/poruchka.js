@@ -4,6 +4,7 @@ import { mountProducts, renderHistory } from "./order-edit.js";
 import { openSms } from "./sms.js";
 import { openOrderForm } from "./order-form.js";
 import { openStageMenu } from "./stage-menu.js";
+import { progress } from "./order-panel.js";
 
 const $ = (id) => document.getElementById(id);
 const id = Number(qs().get("id"));
@@ -41,26 +42,6 @@ function journeyCard(o) {
 // „✕ Откажи“: an order not sent yet (no waybill); „Върни“ undoes a refusal made here.
 const canRefuse = (o) => !o.canceled_at && !o.tracking_no && !o.cb_shipped && !o.parcel_status && ["abandoned", "new", "duplicate"].includes(o.stage);
 const CALL_WAIT = { requested: "☎ чака обаждане от Александра", calling: "📞 Александра звъни…" };
-const STEPS = [
-  ["new", "Създадена"],
-  ["confirmed", "Потвърдена"],
-  ["prepared", "Изготвена"],
-  ["shipped", "Изпратена"],
-  ["at_office", "В офис"],
-  ["delivered", "Взета"],
-];
-function progress(o) {
-  if (["returned", "canceled"].includes(o.stage)) return "";
-  const reached = new Set(["new"]);
-  if (o.confirmed_at) reached.add("confirmed");
-  const order = ["prepared", "shipped", "at_office", "delivered"];
-  const at = order.indexOf(o.stage);
-  for (let i = 0; i <= at; i++) reached.add(order[i]);
-  if (at >= 0) reached.add("confirmed");
-  if (o.stage === "delivered") reached.add("at_office");
-  const cur = [...STEPS].reverse().find(([k]) => reached.has(k))?.[0];
-  return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}${k === cur ? " cur" : ""}">${l}</li>`).join("")}</ol>`;
-}
 // Held as a duplicate: what the same customer already ordered, and the two ways out.
 function dupBox(o) {
   if (o.stage !== "duplicate" || !o.dup) return "";

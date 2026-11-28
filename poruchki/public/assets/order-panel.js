@@ -25,6 +25,36 @@ export function courierOfDetail(o) {
   return /еконт|econt/i.test(o.shipping_name || "") ? "econt" : /спиди|speedy/i.test(o.shipping_name || "") ? "speedy" : "";
 }
 
+// „PETAK20 (−20%, −10,94 €)“ – the code with what it took off, like in Middleware.
+function promo(o, cur) {
+  if (!o.discount_code && !(o.discount > 0)) return "";
+  const p = o.discount > 0 && o.sub_total > 0 ? (o.discount / o.sub_total) * 100 : 0;
+  const parts = [p > 0 && Math.abs(p - Math.round(p)) < 0.1 ? `−${Math.round(p)}%` : "", o.discount > 0 ? `−${money(o.discount, cur)}` : ""].filter(Boolean);
+  return `${o.discount_code ? `<span class="code">${esc(o.discount_code)}</span>` : `<span class="muted">без код</span>`}${parts.length ? ` <span class="muted">(${parts.join(", ")})</span>` : ""}`;
+}
+
+// Where the order is: Създадена → Потвърдена → Изготвена → Изпратена → В офис → Взета (as on the order page).
+const STEPS = [
+  ["new", "Създадена"],
+  ["confirmed", "Потвърдена"],
+  ["prepared", "Изготвена"],
+  ["shipped", "Изпратена"],
+  ["at_office", "В офис"],
+  ["delivered", "Взета"],
+];
+export function progress(o) {
+  if (["returned", "canceled"].includes(o.stage)) return "";
+  const reached = new Set(["new"]);
+  if (o.confirmed_at) reached.add("confirmed");
+  const order = ["prepared", "shipped", "at_office", "delivered"];
+  const at = order.indexOf(o.stage);
+  for (let i = 0; i <= at; i++) reached.add(order[i]);
+  if (at >= 0) reached.add("confirmed");
+  if (o.stage === "delivered") reached.add("at_office");
+  const cur = [...STEPS].reverse().find(([k]) => reached.has(k))?.[0];
+  return `<ol class="steps">${STEPS.map(([k, l]) => `<li class="${reached.has(k) ? "on" : ""}${k === cur ? " cur" : ""}">${l}</li>`).join("")}</ol>`;
+}
+
 export function panelHtml(o) {
   const d = o.delivery || {};
   const c = courierOfDetail(o);
@@ -47,7 +77,7 @@ export function panelHtml(o) {
   const order = `<section class="pcard"><h3>Поръчка</h3>
     ${row("Товарителница", wb)}
     ${row("Начин на плащане", `${esc(payText(o))}${o.paid ? ` <span class="okc small">платена</span>` : ""}`)}
-    ${row("Промо код", o.discount_code ? `<span class="code">${esc(o.discount_code)}</span>` : "")}
+    ${row("Промо код", promo(o, cur))}
     ${row("Метод на доставка", `${c ? `${CMARK[c] || ""} ${esc(COURIER[c] || c)} · ` : ""}${esc(where || o.shipping_name || "")}`)}
     ${row("Цена на доставката", shipCell)}
     ${row("Държава", esc(COUNTRY[String(o.country).toUpperCase()] || o.country || (o.region === "bg" ? "България" : "")))}
@@ -99,5 +129,6 @@ export function panelHtml(o) {
     <div class="popen"><a href="/poruchka/?id=${o.id}">Отвори поръчката →</a></div>
   </section>`;
 
-  return `<div class="panel3">${order}${client}${products}</div>`;
+  const steps = progress(o);
+  return `${steps ? `<div class="psteps">${steps}</div>` : ""}<div class="panel3">${order}${client}${products}</div>`;
 }
