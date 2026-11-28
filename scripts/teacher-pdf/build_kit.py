@@ -821,7 +821,7 @@ class Slides:
         self.c = rl_canvas.Canvas(path, pagesize=(SW, SH), pageCompression=1, encrypt=encrypt)
         self.c.setTitle(f'Викторини за класа – {kit["grade"]}. клас')
         self.c.setAuthor('Еду БЕЛ')
-        self.kit, self.pages = kit, 0
+        self.kit, self.pages, self.overflow = kit, 0, []
 
     def page(self, key, bg=PAPER):
         c = self.c
@@ -848,6 +848,8 @@ class Slides:
             if ph <= h or s <= min_size:
                 break
             s -= 1
+        if ph > h + 2:
+            self.overflow.append(f'{self.pages}: {re.sub("<[^>]+>", "", text)[:70]}')
         p.drawOn(self.c, x, y_top - ph)
         return ph
 
@@ -975,9 +977,10 @@ class Slides:
     def mission(self, m, n):
         col = SEC['mission']
         self.page(f'm-{m["id"]}')
-        self.header(f'Детективска мисия {n}', m['topic'], col)
-        self.fit(m['title'], 60, SH - 70, SW - 120, 90, SERIF_B, 40, NAVY, align=TA_CENTER)
-        self.fit(m['intro'], 80, SH - 165, SW - 160, 270, SERIF, 21, INK, min_size=13)
+        self.header(f'Детективска мисия {n}', f'около {m["minutes"]} минути', col)
+        th = self.fit(m['title'], 60, SH - 62, SW - 120, 90, SERIF_B, 40, NAVY, align=TA_CENTER)
+        self.fit(m['topic'], 100, SH - 70 - th, SW - 200, 40, SANS, 14, MUTED, min_size=10, align=TA_CENTER)
+        self.fit(m['intro'], 80, SH - 175, SW - 160, 260, SERIF, 21, INK, min_size=13)
         self.button('Развръзка', f'm-{m["id"]}-end', SW / 2 - 110, 26, 220, 50, fill=col, size=18)
         self.menu_link()
         self.page(f'm-{m["id"]}-end', NAVY)
@@ -1152,6 +1155,8 @@ def main():
         sl = Slides(proj, kit, None)
         sl.build(kit)
         sl.c.save()
+        for o in sl.overflow:
+            print('! слайд', o, '– текстът не се побира', file=sys.stderr)
         if not a.no_encrypt:
             protect(proj, proj_h)
     if kit['tests']:
