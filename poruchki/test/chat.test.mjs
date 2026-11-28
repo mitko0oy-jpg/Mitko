@@ -15,12 +15,23 @@ const SHOP = "https://shop.test";
 
 // ---- фалшив Claude (Messages API) ----
 const calls = [];
+const notes = [];
 const msg = (content, stop = "end_turn") => ({ id: "msg_" + calls.length, type: "message", role: "assistant", model: "fake", content, stop_reason: stop, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 10 } });
 const ai = createServer(async (req, res) => {
   let raw = "";
   for await (const c of req) raw += c;
+  if (req.url.startsWith("/agent/api/notify")) {
+    notes.push({ auth: req.headers.authorization, ...JSON.parse(raw) });
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end('{"ok":true}');
+  }
   const body = JSON.parse(raw || "{}");
   calls.push(body);
+  if (typeof body.system === "string" && body.system.startsWith("Преведи")) {
+    const inner = /<msg>([\s\S]*)<\/msg>/.exec(body.messages[0].content)?.[1] || "";
+    res.writeHead(200, { "content-type": "application/json" });
+    return res.end(JSON.stringify(msg([{ type: "text", text: inner.includes("ПОКВАРИ") ? "" : `[SK] ${inner}` }])));
+  }
   const last = body.messages[body.messages.length - 1];
   let out;
   if (Array.isArray(last.content) && last.content[0]?.type === "tool_result") {
@@ -72,6 +83,8 @@ test.before(async () => {
       SETUP_CODE: "chat-setup-code-123",
       ANTHROPIC_API_KEY: "test-key",
       ANTHROPIC_BASE_URL: `http://127.0.0.1:${AI_PORT}`,
+      AGENT_TOKEN: "agent-token-agent-token-agent-token-0000",
+      AGENT_URL: `http://127.0.0.1:${AI_PORT}/agent`,
       CB_SITES: JSON.stringify([{ id: "vcelijed", label: "Vcelijed SK", domain: "shop.test", key: "k" }]),
     },
     stdio: ["ignore", "pipe", "inherit"],
@@ -157,6 +170,12 @@ test("site chat: off by default, only from the shop's domain, the assistant answ
   assert.equal(r.data.status, "human");
   assert.match(r.data.messages[1].t, /odovzdal som to kolegovi/);
   assert.equal((await api("/api/stats/alerts")).data.chats, 1);
+  assert.equal(notes.length, 1, "one Telegram notice for the new case");
+  assert.equal(notes[0].auth, "Bearer agent-token-agent-token-agent-token-0000");
+  assert.match(notes[0].text, /Vcelijed SK: Оплакване/);
+  assert.match(notes[0].text, /счупена/);
+  assert.match(notes[0].text, /0908111222/);
+  assert.match(notes[0].text, /\/chat\/\?c=\d+/);
   let list = await api("/api/chat/list?tab=human");
   assert.equal(list.data.counts.human, 1);
   const c = list.data.chats[0];
@@ -168,14 +187,26 @@ test("site chat: off by default, only from the shop's domain, the assistant answ
   // Отговор от екипа стига до балончето.
   const one = await api(`/api/chat/c/${c.id}`);
   assert.equal(one.data.chat.messages.length, 2);
-  assert.equal((await api(`/api/chat/c/${c.id}/reply`, { text: "Dobrý deň, pošleme Vám novú tubu." })).status, 200);
+  const rep = await api(`/api/chat/c/${c.id}/reply`, { text: "Здравейте, ще Ви изпратим нова туба." });
+  assert.equal(rep.status, 200, JSON.stringify(rep.data));
+  assert.equal(rep.data.chat.lang, "sk");
+  const h = rep.data.chat.messages.at(-1);
+  assert.equal(h.t, "[SK] Здравейте, ще Ви изпратим нова туба.", "translated into the shop's language");
+  assert.equal(h.o, "Здравейте, ще Ви изпратим нова туба.", "the original stays for the team");
   const polled = await site(`/api/chat/s/vcelijed/m?sid=chatsid0002&after=2`);
   assert.equal(polled.data.messages.length, 1);
   assert.equal(polled.data.messages[0].r, "h");
+  assert.equal(polled.data.messages[0].t, "[SK] Здравейте, ще Ви изпратим нова туба.");
   assert.equal(polled.data.total, 3);
+  // Без превод (вече е на словашки) и неуспешен превод – нищо не стига до клиента.
+  assert.equal((await api(`/api/chat/c/${c.id}/reply`, { text: "Dobrý deň, pošleme Vám novú tubu.", translate: false })).data.chat.messages.at(-1).t, "Dobrý deň, pošleme Vám novú tubu.");
+  const badTr = await api(`/api/chat/c/${c.id}/reply`, { text: "ПОКВАРИ превода" });
+  assert.equal(badTr.status, 400);
+  assert.match(badTr.data.message, /Преводът не стана/);
+  assert.equal((await site(`/api/chat/s/vcelijed/m?sid=chatsid0002&after=0`)).data.total, 4);
   // Клиентът пише пак: асистентът вижда отговора на екипа.
   await site("/api/chat/s/vcelijed", { sid: "chatsid0002", text: "Ďakujem" });
-  assert.match(JSON.stringify(calls[calls.length - 1].messages), /Kolega z tímu\] Dobrý deň, pošleme/);
+  assert.match(JSON.stringify(calls[calls.length - 1].messages), /Kolega z tímu\] \[SK\] Здравейте/);
 
   // Приключено → звънчето гасне.
   await api(`/api/chat/c/${c.id}/status`, { status: "done" });
@@ -189,6 +220,8 @@ test("site chat: off by default, only from the shop's domain, the assistant answ
   assert.equal(r.status, 200);
   assert.match(r.data.messages[1].t, /majstervcelar@gmail\.com/);
   assert.equal(r.data.status, "human");
+  assert.equal(notes.length, 2, "the failed answer also tells the team");
+  assert.match(notes[1].text, /Клиентът: „CRASH“/);
 
   // Проба от OrderDesk (влязъл човек, без Origin) – работи и при изключен чат; без вход – не.
   await api("/api/chat/settings/vcelijed", { ...st.data.settings, enabled: false });
@@ -196,6 +229,7 @@ test("site chat: off by default, only from the shop's domain, the assistant answ
   assert.equal(pv.enabled, true);
   const pvPost = await fetch(`${B}/api/chat/s/vcelijed`, { method: "POST", headers: { cookie, "content-type": "text/plain" }, body: JSON.stringify({ sid: "preview0001", text: "Test" }) });
   assert.equal(pvPost.status, 200);
+  assert.equal(notes.length, 2, "a try from OrderDesk does not notify");
   assert.equal((await fetch(`${B}/api/chat/s/vcelijed`)).status, 403);
   assert.equal((await site("/api/chat/s/vcelijed")).data.enabled, false, "the site still sees it off");
 

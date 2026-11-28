@@ -117,22 +117,31 @@ const staffApi = handle(async (req) => {
   if (what === "c") {
     const n = Number(id);
     if (!Number.isSafeInteger(n) || n <= 0) throw notFound();
+    const withLang = async (c: any) => (c ? { ...c, lang: (await chatSettings(c.shop)).lang } : c);
     if (!action && req.method === "GET") {
       const c = await getChat(company, n);
       if (!c) throw notFound("Няма такъв разговор.");
-      return json({ chat: c });
+      return json({ chat: await withLang(c) });
     }
     if (action === "reply" && req.method === "POST") {
-      const text = cleanText((await body(req))?.text);
+      const b = await body(req);
+      const text = cleanText(b?.text);
       if (!text) throw bad("empty", "Напиши отговора.");
-      if (!(await staffReply(company, n, text))) throw notFound("Няма такъв разговор.");
-      return json({ chat: await getChat(company, n) });
+      let ok = false;
+      try {
+        ok = await staffReply(company, n, text, b?.translate !== false);
+      } catch (e) {
+        console.error("chat translate failed", e);
+        throw bad("translate", "Преводът не стана. Опитай пак или махни отметката „Преведи“ и напиши на езика на клиента.");
+      }
+      if (!ok) throw notFound("Няма такъв разговор.");
+      return json({ chat: await withLang(await getChat(company, n)) });
     }
     if (action === "status" && req.method === "POST") {
       const status = (await body(req))?.status;
       if (!["bot", "human", "done"].includes(status)) throw bad("bad_status", "Непознат статус.");
       if (!(await setChatStatus(company, n, status))) throw notFound("Няма такъв разговор.");
-      return json({ chat: await getChat(company, n) });
+      return json({ chat: await withLang(await getChat(company, n)) });
     }
     throw notFound();
   }

@@ -52,7 +52,8 @@ async function load() {
 
 const bubble = (m) => {
   const side = m.r === "u" ? "u" : m.r === "h" ? "h" : "a";
-  return `<div class="cmsg ${side}"><div class="cwho">${who[m.r] || ""} · ${when(m.at)}</div><div class="ctext">${esc(m.t).replace(/\n/g, "<br>")}</div></div>`;
+  const orig = m.o ? `<div class="corig">Ти написа: ${esc(m.o).replace(/\n/g, "<br>")}</div>` : "";
+  return `<div class="cmsg ${side}"><div class="cwho">${who[m.r] || ""} · ${when(m.at)}</div><div class="ctext">${esc(m.t).replace(/\n/g, "<br>")}</div>${orig}</div>`;
 };
 
 async function openChat(id) {
@@ -66,7 +67,8 @@ async function openChat(id) {
       ${c.case_summary ? `<div class="note"><b>${esc(c.kind_bg || "Случай")}:</b> ${esc(c.case_summary)}</div>` : ""}
       ${c.phone || c.email ? `<div>${c.phone ? `📞 <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : ""}${c.email ? ` ✉ <a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ""}</div>` : ""}
       <div class="cthread" id="thread">${(c.messages || []).map(bubble).join("")}</div>
-      <label>Отговор до клиента<textarea id="ans" rows="3" maxlength="1000" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)" placeholder="На езика на клиента…"></textarea></label>
+      <label>Отговор до клиента<textarea id="ans" rows="3" maxlength="1000" style="width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)" placeholder="${c.lang && c.lang !== "bg" ? "Пиши на български – ще се преведе" : "Напиши отговора…"}"></textarea></label>
+      ${c.lang && c.lang !== "bg" ? `<label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text)"><input type="checkbox" id="tr" checked> Преведи автоматично на ${LANGS[c.lang] || c.lang}</label>` : ""}
       <div class="muted small">Отговорът се появява в балончето, ако клиентът още е на страницата. Иначе му се обади или пиши на телефона/имейла по-горе.</div>
       <p class="err small" id="cErr"></p>
     </div>
@@ -92,7 +94,7 @@ async function openChat(id) {
     if (!text) return;
     $("send").disabled = true;
     try {
-      await api(`/api/chat/c/${c.id}/reply`, { method: "POST", body: { text } });
+      await api(`/api/chat/c/${c.id}/reply`, { method: "POST", body: { text, translate: $("tr") ? $("tr").checked : true } });
       await openChat(c.id);
       await load();
     } catch (e) {
@@ -194,4 +196,7 @@ $("shops").onclick = (e) => {
   if (b) openSettings(b.dataset.set);
 };
 await load();
+// Линкът от Telegram (/chat/?c=<номер>) отваря разговора направо.
+const openId = new URLSearchParams(location.search).get("c");
+if (openId && /^\d+$/.test(openId)) openChat(openId).catch(() => null);
 setInterval(() => !document.hidden && !$("dlg").open && load().catch(() => null), 30000);
