@@ -1,7 +1,7 @@
-// "Виж я в реален размер": one card (10 × 14 cm) on the screen at its true size.
-// A browser does not know how big its screen is in centimetres, so the visitor first matches a frame
-// to a bank or ID card (ISO/IEC 7810 ID-1, 85.6 × 53.98 mm – the same everywhere). The scale is kept
-// on the device and asked again only when the screen or the zoom changes.
+// "Виж я в реален размер": one card (10 × 14 cm) on the screen, with centimetre rulers.
+// A browser does not know how big its screen is in centimetres, and asking visitors to hold a bank card
+// to the screen did not work for them, so the scale is a guess by kind of device (phone, tablet, Mac,
+// other computer) – close on most screens. A scale saved by the old bank-card setting is still used.
 // Any button with data-realsize="lit|ezik|mat" opens it; the card pictures come from the button's
 // data-rs-lit / data-rs-ezik / data-rs-mat (attributes, so the store build points them at the CDN).
 import { ROOT } from "/assets/eb-root.js";
@@ -9,13 +9,10 @@ import { ROOT } from "/assets/eb-root.js";
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const CARD = { w: 100, h: 140 }; // mm
-const ID1 = { w: 85.6, h: 53.98 }; // mm
-const CSS_MM = 96 / 25.4; // px per "millimetre" as the browser counts it – right on many desktop screens
-const K_MIN = 1.5, K_MAX = 9, K_STEP = 0.01;
+const K_MIN = 1.5, K_MAX = 9;
 const KEY = "eb-realsize";
 const DECKS = [["lit", "Литература"], ["ezik", "Български език"], ["mat", "Математика"]];
 
-const clampK = (k) => Math.min(K_MAX, Math.max(K_MIN, Math.round(k * 1000) / 1000));
 const screenId = () => `${screen.width}x${screen.height}@${Math.round((window.devicePixelRatio || 1) * 100)}`;
 function savedK() {
   try {
@@ -24,8 +21,13 @@ function savedK() {
   } catch {}
   return 0;
 }
-function saveK(k) {
-  try { localStorage.setItem(KEY, JSON.stringify({ k, s: screenId() })); } catch {}
+// CSS pixels per inch on typical screens: phones ≈ 155, tablets ≈ 132, MacBooks ≈ 127, other computers ≈ 96
+function guessK() {
+  const short = Math.min(screen.width, screen.height);
+  const touch = matchMedia("(pointer: coarse)").matches;
+  const mac = /Mac/.test(navigator.platform || navigator.userAgent);
+  const ppi = touch && short < 600 ? 155 : touch ? 132 : mac && (window.devicePixelRatio || 1) >= 2 ? 127 : 96;
+  return ppi / 25.4;
 }
 
 // a centimetre ruler as long as the card's side: numbers every cm, ticks every 5 mm (and every mm if there is room)
@@ -50,41 +52,17 @@ const X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 const HTML = `
 <button class="rs-x" type="button" aria-label="Затвори">${X}</button>
 <div class="rs-body">
-  <section class="rs-cal" data-rs="cal">
-    <div class="rs-cal-txt">
-      <p class="kicker">Стъпка 1 от 2 · настройка</p>
-      <h2 class="rs-h">Настройте екрана по истинска карта</h2>
-      <p class="rs-p">Всеки екран показва нещата в различен размер. Настройката отнема 10 секунди и се прави само веднъж на това устройство.</p>
-      <ol class="rs-steps">
-        <li>Вземете <b>банкова или лична карта</b> – всички са с еднакъв размер.</li>
-        <li>Долепете я до екрана върху рамката, като <b>подравните горните леви ъгли</b>.</li>
-        <li>Местете плъзгача, докато рамката стане <b>точно колкото картата</b>.</li>
-      </ol>
-    </div>
-    <div class="rs-frame"><div class="rs-id" data-rs="id"><span class="rs-chip" data-rs="chip"></span><span class="rs-id-t">Долепете картата тук</span></div></div>
-    <div class="rs-cal-ctrl">
-      <div class="rs-slider">
-        <button type="button" data-step="-1" aria-label="По-малка рамка">−</button>
-        <input type="range" min="${K_MIN}" max="${K_MAX}" step="${K_STEP}" aria-label="Размер на рамката" data-rs="range">
-        <button type="button" data-step="1" aria-label="По-голяма рамка">+</button>
-      </div>
-      <button class="btn btn-primary" type="button" data-rs="done">Готово – покажи картата <span class="arrow">→</span></button>
-      <button class="rs-link" type="button" data-rs="skip">Нямам карта под ръка – покажи приблизително</button>
-    </div>
-  </section>
-  <section class="rs-view" data-rs="view" hidden>
+  <section class="rs-view" data-rs="view">
     <div class="rs-view-txt">
       <p class="kicker" data-rs="kick">Реален размер</p>
       <h2 class="rs-h">Ето колко голяма е една карта</h2>
       <div class="side-switch rs-tabs" role="group" aria-label="Тесте" data-rs="tabs">${DECKS.map(([d, n]) => `<button type="button" data-deck="${d}" aria-pressed="false">${n}</button>`).join("")}</div>
-      <p class="rs-note" data-rs="ok">Това е истинският ѝ размер – <b>10 × 14 см</b>. Линийките са в сантиметри. Картите и на трите тестета са с еднакъв размер.</p>
-      <p class="rs-note rs-warn" data-rs="approx" hidden>Размерът е <b>приблизителен</b>. За точен размер <button class="rs-link" type="button" data-rs="recal">настройте екрана с банкова карта</button>.</p>
+      <p class="rs-note">Всяка карта е <b>10 × 14 см</b> – колкото четвърт лист А4. Линийките са в сантиметри. Картите и на трите тестета са с еднакъв размер.</p>
       <p class="rs-note" data-rs="over" hidden>Картата е по-голяма от видимата част на екрана – превъртете, за да я видите цялата.</p>
       <div class="rs-acts">
         <button class="btn btn-primary" type="button" data-rs="order" hidden>Към поръчката <span class="arrow">→</span></button>
         <button class="btn btn-ghost" type="button" data-rs="close">Затвори</button>
       </div>
-      <button class="rs-link" type="button" data-rs="recal">↻ Настрой екрана отново</button>
     </div>
     <div class="rs-stage"><div class="rs-grid"><span class="rs-cm">см</span><div data-rs="top"></div><div data-rs="left"></div><div class="rs-card" role="img" data-rs="card"></div></div></div>
   </section>
@@ -93,18 +71,9 @@ const HTML = `
 const scope = ROOT || document;
 const buttons = $$("[data-realsize]", scope).filter((b) => !b.dataset.rsOn);
 if (buttons.length) {
-  let dlg = null, k = CSS_MM, approx = false, deck = "lit", pics = {}, portrait = false, overflow = "";
+  let dlg = null, k = guessK(), deck = "lit", pics = {}, overflow = "";
   const q = (name) => $(`[data-rs="${name}"]`, dlg);
 
-  const drawFrame = () => {
-    const w = (portrait ? ID1.h : ID1.w) * k, h = (portrait ? ID1.w : ID1.h) * k;
-    const f = q("id"), c = q("chip");
-    Object.assign(f.style, { width: `${w}px`, height: `${h}px`, borderRadius: `${3.18 * k}px` });
-    // the chip sits where it does on a real card (landscape), turned with it (portrait)
-    Object.assign(c.style, portrait
-      ? { left: `${27.5 * k}px`, top: `${9 * k}px`, width: `${8.5 * k}px`, height: `${11 * k}px`, borderRadius: `${1.5 * k}px` }
-      : { left: `${9 * k}px`, top: `${18 * k}px`, width: `${11 * k}px`, height: `${8.5 * k}px`, borderRadius: `${1.5 * k}px` });
-  };
   const drawCard = () => {
     const w = CARD.w * k, h = CARD.h * k, card = q("card");
     q("top").innerHTML = ruler(CARD.w, k, false);
@@ -113,22 +82,9 @@ if (buttons.length) {
     const name = (DECKS.find(([d]) => d === deck) || DECKS[0])[1];
     card.setAttribute("aria-label", `Карта по ${name.toLowerCase()} в реален размер – 10 × 14 см`);
     for (const b of $$("button", q("tabs"))) b.setAttribute("aria-pressed", String(b.dataset.deck === deck));
-    q("ok").hidden = approx;
-    q("approx").hidden = !approx;
     q("over").hidden = !(w + 70 > innerWidth || h + 70 > innerHeight);
   };
-  const showCal = () => {
-    q("cal").hidden = false;
-    q("view").hidden = true;
-    portrait = innerWidth < 640;
-    q("range").value = String(k);
-    drawFrame();
-    dlg.scrollTop = 0;
-  };
-  const showView = (fromSaved) => {
-    q("cal").hidden = true;
-    q("view").hidden = false;
-    q("kick").textContent = fromSaved ? "Реален размер" : "Стъпка 2 от 2 · реален размер";
+  const show = () => {
     drawCard();
     dlg.scrollTop = 0;
   };
@@ -143,13 +99,6 @@ if (buttons.length) {
     (document.getElementById("ebf") || ROOT || document.body).appendChild(dlg);
     $(".rs-x", dlg).addEventListener("click", close);
     q("close").addEventListener("click", close);
-    q("range").addEventListener("input", (e) => { k = clampK(Number(e.target.value)); drawFrame(); });
-    for (const b of $$("[data-step]", dlg)) {
-      b.addEventListener("click", () => { k = clampK(k + Number(b.dataset.step) * K_STEP); q("range").value = String(k); drawFrame(); });
-    }
-    q("done").addEventListener("click", () => { saveK(k); approx = false; showView(false); });
-    q("skip").addEventListener("click", () => { k = CSS_MM; approx = true; showView(false); });
-    for (const b of $$('[data-rs="recal"]', dlg)) b.addEventListener("click", showCal);
     q("tabs").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-deck]");
       if (b) { deck = b.dataset.deck; drawCard(); }
@@ -161,11 +110,7 @@ if (buttons.length) {
     }
     dlg.addEventListener("close", () => { document.documentElement.style.overflow = overflow; });
     dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
-    addEventListener("resize", () => {
-      if (!dlg.open) return;
-      if (!q("cal").hidden) drawFrame();
-      else drawCard();
-    });
+    addEventListener("resize", () => { if (dlg.open) drawCard(); });
   };
 
   const open = (btn) => {
@@ -176,9 +121,8 @@ if (buttons.length) {
     overflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
     dlg.showModal();
-    const s = savedK();
-    if (s) { k = s; approx = false; showView(true); }
-    else { k = CSS_MM; approx = false; showCal(); }
+    k = savedK() || guessK();
+    show();
     $(".rs-x", dlg).focus();
   };
   for (const b of buttons) {

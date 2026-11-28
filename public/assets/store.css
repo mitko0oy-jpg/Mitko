@@ -1089,29 +1089,11 @@ dialog.rs-dlg::backdrop{background:rgba(14,16,22,.5)}
 .rs-x svg{width:22px;height:22px}
 .rs-body{max-width:1280px;margin:0 auto;padding:28px clamp(14px,3vw,36px) 56px}
 .rs-h{margin:0 0 12px;padding-right:56px;font-size:clamp(24px,2.8vw,34px);line-height:1.12;letter-spacing:-.02em}
-.rs-p{margin:0 0 14px;color:var(--muted);font-size:17px}
-.rs-steps{margin:0 0 6px;padding-left:24px;color:var(--muted);font-size:17px}
-.rs-steps li{margin:0 0 8px}
-.rs-steps b,.rs-note b{color:var(--ink)}
-.rs-cal{display:grid;grid-template-columns:minmax(280px,420px) minmax(0,1fr);grid-template-areas:"txt frame" "ctrl frame";gap:10px clamp(24px,4vw,56px);align-items:start}
-.rs-cal-txt{grid-area:txt}
-.rs-cal-ctrl{grid-area:ctrl}
-.rs-frame{grid-area:frame;padding-top:6px}
-.rs-id{position:relative;border:2px dashed var(--accent);background:repeating-linear-gradient(135deg,var(--surface) 0 12px,var(--surface-2) 12px 24px)}
-.rs-chip{position:absolute;background:linear-gradient(135deg,#F3D98A,#C99A2E)}
-.rs-id::before{content:"";position:absolute;top:-8px;left:-8px;width:26px;height:26px;border-top:4px solid var(--accent);border-left:4px solid var(--accent);border-radius:6px 0 0 0}
-.rs-id-t{position:absolute;inset:auto 0 0 0;padding:0 8px 12px;text-align:center;font-size:15px;font-weight:700;line-height:1.25;color:var(--accent)}
-.rs-slider{display:flex;align-items:center;gap:10px;margin:8px 0 18px;padding:6px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
-.rs-slider button{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:var(--ink);color:var(--bg);font-size:24px;font-weight:700;line-height:1;cursor:pointer}
-.rs-slider input{flex:1;min-width:0;height:32px;accent-color:var(--accent)}
-.rs-cal-ctrl .btn{width:100%}
-.rs-link{display:inline-block;margin-top:12px;padding:4px 0;border:0;background:none;color:var(--ink);font-size:16px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.rs-note .rs-link{margin:0;padding:0;font-size:inherit}
+.rs-note b{color:var(--ink)}
 .rs-view{display:grid;grid-template-columns:minmax(260px,380px) minmax(0,1fr);gap:clamp(20px,3vw,44px);align-items:start}
 .rs-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;width:100%;margin-bottom:16px;border-radius:18px}
 .rs-tabs button{padding:10px 6px;font-size:15px;line-height:1.2;white-space:normal;cursor:pointer}
 .rs-note{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);font-size:16px;line-height:1.45}
-.rs-note.rs-warn{background:#FFF4DA;box-shadow:inset 0 0 0 1px #EFD28A;color:#5A4410}
 .rs-acts{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 0}
 .rs-stage{overflow-x:auto;padding:4px 0 10px}
 .rs-grid{display:grid;grid-template-columns:28px auto;grid-template-rows:28px auto;gap:4px;width:max-content;margin:0 auto}
@@ -1120,4 +1102,4 @@ dialog.rs-dlg::backdrop{background:rgba(14,16,22,.5)}
 .rs-ruler{display:block;overflow:visible}
 .rs-ruler line{stroke:var(--ink);stroke-width:1;shape-rendering:crispEdges}
 .rs-ruler text{font-family:var(--sans);font-size:11px;font-weight:700;fill:var(--ink)}
-@media (max-width:860px){.rs-dlg .kicker{padding-right:60px}.rs-cal{grid-template-columns:1fr;grid-template-areas:"txt" "frame" "ctrl"}.rs-frame{padding:4px 0 14px}.rs-view{grid-template-columns:1fr}}
+@media (max-width:860px){.rs-dlg .kicker{padding-right:60px}.rs-view{grid-template-columns:1fr}}
