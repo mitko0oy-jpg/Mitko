@@ -150,6 +150,12 @@ function render(o) {
     <section class="card" id="historyCard"></section>
   </div>`;
   mountProducts($("productsCard"), o, (fresh) => render(fresh));
+  // From ✎ in the orders list → „Продукти и цени“: open the products editor once.
+  if (location.hash === "#produkti") {
+    history.replaceState(null, "", location.pathname + location.search);
+    $("productsCard").querySelector("#peEdit")?.click();
+    $("productsCard").scrollIntoView({ block: "start" });
+  }
   if ($("nekCheck"))
     $("nekCheck").onclick = async () => {
       $("nekCheck").disabled = true;

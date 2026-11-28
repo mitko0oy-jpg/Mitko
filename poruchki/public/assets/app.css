@@ -313,6 +313,7 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
 .modal .mh { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
 .modal .mb { padding: 16px 18px; display: grid; gap: 12px; overflow: auto; }
 .modal .mf { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+.modal .mf .mfleft { margin-right: auto; font-size: 14px; color: var(--link); }
 .modal .grid2 { gap: 10px; }
 .modal label { display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
 .modal input[type="text"], .modal input[type="number"], .modal input[type="tel"], .modal input[type="search"] { width: 100%; }
@@ -365,7 +366,7 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 0.45); }
 }
 @media (min-width: 761px) and (max-width: 1099px) {
   /* Tablets: the buttons go in two rows instead of pushing the table off the screen. */
-  .otbl .actsin { flex-wrap: wrap; width: 76px; }
+  .otbl .actsin { flex-wrap: wrap; width: 98px; }
   .otbl .c-when, .otbl .c-shop { display: none; }
 }
 .notebtn svg { width: 16px; height: 16px; }
@@ -574,7 +575,7 @@ body.focus main { padding-top: 8px; }
 @media (min-width: 761px) {
   .actsin { gap: 4px; }
   .actsin .iconbtn { width: 30px; height: 30px; }
-  .otbl td.acts { width: 136px; }
+  .otbl td.acts { width: 170px; }
 
 }
 @media (min-width: 761px) {
@@ -628,7 +629,7 @@ body.focus main { padding-top: 8px; }
   .cg .cmain, .otbl .cname2 { max-width: 158px; }
 }
 @media (min-width: 1300px) {
-  .work { grid-template-columns: 214px minmax(0, 1fr); }
+  .work { grid-template-columns: 232px minmax(0, 1fr); }
   .work.folded { grid-template-columns: 30px minmax(0, 1fr); }
 }
 .tgl .badge { width: 94px; }
@@ -732,21 +733,27 @@ dialog.modal > .mh, dialog.modal > .mf { flex: none; }
 .nektip .rl b { font-weight: 700; }
 .tipwrap { display: inline-grid; place-items: center; outline-offset: 2px; }
 
-/* filter panel: groups, nothing cut off, counts in their own column */
-.side { gap: 14px; }
-.side .grp { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); min-width: 0; }
-.side h3 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.side .fld { gap: 4px; font-size: 13px; }
-.side .fld select, .side .fld input[type="date"] { font-size: 13px; padding: 7px 8px; min-height: 36px; text-overflow: ellipsis; }
+/* filter panel, compact like Middleware: the name of each field sits on its border, one line per switch */
+.side { gap: 10px; padding: 12px 8px 12px 12px; scrollbar-width: thin; }
+.side .grp { display: grid; gap: 14px; padding-top: 14px; border-top: 1px solid var(--line); min-width: 0; }
+.side h3 { margin: 0 0 -4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.side .fld { position: relative; display: block; font-size: 13px; }
+.side .fld .fl { position: absolute; top: -7px; left: 7px; z-index: 1; max-width: calc(100% - 14px); padding: 0 4px; background: var(--surface); font-size: 11px; line-height: 14px; font-weight: 600; color: var(--muted); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side .fld:has(option:checked:not([value=""])) .fl { color: var(--accent); }
+.side .fld:has(option:checked:not([value=""])) select { border-color: var(--accent); }
+.side .fld select, .side .fld input[type="date"] { width: 100%; font-size: 13px; padding: 7px 8px; min-height: 36px; text-overflow: ellipsis; }
 .side-top { grid-template-columns: minmax(0, 1fr) 40px; }
 .side-top .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; }
 .side-top .btn svg { width: 16px; height: 16px; flex: none; }
-.side .tgllist { display: grid; gap: 4px; }
-.side .tgl { grid-template-columns: 34px minmax(0, 1fr) 42px; gap: 8px; padding: 4px 2px; }
-.side .tgl .t { font-size: 13px; line-height: 1.25; }
-.side .tgl .badge { width: auto; max-width: none; justify-self: stretch; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; padding: 4px 6px; }
-.side .tgl .n { justify-self: end; min-width: 0; padding: 1px 7px; }
-.side .dates { grid-template-columns: 1fr; gap: 8px; }
+.side .tgllist { display: grid; gap: 2px; }
+.side .tgl { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 7px; padding: 4px 2px; }
+.side .tgl .sw { width: 30px; height: 17px; }
+.side .tgl .sw::after { width: 13px; height: 13px; }
+.side .tgl input:checked + .sw::after { transform: translateX(13px); }
+.side .tgl .t { font-size: 13px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side .tgl .badge { width: auto; max-width: none; justify-self: stretch; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; padding: 4px 4px; letter-spacing: -0.015em; }
+.side .tgl .n { justify-self: end; min-width: 20px; padding: 1px 5px; }
+.side .dates { grid-template-columns: 1fr; gap: 14px; }
 
 /* ================= modern look (v2): cooler neutrals, soft tinted badges, lighter controls ================= */
 :root {
@@ -877,10 +884,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .tabs .n { color: var(--muted); }
 .side .badge.abandoned::before { display: none; }
 @media (max-width: 1299px) and (min-width: 761px) { .otbl td, .otbl th { padding-left: 4px; padding-right: 4px; } }
-.side .tgl { grid-template-columns: 34px minmax(0, 1fr) 40px; }
-.side .tgl .badge { padding: 4px 4px; }
 @media (min-width: 761px) { .otbl td.c-client { min-width: 174px; } }
-.side .tgl .badge { letter-spacing: -0.015em; }
 
 /* Middleware's softer blue for names, phones and links; buttons a touch deeper in the same hue (white text stays readable) */
 :root { --link: #5494de; --accent: #3d86df; --accent-soft: #e9f2fd; }

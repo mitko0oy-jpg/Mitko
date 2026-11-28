@@ -21,8 +21,9 @@ function dialog() {
 /**
  * mode "new": shops required, resolves to {id, order_no} of the new order.
  * mode "contact": order required, resolves to true when saved.
+ *   productsLink: a link to the order with its products editor open (from the orders list).
  */
-export function openOrderForm({ mode, order, shops = [] }) {
+export function openOrderForm({ mode, order, shops = [], productsLink = false }) {
   const d = dialog();
   const del = order?.delivery || {};
   const st = {
@@ -112,7 +113,7 @@ export function openOrderForm({ mode, order, shops = [] }) {
           }
           <div class="err small" id="ofErr"></div>
         </form>
-        <div class="mf"><button class="btn" data-close>Откажи</button><button class="btn primary" id="ofSave">${mode === "new" ? "Създай поръчката" : "Запази"}</button></div>`;
+        <div class="mf">${mode === "contact" && productsLink ? `<a class="linkbtn mfleft" href="/poruchka/?id=${order.id}#produkti">Продукти и цени →</a>` : ""}<button class="btn" data-close>Откажи</button><button class="btn primary" id="ofSave">${mode === "new" ? "Създай поръчката" : "Запази"}</button></div>`;
       bind();
       // Typing on: the field keeps the cursor after the form is drawn again.
       const el = was && d.querySelector(`form [name="${was}"]`);

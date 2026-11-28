@@ -43,6 +43,7 @@ const ICON = {
   robot: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg>`,
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
   note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>`,
+  edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M18.4 3.6a2 2 0 0 1 2.9 2.9L12.5 15.3 9 16l.7-3.5z"/></svg>`,
   cancel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>`,
   tag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5z"/><path d="M14 5v2M14 11v2M14 17v2"/></svg>`,
 };
@@ -200,6 +201,7 @@ function actions(o) {
   // ⓘ opens the details under the row (like in Middleware), so there is no going to another page and back.
   const open = opened.has(o.id);
   const out = [`<button class="iconbtn info${open ? " on" : ""}" title="${open ? "Скрий подробностите" : "Подробности (под реда)"}" aria-label="Подробности" aria-expanded="${open}" data-act="info" data-id="${o.id}">${ICON.info}</button>`];
+  out.push(`<button class="iconbtn" title="Редактирай клиента и доставката" aria-label="Редактирай" data-act="edit" data-id="${o.id}">${ICON.edit}</button>`);
   out.push(o.phone ? `<button class="iconbtn" title="Изпрати SMS" aria-label="Изпрати SMS" data-act="sms" data-id="${o.id}">${ICON.sms}</button>` : `<span class="iconbtn off" aria-hidden="true">${ICON.sms}</span>`);
   if (canShip(o)) out.push(`<button class="iconbtn primary" title="Създай товарителница" aria-label="Създай товарителница" data-act="ship" data-id="${o.id}">${ICON.ship}</button>`);
   else if (canCancel(o)) out.push(`<button class="iconbtn danger" title="Анулирай товарителницата" aria-label="Анулирай товарителницата" data-act="cancel" data-id="${o.id}">${ICON.cancel}</button>`);
@@ -215,6 +217,7 @@ function moreMenu(o) {
   if (!o.confirmed_at) items.push(["confirm", "✓ Потвърди"]);
   else items.push(["unconfirm", "Махни потвърждението"]);
   if (!o.confirmed_at && o.phone && !["requested", "calling"].includes(o.call?.state)) items.push(["ai", "📞 Обади се (Александра)"]);
+  items.push(["edit", "Редактирай"]);
   items.push(["note", "Бележка"]);
   if (canShip(o)) items.push(["ship", "Създай товарителница"]);
   if (o.tracking_no && (c === "speedy" || c === "econt")) items.push(["print", "Печат на етикета"]);
@@ -488,6 +491,12 @@ async function act(what, id, btn) {
       return tr && toggleRow(tr);
     }
     if (what === "stage") return openStageMenu(o, btn, () => load(true));
+    if (what === "edit") {
+      // Like Middleware's ✎: name, phone and delivery right here; products and prices are one click away in the order.
+      const full = await api(`/api/orders/${id}`);
+      if (await openOrderForm({ mode: "contact", order: full, productsLink: true })) load(true);
+      return;
+    }
     if (["unconfirm", "archive", "unarchive", "not-duplicate"].includes(what)) {
       if (what === "archive" && !confirm(`Да архивирам ли поръчка № ${o?.order_no}?`)) return;
       await api(`/api/orders/${id}/${what}`, { method: "POST", body: {} });
