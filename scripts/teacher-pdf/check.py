@@ -26,6 +26,7 @@ same = lambda s: re.sub(r"\s+", " ", str(s)).strip()  # options: punctuation and
 class Check:
     def __init__(self, old):
         self.errors, self.warns, self.texts, self.old = [], [], [], old
+        self.mc = self.longest = 0  # how often the right answer is the longest option (it gives the answer away)
 
     def err(self, w, m):
         self.errors.append(f"{w}: {m}")
@@ -109,6 +110,9 @@ class Check:
                 self.err(w, "pts 1–8")
             if not t.get("skill"):
                 self.err(w, "липсва skill")
+        if ty == "mc" and len(t.get("o") or []) == 4:
+            self.mc += 1
+            self.longest += len(str(t["o"][0])) > max(len(str(x)) for x in t["o"][1:])
         self.language(w, t)
         q = norm(t.get("q", "")) + " " + " ".join(norm(x) for x in (t.get("passage") or []))
         if len(q) > 25:
@@ -245,6 +249,9 @@ def main(files, old_file):
         if "missions" in d:
             c.missions(d["missions"])
             print(f"{f}: {len(d['missions'])} мисии, {sum(len(m.get('clues') or []) for m in d['missions'])} улики")
+    if c.mc >= 12 and c.longest / c.mc > .35:
+        c.warn("отговори", f"верният отговор е най-дългият в {c.longest} от {c.mc} въпроса с избор ({100 * c.longest // c.mc}%) – "
+                           "това го издава; изравни дължините (при случайност е около 25%)")
     for x in c.warns:
         print("! " + x)
     if c.errors:
