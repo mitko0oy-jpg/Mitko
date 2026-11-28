@@ -463,7 +463,7 @@ a.badge:hover { text-decoration: none; filter: brightness(1.1); }
 .otbl th.sortable .arr { color: var(--muted); font-size: 11px; margin-left: 2px; }
 .otbl th.sortable.on { color: var(--accent); }
 .otbl th.sortable.on .arr { color: var(--accent); }
-.otbl .ono { font-weight: 700; font-size: 15px; color: var(--text); }
+.otbl .ono { font-weight: 600; font-size: 12.5px; color: var(--text-2); }
 .otbl .pills { display: flex; gap: 4px; margin-top: 4px; }
 .pill { min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; border: 1px solid var(--line); color: var(--text-2); }
 .pill.n { background: var(--text); color: var(--surface); border-color: var(--text); }
@@ -1239,7 +1239,7 @@ a.tile { display: block; }
 
   /* number + the four small signs in one row */
   .otbl .nocell { gap: 10px; }
-  .otbl .nocell .ono { min-width: 0; font-size: 17px; }
+  .otbl .nocell .ono { min-width: 0; font-size: 13px; }
   .otbl .ic4 { grid-template-columns: repeat(4, 19px); gap: 4px; }
   .otbl .i4 { width: 19px; height: 19px; font-size: 11px; }
   .otbl .i4 svg { width: 11px; height: 11px; }
