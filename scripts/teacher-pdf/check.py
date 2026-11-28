@@ -20,7 +20,7 @@ LV = (0, 1, 2)
 BANNED_OPT = re.compile(r"\bвсички\b|\bнито един|\b[АБВГ] и [АБВГ]\b", re.I)
 TESA = re.compile(r"\bтеза(та)?\b", re.I)  # „тези“ is also „these“ – allowed
 norm = lambda s: re.sub(r"[^\w ]+", "", str(s).lower()).strip()
-same = lambda s: re.sub(r"\s+", " ", str(s).lower()).strip()  # options: punctuation counts („Ох, …“ ≠ „Ох …“)
+same = lambda s: re.sub(r"\s+", " ", str(s)).strip()  # options: punctuation and capitals count („Ох, …“ ≠ „Ох …“)
 
 
 class Check:
