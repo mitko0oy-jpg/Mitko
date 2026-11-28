@@ -69,9 +69,15 @@ S = {
 }
 
 
+FALLBACK = set()  # characters drawn with Noto Sans Math (→, ≠ …): the text fonts lack them
+
+
 def X(s):
-    """Plain text → Paragraph markup (keeps line breaks)."""
-    return '<br/>'.join(escape(str(x)) for x in str(s).split('\n'))
+    """Plain text → Paragraph markup (keeps line breaks; symbols the text fonts lack go to Noto Sans Math)."""
+    out = '<br/>'.join(escape(str(x)) for x in str(s).split('\n'))
+    for ch in FALLBACK & set(out):
+        out = out.replace(ch, f'<font name="NotoSansMath">{ch}</font>')
+    return out
 
 
 def P(text, style='body', raw=False):
@@ -1104,7 +1110,9 @@ def main():
     used = set()
     for part in ('sheets', 'quizzes', 'missions', 'tests', 'skills'):
         used |= set(json.dumps(kit[part], ensure_ascii=False))
-    missing = sorted(ch for ch in used if ch not in '\n\t' and not all(ord(ch) in cmaps[f] for f in (SANS, SERIF, SERIF_I, SANS_B)))
+    lack = {ch for ch in used if ch not in '\n\t' and not all(ord(ch) in cmaps[f] for f in (SANS, SERIF, SERIF_I, SANS_B))}
+    FALLBACK.update(ch for ch in lack if ord(ch) in cmaps['NotoSansMath'])
+    missing = sorted(lack - FALLBACK)
     if missing:
         sys.exit('Знаци, които ги няма в шрифтовете: ' + ' '.join(f'{ch} (U+{ord(ch):04X})' for ch in missing))
     kit.update({'for': a.lic, 'draft': a.draft})
